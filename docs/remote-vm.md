@@ -1,4 +1,13 @@
-# Remote VM and Yukon Pareto integration
+# Existing VM deployment record
+
+**Current integration:** use [GitHub Actions end to end](github-actions-e2e.md).
+Release `20261007-github-actions-1` is now running under `screen` on the existing
+VM. Stock `yukon run` retrieved the real receipt through its new endpoint.
+Jobs and credentials were preserved, and no evaluation was started by retrieval.
+
+The details below record the **earlier direct-backend prototype**, including its
+historical release and tests. Do not apply the custom Yukon provider or follow
+its registration steps for the GitHub Actions integration.
 
 Catalyst is installed on the existing `openclaw` VM. The API supervises its
 worker; harnesses and independent verification run in Docker on that same VM.
@@ -10,6 +19,56 @@ scores `[10758874395, 0]`. The new Yukon provider retrieved its baseline and
 submission judgments, repeated retrieval without another evaluation, and
 rejected a different owner. The result remained retrievable after restarting
 the screen-managed service. Two earlier failed attempts remain recorded.
+The service now runs `catalyst-yukon-v2` from release
+`20261007-receipt-only-1`. Receipt-only retrieval passed against that same
+evaluation. The real Yukon CLI, local API, PostgreSQL queue and worker also
+completed a submission and returned `[10758874395, 0]` through Yukon's HTTP API.
+A repeated submission reused the same Yukon record with no new validation job.
+
+The local Yukon/Catalyst code has since moved to the project-independent
+`yukon-remote-verification-v1` contract at `POST /yukon/v1/retrieve`.
+That change has **not been deployed** to this VM. The current Yukon checkout
+requires the generic endpoint; upgrade the Catalyst release before repeating
+the integration commands below with the new provider. The existing receipt
+remains usable without rerunning the harness. The old endpoint is retained in
+the new Catalyst source for previously deployed consumers, subject to the new
+explicit consumer benchmark grants.
+See [the shared contract](remote-evaluation.md#receipt-only-yukon-submission).
+
+## Benchmark authorization
+
+The updated code denies remote retrieval by default. The manifest's runner
+selection alone does not enable it. For an operator-reviewed benchmark UUID, add
+the following entry to the Yukon service's private `benchmarks` map and to the
+matching consumer token principal's `benchmarks` map in Catalyst's private
+`auth.json`:
+
+```json
+{
+  "<benchmark UUID>": {
+    "enabled": true,
+    "problem": {"id": "ecdsa.fail", "version": "<pinned problem-set SHA-256>"}
+  }
+}
+```
+
+Use the reviewed problem definition to obtain the version, not solver input:
+
+```sh
+.venv/bin/python -c 'from catalyst.problems import initial_problems; from catalyst.remote import digest; print(digest(initial_problems()))'
+```
+
+The consumer token stays secret; only its hashed-token principal is edited on
+the Catalyst service. Restart/reload both services after changing their private
+configuration. Disabling the entry prevents further retrieval after reload.
+`initialize-remote` creates an empty consumer allowlist; it grants no benchmarks.
+Both the generic and compatibility endpoint require the scoped grant.
+
+For a new benchmark, hold its baseline job while importing to obtain its Yukon
+UUID, then provision both explicit grants and start the worker. The local
+launcher handles this by leaving the new benchmark queued and printing its UUID
+before starting a worker. It never enables remote verification automatically.
+An existing receipt can be reused: no new model run is required.
 
 ## Start and stop
 
@@ -84,8 +143,8 @@ work.
 
 ## Yukon changes
 
-The implementation checkout is `.catalyst/yukon-remote-service`, based on the
-existing Yukon checkout. The exportable patch and base revision are under
+The implementation is applied to `/Users/bxue/Documents/yukon/yukon`.
+The exportable patch and base revision are under
 `integrations/yukon/`. The prior UI preview is preserved separately.
 
 The manifest uses:
@@ -97,7 +156,7 @@ The manifest uses:
   "runner": {
     "provider": "remote-verification",
     "service": "catalyst",
-    "submissionPath": "submission"
+    "receiptPath": "submission/verification.json"
   }
 }
 ```
@@ -105,20 +164,21 @@ The manifest uses:
 Both objectives minimize: verified `avg_toffoli × peak_qubits`, and model credits
 at that capture. Tier summaries and complete curves remain in public metrics.
 
-The Yukon backend materializes the pinned benchmark, safely applies the
-submission archive, computes the submitted file hashes and reads its
-`verification.json`. It sends the evaluation ID, the stored solver account ID,
-source hashes, configuration, reference and requested Pareto fields to:
+`yukon submit` uploads only the receipt file. The Yukon backend loads the pinned
+benchmark's retrieval configuration and reads that receipt from the bounded
+submission archive. It sends the evaluation ID, stored solver account ID,
+benchmark/submission IDs, receipt and requested Pareto fields to:
 
 ```text
 POST /evaluations/<evaluation_id>/yukon
 ```
 
-Catalyst checks ownership and every binding against the stored evaluation,
+Catalyst checks ownership and the receipt's bindings against its stored evaluation,
 records an immutable Yukon submission binding, and returns a public judgment.
 Yukon validates the finite Pareto tuple using its existing parser. The provider
 does not run setup/benchmark commands or launch another harness evaluation.
-Baseline import likewise requires an existing verified reference in the
+Harness source and evaluation settings are already stored in Catalyst and are
+not uploaded to Yukon. Baseline import likewise requires an existing verified reference in the
 benchmark's starter submission. Promotion is a separate reviewed source change.
 
 Deployment configuration lives in a private file selected by
@@ -141,18 +201,26 @@ Mac does not make the endpoint reachable from the hosted Yukon backend.
 
 To exercise the actual new Yukon provider against an already completed remote
 evaluation, prepare a local benchmark workspace containing this manifest and
-the matching `submission/` source, configuration and remote reference:
+the remote receipt at `submission/verification.json`. This requires a service
+running the current v2 retrieval protocol:
 
 ```sh
-cd .catalyst/yukon-remote-service
+cd /Users/bxue/Documents/yukon/yukon
 YUKON_REMOTE_VERIFIERS_FILE=/Users/bxue/Documents/catalyst/.catalyst/remote-vm/yukon-verifiers.json \
   bun scripts/check-remote-verification.ts \
-  /Users/bxue/Documents/catalyst/.catalyst/remote-vm/yukon-workspace \
-  /Users/bxue/Documents/catalyst/.catalyst/remote-vm/yukon-retrieval.json
+  /Users/bxue/Documents/catalyst/.catalyst/remote-vm/yukon-receipt-workspace \
+  /Users/bxue/Documents/catalyst/.catalyst/remote-vm/yukon-retrieval.json \
+  "<authorized-test-benchmark-uuid>" "<pinned-benchmark-revision>"
 ```
 
-This checks baseline retrieval, submission retrieval, replay consistency and
+This uploads only the receipt and checks baseline retrieval, submission retrieval, replay consistency and
 cross-owner rejection. It does not publish to Yukon or push source.
+
+For the full local Yukon API/worker/database flow, use the two separate commands
+in Yukon's `docs/catalyst-receipt-local.md`: `catalyst-local-api.ts` starts the
+local service and `check-catalyst-local.ts` submits through the actual CLI.
+Local state lives in `.catalyst/yukon-local/`. This exercises the normal queue and
+Pareto persistence path without contacting the hosted Yukon API.
 
 The hosted Yukon API/CLI must receive these changes, have a secure connection
 and service credential configured, and register the benchmark before live

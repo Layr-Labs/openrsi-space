@@ -274,6 +274,14 @@ def main(argv=None):
     remote_init.add_argument("directory")
     remote_init.add_argument("--dungeness", required=True)
     remote_init.add_argument("--owner-id", required=True, help="Yukon solver account UUID bound to the provisioned key.")
+    github_config = commands.add_parser("github-configure", help="Authorize the challenge's GitHub workflow for receipt retrieval.")
+    github_config.add_argument("--auth-file", required=True)
+    github_config.add_argument("--repository", required=True)
+    github_config.add_argument("--repository-id", required=True)
+    github_config.add_argument("--yukon-api", required=True)
+    github_config.add_argument("--baseline-evaluation", required=True)
+    github_config.add_argument("--baseline-sha", required=True)
+    github_config.add_argument("--benchmark-id", help="Add after Yukon assigns the imported benchmark UUID.")
     evaluator = commands.add_parser("evaluator-serve", help="Run the API and its supervised worker.")
     evaluator.add_argument("--local-auth", "--local-test", "--service-auth", action="store_true", required=True,
                            help="Use local service identities (no hosted Yukon authentication).")
@@ -415,8 +423,8 @@ def main(argv=None):
             from .yukon import setup_problems
             setup_problems(Path.cwd())
         elif args.command == "yukon-run":
-            from .yukon import run_remote
-            run_remote(state)
+            from .receipts import check_receipt
+            check_receipt()
         elif args.command == "remote":
             remote_command(args, state)
         elif args.command == "local-evaluator-init":
@@ -428,6 +436,14 @@ def main(argv=None):
         elif args.command == "remote-evaluator-init":
             from .hosted import initialize_remote
             print(json.dumps(initialize_remote(Path(args.directory), Path(args.dungeness), args.owner_id), indent=2))
+        elif args.command == "github-configure":
+            from .evaluator import JobStore
+            from .hosted import configure_github
+            print(json.dumps(configure_github(
+                JobStore(state), Path(args.auth_file).resolve(), repository=args.repository,
+                repository_id=args.repository_id, yukon_api=args.yukon_api,
+                baseline_evaluation=args.baseline_evaluation, baseline_sha=args.baseline_sha,
+                benchmark_id=args.benchmark_id), indent=2))
         elif args.command == "evaluator-serve":
             from .evaluator import serve
             serve(state, Path(args.auth_file), Path(args.problem_set), args.port,

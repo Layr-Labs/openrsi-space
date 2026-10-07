@@ -32,22 +32,27 @@ eligibility, concurrent-request handling, and Yukon score projection.
 ## Solver workflow
 
 The root [`benchmark.json`](benchmark.json) is one schema-v1 Yukon benchmark,
-with one editable `submission/` directory:
+using stock Yukon's GitHub Actions runner. Only `submission/verification.json`
+is submitted to Yukon:
 
 ```sh
 yukon setup
-yukon run     # requests remote evaluation once the service is connected
+mkdir -p .catalyst
+cp -R harnesses/ecdsa-baseline .catalyst/my-harness
+# Develop the harness and configure its evaluation.json and authorized access grant.
+uv run catalyst remote submit .catalyst/my-harness --wait
+cp .catalyst/my-harness/verification.json submission/verification.json
+yukon run     # preview the existing receipt; never starts an evaluation
 yukon submit --note-file submission-note.md --model "<exact model>" --harness "<harness>"
 ```
 
-This manifest requires the Yukon `remote-verification` provider change in
-`.catalyst/yukon-remote-service`; it is not yet released in the hosted CLI/API.
+No Yukon code changes or custom runner are required.
 `yukon setup` downloads the pinned ECDSA workspace and local verifier. Develop
 and check candidates in that existing workspace, retaining context and build
 caches. Improve the autonomous harness's code, tools, instructions and knowledge
-under `submission/`. Local tests provide development feedback.
+under the ignored `.catalyst/my-harness/` directory. Local tests provide development feedback.
 
-Select a supported provider/model, private access-grant reference, and an explicit model-credit cap in `submission/evaluation.json`. Its token and wall-time
+Select a supported provider/model, private access-grant reference, and an explicit model-credit cap in the harness's `evaluation.json`. Its token and wall-time
 limits are additional safety caps; they do not promise that the entire credit
 allowance will be consumed. The starter uses a 20-credit cap, 100,000 tokens and
 900 seconds; its grant reference is deliberately blank.
@@ -59,12 +64,19 @@ checkpoint capture still need implementation. Local interactive state is not an
 implicit input. The required repetition policy
 remains undecided; preserve attempts and show counts rather than hiding repeats.
 
-The client downloads private traces and writes `submission/verification.json`.
-The new Yukon backend provider retrieves that existing server-owned evaluation
-directly, supplying the stored submission owner and computed source hashes.
-Catalyst checks source, image, problem, model, limits, pricing and policy identities.
+The client downloads private traces and writes `verification.json` in the harness
+directory. Copy that receipt into `submission/verification.json`.
+`yukon submit` uploads only that receipt, not the harness or evaluation settings.
+Yukon creates the submission PR and dispatches the repository's workflow. That
+workflow authenticates with GitHub OIDC and retrieves the existing evaluation.
+Catalyst resolves the solver account through Yukon's existing submission API and checks the
+receipt's source, image, problem, configuration, pricing and policy identities
+against its retained evaluation. The harness was uploaded to Catalyst during
+`catalyst remote submit` and stays in Catalyst's evidence store.
 Retrieval does not purchase a second run.
 A local score or reference file is not proof of remote verification.
+Editing local harness files after a run does not change what its receipt refers
+to; submit a new evaluation to score those edits.
 
 ## Direct verification-service CLI
 
@@ -78,14 +90,13 @@ catalyst remote traces EVALUATION_ID
 ```
 
 Or submit and wait in one command: `catalyst remote submit submission --wait`.
-Configure `CATALYST_EVALUATOR_URL` and supply `CATALYST_API_TOKEN` through the
-environment. An existing Yukon login or `YUKON_API_TOKEN` also works. The token
+Configure `CATALYST_EVALUATOR_URL` and supply the provisioned `CATALYST_API_TOKEN` through the
+environment. Automatic exchange of a Yukon login for evaluator access is pending. The token
 authenticates to Catalyst; provider access remains a separate grant.
 
-The Yukon adapter uses this same client for packaging, submission, polling and
-validation. Both use `.catalyst/remote/` state, so `yukon run` can resume a request
-already queued by `catalyst remote submit` from the same workspace. Once `wait`
-finishes, `submission/verification.json` is ready for `yukon submit`.
+The remote client uses `.catalyst/remote/` state. Resume interrupted waiting with
+`catalyst remote wait EVALUATION_ID`. Once it finishes, copy the returned receipt
+into `submission/verification.json`. `yukon run` only checks that receipt.
 A subsequent `submit` after completion deliberately requests a fresh evaluation;
 `status`, `wait` and `traces` never enqueue work.
 
@@ -120,8 +131,9 @@ Implemented locally:
   local records do not establish official checkpoint eligibility.
 - Reference credit calculation, trusted-result validation, checkpoint eligibility,
   full verified curves, and the remote client/submission HTTP contract.
-- A Pareto Yukon manifest and a backend provider that retrieves remote evidence.
-  The earlier GitHub Actions adapter is retained as a legacy integration path.
+- A Pareto Yukon manifest and a receipt-only GitHub Actions judge using stock
+  Yukon dispatch and score artifacts. GitHub OIDC authentication binds the repository,
+  workflow, source commit and submission owner before releasing results.
 - A loopback verification API with a durable SQLite queue, owner authorization,
   idempotent requests and publication, and a separate Dungeness/Docker worker.
   The real ECDSA baseline uses local identities and disables model access; the
@@ -136,7 +148,7 @@ submission registration and model responses are fixtures; its tiny circuit is
 explicitly labeled local-test evidence and cannot count as an ECDSA result.
 
 Automatic Yukon identity/grant provisioning, temporary provider access,
-runtime checkpoint collection, the Yukon provider release and hosted benchmark
+runtime checkpoint collection, GitHub repository/connection setup and hosted benchmark
 registration remain pending. Catalyst is not yet available for hosted
 `yukon clone` or live submissions.
 
@@ -147,15 +159,17 @@ Use separate run workspaces/containers for builds, harness execution and candida
 verification, keeping the API process and provider credentials out of submitted
 code's access. Agent Compose and new cloud resources are unnecessary for the MVP.
 
-Keep renewable provider credentials locally and supply temporary provider access
-to remote execution through a private authenticated channel. No vault or reverse
-proxy is required initially. Preserve the user's original credentials; never
+The final service will accept user-authorized provider credentials over authenticated
+HTTPS on port 443, with scoped use, expiry and revocation. That upload/storage
+path is not implemented in this model-disabled MVP. Preserve original credentials; never
 include secrets in submissions, images, public results or retained traces.
 The harness receives only scoped model access. Authentication and renewal still
 need implementation and separate tests for API and subscription routes.
 
 See [architecture](docs/architecture.md), [runtime requirements](docs/runtime-platform-requirements.md),
 [remote evaluation](docs/remote-evaluation.md), and [executable development](docs/executable-harness.md).
+For the complete GitHub/Yukon setup and solver commands, use
+[the end-to-end guide](docs/github-actions-e2e.md).
 
 ## Yukon compatibility
 

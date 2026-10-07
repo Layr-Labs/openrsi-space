@@ -91,7 +91,8 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 def fetch(url: str, token: str, *, document=None, limit=4 * 1024 * 1024) -> bytes:
     request = urllib.request.Request(
         url, data=canonical(document) if document is not None else None,
-        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+        headers={**({"Authorization": f"Bearer {token}"} if token else {}),
+                 "Content-Type": "application/json"},
         method="POST" if document is not None else "GET",
     )
     try:

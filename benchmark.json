@@ -13,14 +13,14 @@
     "scoring": {"version": "ecdsa-best-and-checkpoints-v2"},
     "validity": {"version": "ecdsa-trusted-checkpoints-v2"}
   },
-  "editablePaths": ["submission"],
+  "editablePaths": ["submission/verification.json"],
   "setupCommand": ["uv", "run", "--frozen", "catalyst", "yukon-setup"],
   "benchmarkCommand": ["uv", "run", "--frozen", "catalyst", "yukon-run"],
   "scorePath": ".catalyst/yukon/score.json",
-  "maxSubmissionBytes": 8388608,
+  "maxSubmissionBytes": 65536,
   "runner": {
-    "provider": "remote-verification",
-    "service": "catalyst",
-    "submissionPath": "submission"
+    "provider": "github-actions",
+    "workflow": "benchmark.yml",
+    "maxConcurrentWorkflows": 2
   }
 }

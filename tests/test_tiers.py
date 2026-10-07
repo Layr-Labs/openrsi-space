@@ -184,5 +184,6 @@ class PricingTests(unittest.TestCase):
         manifest = json.loads((source / "benchmark.json").read_text())
         self.assertEqual(manifest["paretoPolicies"], {"scoring": SCORING, "validity": VALIDITY})
         self.assertEqual(manifest["schemaVersion"], 1)
-        self.assertEqual(manifest["editablePaths"], ["submission"])
+        self.assertEqual(manifest["editablePaths"], ["submission/verification.json"])
+        self.assertEqual(manifest["runner"]["provider"], "github-actions")
         self.assertEqual([o["name"] for o in manifest["objectives"]], ["ecdsaPerformance", "modelCreditsAtBest"])

@@ -61,6 +61,9 @@ class YukonRunnerTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
         shutil.copytree(PROJECT / "submission", self.root / "submission")
+        # The checked-in receipt is a real registration baseline, not this
+        # synthetic client's preexisting evaluation.
+        (self.root / "submission/verification.json").unlink(missing_ok=True)
         self.state = self.root / ".catalyst"
         self.target = self.state / "yukon/score.json"
         self.config = read_json(self.root / "submission/evaluation.json")

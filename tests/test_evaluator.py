@@ -34,6 +34,8 @@ class EvaluatorFixture:
         self.root = Path(self.temp.name)
         submission = self.root / "submission"
         shutil.copytree(PROJECT / "submission", submission)
+        # Tests start with unevaluated harnesses, not the real starter receipt.
+        (submission / "verification.json").unlink(missing_ok=True)
         evaluation = read_json(submission / "evaluation.json")
         evaluation["llm_access"]["grant_id"] = "grant_contract_test"
         write_json(submission / "evaluation.json", evaluation)

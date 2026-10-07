@@ -40,8 +40,8 @@ flowchart TB
         end
     end
     PROVIDER["Model provider"]
-    YUKON["Yukon identity and submissions"]
-    GH["GitHub Actions: resolve existing evaluation"]
+    YUKON["Yukon backend: receipt submissions and Pareto scores"]
+    GITHUB["Challenge-owned GitHub workflow"]
     UI["Tier rankings and full performance-cost curves"]
     CLI -->|"Source, exact model, tier and limits"| API
     AUTH -->|"Temporary access via private authenticated channel"| METER
@@ -51,10 +51,13 @@ flowchart TB
     METER -->|"Settled usage ledger"| CAPTURE
     VERIFY -->|"Metrics bound to immutable candidate digest"| STORE
     RUN -->|"Private traces and status"| STORE
-    CLI <--> YUKON
-    YUKON --> GH
-    GH <-->|"Authorize source/settings/result reuse; no new paid run"| API
-    GH -->|"Public judgment"| YUKON
+    API -->|"Verification receipt"| CLI
+    CLI -->|"Receipt only; no harness upload"| YUKON
+    YUKON -->|"Create PR, dispatch pinned workflow"| GITHUB
+    GITHUB -->|"Receipt, expected problem, GitHub OIDC"| API
+    API -->|"Resolve submission owner via existing API"| YUKON
+    API -->|"Stored verified judgment; no new run"| GITHUB
+    GITHUB -->|"Trusted Pareto score artifact"| YUKON
     YUKON --> UI
 ```
 
@@ -70,6 +73,11 @@ Use distinct request, build and evaluation IDs. Retries reuse their original
 operation key; deliberate repeats get a new evaluation ID. The server can reuse
 an immutable build for unchanged source. Changed source or settings require new
 remote evidence. A reference file or local score is not an attestation.
+Yukon receives only the receipt. Its standard GitHub Actions runner dispatches
+the challenge workflow, which resolves it with Catalyst. The submitted
+receipt identifies the previously evaluated harness, even if local files have
+subsequently changed. Catalyst retains that harness and its evaluation settings;
+Yukon does not need another source upload or a local source comparison.
 
 Official measurements require trusted usage settlement, immutable candidate
 capture, checkpoint seals and independent verification. Keep the complete
@@ -81,8 +89,10 @@ traces stay out of submissions and public artifacts.
 
 ## Credentials and implementation boundary
 
-Renewable credentials remain on the solver's machine. A private authenticated
-channel supplies temporary provider access to trusted execution components.
+The final service will accept user-authorized provider credentials over authenticated
+HTTPS (port 443) and provide scoped access to trusted execution components.
+Credential upload, protected storage, expiration, revocation and renewal remain
+separate implementation work; this MVP keeps model access disabled.
 The submitted harness receives scoped model access; builds receive none.
 The implementation must preserve original credentials during cancellation and
 cleanup. No vault or reverse proxy is required. API and subscription renewal
@@ -99,12 +109,21 @@ provider to test accounting. Worker failure stops the API; service shutdown stop
 the owned worker and its reported execution processes. Queued work survives,
 and interrupted attempts are marked failed without automatic replay.
 The private VM deployment runs under `screen` with provisioned solver and Yukon
-consumer keys. The new Yukon backend provider retrieves stored judgments
-directly and validates them as Pareto results. See [VM setup](remote-vm.md) and
+consumer keys. The current integration uses stock Yukon's GitHub Actions runner,
+receipt-only archives and a signed-OIDC result endpoint. Experimental custom
+Yukon patches are preserved but not required. See [the end-to-end guide](github-actions-e2e.md) and
 [the reproducible local check](local-evaluation.md).
 
-Pending: the hosted Yukon provider release, automatic account/grant provisioning, temporary
+Pending: GitHub App/connection setup and hosted benchmark registration, automatic account/grant provisioning, temporary
 provider access and renewal for ECDSA research runs, runtime checkpoint
 capture and credit reservations, artifact retention policy, hosted benchmark
 registration and the real Yukon board integration. Local fixture modes remain
 separate and cannot be relabeled as remote ECDSA evidence.
+
+## Service extraction
+
+The reusable verification service owns upload, queueing, execution, authentication,
+immutable receipts and result retrieval. Catalyst owns ECDSA task pins, verification
+and scoring policy, model-credit rules and the challenge workflow. Keep those
+boundaries explicit while validating this integration; a separate service package
+or repository can follow without changing the solver's receipt workflow.

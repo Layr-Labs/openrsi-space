@@ -293,6 +293,12 @@ def handler_for(store, auth, problem_set, evidence_mode="local-test"):
                     if self.headers.get("Content-Type", "").split(";")[0] != "application/json":
                         raise APIError(415, "JSON required.")
                     request = json.loads(self.rfile.read(length))
+                    if parts == ["verifications", "retrieve"]:
+                        from .hosted import retrieve_receipt
+                        return self.send(200, retrieve_receipt(store, auth, principal, request))
+                    if parts == ["yukon", "v1", "retrieve"]:
+                        from .hosted import retrieve_verification
+                        return self.send(200, retrieve_verification(store, principal, request))
                     if len(parts) == 3 and parts[0] == "evaluations" and parts[2] == "yukon":
                         from .hosted import retrieve_for_yukon
                         return self.send(200, retrieve_for_yukon(store, parts[1], principal, request))

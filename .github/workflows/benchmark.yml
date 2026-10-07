@@ -15,7 +15,9 @@ permissions:
 jobs:
   benchmark:
     runs-on: ubuntu-latest
-    timeout-minutes: 360
+    timeout-minutes: 10
+    env:
+      CATALYST_EVALUATOR_URL: ${{ vars.CATALYST_EVALUATOR_URL }}
     steps:
       - name: Checkout dispatched source
         uses: actions/checkout@v4
@@ -29,9 +31,15 @@ jobs:
           python-version: "3.12"
       - name: Setup trusted evaluation client
         run: uv sync --frozen
-      - name: Benchmark through remote evaluator
+      - name: Setup private verifier connection
         env:
-          CATALYST_EVALUATOR_URL: ${{ vars.CATALYST_EVALUATOR_URL }}
+          CATALYST_SSH_HOST: ${{ vars.CATALYST_SSH_HOST }}
+          CATALYST_SSH_USER: ${{ vars.CATALYST_SSH_USER }}
+          CATALYST_SSH_KEY: ${{ secrets.CATALYST_SSH_KEY }}
+          CATALYST_SSH_KNOWN_HOSTS: ${{ secrets.CATALYST_SSH_KNOWN_HOSTS }}
+        run: bash scripts/github-tunnel.sh
+      - name: Benchmark — retrieve verified receipt
+        env:
           YUKON_EVALUATION: ${{ inputs.yukon_evaluation }}
         run: uv run --frozen catalyst yukon-run
       - name: Upload verified judgment
@@ -41,3 +49,10 @@ jobs:
           path: .catalyst/yukon/score.json
           include-hidden-files: true
           if-no-files-found: error
+      - name: Close private verifier connection
+        if: always()
+        run: |
+          if test -S "$RUNNER_TEMP/catalyst-tunnel/control"; then
+            ssh -S "$RUNNER_TEMP/catalyst-tunnel/control" -O exit localhost || true
+          fi
+          rm -f "$RUNNER_TEMP/catalyst-tunnel/key"

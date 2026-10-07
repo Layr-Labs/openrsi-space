@@ -38,6 +38,10 @@ def group_exists(group):
         return True
     except ProcessLookupError:
         return False
+    except PermissionError:
+        # Darwin may report EPERM briefly while an orphaned group exits.
+        # A denied probe does not establish that the group has disappeared.
+        return True
 
 
 class WorkerSupervisor:
