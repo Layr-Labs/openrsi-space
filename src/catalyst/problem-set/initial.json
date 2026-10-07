@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "problems": [
+    {
+      "id": "ecdsa.fail",
+      "title": "ecdsa.fail",
+      "repository": {
+        "url": "https://github.com/Layr-Labs/ecdsafail-challenge.git",
+        "commit": "62ae3d00d1e01d7bc640b5163cfea8dabffd8392"
+      },
+      "metric": {
+        "name": "ecdsafail_score",
+        "direction": "minimize",
+        "formula": "avg_toffoli * peak_qubits"
+      },
+      "candidate_paths": [
+        "src/point_add"
+      ],
+      "setup_command": [
+        "bash",
+        "./setup.sh"
+      ],
+      "check_command": [
+        "bash",
+        "./benchmark.sh"
+      ],
+      "score_path": "score.json",
+      "requirements": "Pinned Rust toolchain; full circuit simulation is memory intensive.",
+      "dungeness": {
+        "task": "task:users/bx/ecdsa-fail-v2",
+        "checkpoint": "checkpoint:public/github/layr-labs/ecdsafail-challenge/62ae3d00d1e01d7bc640b5163cfea8dabffd8392"
+      }
+    }
+  ]
+}

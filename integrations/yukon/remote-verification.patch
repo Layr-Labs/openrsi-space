@@ -1,0 +1,480 @@
+diff --git a/src/benchmark/manifest.ts b/src/benchmark/manifest.ts
+index 1f3b7df4..7d55404e 100644
+--- a/src/benchmark/manifest.ts
++++ b/src/benchmark/manifest.ts
+@@ -46,6 +46,11 @@ const CommandSchema = z
+   .min(1, "command must contain at least one entry");
+ 
+ const BenchmarkRunnerSchema = z.discriminatedUnion("provider", [
++  z.object({
++    provider: z.literal("remote-verification"),
++    service: z.string().regex(/^[a-z][a-z0-9-]{0,62}$/),
++    submissionPath: z.string().regex(/^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*$/),
++  }).strict(),
+   z
+     .object({
+       provider: z.literal("github-actions"),
+diff --git a/src/cli/yukond.ts b/src/cli/yukond.ts
+index 59d1f521..00636f01 100644
+--- a/src/cli/yukond.ts
++++ b/src/cli/yukond.ts
+@@ -15,6 +15,7 @@ import {
+   GitHubActionsExecutionProvider,
+   LocalExecutionProvider,
+   RoutingExecutionProvider,
++  RemoteVerificationExecutionProvider,
+   type ExecutionProvider,
+ } from "../execution/index.ts";
+ import {
+@@ -117,6 +118,7 @@ async function shutdown(): Promise<void> {
+ function createExecutionProvider(): ExecutionProvider {
+   const defaultProvider = createDefaultExecutionProvider();
+   return new RoutingExecutionProvider(defaultProvider, {
++    "remote-verification": RemoteVerificationExecutionProvider.fromEnv(repositoryGateway),
+     "github-actions": GitHubActionsExecutionProvider.fromEnv(repositoryGateway),
+     frontiercs: process.env.YUKON_EXECUTION_PROVIDER === "agent-compose"
+       ? FrontiercsExecutionProvider.fromEnv({
+diff --git a/src/execution/index.ts b/src/execution/index.ts
+index 70c6269d..be6b6316 100644
+--- a/src/execution/index.ts
++++ b/src/execution/index.ts
+@@ -5,3 +5,4 @@ export * from "./agent-compose.ts";
+ export * from "./frontiercs.ts";
+ export * from "./github-actions.ts";
+ export * from "./routing.ts";
++export * from "./remote-verification.ts";
+diff --git a/src/execution/types.ts b/src/execution/types.ts
+index e24662a7..a62912ad 100644
+--- a/src/execution/types.ts
++++ b/src/execution/types.ts
+@@ -90,6 +90,8 @@ export interface DispatchSlotLease {
+ }
+ 
+ export interface SubmissionValidationInput {
++  /** Authenticated account from the stored submission, never from its archive. */
++  solverAccountId?: string | null;
+   pareto?: ParetoJudgeInput;
+   source: BenchmarkSourceRef;
+   submission: SubmissionArchive;
+diff --git a/src/worker/worker.ts b/src/worker/worker.ts
+index 7d1ab033..043bfd66 100644
+--- a/src/worker/worker.ts
++++ b/src/worker/worker.ts
+@@ -446,6 +446,7 @@ export class YukonWorker {
+         // real measured score and metrics.
+         const downloadUrl = await this.deps.archiveStorage.createDownloadUrl(input.submissionArchiveRef);
+         const validation = await this.deps.executionProvider.validateSubmission({
++          solverAccountId: submission.solverAccountId,
+           source: benchmarkSource(benchmark),
+           pareto: paretoJudgeInput(benchmark, { scores: input.paretoScores === true, validity: input.paretoValidity === true }),
+           pinSource: benchmark.mode === "pareto",
+diff --git a/scripts/check-remote-verification.ts b/scripts/check-remote-verification.ts
+new file mode 100644
+index 00000000..3ad4d330
+--- /dev/null
++++ b/scripts/check-remote-verification.ts
+@@ -0,0 +1,46 @@
++#!/usr/bin/env bun
++// Exercise the actual backend provider against an already completed evaluation.
++// Does not enqueue Catalyst work, publish a Yukon submission, or push a Git commit.
++import { readFile, mkdtemp, rm, writeFile } from "node:fs/promises";
++import os from "node:os";
++import path from "node:path";
++import { pathToFileURL } from "node:url";
++import { randomUUID } from "node:crypto";
++import * as tar from "tar";
++import { loadBenchmarkManifest } from "../src/benchmark/manifest.ts";
++import { RemoteVerificationExecutionProvider } from "../src/execution/remote-verification.ts";
++import { LocalDirectoryBenchmarkSourceProvider } from "../src/source/local.ts";
++
++const [workspaceArg, receiptArg] = process.argv.slice(2);
++if (!workspaceArg || !receiptArg || !process.env.YUKON_REMOTE_VERIFIERS_FILE) {
++  throw new Error("Usage: YUKON_REMOTE_VERIFIERS_FILE=private.json bun scripts/check-remote-verification.ts WORKSPACE RECEIPT.json");
++}
++const workspace = path.resolve(workspaceArg);
++const manifest = await loadBenchmarkManifest(workspace);
++if (manifest.runner?.provider !== "remote-verification") throw new Error("Expected a remote-verification manifest.");
++const services = JSON.parse(await readFile(process.env.YUKON_REMOTE_VERIFIERS_FILE, "utf8"));
++const owner = services[manifest.runner.service]?.baselineOwnerId;
++if (typeof owner !== "string") throw new Error("Configured owner is required.");
++const temporary = await mkdtemp(path.join(os.tmpdir(), "yukon-remote-check-"));
++try {
++  const archive = path.join(temporary, "submission.tar.gz");
++  await tar.c({ file: archive, gzip: true, cwd: workspace }, [manifest.runner.submissionPath]);
++  const provider = RemoteVerificationExecutionProvider.fromEnv(new LocalDirectoryBenchmarkSourceProvider());
++  const input = { source: { sourceUrl: pathToFileURL(workspace).href, sourceRef: "local", sourceBranch: null },
++    submission: { url: pathToFileURL(archive).href }, solverAccountId: owner,
++    submissionId: randomUUID(), benchmarkId: randomUUID(), runner: manifest.runner, currentBestScore: null };
++  const baseline = await provider.runBaseline(input);
++  const result = await provider.validateSubmission(input);
++  const replay = await provider.validateSubmission(input);
++  if (!baseline.ok || !result.ok || !replay.ok) throw new Error(JSON.stringify({ baseline, result, replay }));
++  if (JSON.stringify(result.judgment) !== JSON.stringify(replay.judgment)) throw new Error("Replay changed the judgment.");
++  const wrongOwner = await provider.validateSubmission({ ...input, solverAccountId: randomUUID() });
++  if (wrongOwner.ok) throw new Error("Cross-owner retrieval was accepted.");
++  const receipt = { benchmarkId: input.benchmarkId, submissionId: input.submissionId,
++    baseline: baseline.judgment, judgment: result.judgment, metrics: result.scoreMetrics,
++    repeatedRetrievalMatches: true, wrongOwnerRejected: true, commandsExecuted: result.commands.length };
++  await writeFile(path.resolve(receiptArg), JSON.stringify(receipt, null, 2) + "\n", { mode: 0o600 });
++  console.log(JSON.stringify(receipt, null, 2));
++} finally {
++  await rm(temporary, { recursive: true, force: true });
++}
+diff --git a/src/execution/remote-verification.ts b/src/execution/remote-verification.ts
+new file mode 100644
+index 00000000..9654fdd7
+--- /dev/null
++++ b/src/execution/remote-verification.ts
+@@ -0,0 +1,198 @@
++import { createHash } from "node:crypto";
++import { readFile, readdir, lstat } from "node:fs/promises";
++import { readFileSync } from "node:fs";
++import path from "node:path";
++import { loadBenchmarkManifest, type BenchmarkManifest } from "../benchmark/manifest.ts";
++import { joinRootDir, resolveRepoPath } from "../benchmark/paths.ts";
++import { paretoJudgeInput } from "../benchmark/pareto.ts";
++import { parseBenchmarkScore, sanitizeScoreForOutput } from "../benchmark/score.ts";
++import type { BenchmarkSourceMaterializer } from "../source/types.ts";
++import { applySubmissionToWorkspace, manifestWithMaxSubmissionBytes, materializeSubmissionArchive,
++  submissionArchiveLimitsForManifest } from "./submission.ts";
++import type { BaselineRunResult, BenchmarkRunInput, BenchmarkRunResult, ExecutionProvider,
++  RecoverSubmissionValidationInput, SubmissionPromotionInput, SubmissionPromotionResult,
++  SubmissionValidationInput, SubmissionValidationResult } from "./types.ts";
++
++const PROTOCOL = "catalyst-yukon-v1";
++const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
++const IGNORED = new Set([".git", ".catalyst", ".venv", "__pycache__", ".DS_Store", ".env"]);
++type Service = { url: string; token: string; baselineOwnerId: string };
++export type RemoteVerificationServices = Record<string, Service>;
++
++/** The deployment selects destinations and credentials. A manifest only names a service. */
++export class RemoteVerificationExecutionProvider implements ExecutionProvider {
++  constructor(private readonly materializer: BenchmarkSourceMaterializer,
++    private readonly services: RemoteVerificationServices) {}
++
++  static fromEnv(materializer: BenchmarkSourceMaterializer): RemoteVerificationExecutionProvider {
++    const filename = process.env.YUKON_REMOTE_VERIFIERS_FILE;
++    return new RemoteVerificationExecutionProvider(materializer,
++      filename ? JSON.parse(readFileSync(filename, "utf8")) as RemoteVerificationServices : {});
++  }
++
++  async runBaseline(input: BenchmarkRunInput): Promise<BaselineRunResult> {
++    const result = await this.retrieve(input);
++    return result.ok ? { ...result, setupSnapshotRef: `remote-verification:${input.source.sourceRef}` } : result;
++  }
++
++  async validateSubmission(input: SubmissionValidationInput): Promise<SubmissionValidationResult> {
++    const result = await this.retrieve(input, input);
++    const shared = { currentBestScore: input.currentBestScore, improved: false as const,
++      newBestScore: input.currentBestScore };
++    return result.ok ? { ...result, ...shared, submissionApplied: true }
++      : { ...result, ...shared, submissionApplied: false };
++  }
++
++  // Repeating preparation is safe: this provider can only retrieve, never enqueue execution.
++  async recoverSubmissionValidation(_input: RecoverSubmissionValidationInput) {
++    return { retryPreparation: true as const };
++  }
++
++  async publishAcceptedSubmission(_input: SubmissionPromotionInput): Promise<SubmissionPromotionResult> {
++    return { ok: false, commands: [], error: { code: "not_implemented",
++      message: "Remote verification uses Pareto evidence; source promotion requires a separate reviewed action." } };
++  }
++
++  private async retrieve(input: BenchmarkRunInput, submission?: SubmissionValidationInput): Promise<BenchmarkRunResult> {
++    let manifest: BenchmarkManifest | undefined;
++    let cleanupSource: (() => Promise<void>) | undefined;
++    let cleanupArchive: (() => Promise<void>) | undefined;
++    try {
++      submission?.signal?.throwIfAborted();
++      const materialized = await this.materializer.materialize(input.source);
++      cleanupSource = () => materialized.cleanup();
++      if (materialized.sourceRef !== input.source.sourceRef) throw new Error("Source revision mismatch.");
++      manifest = manifestWithMaxSubmissionBytes(
++        await loadBenchmarkManifest(materialized.path, input.rootDir, { trackName: input.source.trackName }),
++        submission?.maxSubmissionBytes);
++      const runner = manifest.runner;
++      if (manifest.mode !== "pareto" || manifest.promotionMode !== "manual"
++        || runner?.provider !== "remote-verification"
++        || (input.runner && stable(input.runner) !== stable(runner))) throw new Error("Remote verification requires a pinned manual Pareto manifest.");
++      const service = this.services[runner.service];
++      if (!service) throw new Error("Remote verification service is not configured.");
++      const base = trustedEndpoint(service);
++      if (!manifest.editablePaths.includes(runner.submissionPath)) throw new Error("Submission path must be an editable directory.");
++      if (submission) {
++        const archive = await materializeSubmissionArchive(submission.submission.url);
++        if (archive instanceof Error) throw new Error("Cannot read submission archive.");
++        cleanupArchive = () => archive.cleanup();
++        await applySubmissionToWorkspace({ submission: archive, workspacePath: materialized.path,
++          manifest, limits: submissionArchiveLimitsForManifest(manifest), rootDir: input.rootDir });
++      }
++      submission?.signal?.throwIfAborted();
++      const folder = resolveRepoPath(materialized.path, joinRootDir(input.rootDir, runner.submissionPath));
++      const reference = await jsonFile(path.join(folder, "verification.json"));
++      const evaluation = await jsonFile(path.join(folder, "evaluation.json"));
++      if (reference.schema_version !== 2 || reference.evidence_mode !== "remote"
++        || typeof reference.evaluation_id !== "string" || !UUID.test(reference.evaluation_id)) {
++        throw new Error("A completed remote verification reference is required.");
++      }
++      const owner = submission ? submission.solverAccountId : service.baselineOwnerId;
++      const submissionId = submission ? submission.submissionId : reference.evaluation_id;
++      if (!owner || !UUID.test(owner) || !input.benchmarkId || !UUID.test(input.benchmarkId)
++        || !submissionId || !UUID.test(submissionId)) throw new Error("Stored owner, benchmark and submission IDs are required.");
++      const files = await sourceHashes(folder);
++      const judge = input.pareto ?? paretoJudgeInput(manifest);
++      if (!judge || stable(judge.policies) !== stable(manifest.paretoPolicies)) throw new Error("Evaluation policies differ from the pinned manifest.");
++      if (submission?.cancellationCheck && await submission.cancellationCheck()) throw new Error("Submission cancelled.");
++      const signal = submission?.signal
++        ? AbortSignal.any([submission.signal, AbortSignal.timeout(30_000)]) : AbortSignal.timeout(30_000);
++      const response = await fetch(`${base}/evaluations/${reference.evaluation_id}/yukon`, {
++        method: "POST", redirect: "error", signal,
++        headers: { Authorization: `Bearer ${service.token}`, "Content-Type": "application/json" },
++        body: JSON.stringify({ protocol: PROTOCOL, kind: submission ? "submission" : "baseline",
++          owner_id: owner, benchmark_id: input.benchmarkId, submission_id: submissionId,
++          reference, source_files: files, evaluation, judge }),
++      });
++      if (!response.ok) {
++        await response.body?.cancel();
++        throw new Error(`Remote verification returned HTTP ${response.status}.`);
++      }
++      const result = await boundedJson(response);
++      if (result.protocol !== PROTOCOL || result.evaluation_id !== reference.evaluation_id
++        || stable(result.reference) !== stable(reference)) throw new Error("Remote verification result identity mismatch.");
++      const score = sanitizeScoreForOutput(parseBenchmarkScore(result.judgment, manifest, judge.fields));
++      return { ok: true, manifest, score: score.score, judgment: score.judgment,
++        scoreMetrics: score.metrics, scoreRaw: score.raw, commands: [] };
++    } catch (error) {
++      // Network exceptions can include request details. Never log headers or server bodies.
++      const message = error instanceof Error && /^(Remote verification|A completed|Stored owner|Source revision|Submission path|Submission cancelled|Evaluation policies|Cannot read)/.test(error.message)
++        ? error.message : "Remote verification failed; check service configuration and submitted evidence.";
++      return { ok: false, ...(manifest ? { manifest } : {}), commands: [],
++        error: { code: "submission_rejected", message } };
++    } finally {
++      await cleanupArchive?.();
++      await cleanupSource?.();
++    }
++  }
++}
++
++function trustedEndpoint(service: Service): string {
++  const url = new URL(service.url);
++  if (url.username || url.password || url.search || url.hash
++    || (url.protocol !== "https:" && !(url.protocol === "http:" && ["localhost", "127.0.0.1", "[::1]"].includes(url.hostname)))
++    || typeof service.token !== "string" || !service.token || /[\r\n]/.test(service.token)) {
++    throw new Error("Remote verification requires HTTPS or an authenticated local tunnel.");
++  }
++  return url.toString().replace(/\/$/, "");
++}
++
++async function jsonFile(filename: string): Promise<Record<string, unknown>> {
++  const info = await lstat(filename);
++  if (!info.isFile() || info.isSymbolicLink() || info.size > 64 * 1024) throw new Error("Invalid reference file.");
++  const result: unknown = JSON.parse(await readFile(filename, "utf8"));
++  if (!result || typeof result !== "object" || Array.isArray(result)) throw new Error("Invalid reference JSON.");
++  return result as Record<string, unknown>;
++}
++
++export async function sourceHashes(folder: string): Promise<Record<string, string>> {
++  const hashes: Record<string, string> = Object.create(null);
++  let bytes = 0;
++  let entries = 0;
++  async function visit(directory: string, prefix: string) {
++    const info = await lstat(directory);
++    if (!info.isDirectory() || info.isSymbolicLink()) throw new Error("Invalid source directory.");
++    for (const entry of await readdir(directory, { withFileTypes: true })) {
++      if (IGNORED.has(entry.name) || entry.name.startsWith(".env")) continue;
++      const relative = prefix + entry.name;
++      if (relative === "verification.json" || relative === "evaluation.json") continue;
++      if (++entries > 4000) throw new Error("Source has too many entries.");
++      const filename = path.join(directory, entry.name);
++      if (entry.isDirectory()) await visit(filename, relative + "/");
++      else {
++        if (!entry.isFile()) throw new Error("Source must contain regular files.");
++        const info = await lstat(filename);
++        bytes += info.size;
++        if (bytes > 8 * 1024 * 1024 || Object.keys(hashes).length >= 2000) throw new Error("Source exceeds limits.");
++        hashes[relative] = createHash("sha256").update(await readFile(filename)).digest("hex");
++      }
++    }
++  }
++  await visit(folder, "");
++  return hashes;
++}
++
++function stable(value: unknown): string {
++  if (Array.isArray(value)) return `[${value.map(stable).join(",")}]`;
++  if (value && typeof value === "object") return `{${Object.keys(value).sort().map(key =>
++    `${JSON.stringify(key)}:${stable((value as Record<string, unknown>)[key])}`).join(",")}}`;
++  return JSON.stringify(value);
++}
++
++async function boundedJson(response: Response): Promise<Record<string, unknown>> {
++  const reader = response.body?.getReader();
++  if (!reader) throw new Error("Empty remote response.");
++  const chunks: Uint8Array[] = [];
++  let size = 0;
++  try {
++    while (true) {
++      const item = await reader.read();
++      if (item.done) break;
++      size += item.value.byteLength;
++      if (size > 4 * 1024 * 1024) throw new Error("Remote response exceeds limits.");
++      chunks.push(item.value);
++    }
++  } finally { await reader.cancel(); }
++  return JSON.parse(Buffer.concat(chunks).toString("utf8")) as Record<string, unknown>;
++}
+diff --git a/tests/unit/remote-verification.test.ts b/tests/unit/remote-verification.test.ts
+new file mode 100644
+index 00000000..b73efd30
+--- /dev/null
++++ b/tests/unit/remote-verification.test.ts
+@@ -0,0 +1,148 @@
++import { afterEach, beforeEach, describe, expect, test } from "bun:test";
++import { cp, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
++import os from "node:os";
++import path from "node:path";
++import { pathToFileURL } from "node:url";
++import * as tar from "tar";
++import { RemoteVerificationExecutionProvider } from "../../src/execution/remote-verification.ts";
++import { parseBenchmarkManifest } from "../../src/benchmark/manifest.ts";
++import type { BenchmarkSourceMaterializer } from "../../src/source/types.ts";
++import type { SubmissionValidationInput } from "../../src/execution/types.ts";
++
++const OWNER = "11111111-1111-4111-8111-111111111111";
++const BENCHMARK = "22222222-2222-4222-8222-222222222222";
++const EVALUATION = "33333333-3333-4333-8333-333333333333";
++const SUBMISSION = "44444444-4444-4444-8444-444444444444";
++const runner = { provider: "remote-verification" as const, service: "catalyst", submissionPath: "submission" };
++const manifest = { schemaVersion: 1, name: "catalyst", description: "Remote ECDSA", category: "research",
++  mode: "pareto", promotionMode: "manual",
++  objectives: [{ name: "performance", direction: "-" }, { name: "credits", direction: "-" }],
++  paretoPolicies: { scoring: { version: "scoring" }, validity: { version: "validity" } },
++  editablePaths: ["submission"], setupCommand: ["touch", "MUST_NOT_RUN_SETUP"],
++  benchmarkCommand: ["touch", "MUST_NOT_RUN_BENCHMARK"], scorePath: "score.json", runner };
++const reference = { schema_version: 2, evaluation_id: EVALUATION, evidence_mode: "remote",
++  source_digest: "a".repeat(64), evaluation_config_digest: "b".repeat(64) };
++
++describe("stored remote verification provider", () => {
++  let root: string;
++  let server: ReturnType<typeof Bun.serve>;
++  let calls: Array<Record<string, any>>;
++  let responseTransform: (value: any) => any;
++  let status: number;
++  let provider: RemoteVerificationExecutionProvider;
++  let input: SubmissionValidationInput;
++  let materializer: BenchmarkSourceMaterializer;
++  beforeEach(async () => {
++    root = await mkdtemp(path.join(os.tmpdir(), "yukon-remote-test-"));
++    calls = [];
++    responseTransform = value => value;
++    status = 200;
++    const template = path.join(root, "template");
++    const archiveSource = path.join(root, "archive-source");
++    await mkdir(path.join(template, "submission"), { recursive: true });
++    await mkdir(path.join(archiveSource, "submission"), { recursive: true });
++    await writeFile(path.join(template, "benchmark.json"), JSON.stringify(manifest));
++    for (const base of [template, archiveSource]) {
++      await writeFile(path.join(base, "submission/verification.json"), JSON.stringify(reference));
++      await writeFile(path.join(base, "submission/evaluation.json"), '{"max_model_credits":20}');
++      await writeFile(path.join(base, "submission/agent.py"), 'raise Exception("must not execute")\n');
++    }
++    const archive = path.join(root, "submission.tgz");
++    await tar.c({ file: archive, gzip: true, cwd: archiveSource }, ["submission"]);
++    let counter = 0;
++    materializer = { async materialize(source) {
++      const folder = path.join(root, `workspace-${counter++}`);
++      await cp(template, folder, { recursive: true });
++      return { path: folder, sourceRef: source.sourceRef, async cleanup() {
++        // Commands were never executed, even though they are present in the manifest.
++        expect(await Bun.file(path.join(folder, "MUST_NOT_RUN_SETUP")).exists()).toBe(false);
++        expect(await Bun.file(path.join(folder, "MUST_NOT_RUN_BENCHMARK")).exists()).toBe(false);
++        await rm(folder, { recursive: true, force: true });
++      } };
++    } };
++    server = Bun.serve({ hostname: "127.0.0.1", port: 0, async fetch(request) {
++      expect(request.method).toBe("POST");
++      expect(new URL(request.url).pathname).toBe(`/evaluations/${EVALUATION}/yukon`);
++      expect(request.headers.get("Authorization")).toBe("Bearer consumer-test-key");
++      const body = await request.json() as Record<string, any>;
++      calls.push(body);
++      return Response.json(responseTransform({ protocol: "catalyst-yukon-v1",
++        evaluation_id: EVALUATION, reference,
++        judgment: { scores: [10758874395, 0], valid: true, reason: "Verified", metrics: { evaluationId: EVALUATION } },
++      }), { status });
++    } });
++    provider = new RemoteVerificationExecutionProvider(materializer, { catalyst: {
++      url: `http://127.0.0.1:${server.port}`, token: "consumer-test-key", baselineOwnerId: OWNER,
++    } });
++    input = { source: { sourceUrl: "https://github.com/example/catalyst", sourceRef: "a".repeat(40), sourceBranch: "main" },
++      submission: { url: pathToFileURL(archive).href }, solverAccountId: OWNER,
++      benchmarkId: BENCHMARK, submissionId: SUBMISSION, runner, currentBestScore: null };
++  });
++  afterEach(async () => { server.stop(true); await rm(root, { recursive: true, force: true }); });
++
++  test("fetches the verified Pareto tuple; retries do not run setup or benchmark commands", async () => {
++    const first = await provider.validateSubmission(input);
++    const retry = await provider.validateSubmission(input);
++    expect(first.ok).toBe(true);
++    expect(retry.ok).toBe(true);
++    if (!first.ok) throw new Error("expected successful retrieval");
++    expect(first.judgment?.scores).toEqual([10758874395, 0]);
++    expect(first.commands).toEqual([]);
++    expect(first.improved).toBe(false);
++    expect(calls.length).toBe(2);
++    expect(calls[0]).toEqual(calls[1]);
++    expect(calls[0]?.owner_id).toBe(OWNER);
++    expect(calls[0]?.source_files).toEqual({ "agent.py": new Bun.CryptoHasher("sha256")
++      .update('raise Exception("must not execute")\n').digest("hex") });
++    expect(JSON.stringify(first)).not.toContain("consumer-test-key");
++  });
++
++  test("baseline import retrieves existing evidence with a reusable snapshot reference", async () => {
++    const result = await provider.runBaseline(input);
++    expect(result.ok).toBe(true);
++    if (result.ok) expect(result.setupSnapshotRef).toStartWith("remote-verification:");
++    expect(calls[0]?.kind).toBe("baseline");
++    expect(calls[0]?.owner_id).toBe(OWNER);
++  });
++
++  test("partial Pareto passes respect requested fields", async () => {
++    const result = await provider.validateSubmission({ ...input, pareto: {
++      policies: manifest.paretoPolicies, fields: { scores: false, validity: true },
++    } });
++    expect(result.ok).toBe(true);
++    if (result.ok) {
++      expect(result.judgment?.valid).toBe(true);
++      expect(result.judgment).not.toHaveProperty("scores");
++    }
++  });
++
++  test("rejects missing trusted owners, unconfigured services and HTTP destinations", async () => {
++    expect((await provider.validateSubmission({ ...input, solverAccountId: null })).ok).toBe(false);
++    expect((await new RemoteVerificationExecutionProvider(materializer, {}).validateSubmission(input)).ok).toBe(false);
++    const unsafe = new RemoteVerificationExecutionProvider(materializer, { catalyst: {
++      url: "http://untrusted.invalid", token: "consumer-test-key", baselineOwnerId: OWNER,
++    } });
++    expect((await unsafe.validateSubmission(input)).ok).toBe(false);
++    expect(calls).toEqual([]);
++  });
++
++  test("fails closed on service rejection, wrong identity, missing scores and redirected responses", async () => {
++    status = 403;
++    expect((await provider.validateSubmission(input)).ok).toBe(false);
++    status = 200;
++    responseTransform = value => ({ ...value, evaluation_id: SUBMISSION });
++    expect((await provider.validateSubmission(input)).ok).toBe(false);
++    responseTransform = value => ({ ...value, judgment: { valid: true, scores: [1, null] } });
++    expect((await provider.validateSubmission(input)).ok).toBe(false);
++    responseTransform = value => ({ ...value, reference: { ...reference, source_digest: "different" } });
++    expect((await provider.validateSubmission(input)).ok).toBe(false);
++    status = 302;
++    expect((await provider.validateSubmission(input)).ok).toBe(false);
++  });
++
++  test("manifest names services instead of embedding credentials or URLs", () => {
++    expect(parseBenchmarkManifest(manifest).runner).toEqual(runner);
++    expect(() => parseBenchmarkManifest({ ...manifest, runner: { ...runner, url: "https://example.com" } })).toThrow();
++    expect(() => parseBenchmarkManifest({ ...manifest, runner: { ...runner, submissionPath: "../submission" } })).toThrow();
++  });
++});

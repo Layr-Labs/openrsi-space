@@ -1,0 +1,152 @@
+{
+  "schema_version": 1,
+  "id": "catalyst-model-credits-v1",
+  "unit": "normalized_model_usd",
+  "description": "Pinned reference credits, not a claim about current prices or cash billing. Input counts include cache read/write tokens; output includes reasoning tokens. No live price lookup.",
+  "source": {
+    "repository": "dungeness",
+    "commit": "506890937d75b659db714d3e02ea3d3cec3a1451",
+    "path": "services/gateway/pricing.yaml"
+  },
+  "entries": [
+    {
+      "provider": "openrouter",
+      "upstream_id": "openai/gpt-5.6-sol",
+      "request_models": [
+        "openai/gpt-5.6-sol"
+      ],
+      "input_per_mtok": 5.0,
+      "cached_read_per_mtok": 0.5,
+      "output_per_mtok": 30.0,
+      "note": "base tier; requests above 272k input tokens may use a higher tier"
+    },
+    {
+      "provider": "openrouter",
+      "upstream_id": "moonshotai/kimi-k3",
+      "request_models": [
+        "moonshotai/kimi-k3"
+      ],
+      "input_per_mtok": 3.0,
+      "cached_read_per_mtok": 0.3,
+      "output_per_mtok": 15.0,
+      "note": "OpenRouter Kimi K3"
+    },
+    {
+      "provider": "openai",
+      "upstream_id": "openai/gpt-5.6-sol",
+      "request_models": [
+        "gpt-5.6-sol",
+        "openai/gpt-5.6-sol"
+      ],
+      "input_per_mtok": 5.0,
+      "cached_read_per_mtok": 0.5,
+      "output_per_mtok": 30.0,
+      "note": "base tier; requests above 272k input tokens may use a higher tier"
+    },
+    {
+      "provider": "openai",
+      "upstream_id": "openai/gpt-6-astra",
+      "request_models": [
+        "gpt-6-astra",
+        "openai/gpt-6-astra"
+      ],
+      "input_per_mtok": 10.0,
+      "cached_read_per_mtok": 1.0,
+      "cache_write_per_mtok": 12.5,
+      "output_per_mtok": 50.0,
+      "long_context": {
+        "threshold_input_tokens": 272000,
+        "input_per_mtok": 20.0,
+        "cached_read_per_mtok": 2.0,
+        "cache_write_per_mtok": 25.0,
+        "output_per_mtok": 75.0
+      },
+      "note": "OpenAI GPT-6 Astra; cache writes and long-context tier modeled exactly"
+    },
+    {
+      "provider": "openai-chatgpt",
+      "upstream_id": "openai/gpt-6-astra",
+      "request_models": [
+        "gpt-6-astra"
+      ],
+      "input_per_mtok": 10.0,
+      "cached_read_per_mtok": 1.0,
+      "cache_write_per_mtok": 12.5,
+      "output_per_mtok": 50.0,
+      "long_context": {
+        "threshold_input_tokens": 272000,
+        "input_per_mtok": 20.0,
+        "cached_read_per_mtok": 2.0,
+        "cache_write_per_mtok": 25.0,
+        "output_per_mtok": 75.0
+      },
+      "note": "normalized Astra cost for ChatGPT subscription; billed USD unavailable"
+    },
+    {
+      "provider": "openai-chatgpt",
+      "upstream_id": "openai/gpt-5.6-sol",
+      "request_models": [
+        "gpt-5.6-sol"
+      ],
+      "input_per_mtok": 5.0,
+      "cached_read_per_mtok": 0.5,
+      "output_per_mtok": 30.0,
+      "note": "normalized experimental cost; billed USD is unavailable"
+    },
+    {
+      "provider": "moonshot",
+      "upstream_id": "moonshot/kimi-k3",
+      "request_models": [
+        "kimi-k3"
+      ],
+      "input_per_mtok": 3.0,
+      "cached_read_per_mtok": 0.3,
+      "output_per_mtok": 15.0,
+      "note": "flat Kimi K3 API pricing"
+    },
+    {
+      "provider": "kimi-code",
+      "upstream_id": "kimi-code/k3",
+      "request_models": [
+        "k3"
+      ],
+      "input_per_mtok": 3.0,
+      "cached_read_per_mtok": 0.3,
+      "output_per_mtok": 15.0,
+      "note": "normalized Kimi K3 reference cost; membership billed USD unavailable"
+    },
+    {
+      "provider": "anthropic",
+      "upstream_id": "anthropic/claude-opus-5",
+      "request_models": [
+        "claude-opus-5"
+      ],
+      "input_per_mtok": 5.0,
+      "cached_read_per_mtok": 0.5,
+      "output_per_mtok": 25.0,
+      "note": "flat token pricing"
+    },
+    {
+      "provider": "openrouter",
+      "upstream_id": "anthropic/claude-opus-5",
+      "request_models": [
+        "anthropic/claude-opus-5"
+      ],
+      "input_per_mtok": 5.0,
+      "cached_read_per_mtok": 0.5,
+      "output_per_mtok": 25.0,
+      "note": "OpenRouter Claude Opus 5; flat token pricing"
+    },
+    {
+      "provider": "openrouter",
+      "upstream_id": "anthropic/claude-fable-5.1",
+      "request_models": [
+        "anthropic/claude-fable-5.1"
+      ],
+      "input_per_mtok": 10.0,
+      "cached_read_per_mtok": 0.25,
+      "output_per_mtok": 50.0,
+      "note": "OpenRouter Claude Fable 5.1; flat token pricing"
+    }
+  ]
+}

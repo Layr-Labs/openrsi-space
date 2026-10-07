@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "name": "catalyst",
+  "description": "Submit autonomous harness source for ecdsa.fail. Compare verified avg_toffoli * peak_qubits at $20 and $200 checkpoints, plus the best achieved result and its model credits. Every run requires an explicit spending cap.",
+  "category": "agent-harness",
+  "mode": "pareto",
+  "promotionMode": "manual",
+  "objectives": [
+    {"name": "ecdsaPerformance", "direction": "-"},
+    {"name": "modelCreditsAtBest", "direction": "-"}
+  ],
+  "paretoPolicies": {
+    "scoring": {"version": "ecdsa-best-and-checkpoints-v2"},
+    "validity": {"version": "ecdsa-trusted-checkpoints-v2"}
+  },
+  "editablePaths": ["submission"],
+  "setupCommand": ["uv", "run", "--frozen", "catalyst", "yukon-setup"],
+  "benchmarkCommand": ["uv", "run", "--frozen", "catalyst", "yukon-run"],
+  "scorePath": ".catalyst/yukon/score.json",
+  "maxSubmissionBytes": 8388608,
+  "runner": {
+    "provider": "remote-verification",
+    "service": "catalyst",
+    "submissionPath": "submission"
+  }
+}

@@ -1,0 +1,10 @@
+.catalyst/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.DS_Store
+.env
+.env.*
+harnesses/*/verification.json
+problems/

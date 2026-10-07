@@ -1,0 +1,43 @@
+name: Catalyst Benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      yukon_evaluation:
+        description: Yukon Pareto policies and requested fields
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - name: Checkout dispatched source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.8.22"
+          python-version: "3.12"
+      - name: Setup trusted evaluation client
+        run: uv sync --frozen
+      - name: Benchmark through remote evaluator
+        env:
+          CATALYST_EVALUATOR_URL: ${{ vars.CATALYST_EVALUATOR_URL }}
+          YUKON_EVALUATION: ${{ inputs.yukon_evaluation }}
+        run: uv run --frozen catalyst yukon-run
+      - name: Upload verified judgment
+        uses: actions/upload-artifact@v4
+        with:
+          name: catalyst-score
+          path: .catalyst/yukon/score.json
+          include-hidden-files: true
+          if-no-files-found: error
