@@ -23,9 +23,14 @@ starting an evaluation. Existing jobs and credentials were preserved.
 
 OIDC tests use signed fixture tokens, not real GitHub-issued tokens. A complete
 hosted run still requires configuring repository authorization and the workflow
-connection, installing the Yukon App and
-registering the benchmark. A successful local preview does not establish
+connection and registering the benchmark. The author confirmed that the Yukon
+Eigen App's access to `Layr-Labs/catalyst` was saved on October 7, 2026.
+A successful local preview does not establish
 GitHub App permissions, hosted dispatch or the resulting Yukon leaderboard entry.
+The dedicated CI SSH key and host pin have also been tested from the Mac against
+the VM using the workflow's connection script: verifier access succeeds, while
+shell commands, other ports and remote listeners are denied. GitHub-hosted
+runner connectivity and repository secret configuration remain unverified.
 
 The included starter receipt refers to completed remote evaluation
 `03586584-86c1-4b9d-9a09-1a13701efabe`, with scores `[10758874395, 0]` and model
@@ -65,12 +70,33 @@ Use a dedicated CI key, never a person's administrative private key. A restricte
 OpenSSH authorized-key entry can use:
 
 ```text
-restrict,port-forwarding,permitopen="127.0.0.1:8778",permitlisten="none",command="/bin/false" ssh-ed25519 <CI public key>
+restrict,port-forwarding,permitopen="127.0.0.1:8778",command="/bin/false" ssh-ed25519 <CI public key>
 ```
+
+On `openclaw`, the dedicated non-login user is `catalyst-ci`. Its separate SSH
+policy in `/etc/ssh/sshd_config.d/90-catalyst-ci.conf` restricts forwarding to
+local connections; the authorized-key `permitlisten="none"` option is not valid
+on this OpenSSH version:
+
+```text
+Match User catalyst-ci
+    AllowTcpForwarding local
+    AllowStreamLocalForwarding no
+    PermitOpen 127.0.0.1:8778
+    PermitTTY no
+    X11Forwarding no
+    ForceCommand /bin/false
+Match all
+```
+
+Validate with `sshd -t` and check `sshd -T -C user=catalyst-ci,host=localhost,addr=127.0.0.1`
+before reloading SSH. The existing administrative user's effective policy must
+remain unchanged. This affects SSH transport, not the screen-managed Catalyst API.
 
 Verify the VM host public key through the existing trusted administrative
 connection. Never disable host-key checking or trust an unchecked runtime
-`ssh-keyscan`. Keep the private key in Actions secrets only. The tunnel grants
+`ssh-keyscan`. Store the CI key in Actions secrets; keep any local provisioning
+copy private and outside Git. The tunnel grants
 transport; API authorization separately prevents execution and foreign-result access.
 
 The `ubuntu-latest` runner needs outbound access to the verifier, GitHub OIDC
