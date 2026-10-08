@@ -16,13 +16,13 @@ This follows Yukon's `docs/github-actions-benchmark-author-guide.md` and
 6. Yukon records its score and evidence. Pareto does not merge submissions.
 
 The receipt endpoint and Yukon login are deployed on `openclaw` in release
-`20261007-yukon-auth-1`. The Linux suite passed 116 tests (three optional
+`20261007-dev-pipeline-1` from commit `3e6b373`. The Linux suite passed 117 tests (three optional
 integrations skipped). Solver keys are validated against **https://api-dev.yukon.org**.
 Existing evaluations were preserved; legacy solver passwords are disabled.
 
 OIDC tests use signed fixture tokens, not real GitHub-issued tokens. A complete
-hosted run still requires configuring repository authorization, publishing the
-HTTPS workflow and registering the benchmark. The author installed the
+hosted run still requires configuring repository authorization and registering
+the benchmark. The HTTPS workflow is published on `main`. The author installed the
 dev Yukon Eigen App on `Layr-Labs/catalyst`, which is the correct App for this
 integration. Production App access is not required.
 A successful local preview does not establish

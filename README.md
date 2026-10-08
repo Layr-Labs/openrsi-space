@@ -97,7 +97,7 @@ solver session, renewed automatically by the client. Keys and sessions are never
 saved by the server. `CATALYST_API_TOKEN` remains for local test fixtures only.
 Provider access is separate and remains disabled in the remote MVP.
 
-Yukon login is live in release `20261007-yukon-auth-1`, configured against
+Yukon login is live in release `20261007-dev-pipeline-1`, configured against
 **https://api-dev.yukon.org**. This integration targets **dev Yukon**, using the
 Yukon Eigen GitHub App and a dev API key. Keys from `www.yukon.org` belong to
 production and cannot authenticate here.

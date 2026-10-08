@@ -1,14 +1,14 @@
 # Existing VM deployment record
 
 **Current integration:** use [GitHub Actions end to end](github-actions-e2e.md).
-Release `20261007-yukon-auth-1` is now running under `screen` on the existing
+Release `20261007-dev-pipeline-1` (source commit `3e6b373`) is now running under `screen` on the existing
 VM. Stock `yukon run` retrieved the real receipt through its new endpoint.
 Jobs and credentials were preserved, and no evaluation was started by retrieval.
 The service is now reachable through **https://35.92.254.142**, with a trusted
 IP certificate and tested automatic renewal. Nginx forwards to the existing
 loopback API; the API remains screen-managed. See [HTTPS operations](https.md).
 
-Yukon login is active against **https://api-dev.yukon.org**, with 116 tests passing
+Yukon login is active against **https://api-dev.yukon.org**, with 117 tests passing
 on the Mac (two optional skips) and VM (three optional skips). The local dev
 login is valid. Legacy Catalyst solver passwords remain disabled.
 The starter receipt points to the dev account's original evaluation
@@ -22,6 +22,10 @@ and restarted the API (invalidating existing sessions). Both evaluations and
 their original owners remain intact. No evaluation was rerun for this correction.
 The issuer audit and pre-change snapshot are under
 `/var/lib/catalyst/evaluator/backups/20261007-return-to-dev`.
+The latest release backup is `/var/lib/catalyst/evaluator/backups/20261007-dev-pipeline-1`.
+The service accepts solver-selected spending caps above the $20/$200 comparison
+checkpoints while retaining the model-disabled runtime policy. HTTPS receipt
+retrieval passed after the release switch without creating another evaluation.
 
 The details below record the **earlier direct-backend prototype**, including its
 historical release and tests. Do not apply the custom Yukon provider or follow

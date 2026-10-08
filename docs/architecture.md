@@ -122,8 +122,8 @@ receipt-only archives and a signed-OIDC result endpoint. Experimental custom
 Yukon patches are preserved but not required. See [the end-to-end guide](github-actions-e2e.md) and
 [the reproducible local check](local-evaluation.md).
 
-Current priority: publish the HTTPS workflow, authorize GitHub OIDC, register
-the benchmark in Yukon dev and validate one hosted submission. The dev GitHub
+Current priority: authorize GitHub OIDC, register the benchmark in Yukon dev
+and validate one hosted submission. The HTTPS workflow is published. The dev GitHub
 App is installed; the account still needs benchmark-import permission.
 Temporary provider access, runtime checkpoint capture and credit reservations
 remain implementation work. User cancellation is deferred. Real research runs
