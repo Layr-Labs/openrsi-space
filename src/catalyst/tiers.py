@@ -115,7 +115,11 @@ def project_observation(observation: dict, model: dict, max_model_credits, limit
         previous = seq
         requests.add(request_id)
         total += credits(event.get("tokens"), model)
-        tokens += event["tokens"]["input_tokens"] + event["tokens"]["output_tokens"]
+        # Native Dungeness budgets use its cache-weighted counter. Preserve raw
+        # provider counts for pricing, and legacy records' original semantics.
+        tokens += integer(event.get("budget_tokens",
+                          event["tokens"]["input_tokens"] + event["tokens"]["output_tokens"]),
+                          "budget_tokens")
         charges.append((seq, total))
     if tokens > limits["max_model_tokens"]:
         raise CatalystError("Remote usage exceeded the authorized token limit.")

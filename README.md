@@ -59,8 +59,8 @@ allowance will be consumed. The starter uses a 20-credit cap, 100,000 tokens and
 
 The local worker builds immutable source, starts from the pinned problem state,
 captures the final candidate and independently verifies it. Real ECDSA execution
-is available with model access disabled; temporary provider access and runtime
-checkpoint capture still need implementation. Local interactive state is not an
+is available with model access disabled or through an operator-enabled
+[temporary ChatGPT access](docs/live-models.md) uses native Codex through Dungeness; runtime checkpoint capture still needs implementation. Local interactive state is not an
 implicit input. The required repetition policy
 remains undecided; preserve attempts and show counts rather than hiding repeats.
 
@@ -95,9 +95,10 @@ Yukon login or `YUKON_API_TOKEN`. No separate Catalyst password is needed.
 Catalyst validates the key with its configured Yukon API and returns a 15-minute
 solver session, renewed automatically by the client. Keys and sessions are never
 saved by the server. `CATALYST_API_TOKEN` remains for local test fixtures only.
-Provider access is separate and remains disabled in the remote MVP.
+Provider access is separate. Live runs use the
+[Codex credential handoff](docs/live-models.md) after operator enablement.
 
-Yukon login is live in release `20261007-dev-pipeline-1`, configured against
+Yukon login and native Codex access are live in release `20261007-codex-chatgpt-1`, configured against
 **https://api-dev.yukon.org**. This integration targets **dev Yukon**, using the
 Yukon Eigen GitHub App and a dev API key. Keys from `www.yukon.org` belong to
 production and cannot authenticate here.
@@ -111,7 +112,14 @@ A subsequent `submit` after completion deliberately requests a fresh evaluation;
 See [the client contract](docs/remote-evaluation.md#standalone-client),
 [the local service setup](docs/local-evaluation.md), and
 [the deployed VM commands](docs/remote-vm.md). The private service runs on the
-existing `openclaw` VM, reached through HTTPS, with model access disabled.
+existing `openclaw` VM, reached through HTTPS, with optional temporary ChatGPT access.
+
+The real Codex/Astra/high test completed at **0.887796 model credits** and
+independently verified **10,704,574,395** (3,942,753 average Toffoli gates ×
+2,715 peak qubits), a 0.505% improvement over the pinned baseline. Its receipt
+was retrieved through the HTTPS client. A token-limit validation bug was corrected
+using the retained Dungeness ledger, without another model run. Hosted Yukon
+submission remains a separate integration step.
 
 For the actual pinned ECDSA problem, use
 [`harnesses/ecdsa-baseline`](harnesses/ecdsa-baseline/README.md). The submitted
@@ -155,8 +163,8 @@ that workflow publication reuses the completed job. Only external identity,
 submission registration and model responses are fixtures; its tiny circuit is
 explicitly labeled local-test evidence and cannot count as an ECDSA result.
 
-Temporary provider access and its grants,
-runtime checkpoint collection, GitHub repository/connection setup and hosted benchmark
+Subscription access is verified; renewal, runtime checkpoint collection,
+GitHub repository authorization and hosted benchmark
 registration remain pending. Catalyst is not yet available for hosted
 `yukon clone` or live submissions.
 
@@ -164,18 +172,15 @@ Develop and test on the Mac first. The initial remote MVP hosts the API and runs
 the harness worker inside the existing VM accessible through `ssh openclaw`.
 Reuse that VM across jobs; there is no per-evaluation VM provisioning or teardown.
 Use separate run workspaces/containers for builds, harness execution and candidate
-verification, keeping the API process and provider credentials out of submitted
-code's access. Agent Compose and new cloud resources are unnecessary for the MVP.
+verification, keeping the API process outside submitted code's access. Agent Compose and new cloud resources are unnecessary for the MVP.
 
-The final service will receive temporary provider access over authenticated HTTPS
-on port 443 and hold it only in memory for the active run. Never persist user
-provider credentials, even encrypted, or include them in queues, files, databases,
-logs, images, submissions or retained traces. Discard access when the run ends
-or expires; service restart requires fresh authorization.
-Original credentials and renewal remain on the user's machine. The harness
-receives only scoped gateway access. This credential-handling path is not
-implemented in the model-disabled MVP and needs separate lifecycle tests for
-API and subscription routes.
+The optional live-model service receives temporary ChatGPT access over authenticated
+HTTPS on port 443. Renewable credentials remain on the client. API memory, a private
+worker socket and Linux tmpfs carry temporary access into native Codex; credentials
+are excluded from persisted jobs, source packages and receipts. Native subscription
+mode exposes temporary access to the harness container. Dungeness supplies usage
+accounting and budget enforcement. See [live-model operation](docs/live-models.md)
+for cleanup, budget-boundary behavior and current limitations.
 
 See [architecture](docs/architecture.md), [runtime requirements](docs/runtime-platform-requirements.md),
 [remote evaluation](docs/remote-evaluation.md), and [executable development](docs/executable-harness.md).

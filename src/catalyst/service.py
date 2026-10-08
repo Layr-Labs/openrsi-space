@@ -47,7 +47,7 @@ def group_exists(group):
 class WorkerSupervisor:
     """Fail the service on worker loss; never automatically repeat an evaluation."""
 
-    def __init__(self, store, config_path):
+    def __init__(self, store, config_path, credentials=None):
         self.store = store
         self.ready = False
         self.groups = set()
@@ -61,17 +61,29 @@ class WorkerSupervisor:
             "PATH", "HOME", "TMPDIR", "USER", "LOGNAME", "DOCKER_HOST", "DOCKER_CONTEXT",
         ) if key in os.environ}
         environment["PYTHONPATH"] = str(Path(__file__).resolve().parents[1])
+        self.credentials = None
+        credential_args = []
+        inherited = [write_fd]
+        if credentials is not None:
+            from .model_access import CredentialChannel
+            self.credentials = CredentialChannel(credentials)
+            credential_args = ["--credential-fd", str(self.credentials.child.fileno())]
+            inherited.append(self.credentials.child.fileno())
         try:
             self.process = subprocess.Popen(
                 [sys.executable, "-m", "catalyst.cli", "--state", str(store.root),
                  "worker", "--local-test", "--config", str(config_path.resolve()),
-                 "--supervisor-fd", str(write_fd)],
+                 "--supervisor-fd", str(write_fd), *credential_args],
                 env=environment, stdin=subprocess.DEVNULL, stdout=self.log, stderr=subprocess.STDOUT,
-                start_new_session=True, pass_fds=(write_fd,),
+                start_new_session=True, pass_fds=tuple(inherited),
             )
+            if self.credentials:
+                self.credentials.start()
         except BaseException:
             os.close(self.read_fd)
             self.log.close()
+            if self.credentials:
+                self.credentials.close()
             raise
         finally:
             os.close(write_fd)
@@ -133,6 +145,8 @@ class WorkerSupervisor:
             if group_exists(group):
                 signal_group(group, signal.SIGKILL)
         self.process.wait(timeout=5)
+        if self.credentials:
+            self.credentials.close()
         os.close(self.read_fd)
         self.log.close()
         if self.ready:

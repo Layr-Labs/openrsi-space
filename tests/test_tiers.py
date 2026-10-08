@@ -136,6 +136,17 @@ class TierTests(unittest.TestCase):
         with self.assertRaises(CatalystError):
             self.project(record)
 
+    def test_native_token_budget_uses_trusted_counter_without_changing_credits(self):
+        record = observation()
+        for event in record["usage"]:
+            event["budget_tokens"] = 100
+        result = project_observation(record, MODEL, 500, {**LIMITS, "max_model_tokens": 400})
+        self.assertEqual(result["normalized_model_usd"], 201)
+        with self.assertRaises(CatalystError):
+            project_observation(record, MODEL, 500, {**LIMITS, "max_model_tokens": 399})
+        with self.assertRaises(CatalystError):
+            project_observation(record, MODEL, 200, {**LIMITS, "max_model_tokens": 400})
+
 
 class PricingTests(unittest.TestCase):
     def test_provider_routes_and_subscriptions_use_same_reference_credit_rates(self):

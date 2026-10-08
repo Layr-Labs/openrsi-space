@@ -89,7 +89,7 @@ def write_yaml(path: Path, value: dict) -> None:
 
 def prepare(state: Path, problem_path: Path, harness_path: Path, budget: float,
             max_tokens: int, resume: str | None = None, env_file: str | None = None, *,
-            build_id: str | None = None, model: str | None = None) -> dict:
+            build_id: str | None = None, model: str | None = None, provider="openai", reasoning_effort=None) -> dict:
     finite_number(budget, nonnegative=True)
     if budget <= 0 or max_tokens < 1:
         raise CatalystError("Evaluation requires a positive budget and token cap.")
@@ -110,7 +110,9 @@ def prepare(state: Path, problem_path: Path, harness_path: Path, budget: float,
         build_record = inspect_build(state, build_id)
         if build_record["source_digest"] != harness["version"]:
             raise CatalystError("Harness source changed since this build. Build the current source first.")
-        executable_model = model_profile(source, model)
+        executable_model = model_profile(source, model, provider)
+        if reasoning_effort:
+            executable_model["defaults"] = {"reasoning_effort": reasoning_effort}
     else:
         if build_id or model:
             raise CatalystError("--build and --model apply only to executable harnesses.")
@@ -165,8 +167,17 @@ def prepare(state: Path, problem_path: Path, harness_path: Path, budget: float,
             "harness": {k: harness[k] for k in ("id", "version")},
             "candidate_paths": paths, "budget": {"max_usd": budget, "max_model_tokens": max_tokens},
             "evidence": "local-evaluation",
+            "model_provider": provider, "reasoning_effort": reasoning_effort,
         }
         agent_ref, added_agent_paths = install_agent(runtime, build_record, executable_model, task_input)
+        if provider == "openai-chatgpt":
+            launcher = runtime / "dungeness"
+            original = launcher.read_text()
+            before = 'tempfile.mkdtemp(prefix="dungeness-codex-auth-", dir="/tmp")'
+            if original.count(before) != 1:
+                raise CatalystError("Pinned Dungeness credential staging has changed.")
+            launcher.write_text(original.replace(before, before.replace("/tmp", "/dev/shm")))
+            added_agent_paths.append("dungeness")
     token = "catalyst-" + problem["version"]
     namespace = "projects/catalyst"
     task_path = runtime / "tasks" / namespace / token / "task.yaml"

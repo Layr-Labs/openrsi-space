@@ -15,9 +15,10 @@ This follows Yukon's `docs/github-actions-benchmark-author-guide.md` and
    and uploads one trusted Pareto score artifact.
 6. Yukon records its score and evidence. Pareto does not merge submissions.
 
-The receipt endpoint and Yukon login are deployed on `openclaw` in release
-`20261007-dev-pipeline-1` from commit `3e6b373`. The Linux suite passed 117 tests (three optional
-integrations skipped). Solver keys are validated against **https://api-dev.yukon.org**.
+The receipt endpoint, Yukon login and native Codex execution are deployed on
+`openclaw` in release `20261007-codex-chatgpt-1`. The current local suite passed
+129 tests (one Linux-only check skipped), including stock Yukon and native
+Dungeness contracts. Solver keys are validated against **https://api-dev.yukon.org**.
 Existing evaluations were preserved; legacy solver passwords are disabled.
 
 OIDC tests use signed fixture tokens, not real GitHub-issued tokens. A complete
@@ -51,11 +52,10 @@ The author also needs
 Yukon benchmark-import permission. For a private repo, solvers need ordinary
 GitHub read access. No custom Yukon release is needed.
 
-The dev account's import preflight currently returns HTTP 403:
-`this account is not allowed to import benchmarks`. A Yukon operator must
-authorize the account for benchmark imports or perform the import. The
-ordinary dev API key works for solver authentication; it does not grant this
-author permission.
+The dev account's importer permission was confirmed on October 8: an empty
+import request now reaches schema validation instead of being rejected by the
+importer allowlist. No benchmark was created by that preflight. Solver login
+and benchmark-import permission remain separate authorizations.
 
 Publish the tested revision to `main`. Record its exact Git SHA and numeric
 GitHub repository ID (different from a Yukon benchmark UUID):
@@ -163,8 +163,9 @@ Yukon's API (`officialMetrics.remoteVerification` and normal evaluation evidence
 
 ## Limits
 
-- The ECDSA MVP has model access disabled. Temporary provider-access handoff
-  and its memory-only lifecycle are not implemented. Do not send provider secrets to it.
+- Baseline runs have model access disabled. The optional
+  [temporary ChatGPT route](live-models.md) requires operator enablement and
+  `--codex-auth-file`; no provider secret belongs in a workflow or receipt.
 - Missing, foreign or altered receipts, wrong problems/policies, and failed owner
   lookups write no score. The client clears stale score files first.
 - Receipt lookup is replay-safe and never enqueues evaluations. Repository
@@ -172,10 +173,10 @@ Yukon's API (`officialMetrics.remoteVerification` and normal evaluation evidence
 - This MVP handles initial import and ordinary submissions. Reorgs using separate
   execution IDs need an additional trusted mapping to the original submission;
   unknown IDs fail closed without rerunning a harness.
-- A future credential endpoint requires authenticated HTTPS and run-scoped,
+- Provider-token handoff requires authenticated HTTPS and one-evaluation,
   memory-only access. Never persist user provider credentials, even encrypted.
-  Renewal stays on the user's machine; completion, failure, cancellation and
-  expiry discard access. Restart requires fresh authorization. See
+  Completion, failure and expiry discard access; restart loses queued tokens.
+  Renewal and user cancellation remain unimplemented. See
   [runtime requirements](runtime-platform-requirements.md).
 
 ## Local tests

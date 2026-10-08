@@ -200,6 +200,32 @@ class YukonAuthTests(unittest.TestCase):
         self.assertEqual(stored["request"]["evaluation"]["max_model_credits"], 20000)
         self.assertEqual(stored["owner"], self.owner)
 
+    def test_live_submission_requires_policy_and_keeps_provider_token_out_of_queue(self):
+        import urllib.request
+        from catalyst.model_access import CredentialInbox, TOKEN_HEADER, TEMPORARY_GRANT
+        inbox = CredentialInbox(self.store)
+        self.server.RequestHandlerClass = handler_for(self.store, self.auth, initial_problems(), "remote", inbox)
+        request = copy.deepcopy(self.request)
+        request["evaluation"]["llm_access"] = {"grant_id": TEMPORARY_GRANT}
+        self.assert_http(403, lambda: self.call("/evaluations", request))
+        self.config["model_policy"] = {"enabled": True, "providers": ["openai"],
+                                       "limits": request["evaluation"]["limits"]}
+        self.assert_http(400, lambda: self.call("/evaluations", request))
+        session = self.exchange()["access_token"]
+        secret = "test-provider-token-do-not-persist"
+        upload = urllib.request.Request(self.base + "/evaluations", data=json.dumps(request).encode(),
+            headers={"Authorization": "Bearer " + session, "Content-Type": "application/json",
+                     TOKEN_HEADER: secret})
+        with urllib.request.urlopen(upload) as response:
+            accepted = json.load(response)
+        job = self.store.claim()
+        self.assertEqual(job["id"], accepted["evaluation_id"])
+        self.assertEqual(job["owner"], self.owner)
+        self.assertEqual(inbox.take(job["id"]), secret)
+        for path in self.root.rglob("*"):
+            if path.is_file():
+                self.assertNotIn(secret.encode(), path.read_bytes(), str(path))
+
     def test_configure_preserves_oidc_and_consumers_disables_legacy_solver_keys(self):
         auth_path, worker_path = self.root / "auth.json", self.root / "worker.json"
         config = {"mode": "service", "tokens": {"old": {"kind": "yukon-solver", "owner": self.owner},

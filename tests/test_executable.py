@@ -12,7 +12,7 @@ from unittest.mock import patch
 from catalyst.cli import main
 from catalyst.common import CatalystError, snapshot_directory, validate_document, write_json
 from catalyst.dungeness import configure, prepare
-from catalyst.executable import build, inspect_build, RUNTIME
+from catalyst.executable import build, inspect_build, install_agent, model_profile, RUNTIME
 from catalyst.problems import develop, initial_problems, validate_workspace
 
 
@@ -139,6 +139,30 @@ class ExecutableTests(unittest.TestCase):
         self.assertEqual(env["CATALYST_TASK"], str(task.resolve()))
         self.assertEqual(env["CATALYST_MODEL"], "test-model")
         self.assertEqual(env["OPENAI_API_KEY"], "testbed")
+
+    @unittest.skipUnless(os.environ.get("CATALYST_DUNGENESS"), "Set CATALYST_DUNGENESS for native compiler contract")
+    def test_subscription_package_compiles_with_native_dungeness(self):
+        source = Path(os.environ["CATALYST_DUNGENESS"])
+        spec = importlib.util.spec_from_file_location("dungeness_compiler_contract",
+                                                     source / "src/dungeness/compiler.py")
+        compiler = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(compiler)
+        model = model_profile(source, "gpt-6-astra", "openai-chatgpt")
+        model["defaults"] = {"reasoning_effort": "high"}
+        runtime = self.root / "runtime"
+        _, paths = install_agent(runtime, {
+            "id": "a" * 64, "source_digest": "b" * 64, "artifact_tag": "catalyst-image:test",
+        }, model, {"model_provider": "openai-chatgpt", "reasoning_effort": "high"})
+        import yaml
+        folder = runtime / paths[0]
+        agent = yaml.safe_load((folder / "agent.yaml").read_text())
+        compiler.render_agent_dockerfile(folder / "Dockerfile", agent)
+        job = yaml.safe_load(compiler.build_harbor_job("contract", agent, self.root / "task"))
+        entry = job["agents"][0]
+        self.assertEqual(entry["import_path"], "catalyst_executable:CatalystExecutable")
+        self.assertEqual(entry["model_name"], "gpt-6-astra")
+        self.assertEqual(entry["kwargs"]["reasoning_effort"], "high")
+        self.assertEqual(entry["env"], {})
 
 
 class DevelopmentTests(unittest.TestCase):

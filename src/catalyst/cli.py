@@ -128,7 +128,24 @@ def remote_command(args, state):
     from .remote import RemoteClient
     client = RemoteClient(state)
     if args.operation == "submit":
-        accepted = client.submit(Path(args.package))
+        model_token = None
+        if args.codex_auth_file:
+            from .live_provider import encode_codex_access
+            model_token = encode_codex_access(args.codex_auth_file)
+        elif args.prompt_model_token:
+            import getpass
+            if not sys.stdin.isatty():
+                raise CatalystError("Use a terminal for the hidden provider-token prompt.")
+            model_token = getpass.getpass("Provider access token (not saved): ")
+        elif args.model_token_stdin:
+            from .model_access import MAX_TOKEN_BYTES, validate_token
+            model_token = sys.stdin.readline(MAX_TOKEN_BYTES + 2).rstrip("\r\n")
+            validate_token(model_token)
+        try:
+            accepted = client.submit(Path(args.package), **(
+                {"model_token": model_token} if model_token is not None else {}))
+        finally:
+            model_token = None
         if not args.wait:
             print(json.dumps(accepted, indent=2))
             return
@@ -256,6 +273,13 @@ def main(argv=None):
     remote_submit = remote_sub.add_parser("submit", help="Upload harness source and queue one evaluation.")
     remote_submit.add_argument("package", nargs="?", default="submission", help="Harness directory (default: submission).")
     remote_submit.add_argument("--wait", action="store_true", help="Wait, validate the result and save its verification reference.")
+    token_input = remote_submit.add_mutually_exclusive_group()
+    token_input.add_argument("--codex-auth-file", nargs="?", const=str(Path.home() / ".codex/auth.json"),
+                             help="Send temporary ChatGPT access from Codex login; keep refresh credentials local.")
+    token_input.add_argument("--prompt-model-token", action="store_true",
+                             help="Read a provider token from a hidden terminal prompt; never save it.")
+    token_input.add_argument("--model-token-stdin", action="store_true",
+                             help="Read one provider-token line from stdin; never save it.")
     for operation, help_text in (
         ("status", "Read the current status of a submitted evaluation."),
         ("wait", "Wait for an existing evaluation; never enqueue another run."),
@@ -298,6 +322,7 @@ def main(argv=None):
     worker.add_argument("--config", required=True)
     worker.add_argument("--once", action="store_true")
     worker.add_argument("--supervisor-fd", type=int, help=argparse.SUPPRESS)
+    worker.add_argument("--credential-fd", type=int, help=argparse.SUPPRESS)
     registration = commands.add_parser("local-submission-bind", help="Register a trusted local queued-submission fixture.")
     registration.add_argument("evaluation_id")
     registration.add_argument("--owner", required=True)
@@ -458,7 +483,8 @@ def main(argv=None):
                   Path(args.worker_config) if args.worker_config else None)
         elif args.command == "worker":
             from .worker import work
-            work(state, Path(args.config), once=args.once, supervisor_fd=args.supervisor_fd)
+            work(state, Path(args.config), once=args.once, supervisor_fd=args.supervisor_fd,
+                 credential_fd=args.credential_fd)
         elif args.command == "local-submission-bind":
             from .evaluator import JobStore
             JobStore(state).register_submission(args.evaluation_id, args.owner, args.repository, args.commit)

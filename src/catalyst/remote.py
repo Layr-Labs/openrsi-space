@@ -66,10 +66,12 @@ def validate_evaluation_config(config: dict) -> dict:
             or not re.fullmatch(r"grant_[A-Za-z0-9_-]{8,100}", access["grant_id"])):
         raise CatalystError("Set llm_access.grant_id to a private evaluator grant reference; never include a token.")
     model = config["model"]
-    if (not isinstance(model, dict) or set(model) != {"provider", "name"}
+    if (not isinstance(model, dict) or (not {"provider", "name"} <= set(model) or set(model) - {"provider", "name", "reasoning_effort"})
             or any(not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9._/-]{1,120}", value)
                    for value in model.values())):
         raise CatalystError("model requires a provider and exact model name.")
+    if "reasoning_effort" in model and model["reasoning_effort"] not in {"low", "medium", "high", "xhigh", "max"}:
+        raise CatalystError("Unsupported reasoning effort.")
     model_prices(model)
     credit_limit(config["max_model_credits"])
     limits = config["limits"]
@@ -94,11 +96,21 @@ class HTTPFailure(CatalystError):
         super().__init__(f"Evaluator returned HTTP {status}; request remains resumable.")
 
 
-def fetch(url: str, token: str, *, document=None, limit=4 * 1024 * 1024, timeout=30) -> bytes:
+def fetch(url: str, token: str, *, document=None, limit=4 * 1024 * 1024, timeout=30,
+          model_token=None) -> bytes:
+    private_headers = {}
+    if model_token is not None:
+        from .model_access import TOKEN_HEADER, validate_token
+        validate_token(model_token)
+        parts = urllib.parse.urlsplit(url)
+        if (parts.scheme != "https" or parts.username or parts.password
+                or parts.path != "/evaluations" or parts.query or parts.fragment):
+            raise CatalystError("Provider tokens require the HTTPS evaluation endpoint.")
+        private_headers[TOKEN_HEADER] = model_token
     request = urllib.request.Request(
         url, data=canonical(document) if document is not None else None,
         headers={**({"Authorization": f"Bearer {token}"} if token else {}),
-                 "Content-Type": "application/json"},
+                 "Content-Type": "application/json", **private_headers},
         method="POST" if document is not None else "GET",
     )
     try:
@@ -121,9 +133,10 @@ def fetch(url: str, token: str, *, document=None, limit=4 * 1024 * 1024, timeout
 _solver_sessions = {}
 
 
-def solver_fetch(base, route, bearer, *, document=None, limit=4 * 1024 * 1024):
+def solver_fetch(base, route, bearer, *, document=None, limit=4 * 1024 * 1024, model_token=None):
+    private = {"model_token": model_token} if model_token is not None else {}
     if not bearer.startswith("ykn_"):
-        return fetch(base + route, bearer, document=document, limit=limit)
+        return fetch(base + route, bearer, document=document, limit=limit, **private)
     parts = urllib.parse.urlsplit(base)
     if (parts.username or parts.password or parts.query or parts.fragment or not parts.hostname
             or (parts.scheme != "https" and not (
@@ -148,7 +161,7 @@ def solver_fetch(base, route, bearer, *, document=None, limit=4 * 1024 * 1024):
                 _solver_sessions.clear()
             _solver_sessions[cache_key] = cached
         try:
-            return fetch(base + route, cached[0], document=document, limit=limit)
+            return fetch(base + route, cached[0], document=document, limit=limit, **private)
         except HTTPFailure as error:
             if error.status != 401 or attempt:
                 raise
@@ -368,11 +381,16 @@ class RemoteClient:
         legacy = self.state / "yukon/pending" / name
         return legacy if legacy.is_file() else self.state / "remote/pending" / name
 
-    def submit(self, submission: Path, *, judge=None):
+    def submit(self, submission: Path, *, judge=None, model_token=None):
         if os.environ.get("GITHUB_ACTIONS") == "true":
             raise CatalystError("GitHub Actions must retrieve an existing result through catalyst yukon-run.")
         submission = submission.resolve()
         body = request_body(submission, self.base, judge=judge)
+        from .model_access import temporary_access, validate_token
+        if temporary_access(body["evaluation"]):
+            validate_token(model_token)
+        elif model_token is not None:
+            raise CatalystError("Use grant_temporary_provider in evaluation.json for live model access.")
         pending = self.pending_path(body)
         with request_lock(pending):
             if pending.is_file():
@@ -382,7 +400,9 @@ class RemoteClient:
             else:
                 request = {**body, "request_id": str(uuid.uuid4())}
                 private_json(pending, request)
-            accepted = json.loads(solver_fetch(self.base, "/evaluations", self.bearer, document=request))
+            private = {"model_token": model_token} if model_token is not None else {}
+            accepted = json.loads(solver_fetch(self.base, "/evaluations", self.bearer,
+                                               document=request, **private))
             identity = evaluation_id(accepted.get("evaluation_id") if isinstance(accepted, dict) else None)
             if accepted.get("request_id") != request["request_id"]:
                 raise CatalystError("Evaluator accepted a different operation key.")

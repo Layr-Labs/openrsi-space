@@ -55,6 +55,16 @@ class ServiceIdentity(LocalIdentity):
         if principal.get("authentication") != "yukon":
             return super().authorize_run(principal, request)
         config = request["evaluation"]
+        from .model_access import temporary_access
+        if temporary_access(config):
+            policy = self.config.get("model_policy", {})
+            if (principal["kind"] != "yukon-solver" or request["context"] != {"kind": "yukon-solver"}
+                    or policy.get("enabled") is not True
+                    or config["model"]["provider"] not in policy.get("providers", [])
+                    or set(policy.get("limits", {})) != {"max_model_tokens", "max_seconds"}
+                    or any(config["limits"][key] > policy["limits"][key] for key in config["limits"])):
+                raise APIError(403, "Temporary model access is not authorized by this service.")
+            return
         allowed = self.config["solver_policy"]["evaluation"]
         if (principal["kind"] != "yukon-solver" or request["context"] != {"kind": "yukon-solver"}
                 or config["llm_access"] != allowed["llm_access"] or config["model"] != allowed["model"]

@@ -9,6 +9,7 @@ import json
 import os
 from pathlib import Path
 import signal
+import socket
 import subprocess
 import sys
 import time
@@ -20,9 +21,10 @@ from .dungeness import prepare
 from .evaluator import JobStore, bindings
 from .executable import build
 from .local_run import FIXTURE_URL, MockProvider
-from .tiers import TIERS, credits, pricing_digest
+from .tiers import TIERS, credits, integer, pricing_digest
 from .remote import judgment
 from .problems import get_problem, initial_problems
+from .model_access import temporary_access, take_worker_token
 
 _SUPERVISOR_FD = None
 
@@ -125,7 +127,7 @@ def collect_usage(run_dir, evaluation):
     events_file = run_dir / "usage/events.jsonl"
     if not events_file.is_file():
         raise CatalystError("Dungeness did not retain its trusted usage ledger.")
-    ledger, seen, total = [], set(), Decimal(0)
+    ledger, seen, total, rounded_total = [], set(), Decimal(0), Decimal(0)
     for line in events_file.read_text().splitlines():
         event = json.loads(line)
         if event.get("source") != "gateway" or event.get("kind") != "model.accounting":
@@ -143,13 +145,29 @@ def collect_usage(run_dir, evaluation):
         tokens = {"input_tokens": data.get("input_tokens"), "output_tokens": data.get("output_tokens"),
                   "cached_read_tokens": data.get("cached_input_tokens", 0),
                   "cache_write_tokens": data.get("cache_write_input_tokens", 0)}
-        total += credits(tokens, evaluation["model"])
-        ledger.append({"sequence": len(ledger) + 1, "request_id": request_id,
-                       "settled": True, "tokens": tokens})
+        cost = credits(tokens, evaluation["model"])
+        rounded = Decimal(str(data.get("normalized_usd", data.get("usd", float(cost)))))
+        if not rounded.is_finite() or abs(rounded - cost) > Decimal("0.000000500001"):
+            raise CatalystError("Gateway pricing disagrees with pinned token prices.")
+        rounded_total += rounded
+        # Dungeness records rejected requests with zero usage.
+        if data.get("status") == "provider_error" and all(value == 0 for value in tokens.values()):
+            continue
+        total += cost
+        entry = {"sequence": len(ledger) + 1, "request_id": request_id,
+                 "settled": True, "tokens": tokens}
+        if "billed_tokens" in data:
+            entry["budget_tokens"] = integer(data["billed_tokens"], "Dungeness budget tokens")
+        ledger.append(entry)
     record = read_json(run_dir / "record.json")
     recorded = record["data"]["usage"].get("normalized_usd")
-    if recorded is None or Decimal(str(recorded)) != total:
+    if (recorded is None or not Decimal(str(recorded)).is_finite()
+            or abs(Decimal(str(recorded)) - rounded_total) > Decimal("0.00000001")):
         raise CatalystError("Dungeness terminal usage disagrees with the pinned pricing ledger.")
+    if any("budget_tokens" in entry for entry in ledger):
+        if (not all("budget_tokens" in entry for entry in ledger)
+                or sum(entry["budget_tokens"] for entry in ledger) != record["data"]["usage"].get("model_tokens")):
+            raise CatalystError("Dungeness token-budget receipts disagree with its terminal counter.")
     return ledger, total
 
 
@@ -177,12 +195,14 @@ def verify_ecdsa(runtime, run_dir, run_id, candidate, relative, environment, art
 
 
 class DungenessLocalBackend:
-    def __init__(self, config):
+    def __init__(self, config, credential_connection=None):
         if config.get("mode") not in {"local-test", "local-ecdsa", "remote"}:
             raise CatalystError("Only local fixture and local ECDSA workers are enabled.")
-        if config["mode"] in {"local-ecdsa", "remote"} and config.get("model_access") != "disabled":
-            raise CatalystError("The real ECDSA baseline requires disabled model access.")
+        permitted = {"disabled", "temporary"} if config["mode"] == "remote" else {"disabled"}
+        if config["mode"] in {"local-ecdsa", "remote"} and config.get("model_access") not in permitted:
+            raise CatalystError("Local ECDSA requires disabled access; remote permits disabled or temporary access.")
         self.config = config
+        self.credential_connection = credential_connection
 
     def evaluate(self, job, artifacts, transition):
         request = job["request"]
@@ -200,8 +220,15 @@ class DungenessLocalBackend:
             raise CatalystError("Fixture worker requires the local circuit problem.")
         relative = request["problem_set"][0]["candidate_paths"][0]
         evaluation = request["evaluation"]
-        if evaluation["model"] != {"provider": "openai", "name": "gpt-5.6-sol"}:
+        live = real and temporary_access(evaluation)
+        if live and (self.config["mode"] != "remote" or self.config.get("model_access") != "temporary"):
+            raise CatalystError("Temporary model access is not enabled by the worker.")
+        if not live and evaluation["model"] != {"provider": "openai", "name": "gpt-5.6-sol"}:
             raise CatalystError("The local mock provider supports only the pinned fixture model.")
+        if live:
+            from .live_provider import PROVIDERS
+            if evaluation["model"]["provider"] not in PROVIDERS:
+                raise CatalystError("Unsupported temporary model provider.")
         work_state = Path(self.config["state"])
         source = artifacts / "source"
         extract_bundle(base64.b64decode(request["source"]["archive_base64"]), source)
@@ -209,16 +236,26 @@ class DungenessLocalBackend:
         build_identity = {"id": built["id"], "image_digest": built["image_id"],
                           "image_identity_kind": "docker-image-id", "evidence": self.config["mode"]}
         write_json(artifacts / "build.json", build_identity)
-        with MockProvider(evaluation, allow_model_calls=not real) as provider:
-            env_file = artifacts / "mock-provider.env"
-            env_file.write_text(
-                f"TESTBED_OPENAI_API_KEY={provider.key}\n"
-                f"OPENAI_UPSTREAM_BASE_URL=http://host.docker.internal:{provider.server.server_port}/v1\n")
-            env_file.chmod(0o600)
+        if live:
+            from .live_provider import CodexAccess
+            model_token = take_worker_token(self.credential_connection, job["id"])
+            provider_context = CodexAccess(evaluation, model_token)
+            model_token = None
+        else:
+            provider_context = MockProvider(evaluation, allow_model_calls=not real)
+        with provider_context as provider:
+            env_file = provider.env_file if live else artifacts / "mock-provider.env"
+            if not live:
+                env_file.write_text(f"TESTBED_OPENAI_API_KEY={provider.key}\n"
+                                    f"OPENAI_UPSTREAM_BASE_URL=http://host.docker.internal:{provider.server.server_port}/v1\n")
+                env_file.chmod(0o600)
+            run_dir = None
             try:
                 metadata = prepare(work_state, Path(self.config["problem"]), source,
                                    evaluation["max_model_credits"], evaluation["limits"]["max_model_tokens"],
-                                   env_file=str(env_file), build_id=built["id"], model=evaluation["model"]["name"])
+                                   env_file=str(env_file), build_id=built["id"], model=evaluation["model"]["name"],
+                                   provider=evaluation["model"]["provider"],
+                                   reasoning_effort=evaluation["model"].get("reasoning_effort"))
                 write_json(artifacts / "runtime.json", metadata)
                 runtime = Path(metadata["runtime"])
                 run_dir = Path(metadata["record_path"]).parent
@@ -226,6 +263,8 @@ class DungenessLocalBackend:
                 environment = {key: os.environ[key] for key in
                                ("PATH", "HOME", "TMPDIR", "USER", "LOGNAME", "DOCKER_HOST", "DOCKER_CONTEXT")
                                if key in os.environ}
+                if live:
+                    environment["DUNGENESS_CODEX_AUTH_FILE"] = str(provider.auth_file)
                 environment["UV_CACHE_DIR"] = str(work_state / "uv-cache")
                 if not real:
                     environment.update({
@@ -240,11 +279,13 @@ class DungenessLocalBackend:
                     runtime, environment, artifacts / "execution.log",
                     timeout=self.config.get("execution_timeout_sec", evaluation["limits"]["max_seconds"] + 600),
                 )
-                if real and provider.attempts:
+                if real and not live and provider.attempts:
                     raise CatalystError("The harness requested a model, but this ECDSA service disables model access.")
                 ledger, total = collect_usage(run_dir, evaluation)
-                if total != provider.total or len(ledger) != len(provider.receipts):
-                    raise CatalystError("Gateway receipts disagree with the mock provider's independently metered usage.")
+                if live and not ledger:
+                    raise CatalystError("Dungeness returned no settled model usage for the live run.")
+                if not live and (total != provider.total or [entry["tokens"] for entry in ledger] != provider.receipts):
+                    raise CatalystError("Gateway receipts disagree with mock provider usage.")
                 write_json(artifacts / "usage.json", ledger)
                 # The harness has stopped; retained artifacts cannot change during this capture.
                 candidates = list(run_dir.glob("harbor/*/*/artifacts/workspace/repo/" + relative))
@@ -293,19 +334,24 @@ class DungenessLocalBackend:
                 }
                 label = "Pinned ecdsa.fail candidate" if real else "Local circuit fixture (not ECDSA)"
                 return {"build": build_identity, "observations": [observation], "valid": bool(points),
-                        "model_access": "disabled" if real else "mock",
+                        "model_access": "metered" if live else "disabled" if real else "mock",
                         "reason": f"{label} independently verified."
                                   if points else f"{label} failed independent verification."}
             finally:
                 env_file.unlink(missing_ok=True)
-                # The only credential used here is a short-lived mock key.
-                for log in artifacts.glob("*.log"):
-                    log.write_text(log.read_text(errors="replace").replace(provider.key, "[REDACTED]"))
+                if live:
+                    provider.scrub(artifacts)
+                    if run_dir is not None:
+                        provider.scrub(run_dir)
+                else:
+                    for log in artifacts.glob("*.log"):
+                        log.write_text(log.read_text(errors="replace").replace(provider.key, "[REDACTED]"))
 
 
 def archive_traces(folder):
     """Allowlisted artifacts only; no auth files, env files, or build context."""
     names = ("build.json", "runtime.json", "execution.log", "verifier-build.log", "verification.log", "failure.json",
+             "provider-usage.json",
              "usage.json", "verification.json")
     temporary = folder / "traces.zip.tmp"
     with zipfile.ZipFile(temporary, "w", compression=zipfile.ZIP_DEFLATED) as archive:
@@ -344,11 +390,14 @@ def run_one(store, backend):
     return evaluation_id
 
 
-def work(state, config_path, *, once=False, supervisor_fd=None):
+def work(state, config_path, *, once=False, supervisor_fd=None, credential_fd=None):
     global _SUPERVISOR_FD
     from .service import termination_as_interrupt
     store = JobStore(state)
-    backend = DungenessLocalBackend(read_json(config_path))
+    connection = socket.socket(fileno=credential_fd) if credential_fd is not None else None
+    if connection:
+        connection.settimeout(10)
+    backend = DungenessLocalBackend(read_json(config_path), connection)
     _SUPERVISOR_FD = supervisor_fd
     try:
         with termination_as_interrupt(), worker_lock(store):
@@ -369,3 +418,5 @@ def work(state, config_path, *, once=False, supervisor_fd=None):
         _SUPERVISOR_FD = None
         if supervisor_fd is not None:
             os.close(supervisor_fd)
+        if connection:
+            connection.close()

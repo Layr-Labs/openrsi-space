@@ -279,7 +279,7 @@ class JobStore:
         return job["result"]
 
 
-def handler_for(store, auth, problem_set, evidence_mode="local-test"):
+def handler_for(store, auth, problem_set, evidence_mode="local-test", credentials=None):
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *args):
             pass  # Never log bearer tokens, source or request bodies.
@@ -328,7 +328,21 @@ def handler_for(store, auth, problem_set, evidence_mode="local-test"):
                     if parts == ["evaluations"]:
                         validate_request(request, problem_set, evidence_mode=evidence_mode)
                         auth.authorize_run(principal, request)
-                        evaluation_id = store.create(principal["owner"], request, auth.creation_limits())
+                        from .model_access import TOKEN_HEADER, temporary_access
+                        token = self.headers.get(TOKEN_HEADER)
+                        if temporary_access(request["evaluation"]):
+                            if credentials is None or evidence_mode != "remote":
+                                raise APIError(403, "Temporary model access is not enabled.")
+                            try:
+                                evaluation_id = credentials.enqueue(
+                                    principal["owner"], request, auth.creation_limits(), token)
+                            finally:
+                                token = None
+                                del self.headers[TOKEN_HEADER]
+                        else:
+                            if token is not None:
+                                raise APIError(400, "This evaluation does not request temporary model access.")
+                            evaluation_id = store.create(principal["owner"], request, auth.creation_limits())
                         return self.send(202, {"request_id": request["request_id"], "evaluation_id": evaluation_id})
                     if len(parts) == 3 and parts[0] == "evaluations" and parts[2] == "submissions":
                         validate_request(request, problem_set, submission=True, evidence_mode=evidence_mode)
@@ -366,19 +380,25 @@ def serve(state, auth_file, problem_set_file, port, worker_config=None):
     if (mode not in {"local-test", "local-ecdsa", "remote"} or not config.get("problem_set")
             or read_json(Path(config["problem_set"])) != problem_set):
         raise CatalystError("Worker configuration must match the API's local problem set.")
-    if mode in {"local-ecdsa", "remote"} and (problem_set != initial_problems() or config.get("model_access") != "disabled"):
-        raise CatalystError("Local ECDSA requires the pinned official problem and disabled model access.")
+    permitted_access = {"disabled", "temporary"} if mode == "remote" else {"disabled"}
+    if mode in {"local-ecdsa", "remote"} and (
+            problem_set != initial_problems() or config.get("model_access") not in permitted_access):
+        raise CatalystError("ECDSA requires the pinned official problem and a supported model-access mode.")
     if (mode == "remote") != isinstance(auth, ServiceIdentity):
         raise CatalystError("Remote execution requires service identities; local fixtures cannot authorize it.")
     store = JobStore(state)
+    from .model_access import CredentialInbox
+    credentials = CredentialInbox(store) if config.get("model_access") == "temporary" else None
 
     class SupervisedServer(ThreadingHTTPServer):
         def service_actions(self):
             supervisor.check()
+            if credentials:
+                credentials.sweep()
 
     with termination_as_interrupt():
-        with SupervisedServer(("127.0.0.1", port), handler_for(store, auth, problem_set, mode)) as server:
-            supervisor = WorkerSupervisor(store, worker_config)
+        with SupervisedServer(("127.0.0.1", port), handler_for(store, auth, problem_set, mode, credentials)) as server:
+            supervisor = WorkerSupervisor(store, worker_config, credentials)
             try:
                 supervisor.wait_ready()
                 print(f"Catalyst verification API: http://127.0.0.1:{server.server_port}", flush=True)

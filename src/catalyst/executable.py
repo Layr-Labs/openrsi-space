@@ -222,19 +222,22 @@ def smoke(state: Path, identity: str, workspace: Path, *, problem=None, timeout=
     return result
 
 
-def model_profile(source: Path, requested: str) -> dict:
+def model_profile(source: Path, requested: str, provider="openai") -> dict:
     """Resolve model identity from Dungeness's trusted accounting policy."""
     from .dungeness import yaml_file
     if not requested or not isinstance(requested, str):
         raise CatalystError("An executable evaluation requires an explicit --model.")
     prices = yaml_file(source / "services/gateway/pricing.yaml")
     matches = [entry for entry in prices.get("entries", [])
-               if entry.get("provider") == "openai"
+               if entry.get("provider") == provider
                and requested in entry.get("request_models", [])]
     if len(matches) != 1:
-        raise CatalystError("Select an OpenAI request model from the pinned Dungeness pricing policy.")
-    return {"provider": "openai", "upstream_id": matches[0]["upstream_id"],
-            "request_model": requested, "api": "openai-completions", "name_format": "request"}
+        raise CatalystError("Select a provider/model from the pinned Dungeness pricing policy.")
+    return {"provider": provider, "upstream_id": matches[0]["upstream_id"],
+            "request_model": requested, "api": "openai-responses" if provider == "openai-chatgpt" else "openai-completions",
+            "name_format": "request", **({"context_window": 1050000,
+            "supported_reasoning_efforts": ["low", "medium", "high", "xhigh", "max"]}
+            if provider == "openai-chatgpt" else {})}
 
 
 def install_agent(runtime: Path, build_record: dict, model: dict, task_input: dict) -> tuple[str, list[str]]:
@@ -244,18 +247,24 @@ def install_agent(runtime: Path, build_record: dict, model: dict, task_input: di
     agent_dir = runtime / "agents" / namespace / token
     agent_dir.mkdir(parents=True)
     from .dungeness import write_yaml
+    subscription = model["provider"] == "openai-chatgpt"
     write_yaml(agent_dir / "agent.yaml", {
         "schema_version": 1, "type": "agent", "namespace": namespace, "id": token,
         "execution_mode": "installed",
         "package": {"name": INTERFACE, "version": build_record["source_digest"]},
         "model": model,
-        "environment": {"OPENAI_API_KEY": "testbed"},
-        "harbor": {"agent": "catalyst-executable", "import_path": "catalyst_executable:CatalystExecutable",
-                   "kwargs": {"task_input": task_input}},
+        "environment": {} if subscription else {"OPENAI_API_KEY": "testbed"},
+        **({"authentication": {"mode": "chatgpt-subscription", "credential": "codex", "isolation": "reduced"}} if subscription else {}),
+        "harbor": {"agent": "codex" if subscription else "catalyst-executable", "import_path": "catalyst_executable:CatalystExecutable",
+                   "kwargs": {"task_input": task_input, **({"web_search": "disabled"} if subscription else {})}},
     })
     # Source was built once. Dungeness adds only its pinned task workspace and clients.
     (agent_dir / "Dockerfile").write_text(
         f"FROM {build_record['artifact_tag']}\nUSER root\n"
+        # Dungeness requires this marker for Codex runtime images. The actual
+        # executable and its version are already bound by the built source.
+        + ("ARG CODEX_VERSION=source\n" if subscription else "")
+        +
         "COPY workspace/ /workspace/repo/\n"
         "COPY web_client.py /usr/local/bin/web\n"
         "COPY evaluate.py /usr/local/bin/evaluate\n"
