@@ -19,7 +19,7 @@ OBJECTIVES = [{"name": "ecdsaPerformance", "direction": "-"},
 
 
 class ServiceIdentity(LocalIdentity):
-    """Explicitly provisioned, hashed bearer tokens; no simulated workflow claims."""
+    """Yukon solver sessions, GitHub OIDC and explicitly provisioned consumers."""
 
     def __init__(self, config):
         if config.get("mode") != "service":
@@ -27,15 +27,44 @@ class ServiceIdentity(LocalIdentity):
         self.config = config
         from .github_identity import GitHubIdentity
         self.github = GitHubIdentity(config.get("github", {}))
+        from .yukon_auth import YukonLogin
+        self.yukon = YukonLogin(config["yukon_login"]) if config.get("yukon_login") else None
+        if self.yukon:
+            from .remote import validate_evaluation_config
+            policy = config.get("solver_policy", {})
+            validate_evaluation_config(policy.get("evaluation"))
+            for name in ("max_active_per_owner", "max_active_total", "max_daily_per_owner"):
+                if type(policy.get(name)) is not int or policy[name] <= 0:
+                    raise CatalystError("Yukon solver resource limits must be positive integers.")
 
     def authenticate(self, header):
+        token = header[7:] if isinstance(header, str) and header.startswith("Bearer ") else ""
+        if token.startswith("cys_") and self.yukon:
+            return self.yukon.authenticate(token)
         try:
-            return super().authenticate(header)
+            principal = super().authenticate(header)
+            if self.yukon and principal.get("kind") == "yukon-solver":
+                raise APIError(401, "Use Yukon login.")
+            return principal
         except APIError:
-            token = header[7:] if isinstance(header, str) and header.startswith("Bearer ") else ""
             if not self.config.get("github") or len(token) > 20_000 or token.count(".") != 2:
                 raise APIError(401, "Authentication required.") from None
             return self.github.authenticate(token)
+
+    def authorize_run(self, principal, request):
+        if principal.get("authentication") != "yukon":
+            return super().authorize_run(principal, request)
+        config = request["evaluation"]
+        allowed = self.config["solver_policy"]["evaluation"]
+        if (principal["kind"] != "yukon-solver" or request["context"] != {"kind": "yukon-solver"}
+                or config["llm_access"] != allowed["llm_access"] or config["model"] != allowed["model"]
+                or any(config["limits"][key] > allowed["limits"][key] for key in allowed["limits"])):
+            raise APIError(403, "Evaluation exceeds the service's solver policy.")
+        # The request's finite spending cap is solver-selected. Scoring
+        # checkpoints and the baseline template's cap do not bound that choice.
+
+    def creation_limits(self):
+        return self.config.get("solver_policy") if self.yukon else None
 
     def workflow_context(self, principal, context):
         raise APIError(403, "Use the authenticated Yukon result endpoint.")

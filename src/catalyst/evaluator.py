@@ -1,7 +1,7 @@
-"""Persistent local verification API. Development identity fixtures only.
+"""Persistent verification API with local fixtures or configured service identities.
 
 The API never executes submitted source. A separate worker claims jobs from
-SQLite. Remote Yukon login/OIDC verification is deliberately not enabled here.
+SQLite. Authentication is supplied by the selected identity provider.
 """
 from __future__ import annotations
 
@@ -78,6 +78,9 @@ class LocalIdentity:
     def workflow_context(self, principal, context):
         if principal["kind"] != "github-actions" or context != principal["context"]:
             raise APIError(403, "Workflow identity does not match the authorized fixture.")
+
+    def creation_limits(self):
+        return None
 
 
 def validate_request(request, problem_set, *, submission=False, evidence_mode="local-test"):
@@ -158,7 +161,7 @@ class JobStore:
         finally:
             db.close()
 
-    def create(self, owner, request):
+    def create(self, owner, request, limits=None):
         encoded, hashed = canonical(request).decode(), digest(request)
         with self.connect() as db:
             db.execute("BEGIN IMMEDIATE")
@@ -168,6 +171,15 @@ class JobStore:
                 if previous["request_digest"] != hashed:
                     raise APIError(409, "Operation key already belongs to another request.")
                 return previous["id"]
+            if limits:
+                active = "status IN ('queued','building','running','verifying')"
+                own = db.execute(f"SELECT count(*) FROM jobs WHERE owner=? AND {active}", (owner,)).fetchone()[0]
+                total = db.execute(f"SELECT count(*) FROM jobs WHERE {active}").fetchone()[0]
+                daily = db.execute("SELECT count(*) FROM jobs WHERE owner=? AND "
+                                   "julianday(created_at) >= julianday('now', '-1 day')", (owner,)).fetchone()[0]
+                if (own >= limits["max_active_per_owner"] or total >= limits["max_active_total"]
+                        or daily >= limits["max_daily_per_owner"]):
+                    raise APIError(429, "Evaluation quota reached; retry after active runs or the daily window.")
             evaluation_id = str(uuid.uuid4())
             db.execute("INSERT INTO jobs VALUES (?,?,?,?,?,'queued',NULL,?)",
                        (evaluation_id, owner, request["request_id"], hashed, encoded, now()))
@@ -284,15 +296,26 @@ def handler_for(store, auth, problem_set, evidence_mode="local-test"):
 
         def dispatch(self):
             try:
-                principal = auth.authenticate(self.headers.get("Authorization"))
                 parts = self.path.strip("/").split("/")
+                login = self.command == "POST" and parts == ["auth", "yukon"]
+                if login:
+                    from .hosted import ServiceIdentity
+                    if not isinstance(auth, ServiceIdentity) or not auth.yukon:
+                        raise APIError(404, "Yukon login is not enabled.")
+                else:
+                    principal = auth.authenticate(self.headers.get("Authorization"))
                 if self.command == "POST":
                     length = int(self.headers.get("Content-Length", "0"))
-                    if not 0 < length <= BODY_LIMIT:
+                    if not 0 < length <= (1024 if login else BODY_LIMIT):
                         raise APIError(413, "Invalid request size.")
                     if self.headers.get("Content-Type", "").split(";")[0] != "application/json":
                         raise APIError(415, "JSON required.")
                     request = json.loads(self.rfile.read(length))
+                    if login:
+                        from .yukon_auth import PROTOCOL as SESSION_PROTOCOL
+                        if request != {"protocol": SESSION_PROTOCOL}:
+                            raise APIError(400, "Invalid Yukon login request.")
+                        return self.send(200, auth.yukon.exchange(self.headers.get("Authorization")))
                     if parts == ["verifications", "retrieve"]:
                         from .hosted import retrieve_receipt
                         return self.send(200, retrieve_receipt(store, auth, principal, request))
@@ -305,7 +328,7 @@ def handler_for(store, auth, problem_set, evidence_mode="local-test"):
                     if parts == ["evaluations"]:
                         validate_request(request, problem_set, evidence_mode=evidence_mode)
                         auth.authorize_run(principal, request)
-                        evaluation_id = store.create(principal["owner"], request)
+                        evaluation_id = store.create(principal["owner"], request, auth.creation_limits())
                         return self.send(202, {"request_id": request["request_id"], "evaluation_id": evaluation_id})
                     if len(parts) == 3 and parts[0] == "evaluations" and parts[2] == "submissions":
                         validate_request(request, problem_set, submission=True, evidence_mode=evidence_mode)

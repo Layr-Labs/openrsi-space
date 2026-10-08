@@ -90,9 +90,17 @@ catalyst remote traces EVALUATION_ID
 ```
 
 Or submit and wait in one command: `catalyst remote submit submission --wait`.
-Configure `CATALYST_EVALUATOR_URL` and supply the provisioned `CATALYST_API_TOKEN` through the
-environment. Automatic exchange of a Yukon login for evaluator access is pending. The token
-authenticates to Catalyst; provider access remains a separate grant.
+Configure `CATALYST_EVALUATOR_URL=https://35.92.254.142` and use your existing
+Yukon login or `YUKON_API_TOKEN`. No separate Catalyst password is needed.
+Catalyst validates the key with its configured Yukon API and returns a 15-minute
+solver session, renewed automatically by the client. Keys and sessions are never
+saved by the server. `CATALYST_API_TOKEN` remains for local test fixtures only.
+Provider access is separate and remains disabled in the remote MVP.
+
+Yukon login is live in release `20261007-yukon-auth-1`, configured against
+**https://api-dev.yukon.org**. This integration targets **dev Yukon**, using the
+Yukon Eigen GitHub App and a dev API key. Keys from `www.yukon.org` belong to
+production and cannot authenticate here.
 
 The remote client uses `.catalyst/remote/` state. Resume interrupted waiting with
 `catalyst remote wait EVALUATION_ID`. Once it finishes, copy the returned receipt
@@ -103,7 +111,7 @@ A subsequent `submit` after completion deliberately requests a fresh evaluation;
 See [the client contract](docs/remote-evaluation.md#standalone-client),
 [the local service setup](docs/local-evaluation.md), and
 [the deployed VM commands](docs/remote-vm.md). The private service runs on the
-existing `openclaw` VM, reached through SSH, with model access disabled.
+existing `openclaw` VM, reached through HTTPS, with model access disabled.
 
 For the actual pinned ECDSA problem, use
 [`harnesses/ecdsa-baseline`](harnesses/ecdsa-baseline/README.md). The submitted
@@ -147,7 +155,7 @@ that workflow publication reuses the completed job. Only external identity,
 submission registration and model responses are fixtures; its tiny circuit is
 explicitly labeled local-test evidence and cannot count as an ECDSA result.
 
-Automatic Yukon identity/grant provisioning, temporary provider access,
+Temporary provider access and its grants,
 runtime checkpoint collection, GitHub repository/connection setup and hosted benchmark
 registration remain pending. Catalyst is not yet available for hosted
 `yukon clone` or live submissions.
@@ -159,17 +167,22 @@ Use separate run workspaces/containers for builds, harness execution and candida
 verification, keeping the API process and provider credentials out of submitted
 code's access. Agent Compose and new cloud resources are unnecessary for the MVP.
 
-The final service will accept user-authorized provider credentials over authenticated
-HTTPS on port 443, with scoped use, expiry and revocation. That upload/storage
-path is not implemented in this model-disabled MVP. Preserve original credentials; never
-include secrets in submissions, images, public results or retained traces.
-The harness receives only scoped model access. Authentication and renewal still
-need implementation and separate tests for API and subscription routes.
+The final service will receive temporary provider access over authenticated HTTPS
+on port 443 and hold it only in memory for the active run. Never persist user
+provider credentials, even encrypted, or include them in queues, files, databases,
+logs, images, submissions or retained traces. Discard access when the run ends
+or expires; service restart requires fresh authorization.
+Original credentials and renewal remain on the user's machine. The harness
+receives only scoped gateway access. This credential-handling path is not
+implemented in the model-disabled MVP and needs separate lifecycle tests for
+API and subscription routes.
 
 See [architecture](docs/architecture.md), [runtime requirements](docs/runtime-platform-requirements.md),
 [remote evaluation](docs/remote-evaluation.md), and [executable development](docs/executable-harness.md).
 For the complete GitHub/Yukon setup and solver commands, use
 [the end-to-end guide](docs/github-actions-e2e.md).
+The existing VM now exposes the authenticated API at **https://35.92.254.142**;
+see [HTTPS operations](docs/https.md) for certificate renewal and client setup.
 
 ## Yukon compatibility
 

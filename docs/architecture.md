@@ -5,11 +5,13 @@ authenticated API and the harness worker inside the existing VM reached through
 `ssh openclaw`. The VM stays running and is reused across jobs. The worker builds
 and runs harnesses in separate run workspaces/containers and verifies captured
 candidates in a trusted workspace. No per-evaluation VM provisioning or teardown
-is part of this MVP. Agent Compose, new cloud resources, a vault and a reverse
-proxy are unnecessary for the initial implementation.
+is part of this MVP. Agent Compose, new cloud resources and a vault are
+unnecessary. The current deployment uses Nginx for public HTTPS on port 443.
 
 The initial challenge is exclusively **ecdsa.fail**, compared at **$20 and $200 checkpoints, plus Best achieved**. See [tier accounting](tier-accounting.md). Continuous
 execution with budget checkpoints remains a proposal, not a scheduling decision.
+The checkpoints do not cap a run's total spending; the solver chooses that
+authorization independently.
 
 ```mermaid
 flowchart TB
@@ -89,14 +91,19 @@ traces stay out of submissions and public artifacts.
 
 ## Credentials and implementation boundary
 
-The final service will accept user-authorized provider credentials over authenticated
-HTTPS (port 443) and provide scoped access to trusted execution components.
-Credential upload, protected storage, expiration, revocation and renewal remain
-separate implementation work; this MVP keeps model access disabled.
-The submitted harness receives scoped model access; builds receive none.
-The implementation must preserve original credentials during cancellation and
-cleanup. No vault or reverse proxy is required. API and subscription renewal
-flows still need implementation; see [runtime requirements](runtime-platform-requirements.md).
+The final service will receive temporary provider access over authenticated HTTPS
+(port 443), held only in memory by a trusted component for the active run.
+User-provided provider credentials must never be persisted, even encrypted.
+The durable queue stores non-secret grant references; builds receive no model
+access, and submitted harnesses use a scoped gateway rather than raw provider
+credentials. Discard temporary access on completion, failure, cancellation or
+expiry. A service restart requires fresh user authorization.
+
+Renewable credentials and refresh operations stay on the user's machine.
+Preserve those original credentials during cancellation and cleanup.
+The credential endpoint, memory-only lifecycle and protections against disk
+copies still need implementation; this MVP keeps model access disabled.
+See [runtime requirements](runtime-platform-requirements.md).
 
 Implemented: local packaging/build/smoke tools, Dungeness adapter, pinned ECDSA
 workspace, tier viewer, credit/checkpoint validators, remote client and submission
@@ -108,17 +115,21 @@ baseline runs with model access disabled; a smaller circuit fixture uses a mock
 provider to test accounting. Worker failure stops the API; service shutdown stops
 the owned worker and its reported execution processes. Queued work survives,
 and interrupted attempts are marked failed without automatic replay.
-The private VM deployment runs under `screen` with provisioned solver and Yukon
-consumer keys. The current integration uses stock Yukon's GitHub Actions runner,
+The VM deployment runs under `screen`, validates solver keys against Yukon dev
+and exchanges them for memory-only sessions. No separate Catalyst solver
+password is required. The current integration uses stock Yukon's GitHub Actions runner,
 receipt-only archives and a signed-OIDC result endpoint. Experimental custom
 Yukon patches are preserved but not required. See [the end-to-end guide](github-actions-e2e.md) and
 [the reproducible local check](local-evaluation.md).
 
-Pending: GitHub App/connection setup and hosted benchmark registration, automatic account/grant provisioning, temporary
-provider access and renewal for ECDSA research runs, runtime checkpoint
-capture and credit reservations, artifact retention policy, hosted benchmark
-registration and the real Yukon board integration. Local fixture modes remain
-separate and cannot be relabeled as remote ECDSA evidence.
+Current priority: publish the HTTPS workflow, authorize GitHub OIDC, register
+the benchmark in Yukon dev and validate one hosted submission. The dev GitHub
+App is installed; the account still needs benchmark-import permission.
+Temporary provider access, runtime checkpoint capture and credit reservations
+remain implementation work. User cancellation is deferred. Real research runs
+and adversarial testing follow the pipeline test. Remote viewer integration and
+artifact retention/cleanup policy are later operational work.
+Local fixture modes remain separate and cannot be relabeled as remote ECDSA evidence.
 
 ## Service extraction
 

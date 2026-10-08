@@ -88,7 +88,13 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 
-def fetch(url: str, token: str, *, document=None, limit=4 * 1024 * 1024) -> bytes:
+class HTTPFailure(CatalystError):
+    def __init__(self, status):
+        self.status = status
+        super().__init__(f"Evaluator returned HTTP {status}; request remains resumable.")
+
+
+def fetch(url: str, token: str, *, document=None, limit=4 * 1024 * 1024, timeout=30) -> bytes:
     request = urllib.request.Request(
         url, data=canonical(document) if document is not None else None,
         headers={**({"Authorization": f"Bearer {token}"} if token else {}),
@@ -96,18 +102,59 @@ def fetch(url: str, token: str, *, document=None, limit=4 * 1024 * 1024) -> byte
         method="POST" if document is not None else "GET",
     )
     try:
-        with urllib.request.build_opener(NoRedirect()).open(request, timeout=30) as response:
+        with urllib.request.build_opener(NoRedirect()).open(request, timeout=timeout) as response:
             content = response.read(limit + 1)
     except urllib.error.HTTPError as error:
         # Bodies may contain provider details; never echo them or authorization.
         status = error.code
         error.close()
-        raise CatalystError(f"Evaluator returned HTTP {status}; request remains resumable.") from None
+        raise HTTPFailure(status) from None
     except (urllib.error.URLError, http.client.HTTPException, OSError):
         raise CatalystError("Evaluator is unreachable; request remains resumable.") from None
     if len(content) > limit:
         raise CatalystError("Evaluator response exceeds the allowed size.")
     return content
+
+
+# Process-local only. Long-running clients renew automatically; restarting the
+# client or server never requires a saved Catalyst password.
+_solver_sessions = {}
+
+
+def solver_fetch(base, route, bearer, *, document=None, limit=4 * 1024 * 1024):
+    if not bearer.startswith("ykn_"):
+        return fetch(base + route, bearer, document=document, limit=limit)
+    parts = urllib.parse.urlsplit(base)
+    if (parts.username or parts.password or parts.query or parts.fragment or not parts.hostname
+            or (parts.scheme != "https" and not (
+                parts.scheme == "http" and parts.hostname in {"127.0.0.1", "localhost", "::1"}))):
+        raise CatalystError("Yukon login requires a trusted HTTPS evaluator endpoint.")
+    cache_key = (base, hashlib.sha256(bearer.encode()).digest())
+    for attempt in range(2):
+        cached = _solver_sessions.get(cache_key)
+        if cached is None or cached[1] <= time.monotonic():
+            result = json.loads(fetch(base + "/auth/yukon", bearer,
+                                      document={"protocol": "catalyst-yukon-session-v1"},
+                                      limit=16 * 1024))
+            if (not isinstance(result, dict) or result.get("protocol") != "catalyst-yukon-session-v1"
+                    or not isinstance(result.get("access_token"), str)
+                    or not re.fullmatch(r"cys_[A-Za-z0-9_.-]{1,4096}", result["access_token"])
+                    or type(result.get("expires_in")) is not int
+                    or not 60 <= result["expires_in"] <= 900):
+                raise CatalystError("Evaluator returned an invalid login session.")
+            evaluation_id(result.get("owner_id"))
+            cached = (result["access_token"], time.monotonic() + result["expires_in"] - 30)
+            if len(_solver_sessions) >= 8:
+                _solver_sessions.clear()
+            _solver_sessions[cache_key] = cached
+        try:
+            return fetch(base + route, cached[0], document=document, limit=limit)
+        except HTTPFailure as error:
+            if error.status != 401 or attempt:
+                raise
+            # Authentication failed before dispatch (e.g. the server restarted).
+            # Keep the same request body/operation key when renewing and retrying.
+            _solver_sessions.pop(cache_key, None)
 
 
 
@@ -206,7 +253,7 @@ def judgment(result: dict, request: dict) -> dict:
 
 
 def download_traces(base: str, bearer: str, evaluation_id: str, folder: Path) -> None:
-    content = fetch(f"{base}/evaluations/{evaluation_id}/traces", bearer, limit=64 * 1024 * 1024)
+    content = solver_fetch(base, f"/evaluations/{evaluation_id}/traces", bearer, limit=64 * 1024 * 1024)
     # Store privately, never unpack or execute archive content.
     target = folder / "traces.zip"
     temporary = folder / "traces.zip.tmp"
@@ -246,7 +293,7 @@ def verification_reference(result: dict, body: dict) -> dict:
 
 
 def solver_token() -> str:
-    bearer = (os.environ.get("CATALYST_API_TOKEN") or os.environ.get("YUKON_API_TOKEN")
+    bearer = (os.environ.get("YUKON_API_TOKEN") or os.environ.get("CATALYST_API_TOKEN")
               or os.environ.get("HILBERT_API_TOKEN") or os.environ.get("SUPABASE_ACCESS_TOKEN"))
     if not bearer:
         config_root = Path(os.environ.get("YUKON_CONFIG_DIR", str(Path.home() / ".config")))
@@ -256,7 +303,7 @@ def solver_token() -> str:
         config = read_json(config_path) if config_path.is_file() else {}
         bearer = config.get("token")
     if not isinstance(bearer, str) or not bearer or "\n" in bearer or "\r" in bearer:
-        raise CatalystError("Set CATALYST_API_TOKEN or log in with yukon login before requesting an evaluation.")
+        raise CatalystError("Log in with yukon login or set YUKON_API_TOKEN before requesting an evaluation.")
     return bearer
 
 
@@ -335,7 +382,7 @@ class RemoteClient:
             else:
                 request = {**body, "request_id": str(uuid.uuid4())}
                 private_json(pending, request)
-            accepted = json.loads(fetch(f"{self.base}/evaluations", self.bearer, document=request))
+            accepted = json.loads(solver_fetch(self.base, "/evaluations", self.bearer, document=request))
             identity = evaluation_id(accepted.get("evaluation_id") if isinstance(accepted, dict) else None)
             if accepted.get("request_id") != request["request_id"]:
                 raise CatalystError("Evaluator accepted a different operation key.")
@@ -356,7 +403,7 @@ class RemoteClient:
 
     def status(self, identity):
         session = self.session(identity)
-        result = json.loads(fetch(f"{self.base}/evaluations/{identity}", self.bearer))
+        result = json.loads(solver_fetch(self.base, f"/evaluations/{identity}", self.bearer))
         bound_result(result, session["request"], identity)
         if result["status"] in TERMINAL:
             private_json(self.folder(identity) / "result.json", result)

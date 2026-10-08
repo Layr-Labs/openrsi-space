@@ -15,36 +15,47 @@ This follows Yukon's `docs/github-actions-benchmark-author-guide.md` and
    and uploads one trusted Pareto score artifact.
 6. Yukon records its score and evidence. Pareto does not merge submissions.
 
-The receipt-only endpoint is deployed on `openclaw` in release
-`20261007-github-actions-1`. Its Linux suite passed 108 tests (three optional
-integrations skipped). Stock `yukon run` retrieved the real stored ECDSA result
-through a private tunnel, with the expected scores and harness digest, without
-starting an evaluation. Existing jobs and credentials were preserved.
+The receipt endpoint and Yukon login are deployed on `openclaw` in release
+`20261007-yukon-auth-1`. The Linux suite passed 116 tests (three optional
+integrations skipped). Solver keys are validated against **https://api-dev.yukon.org**.
+Existing evaluations were preserved; legacy solver passwords are disabled.
 
 OIDC tests use signed fixture tokens, not real GitHub-issued tokens. A complete
-hosted run still requires configuring repository authorization and the workflow
-connection and registering the benchmark. The author confirmed that the Yukon
-Eigen App's access to `Layr-Labs/catalyst` was saved on October 7, 2026.
+hosted run still requires configuring repository authorization, publishing the
+HTTPS workflow and registering the benchmark. The author installed the
+dev Yukon Eigen App on `Layr-Labs/catalyst`, which is the correct App for this
+integration. Production App access is not required.
 A successful local preview does not establish
 GitHub App permissions, hosted dispatch or the resulting Yukon leaderboard entry.
-The dedicated CI SSH key and host pin have also been tested from the Mac against
-the VM using the workflow's connection script: verifier access succeeds, while
-shell commands, other ports and remote listeners are denied. GitHub-hosted
-runner connectivity and repository secret configuration remain unverified.
+
+**HTTPS is now available at https://35.92.254.142.** Public certificate
+validation, authenticated receipt retrieval and a certificate-renewal simulation
+with Nginx reload have passed. The workflow calls that URL directly; it requires
+no SSH connection, repository variables or saved API key. The OIDC repository
+policy and GitHub-hosted runner connectivity still need verification.
+See [the deployed HTTPS setup](https.md).
 
 The included starter receipt refers to completed remote evaluation
 `03586584-86c1-4b9d-9a09-1a13701efabe`, with scores `[10758874395, 0]` and model
-access disabled. Baseline registration retrieves it without running the harness.
+access disabled. It belongs to the dev Yukon account and was executed and
+independently verified on the VM.
+Baseline registration retrieves it without running the harness.
 
 ## Author setup
 
-Install the existing **Yukon Eigen** App on `Layr-Labs/catalyst` for dev:
+Use the already-installed **Yukon Eigen** App on `Layr-Labs/catalyst` for dev:
 
 https://github.com/apps/yukon-eigen/installations/new
 
-Production uses the separate Yukon Autoresearch App. The author also needs
+The author also needs
 Yukon benchmark-import permission. For a private repo, solvers need ordinary
 GitHub read access. No custom Yukon release is needed.
+
+The dev account's import preflight currently returns HTTP 403:
+`this account is not allowed to import benchmarks`. A Yukon operator must
+authorize the account for benchmark imports or perform the import. The
+ordinary dev API key works for solver authentication; it does not grant this
+author permission.
 
 Publish the tested revision to `main`. Record its exact Git SHA and numeric
 GitHub repository ID (different from a Yukon benchmark UUID):
@@ -56,48 +67,12 @@ git rev-parse HEAD
 
 ### Verifier connection
 
-Choose one:
-
-- **HTTPS:** set repository variable `CATALYST_EVALUATOR_URL` to the trusted
-  origin with a valid certificate on TCP 443. Keep the internal API on loopback
-  port 8778. A stable hostname lets the server move without client changes.
-- **SSH:** leave that variable unset. Set repository variables
-  `CATALYST_SSH_HOST`, `CATALYST_SSH_USER`, and Actions secrets
-  `CATALYST_SSH_KEY`, `CATALYST_SSH_KNOWN_HOSTS`. The workflow establishes a
-  private port forward; it still authenticates each lookup with OIDC.
-
-Use a dedicated CI key, never a person's administrative private key. A restricted
-OpenSSH authorized-key entry can use:
-
-```text
-restrict,port-forwarding,permitopen="127.0.0.1:8778",command="/bin/false" ssh-ed25519 <CI public key>
-```
-
-On `openclaw`, the dedicated non-login user is `catalyst-ci`. Its separate SSH
-policy in `/etc/ssh/sshd_config.d/90-catalyst-ci.conf` restricts forwarding to
-local connections; the authorized-key `permitlisten="none"` option is not valid
-on this OpenSSH version:
-
-```text
-Match User catalyst-ci
-    AllowTcpForwarding local
-    AllowStreamLocalForwarding no
-    PermitOpen 127.0.0.1:8778
-    PermitTTY no
-    X11Forwarding no
-    ForceCommand /bin/false
-Match all
-```
-
-Validate with `sshd -t` and check `sshd -T -C user=catalyst-ci,host=localhost,addr=127.0.0.1`
-before reloading SSH. The existing administrative user's effective policy must
-remain unchanged. This affects SSH transport, not the screen-managed Catalyst API.
-
-Verify the VM host public key through the existing trusted administrative
-connection. Never disable host-key checking or trust an unchecked runtime
-`ssh-keyscan`. Store the CI key in Actions secrets; keep any local provisioning
-copy private and outside Git. The tunnel grants
-transport; API authorization separately prevents execution and foreign-result access.
+`.github/workflows/benchmark.yml` pins
+`CATALYST_EVALUATOR_URL: https://35.92.254.142` as challenge-owned configuration.
+Nginx terminates TLS on port 443 and forwards to the API on loopback port 8778.
+When the service moves, update the trusted URL in the workflow and client setup.
+The URL is public configuration; authentication uses a fresh GitHub OIDC token.
+No solver key or SSH credential belongs in the workflow.
 
 The `ubuntu-latest` runner needs outbound access to the verifier, GitHub OIDC
 and package downloads. It only retrieves receipts; no dedicated GitHub runner,
@@ -148,25 +123,20 @@ a service-readable Yukon key in the private policy's `yukon_api_token` field.
 
 ## Solver commands
 
-For the private VM, keep this connection open in one terminal:
+Use stock Yukon with the dev login and registered benchmark name:
 
 ```sh
-ssh -N -o ExitOnForwardFailure=yes \
-  -L 127.0.0.1:8878:127.0.0.1:8778 openclaw
-```
-
-In a separate terminal, using stock Yukon and the registered benchmark name:
-
-```sh
+export YUKON_API_URL=https://api-dev.yukon.org
 yukon clone bxue-l2/catalyst catalyst-solver
 cd catalyst-solver
 uv sync --frozen
 yukon setup
 mkdir -p .catalyst
 cp -R harnesses/ecdsa-baseline .catalyst/my-harness
-export CATALYST_EVALUATOR_URL=http://127.0.0.1:8878
-# Supply your provisioned CATALYST_API_TOKEN privately.
-# Set the authorized grant in .catalyst/my-harness/evaluation.json.
+export CATALYST_EVALUATOR_URL=https://35.92.254.142
+# Use your existing Yukon login or supply YUKON_API_TOKEN privately.
+unset CATALYST_API_TOKEN
+# The baseline evaluation configuration is allowed by the model-disabled policy.
 
 uv run catalyst remote submit .catalyst/my-harness --wait
 cp .catalyst/my-harness/verification.json submission/verification.json
@@ -177,8 +147,8 @@ yukon submit --note-file submission-note.md \
 yukon submissions --all --json
 ```
 
-Use an operator-provisioned Catalyst solver key; automatic Yukon login exchange
-is not implemented. A model-disabled baseline is not an optimization claim.
+Use your Yukon login; the client exchanges it for a short-lived solver session.
+A model-disabled baseline is not an optimization claim.
 Notes must meet Yukon's current requirements and contain no secrets.
 
 A fresh evaluation produces a new receipt and a normal candidate diff.
@@ -193,8 +163,8 @@ Yukon's API (`officialMetrics.remoteVerification` and normal evaluation evidence
 
 ## Limits
 
-- The ECDSA MVP has model access disabled. Provider-secret upload/storage/renewal
-  is not implemented. Do not send provider secrets to it.
+- The ECDSA MVP has model access disabled. Temporary provider-access handoff
+  and its memory-only lifecycle are not implemented. Do not send provider secrets to it.
 - Missing, foreign or altered receipts, wrong problems/policies, and failed owner
   lookups write no score. The client clears stale score files first.
 - Receipt lookup is replay-safe and never enqueues evaluations. Repository
@@ -202,8 +172,11 @@ Yukon's API (`officialMetrics.remoteVerification` and normal evaluation evidence
 - This MVP handles initial import and ordinary submissions. Reorgs using separate
   execution IDs need an additional trusted mapping to the original submission;
   unknown IDs fail closed without rerunning a harness.
-- A future credential-upload API requires authenticated HTTPS, owner-scoped
-  protected storage, expiry, revocation, redaction and scoped worker access.
+- A future credential endpoint requires authenticated HTTPS and run-scoped,
+  memory-only access. Never persist user provider credentials, even encrypted.
+  Renewal stays on the user's machine; completion, failure, cancellation and
+  expiry discard access. Restart requires fresh authorization. See
+  [runtime requirements](runtime-platform-requirements.md).
 
 ## Local tests
 

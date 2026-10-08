@@ -12,11 +12,13 @@ the median of attempts. Retain each attempt and its complete curve.
 The two checkpoints and Best achieved, native ECDSA metric, pinned credit pricing, and exclusion of
 infrastructure cost are settled. One continuous run with checkpoints, up to a
 solver-selected spending cap, remains **proposed, not confirmed**.
+The $20/$200 values are comparison checkpoints, not a challenge-imposed spending
+ceiling. Solvers may choose a larger spending cap and continue beyond them.
 Independent tier runs are not selected either. The current code validates
 records and projects explicit checkpoint evidence; it does not schedule either
 strategy. If the strategy changes, give its execution conditions a new identity.
 
-`submission/evaluation.json` v3 requires a positive finite `max_model_credits`.
+The harness's `evaluation.json` v3 requires a positive finite `max_model_credits`.
 This is a spending authorization, separate from the comparison views. There is
 no fixed $2,000 tier. Token/time limits can also end the run earlier. The runner
 must seal any $20/$200 window it claims; a missing seal means that checkpoint is

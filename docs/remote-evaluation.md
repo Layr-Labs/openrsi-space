@@ -12,9 +12,40 @@ waits for independent verification. It writes `verification.json` beside the
 harness and retains private traces under `.catalyst/remote/`. An interrupted
 wait resumes with `catalyst remote wait EVALUATION_ID`; submitting again after
 completion requests a new evaluation. `status`, `wait` and `traces` never enqueue.
-Use an operator-provisioned `CATALYST_API_TOKEN` and trusted
-`CATALYST_EVALUATOR_URL`; provider credentials are separate and are not currently
-accepted by the model-disabled MVP.
+Use your existing Yukon login or `YUKON_API_TOKEN` and a trusted
+`CATALYST_EVALUATOR_URL`. No separate Catalyst password is needed.
+Provider credentials are separate and are not currently accepted by the
+model-disabled MVP. Local fixture servers still use `CATALYST_API_TOKEN`.
+
+### Yukon authentication
+
+The client exchanges the Yukon key at `POST /auth/yukon`, with the key in the
+Authorization header and body `{"protocol":"catalyst-yukon-session-v1"}`.
+The server calls `/api/me` at its operator-configured HTTPS Yukon origin,
+refuses redirects, and derives ownership from the returned account UUID.
+Clients cannot choose that origin or claim another account.
+
+The response contains `protocol`, `access_token`, `owner_id`, and `expires_in`
+(900 seconds). The session authorizes only solver operations. The client keeps
+it in memory and renews before expiry or after a server restart, preserving
+evaluation request IDs. The server retains neither the Yukon key nor a session
+database; its random signing key exists only in the running process.
+Revoking a Yukon key prevents future exchanges; an already issued session can
+remain valid for up to 15 minutes. Restarting the service invalidates sessions.
+
+Any valid user of the configured Yukon instance can submit under the service's
+model-disabled policy: the baseline model and runtime limits, at most one active
+evaluation per account, eight active/queued evaluations globally, and ten new
+evaluations per account in a rolling 24 hours by default. These are operator
+settings. Limits are checked atomically; retrying an existing request does not
+consume another slot. The solver chooses the spending cap; the $20/$200
+comparison checkpoints do not impose a maximum run budget. Authentication does
+not enable provider access in the current model-disabled worker.
+
+Operators enable this with `catalyst yukon-auth-configure --auth-file AUTH_JSON
+--worker-config WORKER_JSON --yukon-api HTTPS_YUKON_ORIGIN`, then restart the API.
+The command preserves jobs, consumer and GitHub policies, and disables legacy
+solver passwords. Changing the identity issuer requires account migration.
 
 Develop harnesses in an ignored directory such as `.catalyst/my-harness` so
 Yukon's trusted judge files stay unchanged. Copy the resulting receipt into
@@ -62,7 +93,7 @@ score artifact. The artifact includes `metrics.remoteVerification` with the
 problem/version and actual evaluated harness digest. Yukon records that artifact
 through its existing GitHub Actions/Pareto path. Retrieval never starts a job.
 
-Local preview uses the same endpoint with the solver's provisioned Catalyst key;
+Local preview uses the same endpoint with the solver's Yukon-authenticated session;
 it authorizes only that owner's receipt and creates no workflow-publication record.
 GitHub workflows cannot use local fixture evidence as official remote results.
 Replays bind the original submission and GitHub run to the original evidence.
@@ -87,10 +118,15 @@ The harness's `evaluation.json` v3 contains exactly:
 ```
 
 The grant is non-secret and server-authorized. Renewable credentials stay local;
-temporary provider access travels over a separate private authenticated channel.
-No provider token is sent by this bridge. A vault or reverse proxy is not an
-initial requirement. The starter grant is empty so an unconfigured run fails
-before network use.
+temporary provider access will travel over a separate authenticated HTTPS
+endpoint when the worker is ready. Only that run's trusted credential component
+may hold it in memory. Never persist provider credentials in the queue, database,
+files or logs, even encrypted; the evaluation request contains only the grant
+reference. Discard access on completion, failure, cancellation or expiry.
+Refresh stays on the user's machine, and server restart requires fresh
+authorization. This credential endpoint is not implemented; no provider token
+is sent by the current bridge. The starter grant is empty so an unconfigured
+run fails before network use.
 
 Hash executable source with Catalyst's canonical per-file SHA-256 manifest,
 including the Dockerfile, code, dependencies, instructions and knowledge.
@@ -102,8 +138,7 @@ Dungeness and builder identities in server provenance.
 
 Configure `CATALYST_EVALUATOR_URL` as the trusted HTTPS endpoint. Loopback HTTP
 exists for local testing and private tunnels. Refuse redirects. Local requests
-use a provisioned Catalyst service token; automatic Yukon login exchange is not
-implemented. Resolve the owner without trusting client identity fields.
+use a Yukon-authenticated solver session. Resolve the owner without trusting client identity fields.
 Workflow requests use GitHub OIDC with audience
 `catalyst-evaluator`. Validate issuer/signature/audience/repository/workflow/ref/
 SHA/run claims, then bind the request to the exact queued Yukon submission and

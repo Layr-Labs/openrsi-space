@@ -1,9 +1,27 @@
 # Existing VM deployment record
 
 **Current integration:** use [GitHub Actions end to end](github-actions-e2e.md).
-Release `20261007-github-actions-1` is now running under `screen` on the existing
+Release `20261007-yukon-auth-1` is now running under `screen` on the existing
 VM. Stock `yukon run` retrieved the real receipt through its new endpoint.
 Jobs and credentials were preserved, and no evaluation was started by retrieval.
+The service is now reachable through **https://35.92.254.142**, with a trusted
+IP certificate and tested automatic renewal. Nginx forwards to the existing
+loopback API; the API remains screen-managed. See [HTTPS operations](https.md).
+
+Yukon login is active against **https://api-dev.yukon.org**, with 116 tests passing
+on the Mac (two optional skips) and VM (three optional skips). The local dev
+login is valid. Legacy Catalyst solver passwords remain disabled.
+The starter receipt points to the dev account's original evaluation
+`03586584-86c1-4b9d-9a09-1a13701efabe`, with scores `[10758874395, 0]`.
+
+A temporary production login check also completed evaluation
+`999da259-c922-444e-9531-0ae070a91037` with the same score and model access disabled.
+After the author clarified that the integration targets dev, the operator
+reviewed the distinct account IDs, backed up the service, restored the dev issuer
+and restarted the API (invalidating existing sessions). Both evaluations and
+their original owners remain intact. No evaluation was rerun for this correction.
+The issuer audit and pre-change snapshot are under
+`/var/lib/catalyst/evaluator/backups/20261007-return-to-dev`.
 
 The details below record the **earlier direct-backend prototype**, including its
 historical release and tests. Do not apply the custom Yukon provider or follow
@@ -99,21 +117,14 @@ credentials, worker logs and trace archives have explicit private permissions.
 
 ## Submit from your Mac
 
-Keep a private tunnel open in one terminal:
-
-```sh
-ssh -N -o ExitOnForwardFailure=yes \
-  -L 127.0.0.1:8878:127.0.0.1:8778 openclaw
-```
-
-In another terminal:
+After enabling Yukon authentication, use HTTPS and the existing Yukon login:
 
 ```sh
 cd /Users/bxue/Documents/catalyst
-export CATALYST_EVALUATOR_URL=http://127.0.0.1:8878
-unset CATALYST_LOCAL_TEST CATALYST_LOCAL_ECDSA CATALYST_LOCAL_PROBLEM_SET
-export CATALYST_API_TOKEN="$(.venv/bin/python -c \
-  'import json; print(json.load(open(".catalyst/remote-vm/client-tokens.json"))["solver"])')"
+export CATALYST_EVALUATOR_URL=https://35.92.254.142
+export YUKON_API_URL=https://api-dev.yukon.org
+unset CATALYST_API_TOKEN CATALYST_LOCAL_TEST CATALYST_LOCAL_ECDSA CATALYST_LOCAL_PROBLEM_SET
+# Existing Yukon login, or YUKON_API_TOKEN supplied privately.
 
 .venv/bin/catalyst --state .catalyst/remote-vm/client remote submit \
   harnesses/ecdsa-baseline --wait
@@ -121,7 +132,21 @@ export CATALYST_API_TOKEN="$(.venv/bin/python -c \
 
 Every completed `submit` followed by another `submit` creates a new evaluation.
 Use `remote status ID` or `remote wait ID` to retrieve the existing attempt.
-Credentials downloaded during deployment are in ignored, private local files.
+No Catalyst solver credential needs to be downloaded or saved.
+
+Enable login on a new service (operator command, no user key needed):
+
+```sh
+sudo -u catalyst /opt/catalyst/current/.venv/bin/catalyst yukon-auth-configure \
+  --auth-file /var/lib/catalyst/evaluator/auth.json \
+  --worker-config /var/lib/catalyst/evaluator/worker.json \
+  --yukon-api https://api-dev.yukon.org
+```
+
+Use the same trusted Yukon instance as the challenge, then restart the
+screen-managed API. This disables old solver passwords, preserves consumer and
+GitHub authorization, and enables bounded model-disabled runs for valid Yukon
+users. See [the authentication contract](remote-evaluation.md#yukon-authentication).
 
 ## Server state
 
@@ -133,13 +158,12 @@ Credentials downloaded during deployment are in ignored, private local files.
 - Dungeness runs/builds: `/var/lib/catalyst/evaluator/worker/`.
 - Worker log: `/var/lib/catalyst/evaluator/service/worker.log`.
 
-The API binds only to VM loopback. SSH provides transport authentication and
-encryption; API bearer keys separately control solver and Yukon access.
-The solver key is bound to the verified Yukon account ID. The dedicated Yukon
-consumer key can retrieve public judgments but cannot enqueue evaluations or
-download private traces. This is explicit account provisioning, not automatic
-Yukon login/token validation. Automatic grant issuance and renewal remain future
-work.
+The API binds only to VM loopback; Nginx provides public HTTPS. Solver identity
+comes from Yukon's `/api/me`, with memory-only, 15-minute sessions that the client
+renews automatically. Raw Yukon keys never enter jobs, logs or retained artifacts.
+The launcher disables core dumps; this VM has no enabled swap. The legacy Yukon
+consumer key can retrieve authorized public judgments but cannot enqueue
+evaluations or download private traces. GitHub OIDC remains independent.
 
 ## Yukon changes
 

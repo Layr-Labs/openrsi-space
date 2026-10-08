@@ -274,6 +274,10 @@ def main(argv=None):
     remote_init.add_argument("directory")
     remote_init.add_argument("--dungeness", required=True)
     remote_init.add_argument("--owner-id", required=True, help="Yukon solver account UUID bound to the provisioned key.")
+    login_config = commands.add_parser("yukon-auth-configure", help="Enable Yukon login for model-disabled remote evaluations.")
+    login_config.add_argument("--auth-file", required=True)
+    login_config.add_argument("--worker-config", required=True)
+    login_config.add_argument("--yukon-api", required=True, help="Trusted HTTPS Yukon API origin.")
     github_config = commands.add_parser("github-configure", help="Authorize the challenge's GitHub workflow for receipt retrieval.")
     github_config.add_argument("--auth-file", required=True)
     github_config.add_argument("--repository", required=True)
@@ -284,7 +288,7 @@ def main(argv=None):
     github_config.add_argument("--benchmark-id", help="Add after Yukon assigns the imported benchmark UUID.")
     evaluator = commands.add_parser("evaluator-serve", help="Run the API and its supervised worker.")
     evaluator.add_argument("--local-auth", "--local-test", "--service-auth", action="store_true", required=True,
-                           help="Use local service identities (no hosted Yukon authentication).")
+                           help="Use the identities configured in the auth file.")
     evaluator.add_argument("--auth-file", required=True)
     evaluator.add_argument("--problem-set", required=True)
     evaluator.add_argument("--worker-config", help="Worker configuration (default: worker.json beside --auth-file).")
@@ -436,6 +440,10 @@ def main(argv=None):
         elif args.command == "remote-evaluator-init":
             from .hosted import initialize_remote
             print(json.dumps(initialize_remote(Path(args.directory), Path(args.dungeness), args.owner_id), indent=2))
+        elif args.command == "yukon-auth-configure":
+            from .yukon_auth import configure_yukon_login
+            print(json.dumps(configure_yukon_login(Path(args.auth_file).resolve(), args.yukon_api,
+                                                   Path(args.worker_config).resolve()), indent=2))
         elif args.command == "github-configure":
             from .evaluator import JobStore
             from .hosted import configure_github

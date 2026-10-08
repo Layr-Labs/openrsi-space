@@ -267,47 +267,20 @@ class GitHubReceiptTests(unittest.TestCase):
         with self.store.connect() as db:
             self.assertEqual(db.execute("SELECT count(*) FROM jobs").fetchone()[0], 1)
 
-class GitHubTunnelTests(unittest.TestCase):
-    def test_private_transport_enforces_host_pinning_and_success_before_export(self):
-        with tempfile.TemporaryDirectory() as directory:
-            root = Path(directory)
-            tools = root / "bin"
-            tools.mkdir()
-            fake_ssh = tools / "ssh"
-            fake_ssh.write_text(
-                f"#!{sys.executable}\nimport json, os, pathlib, sys\n"
-                "pathlib.Path(os.environ['SSH_CALL']).write_text(json.dumps(sys.argv[1:]))\n"
-                "sys.exit(int(os.environ.get('SSH_EXIT', '0')))\n")
-            fake_ssh.chmod(0o700)
-            environment = {
-                "PATH": str(tools) + ":/usr/bin:/bin", "RUNNER_TEMP": str(root),
-                "GITHUB_ENV": str(root / "github-env"), "SSH_CALL": str(root / "ssh-call"),
-                "CATALYST_SSH_HOST": "example.test", "CATALYST_SSH_USER": "catalyst-tunnel",
-                "CATALYST_SSH_KEY": "fixture-key", "CATALYST_SSH_KNOWN_HOSTS": "fixture-host-key",
-            }
-
-            def run(**changes):
-                return subprocess.run(["bash", str(ROOT / "scripts/github-tunnel.sh")],
-                    env={**environment, **changes}, capture_output=True, text=True, timeout=5)
-
-            self.assertEqual(run(CATALYST_EVALUATOR_URL="https://verifier.example.test").returncode, 0)
-            self.assertNotEqual(run(CATALYST_EVALUATOR_URL="http://verifier.example.test").returncode, 0)
-            self.assertNotEqual(run(CATALYST_SSH_HOST="-oProxyCommand=bad").returncode, 0)
-            self.assertFalse((root / "ssh-call").exists())
-            result = run()
-            self.assertEqual(result.returncode, 0, result.stderr)
-            args = read_json(root / "ssh-call")
-            self.assertIn("StrictHostKeyChecking=yes", args)
-            self.assertIn("ExitOnForwardFailure=yes", args)
-            self.assertIn("127.0.0.1:18778:127.0.0.1:8778", args)
-            self.assertEqual(args[-1], "catalyst-tunnel@example.test")
-            self.assertEqual((root / "catalyst-tunnel/key").stat().st_mode & 0o777, 0o600)
-            self.assertEqual((root / "catalyst-tunnel/known_hosts").read_text(), "fixture-host-key\n")
-            self.assertEqual((root / "github-env").read_text(),
-                             "CATALYST_EVALUATOR_URL=http://127.0.0.1:18778\n")
-            # A failed connection must not export a usable-looking endpoint.
-            failed = root / "failed"
-            failed.mkdir()
-            self.assertNotEqual(run(RUNNER_TEMP=str(failed), GITHUB_ENV=str(failed / "env"),
-                                    SSH_EXIT="255").returncode, 0)
-            self.assertFalse((failed / "env").exists())
+class GitHubWorkflowTests(unittest.TestCase):
+    def test_receipt_workflow_uses_https_oidc_without_solver_or_ssh_secrets(self):
+        import yaml
+        source = (ROOT / ".github/workflows/benchmark.yml").read_text()
+        workflow = yaml.load(source, Loader=yaml.BaseLoader)
+        self.assertIn("workflow_dispatch", workflow["on"])
+        self.assertEqual(workflow["permissions"], {"contents": "read", "id-token": "write"})
+        job = workflow["jobs"]["benchmark"]
+        self.assertEqual(job["env"]["CATALYST_EVALUATOR_URL"], "https://35.92.254.142")
+        for obsolete in ("CATALYST_SSH_", "secrets.", "github-tunnel", "CATALYST_API_TOKEN", "YUKON_API_TOKEN"):
+            self.assertNotIn(obsolete, source)
+        self.assertEqual([step["run"] for step in job["steps"] if "run" in step],
+                         ["uv sync --frozen", "uv run --frozen catalyst yukon-run"])
+        upload = next(step for step in job["steps"] if step.get("uses", "").startswith("actions/upload-artifact@"))
+        manifest = read_json(ROOT / "benchmark.json")
+        self.assertEqual(upload["with"]["path"], manifest["scorePath"])
+        self.assertEqual(manifest["editablePaths"], ["submission/verification.json"])

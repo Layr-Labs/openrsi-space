@@ -9,7 +9,7 @@ import stat
 
 from .common import CatalystError, read_json, write_json
 from .problems import initial_problems
-from .remote import digest, endpoint, fetch, judge_input
+from .remote import digest, endpoint, judge_input, solver_fetch
 
 PROTOCOL = "remote-verification-receipt-v1"
 RECEIPT_PATH = Path("submission/verification.json")
@@ -49,7 +49,7 @@ def check_receipt(root=None):
     problem = problem_identity()
     token, _ = authentication()
     body = {"protocol": PROTOCOL, "reference": reference, "problem": problem, "judge": requested}
-    result = json.loads(fetch(endpoint() + "/verifications/retrieve", token, document=body))
+    result = json.loads(solver_fetch(endpoint(), "/verifications/retrieve", token, document=body))
     if (not isinstance(result, dict) or result.get("protocol") != PROTOCOL
             or result.get("reference") != reference or result.get("problem") != problem
             or result.get("judge") != requested):

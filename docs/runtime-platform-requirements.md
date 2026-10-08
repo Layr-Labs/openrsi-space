@@ -11,23 +11,41 @@ The previous cloud/vault architecture image is a historical design artifact;
 
 Keep renewable device-login credentials, refresh tokens and API keys locally.
 Supply temporary provider access to trusted remote execution components through
-a private authenticated channel. A managed vault and a reverse proxy are not
-required initially. Implement supported providers separately; a reference
-pricing entry does not imply a working provider authentication backend.
+authenticated HTTPS. The verification service must not persist user-provided
+provider tokens, refresh tokens, subscription credentials or other provider
+access credentials, even encrypted. Only the trusted credential-handling
+component may hold a run's temporary access credential in memory while needed.
+Implement supported providers separately; a reference pricing entry does not
+imply a working provider authentication backend.
+
+The durable queue contains only the non-secret grant reference and run metadata.
+Request temporary access when the worker is ready; keep credentials out of job
+payloads, files, databases, caches, backups and environment/configuration files.
+Disable request-body logging and disk buffering for the credential endpoint,
+and prevent credential-handling memory from reaching swap or core dumps.
+The provider-credential endpoint is not implemented in the model-disabled MVP.
+The current HTTPS proxy disables request logging and disk buffering, the service
+launcher disables core dumps, and the VM has no enabled swap. The complete
+provider credential lifecycle still requires implementation and tests.
 
 Preserve the original local credentials during setup, refresh, cancellation,
 failures and cleanup. Run-scoped access has its own lifecycle. Do not put secrets
 in source packages, Docker build inputs or layers, submission configuration,
 PRs, public results, or retained model/tool traces. The harness receives limited
-model access and cannot read renewable provider credentials. End that access on
-job completion, cancellation or expiry. Unknown usage or lost authentication
-stops evaluation; it does not enable an unmetered fallback.
+model access through the trusted gateway and cannot read upstream provider
+credentials. End run access and discard its in-memory credential on completion,
+failure, cancellation or expiry. Refresh/renewal stays on the user's machine;
+only replacement temporary access is supplied to the active run.
+Service or credential-process restart loses that access and requires the user
+to authorize it again. Never reconstruct it from persisted state or automatically
+restart an interrupted evaluation. Unknown usage or lost authentication stops
+evaluation; it does not enable an unmetered fallback.
 
 Bind temporary authorization to owner, evaluation, exact provider/model, funded
 tier, token/time limits and expiry. The grant reference in `evaluation.json` is
 an identifier, not a credential or independent permission to spend. Server-side
-identity and grant ownership checks exist for local fixtures; real identity
-verification and provider grant issuance remain to implement.
+Yukon dev identity verification and solver ownership checks are implemented.
+Provider grant issuance and live model access remain to implement.
 
 ## Execution, accounting and retention
 
@@ -58,6 +76,9 @@ a replacement run to validate a receipt.
 Use synthetic providers locally to exercise temporary authentication, renewal,
 concurrent budget enforcement, retries, cancellation, checkpoint ordering and
 artifact ownership. Test hostile harnesses against the isolation and credential
-boundaries, and verify redaction of retained evidence. Then implement and test
-the server's Yukon login validation and GitHub OIDC binding to the exact queued
+boundaries, and verify redaction of retained evidence. Test credential cleanup
+on success, failure, cancellation, expiry and process loss;
+verify that queues, logs, proxy buffers, traces and backup inputs contain no
+provider credentials. These lifecycle tests must use synthetic credentials.
+Also test the server's Yukon login validation and GitHub OIDC binding to the exact queued
 submission. The local contract suite does not replace these runtime tests.
