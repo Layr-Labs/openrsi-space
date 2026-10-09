@@ -1,8 +1,9 @@
 # Existing VM deployment record
 
 **Current integration:** use [GitHub Actions end to end](github-actions-e2e.md).
-Release `20261007-dev-pipeline-1` (source commit `3e6b373`) is now running under `screen` on the existing
-VM. Stock `yukon run` retrieved the real receipt through its new endpoint.
+Release `20261008-yukon-pareto-binding-1` is running under `screen` on the existing
+VM. Stock `yukon run` retrieved the real receipt, and `catalyst yukon-submit`
+completed the hosted Pareto submission flow through stock Yukon.
 Jobs and credentials were preserved, and no evaluation was started by retrieval.
 The service is now reachable through **https://35.92.254.142**, with a trusted
 IP certificate and tested automatic renewal. Nginx forwards to the existing
@@ -169,7 +170,10 @@ The launcher disables core dumps; this VM has no enabled swap. The legacy Yukon
 consumer key can retrieve authorized public judgments but cannot enqueue
 evaluations or download private traces. GitHub OIDC remains independent.
 
-## Yukon changes
+## Historical direct-runner prototype (unused)
+
+The following describes the earlier local prototype. It is not the hosted
+integration and must not be deployed for the current GitHub Actions workflow.
 
 The implementation is applied to `/Users/bxue/Documents/yukon/yukon`.
 The exportable patch and base revision are under

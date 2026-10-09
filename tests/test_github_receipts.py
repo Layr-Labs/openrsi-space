@@ -28,7 +28,7 @@ from catalyst.github_identity import AUDIENCE, GitHubIdentity, ISSUER
 from catalyst.hosted import ServiceIdentity, configure_github
 from catalyst.problems import initial_problems
 from catalyst.receipts import PROTOCOL, check_receipt, problem_identity
-from catalyst.remote import request_body, verification_reference
+from catalyst.remote import HTTPFailure, request_body, verification_reference
 from test_yukon import completed
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -163,6 +163,39 @@ class GitHubReceiptTests(unittest.TestCase):
         self.assertEqual(self.post()[0], 403)
         self.assertEqual(self.api_reads, [])
 
+    def test_direct_job_workflow_identity_can_retrieve_the_existing_receipt(self):
+        workflow = f"example/catalyst/.github/workflows/benchmark.yml@refs/heads/submissions/{self.submission}"
+        for updates in (
+            {"job_workflow_ref": workflow},
+            {"job_workflow_ref": workflow, "job_workflow_sha": "a" * 40},
+        ):
+            status, result = self.post(token=self.token(updates))
+            self.assertEqual(status, 200, result)
+            self.assertEqual(result["judgment"]["scores"], [100, .25])
+
+    def test_different_job_workflow_or_revision_fails_before_yukon_lookup(self):
+        workflow = f"example/catalyst/.github/workflows/benchmark.yml@refs/heads/submissions/{self.submission}"
+        for updates in (
+            {"job_workflow_ref": "attacker/catalyst/.github/workflows/benchmark.yml@refs/heads/main"},
+            {"job_workflow_ref": "example/catalyst/.github/workflows/other.yml@refs/heads/main"},
+            {"job_workflow_ref": workflow, "job_workflow_sha": "b" * 40},
+            {"job_workflow_sha": "b" * 40},
+            {"job_workflow_ref": None},
+            {"job_workflow_sha": ""},
+        ):
+            self.assertEqual(self.post(token=self.token(updates))[0], 403)
+        self.assertEqual(self.api_reads, [])
+
+    def test_auth_rejection_logs_reason_without_credentials_or_receipt(self):
+        token = self.token({"repository_id": "99999"})
+        with self.assertLogs("catalyst.evaluator", level="WARNING") as logs:
+            self.assertEqual(self.post(token=token)[0], 403)
+        text = "\n".join(logs.output)
+        self.assertIn("Remote verification is not enabled for this repository.", text)
+        self.assertNotIn(token, text)
+        self.assertNotIn(self.reference["source_digest"], text)
+        self.assertNotIn(self.evaluation, text)
+
     def test_baseline_is_pinned_and_never_invents_solver_ownership(self):
         ref = "refs/heads/yukon/baseline/" + "b" * 40
         baseline = {"ref": ref, "sha": "b" * 40, "workflow_sha": "b" * 40,
@@ -201,6 +234,116 @@ class GitHubReceiptTests(unittest.TestCase):
                 "SELECT name FROM sqlite_master WHERE name='github_retrievals'").fetchone())
         self.auth.config["tokens"][hashlib.sha256(b"solver-key").hexdigest()]["owner"] = str(uuid.uuid4())
         self.assertEqual(self.post(token="solver-key")[0], 403)
+
+    def binding_fixture(self):
+        from catalyst.yukon_binding import PROTOCOL
+        self.auth.yukon = SimpleNamespace(api="https://api-dev.yukon.org")
+        job_id, execution_id = str(uuid.uuid4()), str(uuid.uuid4())
+        job = {
+            "id": job_id, "kind": "submission_validation", "status": "running",
+            "benchmarkId": self.benchmark, "submissionId": self.submission,
+            "accountId": self.owner,
+            "input": {"executionSubmissionId": execution_id, "sourceRef": "a" * 40,
+                      "sourceUrl": "https://github.com/example/catalyst",
+                      "submissionArchiveRef": "private-upstream-archive-never-store"},
+        }
+        original_get = self.auth.github.get_json
+
+        def lookup(base, route, token):
+            if route == f"/api/jobs/{job_id}":
+                self.assertEqual(base, "https://api-dev.yukon.org")
+                if token != "ykn_private_test_key":
+                    from catalyst.evaluator import APIError
+                    raise APIError(401, "Yukon rejected the key.")
+                return {"job": job}
+            return original_get(base, route, token)
+
+        self.auth.github.get_json = lookup
+        body = {"protocol": PROTOCOL, "job_id": job_id,
+                "benchmark_id": self.benchmark, "reference": self.reference}
+        return job, body
+
+    def bind(self, body, key="ykn_private_test_key"):
+        from catalyst.remote import fetch
+        return json.loads(fetch(self.url + "/verifications/yukon-bind", key, document=body))
+
+    def test_pareto_execution_maps_to_actual_submission_and_keeps_keys_private(self):
+        job, body = self.binding_fixture()
+        result = self.bind(body)
+        self.assertEqual(self.bind(body), result)
+        self.assertEqual(result["submission_id"], self.submission)
+        ref = f"refs/heads/submissions/{job['input']['executionSubmissionId']}"
+        token = self.token({"ref": ref,
+                            "workflow_ref": f"example/catalyst/.github/workflows/benchmark.yml@{ref}"})
+        status, judgment = self.post(token=token)
+        self.assertEqual(status, 200, judgment)
+        self.assertEqual(judgment["judgment"]["scores"], [100, .25])
+        with self.store.connect() as db:
+            self.assertEqual(db.execute("SELECT count(*) FROM github_execution_bindings").fetchone()[0], 1)
+            self.assertEqual(db.execute("SELECT count(*) FROM jobs").fetchone()[0], 1)
+        for path in self.root.rglob("*"):
+            if path.is_file():
+                content = path.read_bytes()
+                self.assertNotIn(b"ykn_private_test_key", content)
+                self.assertNotIn(b"private-upstream-archive-never-store", content)
+        self.api_submission["status"] = "cancelled"
+        self.assertEqual(self.post(token=token)[0], 403)
+
+    def test_job_binding_rejects_wrong_owner_benchmark_kind_source_and_credentials(self):
+        job, body = self.binding_fixture()
+        for field, value in [
+            ("accountId", str(uuid.uuid4())), ("benchmarkId", str(uuid.uuid4())),
+            ("kind", "benchmark_baseline"), ("status", "cancelled"), ("id", str(uuid.uuid4())),
+        ]:
+            before = job[field]
+            job[field] = value
+            with self.assertRaises(HTTPFailure):
+                self.bind(body)
+            job[field] = before
+        for field, value in [
+            ("sourceUrl", "https://github.com/attacker/catalyst"),
+            ("sourceRef", "not-a-commit"), ("executionSubmissionId", "../evil"),
+        ]:
+            before = job["input"][field]
+            job["input"][field] = value
+            with self.assertRaises(HTTPFailure):
+                self.bind(body)
+            job["input"][field] = before
+        for key in ("ykn_invalid_private_key", "solver-key"):
+            with self.assertRaises(HTTPFailure):
+                self.bind(body, key)
+        forged = copy.deepcopy(body)
+        forged["reference"]["source_digest"] = "f" * 64
+        with self.assertRaises(HTTPFailure):
+            self.bind(forged)
+        with self.store.connect() as db:
+            self.assertIsNone(db.execute("SELECT name FROM sqlite_master "
+                                         "WHERE name='github_execution_bindings'").fetchone())
+
+    def test_job_binding_is_immutable_and_cannot_change_yukon_origin(self):
+        job, body = self.binding_fixture()
+        self.bind(body)
+        job["submissionId"] = str(uuid.uuid4())
+        with self.assertRaises(HTTPFailure) as raised:
+            self.bind(body)
+        self.assertEqual(raised.exception.status, 409)
+        self.policy["yukon_api_url"] = "https://attacker.invalid"
+        with patch.object(self.auth.github, "get_json") as lookup:
+            with self.assertRaises(HTTPFailure) as raised:
+                self.bind(body)
+            self.assertEqual(raised.exception.status, 403)
+            lookup.assert_not_called()
+
+    def test_bound_workflow_rejects_different_receipt_before_owner_lookup(self):
+        job, body = self.binding_fixture()
+        self.bind(body)
+        ref = f"refs/heads/submissions/{job['input']['executionSubmissionId']}"
+        token = self.token({"ref": ref,
+                            "workflow_ref": f"example/catalyst/.github/workflows/benchmark.yml@{ref}"})
+        forged = copy.deepcopy(self.body)
+        forged["reference"]["source_digest"] = "f" * 64
+        self.assertEqual(self.post(forged, token=token)[0], 403)
+        self.assertEqual(self.api_reads, [])
 
     def test_stock_github_actions_manifest_and_workflow_contract(self):
         import yaml
@@ -268,6 +411,17 @@ class GitHubReceiptTests(unittest.TestCase):
             self.assertEqual(db.execute("SELECT count(*) FROM jobs").fetchone()[0], 1)
 
 class GitHubWorkflowTests(unittest.TestCase):
+    def test_oidc_failure_is_distinguished_from_verifier_failure(self):
+        from catalyst.yukon import authentication
+        with patch.dict(os.environ, {
+            "GITHUB_ACTIONS": "true", "GITHUB_REPOSITORY": "example/catalyst",
+            "GITHUB_SHA": "a" * 40, "GITHUB_RUN_ID": "42", "GITHUB_RUN_ATTEMPT": "1",
+            "ACTIONS_ID_TOKEN_REQUEST_URL": "https://example.invalid/token",
+            "ACTIONS_ID_TOKEN_REQUEST_TOKEN": "private-request-token",
+        }), patch("catalyst.yukon.fetch", side_effect=HTTPFailure(403)):
+            with self.assertRaisesRegex(CatalystError, r"GitHub OIDC token request failed \(HTTP 403\)"):
+                authentication()
+
     def test_receipt_workflow_uses_https_oidc_without_solver_or_ssh_secrets(self):
         import yaml
         source = (ROOT / ".github/workflows/benchmark.yml").read_text()

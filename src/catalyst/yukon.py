@@ -10,7 +10,7 @@ import uuid
 from .common import CatalystError, read_json, write_json
 from .problems import clone_problem, initial_problems, validate_workspace
 from .remote import (
-    RemoteClient, bound_result, digest, endpoint, fetch, judge_input, judgment,
+    HTTPFailure, RemoteClient, bound_result, digest, endpoint, fetch, judge_input, judgment,
     request_body, solver_token, verification_reference,
 )
 
@@ -39,7 +39,10 @@ def authentication() -> tuple[str, dict]:
         if parts.scheme != "https" or parts.username or parts.password or not parts.hostname or not oidc_token:
             raise CatalystError("GitHub OIDC requires workflow id-token: write permission.")
         url = oidc_url + ("&" if parts.query else "?") + urllib.parse.urlencode({"audience": "catalyst-evaluator"})
-        bearer = json.loads(fetch(url, oidc_token))["value"]
+        try:
+            bearer = json.loads(fetch(url, oidc_token))["value"]
+        except HTTPFailure as error:
+            raise CatalystError(f"GitHub OIDC token request failed (HTTP {error.status}).") from None
         context = {"kind": "github-actions", "repository": os.environ["GITHUB_REPOSITORY"],
                    "commit": os.environ["GITHUB_SHA"], "run_id": os.environ["GITHUB_RUN_ID"],
                    "run_attempt": os.environ["GITHUB_RUN_ATTEMPT"]}

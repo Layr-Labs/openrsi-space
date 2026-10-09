@@ -9,21 +9,41 @@ This follows Yukon's `docs/github-actions-benchmark-author-guide.md` and
    independent verification. It returns a receipt and private traces.
 2. The solver copies the receipt to `submission/verification.json`.
 3. `yukon run` checks the existing receipt; it never starts an evaluation.
-4. `yukon submit` uploads only the receipt. Yukon creates a candidate commit/PR
-   and dispatches the repository's `benchmark.yml`.
+4. `catalyst yukon-submit` calls stock `yukon submit` to upload only the receipt,
+   then verifies and registers its execution/submission mapping with Catalyst.
+   Yukon creates a candidate commit/PR and dispatches the repository's `benchmark.yml`.
 5. The workflow authenticates with GitHub OIDC, retrieves the stored judgment,
    and uploads one trusted Pareto score artifact.
 6. Yukon records its score and evidence. Pareto does not merge submissions.
 
 The receipt endpoint, Yukon login and native Codex execution are deployed on
-`openclaw` in release `20261007-codex-chatgpt-1`. The current local suite passed
+`openclaw`, with workflow identity and Pareto job mapping in release
+`20261008-yukon-pareto-binding-1`. The last full local suite passed
 129 tests (one Linux-only check skipped), including stock Yukon and native
 Dungeness contracts. Solver keys are validated against **https://api-dev.yukon.org**.
 Existing evaluations were preserved; legacy solver passwords are disabled.
 
-OIDC tests use signed fixture tokens, not real GitHub-issued tokens. A complete
-hosted run still requires configuring repository authorization and registering
-the benchmark. The HTTPS workflow is published on `main`. The author installed the
+The active **open** Yukon dev benchmark is `layr-labs/catalyst`, UUID
+`8d3a2daa-afab-4685-b93a-7443c83049d2`, in Pareto mode. Its initial evaluation is
+`b29b2832-d0e7-4612-ae60-93706d971928`. The hosted baseline workflow
+[37854296673](https://github.com/Layr-Labs/catalyst/actions/runs/37854296673)
+passed, and Yukon ingested the baseline judgment. This exercised real GitHub OIDC,
+the public HTTPS connection, receipt retrieval, artifact upload, and Yukon ingestion.
+The configured GitHub repository ID is `1402357635`; the pinned baseline source is
+`2411bd8c64c04023a14645dcf6578e3a7b9e6fae`.
+
+Two earlier empty failed registrations were archived during the authorized recovery:
+`14c194b3-305a-4aaa-a094-c624bbdbcfb4` and
+`f103643a-e478-4675-a077-d8eb0045bb1c`. Their records remain in Yukon history and
+`.catalyst/yukon-dev-registration/`; do not use those UUIDs for new configuration.
+Full upstream Action SHAs resolved the enterprise action-policy rejection.
+The verifier now accepts direct-workflow `job_workflow_ref`/`job_workflow_sha`
+claims only when they match the already authorized workflow and revision.
+All 67 related authentication, receipt, binding, resume and API tests passed,
+including stock Yukon and rejection of foreign owners, workflows or revisions.
+The local `fix/initial-baseline-retry` Yukon patch is unused. No custom Yukon
+backend or worker was deployed.
+The HTTPS workflow is published on `main`. The author installed the
 dev Yukon Eigen App on `Layr-Labs/catalyst`, which is the correct App for this
 integration. Production App access is not required.
 A successful local preview does not establish
@@ -33,7 +53,7 @@ GitHub App permissions, hosted dispatch or the resulting Yukon leaderboard entry
 validation, authenticated receipt retrieval and a certificate-renewal simulation
 with Nginx reload have passed. The workflow calls that URL directly; it requires
 no SSH connection, repository variables or saved API key. The OIDC repository
-policy and GitHub-hosted runner connectivity still need verification.
+policy and GitHub-hosted runner connectivity passed the hosted baseline.
 See [the deployed HTTPS setup](https.md).
 
 The included starter receipt refers to completed remote evaluation
@@ -41,6 +61,14 @@ The included starter receipt refers to completed remote evaluation
 access disabled. It belongs to the dev Yukon account and was executed and
 independently verified on the VM.
 Baseline registration retrieves it without running the harness.
+
+The full solver flow passed with real-model evaluation
+`21045450-81c5-4742-bb9c-628ff30a6606`: Yukon submission
+`8c672862-fdce-43fe-a66c-09ce10bf24b2` records `valid: true` and scores
+`[10704574395, 0.887796]`, with the matching harness digest. GitHub run
+[37869431621](https://github.com/Layr-Labs/catalyst/actions/runs/37869431621)
+succeeded. The submission is in **review**, as configured by manual promotion.
+No additional model evaluation was started during publication.
 
 ## Author setup
 
@@ -89,7 +117,7 @@ sudo -u catalyst /opt/catalyst/current/.venv/bin/catalyst \
   --state /var/lib/catalyst/evaluator/service github-configure \
   --auth-file /var/lib/catalyst/evaluator/auth.json \
   --repository Layr-Labs/catalyst \
-  --repository-id "<numeric GitHub repository ID>" \
+  --repository-id 1402357635 \
   --yukon-api https://api-dev.yukon.org \
   --baseline-evaluation 03586584-86c1-4b9d-9a09-1a13701efabe \
   --baseline-sha "<published baseline commit SHA>"
@@ -102,12 +130,15 @@ Baseline lookup accepts only the configured repository/workflow, Yukon's
 submission identity. Yukon creates that baseline branch from the published
 revision during import.
 
-Import through Yukon's author UI or its existing script, supplying the author's
-Yukon API token privately. From an unmodified Yukon checkout:
+After configuring the baseline authorization, import through Yukon's author UI
+or its existing script, supplying the author's Yukon API token privately.
+The dev benchmark is already open; do not import another copy. For a future fresh
+installation, check for an existing active `layr-labs/catalyst` before importing.
+From an unmodified Yukon checkout:
 
 ```sh
 bun scripts/import-benchmark.ts https://github.com/Layr-Labs/catalyst \
-  --api https://api-dev.yukon.org --name bxue-l2/catalyst
+  --api https://api-dev.yukon.org --name layr-labs/catalyst
 ```
 
 Wait for successful GitHub and Yukon baseline checks. Copy the assigned
@@ -115,19 +146,30 @@ benchmark UUID and rerun `github-configure` with the same arguments plus
 `--benchmark-id "<UUID>"`. Restart the service, then open the ready benchmark
 through the author UI.
 
-For ordinary submissions, Catalyst reads the ID from the OIDC-authenticated
-`refs/heads/submissions/<UUID>` ref. It checks owner and benchmark through
-Yukon's existing `GET /api/submissions/<UUID>` API. It never trusts an owner
-claim in a receipt. If Yukon visibility requires an authenticated read, provision
-a service-readable Yukon key in the private policy's `yukon_api_token` field.
+For Pareto submissions, the OIDC-authenticated
+`refs/heads/submissions/<UUID>` ref contains an **execution ID**, not the public
+submission ID. The helper sends the returned job ID and receipt to
+`POST /verifications/yukon-bind`. Catalyst calls the configured Yukon's authenticated
+`GET /api/jobs/<job-id>` endpoint with the solver's transient key. It checks job kind,
+owner, benchmark, source repository and verified receipt before recording an immutable
+mapping. The key and private job archive URL are never persisted.
+
+During workflow retrieval, Catalyst uses that mapping to check the public submission's
+current owner, benchmark and cancellation state through
+`GET /api/submissions/<submission-id>`. The receipt supplies no trusted owner claim.
+GitHub receives no solver key. A future public, trusted Yukon execution lookup API could
+replace the helper's binding step; no such Yukon change is required for this MVP.
 
 ## Solver commands
 
-Use stock Yukon with the dev login and registered benchmark name:
+Use current stock Yukon with the dev login and registered benchmark name.
+Older CLI releases can reject the Pareto manifest with `Invalid benchmark manifest`;
+update the CLI first:
 
 ```sh
 export YUKON_API_URL=https://api-dev.yukon.org
-yukon clone bxue-l2/catalyst catalyst-solver
+yukon update
+yukon clone layr-labs/catalyst catalyst-solver
 cd catalyst-solver
 uv sync --frozen
 yukon setup
@@ -141,7 +183,7 @@ unset CATALYST_API_TOKEN
 uv run catalyst remote submit .catalyst/my-harness --wait
 cp .catalyst/my-harness/verification.json submission/verification.json
 yukon run
-yukon submit --note-file submission-note.md \
+uv run catalyst yukon-submit --no-dependencies --note-file submission-note.md \
   --model "<exact model used, or disabled for this baseline>" \
   --harness "ecdsa-baseline"
 yukon submissions --all --json
@@ -150,6 +192,22 @@ yukon submissions --all --json
 Use your Yukon login; the client exchanges it for a short-lived solver session.
 A model-disabled baseline is not an optimization claim.
 Notes must meet Yukon's current requirements and contain no secrets.
+Use `--dependencies-file` instead of `--no-dependencies` when reusing a prior
+Yukon submission.
+
+The helper saves its pending job locally before binding. Repeat the same helper
+command after a binding failure to resume without uploading a second submission.
+If the upload outcome is unknown, it stops and asks you to inspect existing Yukon
+submissions first. To bind an already-submitted job manually:
+
+```sh
+uv run catalyst yukon-bind --job-id "<job UUID returned by Yukon>" \
+  --benchmark-id 8d3a2daa-afab-4685-b93a-7443c83049d2
+```
+
+Keep the exact receipt in `submission/verification.json`. If the GitHub job has already
+failed before binding, rerunning GitHub alone does not update a finished Yukon validation;
+a new authorized submission or Yukon-supported recovery is needed.
 
 A fresh evaluation produces a new receipt and a normal candidate diff.
 Submitting the unchanged starter receipt may fail Yukon's normal no-change rule.
@@ -170,9 +228,9 @@ Yukon's API (`officialMetrics.remoteVerification` and normal evaluation evidence
   lookups write no score. The client clears stale score files first.
 - Receipt lookup is replay-safe and never enqueues evaluations. Repository
   permissions default to disabled and must be provisioned by an operator.
-- This MVP handles initial import and ordinary submissions. Reorgs using separate
-  execution IDs need an additional trusted mapping to the original submission;
-  unknown IDs fail closed without rerunning a harness.
+- This MVP handles initial import and ordinary submissions through the helper.
+  Operator-triggered reorgs require new authenticated job mappings; those are not
+  registered automatically. Unknown execution IDs fail closed without rerunning a harness.
 - Provider-token handoff requires authenticated HTTPS and one-evaluation,
   memory-only access. Never persist user provider credentials, even encrypted.
   Completion, failure and expiry discard access; restart loses queued tokens.

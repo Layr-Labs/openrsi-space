@@ -10,6 +10,7 @@ from contextlib import contextmanager
 import hashlib
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
+import logging
 from pathlib import Path
 import sqlite3
 import uuid
@@ -298,7 +299,8 @@ def handler_for(store, auth, problem_set, evidence_mode="local-test", credential
             try:
                 parts = self.path.strip("/").split("/")
                 login = self.command == "POST" and parts == ["auth", "yukon"]
-                if login:
+                binding = self.command == "POST" and parts == ["verifications", "yukon-bind"]
+                if login or binding:
                     from .hosted import ServiceIdentity
                     if not isinstance(auth, ServiceIdentity) or not auth.yukon:
                         raise APIError(404, "Yukon login is not enabled.")
@@ -306,7 +308,7 @@ def handler_for(store, auth, problem_set, evidence_mode="local-test", credential
                     principal = auth.authenticate(self.headers.get("Authorization"))
                 if self.command == "POST":
                     length = int(self.headers.get("Content-Length", "0"))
-                    if not 0 < length <= (1024 if login else BODY_LIMIT):
+                    if not 0 < length <= (1024 if login else 128 * 1024 if binding else BODY_LIMIT):
                         raise APIError(413, "Invalid request size.")
                     if self.headers.get("Content-Type", "").split(";")[0] != "application/json":
                         raise APIError(415, "JSON required.")
@@ -316,6 +318,10 @@ def handler_for(store, auth, problem_set, evidence_mode="local-test", credential
                         if request != {"protocol": SESSION_PROTOCOL}:
                             raise APIError(400, "Invalid Yukon login request.")
                         return self.send(200, auth.yukon.exchange(self.headers.get("Authorization")))
+                    if binding:
+                        from .yukon_binding import bind_execution
+                        return self.send(200, bind_execution(
+                            store, auth, self.headers.get("Authorization"), request))
                     if parts == ["verifications", "retrieve"]:
                         from .hosted import retrieve_receipt
                         return self.send(200, retrieve_receipt(store, auth, principal, request))
@@ -358,6 +364,11 @@ def handler_for(store, auth, problem_set, evidence_mode="local-test", credential
                         return self.send(200, path.read_bytes(), "application/zip")
                 raise APIError(404, "Not found.")
             except APIError as error:
+                if self.command == "POST" and parts == ["verifications", "retrieve"] and error.status in {401, 403}:
+                    # These are service-authored rejection reasons. Do not log
+                    # request headers, token claims, receipts or request bodies.
+                    logging.getLogger(__name__).warning(
+                        "Receipt retrieval rejected (HTTP %d): %s", error.status, str(error))
                 self.send(error.status, {"error": str(error)})
             except (CatalystError, ValueError, KeyError, TypeError):
                 self.send(400, {"error": "Invalid evaluation request."})

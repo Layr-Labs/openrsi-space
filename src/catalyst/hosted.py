@@ -185,7 +185,7 @@ def retrieve_receipt(store, auth, principal, body):
             raise APIError(403, "Receipt belongs to another solver.")
         public = _verified_judgment(job, reference, body["problem"], body["judge"], allow_local=True)
     elif principal.get("kind") == "github-actions" and isinstance(auth, ServiceIdentity):
-        context = auth.github.receipt_context(principal, reference)
+        context = auth.github.receipt_context(principal, reference, store=store)
         if body["problem"] != context["problem"]:
             raise APIError(409, "Requested problem differs from the authorized challenge.")
         public = _retrieve(store, None, {

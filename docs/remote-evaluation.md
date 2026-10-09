@@ -50,8 +50,9 @@ solver passwords. Changing the identity issuer requires account migration.
 Develop harnesses in an ignored directory such as `.catalyst/my-harness` so
 Yukon's trusted judge files stay unchanged. Copy the resulting receipt into
 `submission/verification.json`, the only editable/submittable path. `yukon run`
-now checks that receipt without running a harness. `yukon submit` uploads it using
-Yukon's normal archive transport. Source and evaluation settings stay in Catalyst.
+now checks that receipt without running a harness. `catalyst yukon-submit` calls
+stock `yukon submit` using Yukon's normal archive transport, then registers its
+Pareto execution mapping. Source and evaluation settings stay in Catalyst.
 
 ## Receipt-only Yukon submission
 
@@ -78,9 +79,18 @@ never accepts a claimed score or caller-supplied owner identity.
 The service verifies GitHub's signature using the fixed GitHub JWKS endpoint,
 issuer, audience, expiration, repository ID/name, workflow path, dispatch event,
 ref and source SHA. Its private repository policy must explicitly enable the
-challenge and pin the expected problem/version. For a submission ref
-`refs/heads/submissions/<UUID>`, it reads the existing Yukon
-`GET /api/submissions/<UUID>` endpoint to establish the real owner and benchmark.
+challenge and pin the expected problem/version. Pareto refs
+`refs/heads/submissions/<execution-UUID>` use an execution ID distinct from the
+public submission ID. The helper registers the mapping at
+`POST /verifications/yukon-bind`, supplying `{protocol: "yukon-execution-binding-v1",
+job_id, benchmark_id, reference}` with the solver's Yukon API key over HTTPS.
+The service authenticates that job directly through the configured Yukon's
+`GET /api/jobs/<job-id>` endpoint, checks the job owner/benchmark/source and receipt,
+and stores only the mapping and receipt. It never stores the key or the job's
+private archive URL. Bindings are immutable and retries are idempotent.
+
+The workflow resolves the registered execution ID and reads Yukon's
+`GET /api/submissions/<submission-id>` endpoint to establish the real owner and benchmark.
 Unknown, cancelled, cross-owner or cross-benchmark submissions fail closed.
 Initial baseline dispatch instead requires an explicitly provisioned commit,
 owner and already-verified receipt; it never fabricates a solver identity.

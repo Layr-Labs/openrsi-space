@@ -9,7 +9,7 @@ import jwt
 
 from .common import CatalystError
 from .evaluator import APIError, identity
-from .remote import fetch
+from .remote import HTTPFailure, fetch
 
 ISSUER = "https://token.actions.githubusercontent.com"
 AUDIENCE = "catalyst-evaluator"
@@ -55,9 +55,14 @@ class GitHubIdentity:
                 or any(not isinstance(claims[key], str) or not claims[key].isdigit()
                        for key in ("run_id", "run_attempt"))):
             raise APIError(403, "Workflow identity does not match the configured challenge.")
-        # Reusable workflows are not part of this repository-owned judge contract.
-        if claims.get("job_workflow_ref"):
-            raise APIError(403, "Reusable workflow identities are not configured.")
+        # GitHub can also include job_workflow_* for the direct workflow.
+        # Accept that self-reference, but never a different reusable judge.
+        if any(key in claims and claims[key] != claims[workflow_key]
+               for key, workflow_key in (
+                   ("job_workflow_ref", "workflow_ref"),
+                   ("job_workflow_sha", "workflow_sha"),
+               )):
+            raise APIError(403, "Job workflow identity does not match the configured challenge.")
         return {"kind": "github-actions", "claims": claims, "policy": policy}
 
     @staticmethod
@@ -68,10 +73,14 @@ class GitHubIdentity:
             raise APIError(503, "Configure a trusted HTTPS Yukon API.")
         try:
             return json.loads(fetch(base.rstrip("/") + path, token or "", limit=1024 * 1024))
+        except HTTPFailure as error:
+            if error.status == 404:
+                raise APIError(403, "Yukon identity was not found; register the Pareto job with catalyst yukon-bind.") from None
+            raise APIError(503, f"Yukon identity lookup returned HTTP {error.status}.") from None
         except (CatalystError, ValueError):
             raise APIError(503, "Cannot establish the Yukon submission identity.") from None
 
-    def receipt_context(self, principal, reference):
+    def receipt_context(self, principal, reference, *, store=None):
         """A workflow cannot claim its owner, benchmark, problem or submission ID."""
         claims, policy = principal["claims"], principal["policy"]
         ref = claims["ref"]
@@ -83,6 +92,12 @@ class GitHubIdentity:
             if not benchmark_id:
                 raise APIError(403, "The repository has no authorized Yukon benchmark.")
             identity(benchmark_id)
+            from .yukon_binding import execution_binding
+            bound = execution_binding(store, claims["repository_id"], submission_id)
+            if bound:
+                if bound["benchmark_id"] != benchmark_id or bound["reference"] != reference:
+                    raise APIError(403, "Execution binding does not match this benchmark and receipt.")
+                submission_id = bound["submission_id"]
             document = self.get_json(
                 policy["yukon_api_url"], f"/api/submissions/{submission_id}",
                 policy.get("yukon_api_token"))
@@ -93,6 +108,8 @@ class GitHubIdentity:
                 raise APIError(403, "Workflow does not identify an authorized Yukon submission.")
             owner_id = submission.get("solverAccountId")
             identity(owner_id)
+            if bound and owner_id != bound["owner_id"]:
+                raise APIError(403, "Yukon submission owner differs from the execution binding.")
         else:
             # Initial import has no submission/account input. Only this exact
             # operator-approved baseline revision and receipt may pass.

@@ -43,10 +43,15 @@ cp -R harnesses/ecdsa-baseline .catalyst/my-harness
 uv run catalyst remote submit .catalyst/my-harness --wait
 cp .catalyst/my-harness/verification.json submission/verification.json
 yukon run     # preview the existing receipt; never starts an evaluation
-yukon submit --note-file submission-note.md --model "<exact model>" --harness "<harness>"
+uv run catalyst yukon-submit --no-dependencies --note-file submission-note.md \
+  --model "<exact model>" --harness "<harness>"
 ```
 
-No Yukon code changes or custom runner are required.
+No Yukon code changes or custom runner are required. `catalyst yukon-submit`
+calls stock `yukon submit`, then authenticates its job mapping with the verifier.
+Yukon's Pareto workflow branch uses an execution UUID distinct from the submission
+UUID, so plain `yukon submit` alone does not complete this mapping. Use
+`--dependencies-file` instead of `--no-dependencies` when reusing an earlier submission.
 `yukon setup` downloads the pinned ECDSA workspace and local verifier. Develop
 and check candidates in that existing workspace, retaining context and build
 caches. Improve the autonomous harness's code, tools, instructions and knowledge
@@ -66,10 +71,12 @@ remains undecided; preserve attempts and show counts rather than hiding repeats.
 
 The client downloads private traces and writes `verification.json` in the harness
 directory. Copy that receipt into `submission/verification.json`.
-`yukon submit` uploads only that receipt, not the harness or evaluation settings.
+The helper's stock `yukon submit` call uploads only that receipt.
 Yukon creates the submission PR and dispatches the repository's workflow. That
 workflow authenticates with GitHub OIDC and retrieves the existing evaluation.
-Catalyst resolves the solver account through Yukon's existing submission API and checks the
+Catalyst registers the execution/submission mapping through Yukon's authenticated
+job API, using the solver's key transiently without retaining it. It resolves the
+solver account through Yukon's existing submission API and checks the
 receipt's source, image, problem, configuration, pricing and policy identities
 against its retained evaluation. The harness was uploaded to Catalyst during
 `catalyst remote submit` and stays in Catalyst's evidence store.

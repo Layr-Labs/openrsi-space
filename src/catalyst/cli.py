@@ -268,6 +268,17 @@ def main(argv=None):
     commands.add_parser("list", help="List published snapshots.")
     commands.add_parser("yukon-setup", help="Download the pinned ecdsa.fail workspace for Yukon.")
     commands.add_parser("yukon-run", help="Trusted remote evaluation bridge invoked by Yukon.")
+    yukon_submit = commands.add_parser("yukon-submit", help="Submit a receipt through stock Yukon and bind its Pareto execution.")
+    yukon_submit.add_argument("benchmark", nargs="?")
+    yukon_submit.add_argument("--note-file", required=True)
+    yukon_submit.add_argument("--model", required=True)
+    yukon_submit.add_argument("--harness", required=True)
+    dependencies = yukon_submit.add_mutually_exclusive_group(required=True)
+    dependencies.add_argument("--no-dependencies", action="store_true")
+    dependencies.add_argument("--dependencies-file")
+    yukon_bind = commands.add_parser("yukon-bind", help="Resume execution binding for an already submitted Yukon job.")
+    yukon_bind.add_argument("--job-id", required=True)
+    yukon_bind.add_argument("--benchmark-id", required=True)
     remote = commands.add_parser("remote", help="Submit to and inspect the verification service directly.")
     remote_sub = remote.add_subparsers(dest="operation", required=True)
     remote_submit = remote_sub.add_parser("submit", help="Upload harness source and queue one evaluation.")
@@ -454,6 +465,15 @@ def main(argv=None):
         elif args.command == "yukon-run":
             from .receipts import check_receipt
             check_receipt()
+        elif args.command == "yukon-submit":
+            from .yukon_submit import submit
+            print(json.dumps(submit(
+                Path.cwd(), note_file=args.note_file, model=args.model, harness=args.harness,
+                dependencies_file=args.dependencies_file, no_dependencies=args.no_dependencies,
+                benchmark=args.benchmark), indent=2))
+        elif args.command == "yukon-bind":
+            from .yukon_submit import bind_job
+            print(json.dumps(bind_job(Path.cwd(), args.job_id, args.benchmark_id), indent=2))
         elif args.command == "remote":
             remote_command(args, state)
         elif args.command == "local-evaluator-init":
