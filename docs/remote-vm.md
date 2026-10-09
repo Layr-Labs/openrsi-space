@@ -184,7 +184,7 @@ The manifest uses:
 ```json
 {
   "mode": "pareto",
-  "promotionMode": "manual",
+  "promotionMode": "automatic",
   "runner": {
     "provider": "remote-verification",
     "service": "catalyst",

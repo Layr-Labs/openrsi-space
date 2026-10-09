@@ -160,6 +160,9 @@ def prepare(state: Path, problem_path: Path, harness_path: Path, budget: float,
     git(runtime, "checkout", "--quiet", "--detach", config["commit"])
     agent_ref = h.get("agent")
     added_agent_paths = []
+    if native and p.get("id") == "ecdsa.fail":
+        from .cheat_filter import install_sidecar_screen
+        added_agent_paths.extend(install_sidecar_screen(runtime))
     if build_record:
         from .executable import install_agent
         task_input = {
@@ -169,7 +172,8 @@ def prepare(state: Path, problem_path: Path, harness_path: Path, budget: float,
             "evidence": "local-evaluation",
             "model_provider": provider, "reasoning_effort": reasoning_effort,
         }
-        agent_ref, added_agent_paths = install_agent(runtime, build_record, executable_model, task_input)
+        agent_ref, agent_paths = install_agent(runtime, build_record, executable_model, task_input)
+        added_agent_paths.extend(agent_paths)
         if provider == "openai-chatgpt":
             launcher = runtime / "dungeness"
             original = launcher.read_text()

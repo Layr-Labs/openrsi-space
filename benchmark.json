@@ -1,10 +1,10 @@
 {
   "schemaVersion": 1,
   "name": "catalyst",
-  "description": "Submit autonomous harness source for ecdsa.fail. Compare verified avg_toffoli * peak_qubits at $20 and $200 checkpoints, plus the best achieved result and its model credits. Every run requires an explicit spending cap.",
+  "description": "Submit autonomous harness source for ecdsa.fail. View the best verified avg_toffoli * peak_qubits within $20, within $200, and overall, using the complete performance-cost curve. Solvers choose their spending cap.",
   "category": "agent-harness",
   "mode": "pareto",
-  "promotionMode": "manual",
+  "promotionMode": "automatic",
   "objectives": [
     {"name": "ecdsaPerformance", "direction": "-"},
     {"name": "modelCreditsAtBest", "direction": "-"}

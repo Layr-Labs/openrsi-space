@@ -11,15 +11,16 @@ This follows Yukon's `docs/github-actions-benchmark-author-guide.md` and
 3. `yukon run` checks the existing receipt; it never starts an evaluation.
 4. `catalyst yukon-submit` calls stock `yukon submit` to upload only the receipt,
    then verifies and registers its execution/submission mapping with Catalyst.
-   Yukon creates a candidate commit/PR and dispatches the repository's `benchmark.yml`.
+   Yukon creates a candidate commit and dispatches the repository's `benchmark.yml`.
 5. The workflow authenticates with GitHub OIDC, retrieves the stored judgment,
    and uploads one trusted Pareto score artifact.
 6. Yukon records its score and evidence. Pareto does not merge submissions.
 
 The receipt endpoint, Yukon login and native Codex execution are deployed on
 `openclaw`, with workflow identity and Pareto job mapping in release
-`20261008-yukon-pareto-binding-1`. The last full local suite passed
-129 tests (one Linux-only check skipped), including stock Yukon and native
+`20261008-history-screen-1`, which also exports intermediate ECDSA history and
+screens candidate source. The last full local suite passed
+151 tests (one Linux-only check skipped), including stock Yukon and native
 Dungeness contracts. Solver keys are validated against **https://api-dev.yukon.org**.
 Existing evaluations were preserved; legacy solver passwords are disabled.
 
@@ -67,8 +68,46 @@ The full solver flow passed with real-model evaluation
 `8c672862-fdce-43fe-a66c-09ce10bf24b2` records `valid: true` and scores
 `[10704574395, 0.887796]`, with the matching harness digest. GitHub run
 [37869431621](https://github.com/Layr-Labs/catalyst/actions/runs/37869431621)
-succeeded. The submission is in **review**, as configured by manual promotion.
+succeeded. That first publication used manual promotion. The current manifest
+uses **automatic** acceptance after remote verification; existing benchmarks
+must adopt this change through Yukon's Pareto reorg, preserving the benchmark ID.
 No additional model evaluation was started during publication.
+
+The history/screening release also passed the complete hosted flow with remote
+evaluation `f0dc32fc-a17c-48b5-9dca-d10414023159`, Yukon submission
+`198b4e96-827e-48ed-9b8f-3a498db316a2`, and GitHub run
+[37879400510](https://github.com/Layr-Labs/catalyst/actions/runs/37879400510).
+Yukon recorded the exact source digest, all six curve points, and the score pair
+`[10758874395, 0.674814]`. Total usage for that run was **1.602784** credits;
+0.674814 is the cost when its best result was first verified. It did not beat
+the prior run's circuit score.
+
+That test had a three-credit aggregate allowance. Its first attempt,
+`4958d55a-988c-4ce3-8f38-74ffe2fc0a90`, used **1.117388** credits and was rejected
+for exceeding the inherited 100,000-token limit. Its record was preserved.
+The corrected attempt used a 1.85-credit cap and a 1,000,000-token secondary
+ceiling. Actual combined spending was **2.720172** credits. No extra model run
+was made during Yukon publication. The matrix displays the valid replacement
+in all three budget columns and shows all six observations, without a review
+status column.
+
+### Hosted fake-score rejection
+
+A separate authorized negative test submitted a fabricated receipt directly
+through stock Yukon, claiming score `1`, without creating a remote evaluation.
+The fake evaluation ID was `d44b5b65-ea88-4599-aef4-6b3418ee73e1`; its absence
+from the service's job store was checked.
+
+The local receipt verifier returned **HTTP 404** and removed a pre-existing
+fake score file. Hosted GitHub run
+[37879719498](https://github.com/Layr-Labs/catalyst/actions/runs/37879719498)
+also failed at receipt retrieval with **HTTP 404**. Yukon submission
+`5ec54681-6799-4206-b5a2-808db8e9d249` finished **failed**, with its untrusted
+`claimedScore: 1` retained for audit but `judgment`, `officialMetrics`, and
+`evaluation` all null. Browser verification confirmed it is absent from the
+matrix. No model credits were used for this rejection test.
+The positive workflow produced exactly one `catalyst-score` artifact; the
+negative workflow produced no artifacts.
 
 ## Author setup
 
@@ -162,6 +201,8 @@ replace the helper's binding step; no such Yukon change is required for this MVP
 
 ## Solver commands
 
+For first-time login, see [token types and credential setup](live-models.md#which-token-and-where-does-it-come-from).
+
 Use current stock Yukon with the dev login and registered benchmark name.
 Older CLI releases can reject the Pareto manifest with `Invalid benchmark manifest`;
 update the CLI first:
@@ -248,3 +289,21 @@ CATALYST_STOCK_YUKON=/path/to/unmodified/yukon \
 
 The optional CLI test needs that checkout's locked dependencies installed. These
 fixture tests remain distinct from the live GitHub/App/network checks above.
+
+### Updating the automatic-acceptance policy
+
+The manifest uses `promotionMode: automatic`. For an existing Pareto benchmark,
+use the owner's reorg endpoint, retaining its UUID. A validity-only reorg
+(`paretoScope: {scores: false, validity: "fresh"}`) retains scores and verifies
+receipts under the new revision. It never starts another Dungeness run.
+
+Authorize the exact new baseline commit with `github-configure` before starting.
+Receipt bindings are immutable per Yukon execution, with the original submission
+retained for ownership checks and audit. Each explicitly authorized baseline
+revision also has a distinct retrieval identity; previous evidence remains intact.
+Yukon's current reorg API returns baseline job IDs but not replay job IDs. An
+operator must authorize the exact replay branches after checking their GitHub
+App origin, pinned parent, receipt-only diff and existing receipt/owner binding.
+Keep an audit of those exact revisions; never allow an arbitrary branch or owner.
+Resume the benchmark only after the reorg reports ready and the genuine scores
+and fabricated-score rejection have been checked.

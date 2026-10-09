@@ -8,10 +8,8 @@ candidates in a trusted workspace. No per-evaluation VM provisioning or teardown
 is part of this MVP. Agent Compose, new cloud resources and a vault are
 unnecessary. The current deployment uses Nginx for public HTTPS on port 443.
 
-The initial challenge is exclusively **ecdsa.fail**, compared at **$20 and $200 checkpoints, plus Best achieved**. See [tier accounting](tier-accounting.md). Continuous
-execution with budget checkpoints remains a proposal, not a scheduling decision.
-The checkpoints do not cap a run's total spending; the solver chooses that
-authorization independently.
+The initial challenge is exclusively **ecdsa.fail**, compared **within $20, within $200, and Best overall**. See [tier accounting](tier-accounting.md). Each evaluation is one run with a solver-selected spending cap.
+The comparison budgets are UI views over existing trusted evaluation history.
 
 ```mermaid
 flowchart TB
@@ -33,7 +31,7 @@ flowchart TB
             BUILD["Untrusted source build"]
             RUN["Trusted Dungeness runner"]
             HARNESS["Submitted harness"]
-            CAPTURE["Trusted candidate capture and checkpoint seals"]
+            CAPTURE["Existing evaluator results + final candidate"]
             VERIFY["Isolated ECDSA verification"]
             BUILD --> RUN
             RUN --> HARNESS
@@ -45,7 +43,7 @@ flowchart TB
     YUKON["Yukon backend: receipt submissions and Pareto scores"]
     GITHUB["Challenge-owned GitHub workflow"]
     UI["Tier rankings and full performance-cost curves"]
-    CLI -->|"Source, exact model, tier and limits"| API
+    CLI -->|"Source, exact model, spending cap and limits"| API
     AUTH -->|"Temporary access via private authenticated channel"| METER
     API --> RUN
     HARNESS -->|"Scoped requests"| METER
@@ -55,7 +53,7 @@ flowchart TB
     RUN -->|"Private traces and status"| STORE
     API -->|"Verification receipt"| CLI
     CLI -->|"Receipt only; no harness upload"| YUKON
-    YUKON -->|"Create PR, dispatch pinned workflow"| GITHUB
+    YUKON -->|"Store Pareto submission, dispatch pinned workflow"| GITHUB
     GITHUB -->|"Receipt, expected problem, GitHub OIDC"| API
     API -->|"Resolve submission owner via existing API"| YUKON
     API -->|"Stored verified judgment; no new run"| GITHUB
@@ -82,7 +80,7 @@ subsequently changed. Catalyst retains that harness and its evaluation settings;
 Yukon does not need another source upload or a local source comparison.
 
 Official measurements require trusted usage settlement, immutable candidate
-capture, checkpoint seals and independent verification. Keep the complete
+evaluator history and independent verification. Keep the complete
 verified curve, infrastructure usage, and private traces before cleaning up the
 job's processes, containers and temporary workspace. Keep the remote VM running
 for subsequent jobs.
@@ -101,8 +99,8 @@ expiry. A service restart requires fresh user authorization.
 
 Renewable credentials and refresh operations stay on the user's machine.
 Preserve those original credentials during cancellation and cleanup.
-The credential endpoint, memory-only lifecycle and protections against disk
-copies still need implementation; this MVP keeps model access disabled.
+The Codex/ChatGPT path uses the memory-only credential endpoint and Linux tmpfs
+staging. Provider access is discarded after the run; it is not part of a receipt.
 See [runtime requirements](runtime-platform-requirements.md).
 
 Implemented: local packaging/build/smoke tools, Dungeness adapter, pinned ECDSA
@@ -122,13 +120,11 @@ receipt-only archives and a signed-OIDC result endpoint. Experimental custom
 Yukon patches are preserved but not required. See [the end-to-end guide](github-actions-e2e.md) and
 [the reproducible local check](local-evaluation.md).
 
-Current priority: authorize GitHub OIDC, register the benchmark in Yukon dev
-and validate one hosted submission. The HTTPS workflow is published. The dev GitHub
-App is installed; the account still needs benchmark-import permission.
-Temporary provider access, runtime checkpoint capture and credit reservations
-remain implementation work. User cancellation is deferred. Real research runs
-and adversarial testing follow the pipeline test. Remote viewer integration and
-artifact retention/cleanup policy are later operational work.
+Hosted GitHub OIDC retrieval, Yukon dev registration and a real model submission
+have succeeded. The challenge UI, history export and cheat filter are local
+changes awaiting rollout. The initial service continues to run on the existing
+VM. User cancellation, credential renewal and retention/cleanup policy remain
+later work. No Yukon backend modification is required.
 Local fixture modes remain separate and cannot be relabeled as remote ECDSA evidence.
 
 ## Service extraction

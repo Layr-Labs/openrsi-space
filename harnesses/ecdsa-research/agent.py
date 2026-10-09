@@ -11,13 +11,17 @@ def run():
     task = json.loads(Path(os.environ["CATALYST_TASK"]).read_text())
     if task["model_provider"] != "openai-chatgpt":
         raise SystemExit("This harness requires the ChatGPT Codex provider.")
-    instruction = task["instruction"] + """
-This is a one-dollar integration research run. Spend very little reasoning and
-output: inspect the point-add candidate, identify one small plausible optimization,
-and make it only if you can verify it with the provided evaluate command. Keep the
-original candidate when uncertain. Do not spend time on broad research. Finish
-quickly with a brief account of what you inspected and changed. Do not inspect or
-print credentials. Only candidate paths are retained for independent verification.
+    cap = float(task["budget"]["max_usd"])
+    instruction = task["instruction"] + f"""
+This is a bounded research run with a ${cap:g} normalized model-credit cap.
+Inspect the point-add candidate and evaluate the starting candidate. Try small
+plausible optimizations, checking each with the provided evaluate command. Retain
+the best verified candidate. Check cumulative usage between attempts and finish
+by ${cap * 0.85:g} to leave room for the final response. The cap is a limit,
+not a spending target. Keep reasoning and output concise, and finish early when
+there is no promising change. End with a brief account of verified results.
+Do not inspect or print credentials. Only candidate paths are retained for
+independent verification.
 """
     with tempfile.TemporaryDirectory(prefix="catalyst-codex-", dir="/dev/shm") as directory:
         home = Path(directory)

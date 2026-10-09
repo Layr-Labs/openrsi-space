@@ -1,4 +1,4 @@
-"""Credit accounting and checkpoint projection for trusted evaluator results.
+"""Credit accounting and budget views for trusted evaluator results.
 
 These validators check a server-owned record; they do not attest client records
 or implement worker isolation, model authorization, or checkpoint collection.
@@ -81,10 +81,10 @@ def credit_limit(value) -> Decimal:
 
 
 def project_observation(observation: dict, model: dict, max_model_credits, limits: dict) -> dict:
-    """Recompute costs, bind snapshots to settled usage and close tier windows.
+    """Recompute costs and bind verified observations to settled usage.
 
-    The runner assigns one sequence across usage, captures and checkpoint seals.
-    Verification can complete later, but must judge the exact captured digest.
+    Spending authority is separate from display budgets. Legacy checkpoint
+    records are validated when present, but never decide view eligibility.
     """
     funded_limit = credit_limit(max_model_credits)
     if observation.get("pricing_digest") != pricing_digest():
@@ -129,7 +129,7 @@ def project_observation(observation: dict, model: dict, max_model_credits, limit
     def cost_before(seq):
         return next((cost for position, cost in reversed(charges) if position < seq), Decimal(0))
 
-    checkpoints = observation.get("checkpoints")
+    checkpoints = observation.get("checkpoints", [])
     if not isinstance(checkpoints, list):
         raise CatalystError("Observation requires trusted checkpoint seals.")
     seals, last_seq, last_tier = {}, 0, 0
@@ -170,15 +170,15 @@ def project_observation(observation: dict, model: dict, max_model_credits, limit
             "normalized_model_usd": float(cost), "performance": performance,
             "avg_toffoli": toffoli, "peak_qubits": qubits,
         })
+        for field in ("verification_source", "gateway_sequence", "candidate_digest_kind", "source_digest"):
+            if field in point:
+                points[-1][field] = point[field]
     summaries = []
     for budget in TIERS:
-        eligible = [p for p in points if budget in seals
-                    and p["captured_sequence"] < seals[budget]
-                    and amount(p["normalized_model_usd"]) <= budget]
+        eligible = [p for p in points if amount(p["normalized_model_usd"]) <= budget]
         best = min(eligible, key=lambda p: (p["performance"], p["normalized_model_usd"],
                                            p["captured_sequence"]), default=None)
-        status = ("not_funded" if budget > funded_limit else "not_evaluated" if budget not in seals
-                  else "eligible" if best else "no_verified_candidate")
+        status = "eligible" if best else "no_verified_candidate"
         summaries.append({"budget_tier": budget, "status": status, "best": best})
     best = min(points, key=lambda p: (p["performance"], p["normalized_model_usd"],
                                       p["captured_sequence"]), default=None)

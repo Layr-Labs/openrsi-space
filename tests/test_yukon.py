@@ -193,15 +193,15 @@ class YukonRunnerTests(unittest.TestCase):
         self.assertEqual(len(self.publications), 1)
         self.assertEqual(len(self.trace_gets), 1)
 
-    def test_partial_tier_results_keep_finite_yukon_tuple_and_explicit_missing_tiers(self):
+    def test_cheaper_result_qualifies_for_both_views_without_missing_yukon_values(self):
         self.config["max_model_credits"] = 200
         write_json(self.root / "submission/evaluation.json", self.config)
         artifact = self.evaluate()
         self.assertEqual(artifact["scores"], [100, 0.25])
         summaries = artifact["metrics"]["observations"][0]["tiers"]
         self.assertEqual([t["status"] for t in summaries],
-                         ["not_evaluated", "eligible"])
-        self.assertIsNone(summaries[0]["best"])
+                         ["eligible", "eligible"])
+        self.assertEqual(summaries[0]["best"]["performance"], 100)
 
     def test_no_verified_candidate_cannot_publish_a_valid_score(self):
         def late(result):

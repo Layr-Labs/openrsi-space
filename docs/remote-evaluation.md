@@ -14,8 +14,9 @@ wait resumes with `catalyst remote wait EVALUATION_ID`; submitting again after
 completion requests a new evaluation. `status`, `wait` and `traces` never enqueue.
 Use your existing Yukon login or `YUKON_API_TOKEN` and a trusted
 `CATALYST_EVALUATOR_URL`. No separate Catalyst password is needed.
-Provider credentials are separate and are not currently accepted by the
-model-disabled MVP. Local fixture servers still use `CATALYST_API_TOKEN`.
+Provider credentials are separate. The deployed ChatGPT route accepts temporary
+access through `--codex-auth-file`; see [first-time login and token types](live-models.md).
+Local fixture servers still use `CATALYST_API_TOKEN`.
 
 ### Yukon authentication
 
@@ -39,8 +40,9 @@ evaluation per account, eight active/queued evaluations globally, and ten new
 evaluations per account in a rolling 24 hours by default. These are operator
 settings. Limits are checked atomically; retrying an existing request does not
 consume another slot. The solver chooses the spending cap; the $20/$200
-comparison checkpoints do not impose a maximum run budget. Authentication does
-not enable provider access in the current model-disabled worker.
+comparison checkpoints do not impose a maximum run budget. Model access also
+requires the operator's separate `model_policy`; the deployed service enables
+temporary ChatGPT access with per-run credit, token and time limits.
 
 Operators enable this with `catalyst yukon-auth-configure --auth-file AUTH_JSON
 --worker-config WORKER_JSON --yukon-api HTTPS_YUKON_ORIGIN`, then restart the API.
@@ -56,7 +58,7 @@ Pareto execution mapping. Source and evaluation settings stay in Catalyst.
 
 ## Receipt-only Yukon submission
 
-Yukon builds a candidate commit, opens the submission PR, and dispatches the
+Yukon builds a candidate commit and dispatches the
 challenge workflow. The workflow authenticates with a GitHub OIDC token addressed
 to `catalyst-evaluator`, then calls `POST /verifications/retrieve`:
 

@@ -10,7 +10,7 @@
   },
   "max_model_credits": 1,
   "limits": {
-    "max_model_tokens": 100000,
+    "max_model_tokens": 1000000,
     "max_seconds": 900
   }
 }

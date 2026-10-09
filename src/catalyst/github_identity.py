@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import re
 import urllib.parse
+import uuid
 
 import jwt
 
@@ -97,6 +98,8 @@ class GitHubIdentity:
             if bound:
                 if bound["benchmark_id"] != benchmark_id or bound["reference"] != reference:
                     raise APIError(403, "Execution binding does not match this benchmark and receipt.")
+                if bound.get("revision") is not None and bound["revision"] != claims["sha"]:
+                    raise APIError(403, "Replay revision differs from its operator authorization.")
                 submission_id = bound["submission_id"]
             document = self.get_json(
                 policy["yukon_api_url"], f"/api/submissions/{submission_id}",
@@ -127,6 +130,11 @@ class GitHubIdentity:
             "kind": "submission" if matched else "baseline",
             "owner_id": owner_id, "benchmark_id": benchmark_id,
             "submission_id": submission_id, "revision": claims["sha"],
+            # Each revalidation has its own immutable execution. Keep the original
+            # submission identity for owner checks and audit, without overwriting
+            # the earlier execution's receipt binding.
+            "execution_id": matched.group(1) if matched else str(
+                uuid.uuid5(uuid.UUID(benchmark_id), claims["sha"])),
             "problem": policy.get("problem"),
             "workflow": {key: claims[key] for key in
                          ("repository_id", "repository", "ref", "sha", "run_id", "run_attempt")},

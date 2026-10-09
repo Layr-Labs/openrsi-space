@@ -289,6 +289,57 @@ class GitHubReceiptTests(unittest.TestCase):
         self.api_submission["status"] = "cancelled"
         self.assertEqual(self.post(token=token)[0], 403)
 
+    def test_revalidation_keeps_each_execution_immutable_without_new_model_jobs(self):
+        for index, sha in enumerate(("a" * 40, "c" * 40)):
+            job, body = self.binding_fixture()
+            job["input"]["sourceRef"] = sha
+            self.bind(body)
+            ref = f"refs/heads/submissions/{job['input']['executionSubmissionId']}"
+            claims = {"ref": ref, "sha": sha, "workflow_sha": sha,
+                      "run_id": str(50 + index),
+                      "workflow_ref": f"example/catalyst/.github/workflows/benchmark.yml@{ref}"}
+            status, result = self.post(token=self.token(claims))
+            self.assertEqual(status, 200, result)
+            self.assertEqual(result["judgment"]["scores"], [100, .25])
+            # Reusing this execution at a different revision still fails.
+            changed = {**claims, "sha": "d" * 40, "workflow_sha": "d" * 40,
+                       "run_id": str(60 + index)}
+            self.assertEqual(self.post(token=self.token(changed))[0], 409)
+        with self.store.connect() as db:
+            self.assertEqual(db.execute("SELECT count(*) FROM yukon_retrievals").fetchone()[0], 2)
+            self.assertEqual(db.execute("SELECT count(*) FROM jobs").fetchone()[0], 1)
+
+    def test_operator_baseline_revision_update_preserves_previous_retrieval(self):
+        for index, sha in enumerate(("b" * 40, "c" * 40)):
+            ref = f"refs/heads/yukon/baseline/{sha}"
+            self.policy["baseline"].update(ref=ref, sha=sha)
+            claims = {"ref": ref, "sha": sha, "workflow_sha": sha,
+                      "run_id": str(70 + index),
+                      "workflow_ref": f"example/catalyst/.github/workflows/benchmark.yml@{ref}"}
+            status, result = self.post(token=self.token(claims))
+            self.assertEqual(status, 200, result)
+        with self.store.connect() as db:
+            self.assertEqual(db.execute("SELECT count(*) FROM yukon_retrievals").fetchone()[0], 2)
+            self.assertEqual(db.execute("SELECT count(*) FROM jobs").fetchone()[0], 1)
+
+    def test_operator_replay_pin_rejects_another_revision(self):
+        job, body = self.binding_fixture()
+        self.bind(body)
+        execution = job["input"]["executionSubmissionId"]
+        with self.store.connect() as db:
+            row = db.execute("SELECT binding FROM github_execution_bindings "
+                             "WHERE execution_id=?", (execution,)).fetchone()
+            binding = json.loads(row[0])
+            binding["revision"] = "c" * 40
+            db.execute("UPDATE github_execution_bindings SET binding=? WHERE execution_id=?",
+                       (json.dumps(binding), execution))
+        ref = f"refs/heads/submissions/{execution}"
+        claims = {"ref": ref, "workflow_ref": f"example/catalyst/.github/workflows/benchmark.yml@{ref}"}
+        self.assertEqual(self.post(token=self.token(claims))[0], 403)
+        status, result = self.post(token=self.token({
+            **claims, "sha": "c" * 40, "workflow_sha": "c" * 40}))
+        self.assertEqual(status, 200, result)
+
     def test_job_binding_rejects_wrong_owner_benchmark_kind_source_and_credentials(self):
         job, body = self.binding_fixture()
         for field, value in [

@@ -194,7 +194,7 @@ def retrieve_receipt(store, auth, principal, body):
         }, {
             "protocol": PROTOCOL, "kind": context["kind"], "owner_id": context["owner_id"],
             "benchmark_id": context["benchmark_id"], "benchmark_revision": context["revision"],
-            "submission_id": context["submission_id"], "problem": body["problem"],
+            "submission_id": context["execution_id"], "problem": body["problem"],
             "reference": reference, "objectives": OBJECTIVES, "judge": body["judge"],
         })
         with store.connect() as db:

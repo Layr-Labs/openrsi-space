@@ -19,17 +19,19 @@ rates, not live provider quotes. Subscription usage can consume account
 allowance without representing a cash charge. Unknown usage or unpriced models
 cannot establish tier eligibility.
 
-**Still proposed:** one continuous run with checkpoints, with the solver choosing
-the spending cap. No run strategy has been selected. The result contract
-supports explicitly sealed checkpoints without scheduling continuous runs or
-independent tier runs. `max_model_credits` is the authorized cap for one evaluation;
-a lower tier is measured only if the trusted runner actually seals it. Changing
-a viewing tier never starts an evaluation.
+Each evaluation runs under the solver's chosen spending cap. **Within $20**,
+**Within $200**, and **Best overall** are display views over the saved curve;
+a $5 run qualifies for both budget views. Changing the view never starts a run.
+Catalyst exports the existing Dungeness evaluator history and settled usage.
 
-See [tier and checkpoint accounting](docs/tier-accounting.md) for exact
-eligibility, concurrent-request handling, and Yukon score projection.
+See [budget accounting](docs/tier-accounting.md) for exact eligibility and
+[the challenge UI](docs/challenge-ui.md) for the local preview and Yukon handoff.
 
 ## Solver workflow
+
+First-time users: see [which token to use and how to sign in](docs/live-models.md#which-token-and-where-does-it-come-from).
+Yukon login, temporary model access and the returned verification receipt are
+three different things; the CLI handles model-token extraction and receipt creation.
 
 The root [`benchmark.json`](benchmark.json) is one schema-v1 Yukon benchmark,
 using stock Yukon's GitHub Actions runner. Only `submission/verification.json`
@@ -65,14 +67,14 @@ allowance will be consumed. The starter uses a 20-credit cap, 100,000 tokens and
 The local worker builds immutable source, starts from the pinned problem state,
 captures the final candidate and independently verifies it. Real ECDSA execution
 is available with model access disabled or through an operator-enabled
-[temporary ChatGPT access](docs/live-models.md) uses native Codex through Dungeness; runtime checkpoint capture still needs implementation. Local interactive state is not an
+[temporary ChatGPT access](docs/live-models.md) uses native Codex through Dungeness; the challenge adapter exports its existing evaluator history. Local interactive state is not an
 implicit input. The required repetition policy
 remains undecided; preserve attempts and show counts rather than hiding repeats.
 
 The client downloads private traces and writes `verification.json` in the harness
 directory. Copy that receipt into `submission/verification.json`.
 The helper's stock `yukon submit` call uploads only that receipt.
-Yukon creates the submission PR and dispatches the repository's workflow. That
+Yukon creates the candidate commit and dispatches the repository's workflow. That
 workflow authenticates with GitHub OIDC and retrieves the existing evaluation.
 Catalyst registers the execution/submission mapping through Yukon's authenticated
 job API, using the solver's key transiently without retaining it. It resolves the
@@ -105,7 +107,8 @@ saved by the server. `CATALYST_API_TOKEN` remains for local test fixtures only.
 Provider access is separate. Live runs use the
 [Codex credential handoff](docs/live-models.md) after operator enablement.
 
-Yukon login and native Codex access are live in release `20261007-codex-chatgpt-1`, configured against
+Yukon login, native Codex access, intermediate history and candidate screening are
+live in release `20261008-history-screen-1`, configured against
 **https://api-dev.yukon.org**. This integration targets **dev Yukon**, using the
 Yukon Eigen GitHub App and a dev API key. Keys from `www.yukon.org` belong to
 production and cannot authenticate here.
@@ -124,9 +127,10 @@ existing `openclaw` VM, reached through HTTPS, with optional temporary ChatGPT a
 The real Codex/Astra/high test completed at **0.887796 model credits** and
 independently verified **10,704,574,395** (3,942,753 average Toffoli gates ×
 2,715 peak qubits), a 0.505% improvement over the pinned baseline. Its receipt
-was retrieved through the HTTPS client. A token-limit validation bug was corrected
-using the retained Dungeness ledger, without another model run. Hosted Yukon
-submission remains a separate integration step.
+was retrieved through the HTTPS client and the hosted Yukon workflow. The latest
+test retained six verified observations and completed the same hosted flow, at
+2.720172 credits total across a rejected token-limit attempt and its corrected
+replacement. See [live end-to-end evidence](docs/github-actions-e2e.md).
 
 For the actual pinned ECDSA problem, use
 [`harnesses/ecdsa-baseline`](harnesses/ecdsa-baseline/README.md). The submitted
@@ -152,7 +156,7 @@ Implemented locally:
 - Local catalog and a checkpoint and best-result viewer using explicitly synthetic or
   contributor-reported observations. Its rankings illustrate the policy;
   local records do not establish official checkpoint eligibility.
-- Reference credit calculation, trusted-result validation, checkpoint eligibility,
+- Reference credit calculation, trusted-result validation, budget views,
   full verified curves, and the remote client/submission HTTP contract.
 - A Pareto Yukon manifest and a receipt-only GitHub Actions judge using stock
   Yukon dispatch and score artifacts. GitHub OIDC authentication binds the repository,
@@ -170,10 +174,10 @@ that workflow publication reuses the completed job. Only external identity,
 submission registration and model responses are fixtures; its tiny circuit is
 explicitly labeled local-test evidence and cannot count as an ECDSA result.
 
-Subscription access is verified; renewal, runtime checkpoint collection,
-GitHub repository authorization and hosted benchmark
-registration remain pending. Catalyst is not yet available for hosted
-`yukon clone` or live submissions.
+The remote Codex/ChatGPT run and stock Yukon dev receipt workflow have succeeded.
+The benchmark is `layr-labs/catalyst` in Pareto mode. The UI, existing-history
+export and deterministic cheat screening are implemented locally; these changes
+still need a reviewed rollout. Renewal and user cancellation remain separate work.
 
 Develop and test on the Mac first. The initial remote MVP hosts the API and runs
 the harness worker inside the existing VM accessible through `ssh openclaw`.
@@ -207,9 +211,8 @@ states and no fabricated score. This Pareto transport is not the tier leaderboar
 Catalyst's board must rank eligible results separately at the selected tier.
 
 Keep one shared submission path. Separate budget tiers must not become Yukon
-tracks over the same editable files. The existing archived Yukon UI preview
-predates this contract and needs a tier-aware backend/board integration before
-launch; see [the integration guide](integrations/yukon/README.md).
+tracks over the same editable files. The new challenge board uses stock Yukon responses; see
+[the UI handoff](docs/challenge-ui.md).
 
 ## Try the viewer
 

@@ -87,8 +87,8 @@ source or images.
 ## Prepare an executable Dungeness attempt
 
 This is a local development path with arbitrary test allowances. Official remote
-evaluations use only the two checkpoints and Best achieved and [trusted accounting](tier-accounting.md).
-The current adapter does not collect official checkpoint seals.
+evaluations use [trusted accounting](tier-accounting.md); $20, $200 and Best
+achieved are views of Dungeness’s existing evaluation history, not funding tiers.
 
 With the existing Dungeness installation configured:
 

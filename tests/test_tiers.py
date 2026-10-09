@@ -1,4 +1,4 @@
-"""Checkpoint and credit contracts; all data synthetic, no provider calls."""
+"""Budget views and credit contracts; all data synthetic, no provider calls."""
 from decimal import Decimal
 import json
 from pathlib import Path
@@ -28,7 +28,7 @@ def candidate(sequence, cost, performance):
 
 
 def observation():
-    # A candidate after the $20 seal has exactly the same usage, but is too late.
+    # Legacy seals no longer restrict budget views; both $20 candidates qualify.
     return {
         "pricing_digest": pricing_digest(), "end_sequence": 13,
         "normalized_model_usd": 201,
@@ -47,19 +47,18 @@ class TierTests(unittest.TestCase):
 
     def test_inclusive_boundaries_and_late_capture_cannot_improve_earlier_tiers(self):
         result = self.project()
-        self.assertEqual([t["best"]["performance"] for t in result["tiers"]], [1000, 700])
+        self.assertEqual([t["best"]["performance"] for t in result["tiers"]], [900, 700])
         self.assertEqual([t["best"]["normalized_model_usd"] for t in result["tiers"]], [20, 200])
         self.assertEqual(result["best"]["performance"], 600)
         self.assertEqual(len(result["curve"]), 6)  # Includes regressions and same-cost captures.
         self.assertEqual(result["normalized_model_usd"], 201)
 
-    def test_partial_tiers_are_explicit_and_never_filled_from_terminal_result(self):
+    def test_views_need_no_seals_and_a_cheaper_run_qualifies_for_both(self):
         record = observation()
         record["checkpoints"] = []
         result = self.project(record)
-        self.assertEqual([t["status"] for t in result["tiers"]], ["not_evaluated", "not_evaluated"])
-        self.assertIsNone(result["tiers"][0]["best"])
-        record["curve"] = [p for p in record["curve"] if p["captured_sequence"] > 3]
+        self.assertEqual([t["status"] for t in result["tiers"]], ["eligible", "eligible"])
+        record["curve"] = [p for p in record["curve"] if p["normalized_model_usd"] > 20]
         record["checkpoints"] = observation()["checkpoints"]
         self.assertEqual(self.project(record)["tiers"][0]["status"], "no_verified_candidate")
         record = observation()
@@ -67,7 +66,7 @@ class TierTests(unittest.TestCase):
                       checkpoints=[{"budget_tier": 20, "sequence": 3, "settled": True}],
                       curve=[candidate(2, 20, 1000)], end_sequence=3)
         self.assertEqual([t["status"] for t in self.project(record, 20)["tiers"]],
-                         ["eligible", "not_funded"])
+                         ["eligible", "eligible"])
 
     def test_no_candidate_does_not_get_a_baseline_or_zero(self):
         record = observation()
@@ -85,14 +84,14 @@ class TierTests(unittest.TestCase):
         self.assertEqual(result["best"]["normalized_model_usd"], 2500)
         self.assertEqual(result["normalized_model_usd"], 2600)
         self.assertEqual(len(result["curve"]), 2)
-        self.assertTrue(all(t["status"] == "not_evaluated" for t in result["tiers"]))
+        self.assertTrue(all(t["status"] == "no_verified_candidate" for t in result["tiers"]))
 
-    def test_late_candidate_can_improve_best_without_improving_a_sealed_tier(self):
+    def test_legacy_seals_do_not_exclude_an_observation_at_the_budget(self):
         record = observation()
         record["curve"][1].update(avg_toffoli=1, performance=10)
         result = self.project(record)
         self.assertEqual(result["best"]["performance"], 10)
-        self.assertEqual(result["tiers"][0]["best"]["performance"], 1000)
+        self.assertEqual(result["tiers"][0]["best"]["performance"], 10)
 
     def test_accounting_and_capture_tampering_fail_closed(self):
         mutations = [
@@ -195,6 +194,7 @@ class PricingTests(unittest.TestCase):
         manifest = json.loads((source / "benchmark.json").read_text())
         self.assertEqual(manifest["paretoPolicies"], {"scoring": SCORING, "validity": VALIDITY})
         self.assertEqual(manifest["schemaVersion"], 1)
+        self.assertEqual(manifest["promotionMode"], "automatic")
         self.assertEqual(manifest["editablePaths"], ["submission/verification.json"])
         self.assertEqual(manifest["runner"]["provider"], "github-actions")
         self.assertEqual([o["name"] for o in manifest["objectives"]], ["ecdsaPerformance", "modelCreditsAtBest"])

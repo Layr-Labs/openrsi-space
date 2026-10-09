@@ -21,10 +21,11 @@ from .dungeness import prepare
 from .evaluator import JobStore, bindings
 from .executable import build
 from .local_run import FIXTURE_URL, MockProvider
-from .tiers import TIERS, credits, integer, pricing_digest
+from .tiers import credits, integer, pricing_digest
 from .remote import judgment
 from .problems import get_problem, initial_problems
 from .model_access import temporary_access, take_worker_token
+from .cheat_filter import screen, require_pass
 
 _SUPERVISOR_FD = None
 
@@ -232,6 +233,12 @@ class DungenessLocalBackend:
         work_state = Path(self.config["state"])
         source = artifacts / "source"
         extract_bundle(base64.b64decode(request["source"]["archive_base64"]), source)
+        from .common import snapshot_directory
+        from .executable import SOURCE_EXCLUDES
+        source_snapshot, _ = snapshot_directory(source, exclude=SOURCE_EXCLUDES)
+        screening = screen({name: (source / name).read_bytes() for name in source_snapshot["files"]}, "harness")
+        write_json(artifacts / "harness-screening.json", screening)
+        require_pass(screening)
         built = build(work_state, source, timeout=300)
         build_identity = {"id": built["id"], "image_digest": built["image_id"],
                           "image_identity_kind": "docker-image-id", "evidence": self.config["mode"]}
@@ -293,6 +300,10 @@ class DungenessLocalBackend:
                     raise CatalystError("Expected exactly one retained candidate artifact.")
                 candidate_file = artifacts / "candidate" / relative
                 candidate_digest = capture_candidate(candidates[0], artifacts / "candidate", relative)
+                if real:
+                    screening = screen(candidate_files(candidate_file, relative), "candidate")
+                    write_json(artifacts / "candidate-screening.json", screening)
+                    require_pass(screening)
                 capture_seq = len(ledger) + 1
                 transition("verifying")
                 # Re-run the exact trusted verifier against the frozen candidate, with no network.
@@ -318,21 +329,22 @@ class DungenessLocalBackend:
                         "normalized_model_usd": float(total), "avg_toffoli": verified["avg_toffoli"],
                         "peak_qubits": verified["peak_qubits"], "performance": verified["score"],
                     })
-                # Only terminal windows within the actual allowance are sealed.
-                # Earlier windows crossed during execution remain explicitly unmeasured.
-                checkpoints = []
-                seq = capture_seq
-                for budget in TIERS:
-                    if total <= budget <= evaluation["max_model_credits"]:
-                        seq += 1
-                        checkpoints.append({"budget_tier": budget, "sequence": seq, "settled": True})
+                end_sequence = capture_seq + 1
+                if real:
+                    from .ecdsa_history import project_history
+                    ledger, points, end_sequence, omitted = project_history(
+                        run_dir, ledger, points, evaluation["model"])
+                    write_json(artifacts / "usage.json", ledger)
+                    write_json(artifacts / "evaluation-history.json", {
+                        "curve": points, "unordered_evaluations_omitted": omitted,
+                    })
                 observation = {
                     "problem_id": request["problem_set"][0]["id"],
                     "problem_commit": request["problem_set"][0]["repository"]["commit"],
                     "pricing_digest": pricing_digest(), "normalized_model_usd": float(total),
-                    "end_sequence": seq + 1, "usage": ledger, "curve": points, "checkpoints": checkpoints,
+                    "end_sequence": end_sequence, "usage": ledger, "curve": points, "checkpoints": [],
                 }
-                label = "Pinned ecdsa.fail candidate" if real else "Local circuit fixture (not ECDSA)"
+                label = "Pinned ecdsa.fail results" if real else "Local circuit fixture (not ECDSA)"
                 return {"build": build_identity, "observations": [observation], "valid": bool(points),
                         "model_access": "metered" if live else "disabled" if real else "mock",
                         "reason": f"{label} independently verified."
@@ -352,7 +364,8 @@ def archive_traces(folder):
     """Allowlisted artifacts only; no auth files, env files, or build context."""
     names = ("build.json", "runtime.json", "execution.log", "verifier-build.log", "verification.log", "failure.json",
              "provider-usage.json",
-             "usage.json", "verification.json")
+             "usage.json", "verification.json", "harness-screening.json", "candidate-screening.json",
+             "evaluation-history.json")
     temporary = folder / "traces.zip.tmp"
     with zipfile.ZipFile(temporary, "w", compression=zipfile.ZIP_DEFLATED) as archive:
         for name in names:
