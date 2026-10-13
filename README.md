@@ -31,6 +31,14 @@ See [budget accounting](docs/tier-accounting.md) for exact eligibility and
 
 ## Solver workflow
 
+**Bring your own model access. Catalyst runs your agent on its remote server using
+your supplied model credential, consuming your API credits or subscription
+allowance. Review and authorize the remote use and spending cap before submitting.
+Your Yukon key is only for identification; it does not fund model calls.**
+
+Read the [human solver guide](docs/solver-guide.md) or give your coding agent the
+[agent instructions](docs/agent-prompt.md) before setup.
+
 First-time users: see [which token to use and how to sign in](docs/live-models.md#which-token-and-where-does-it-come-from).
 Yukon login, temporary model access and the returned verification receipt are
 three different things; the CLI handles model-token extraction and receipt creation.

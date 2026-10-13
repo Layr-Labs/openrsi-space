@@ -6,14 +6,41 @@ import os
 from pathlib import Path
 import re
 import stat
+import sys
+import time
 
 from .common import CatalystError, read_json, write_json
 from .problems import initial_problems
-from .remote import digest, endpoint, judge_input, solver_fetch
+from .remote import HTTPFailure, digest, endpoint, judge_input, solver_fetch
 
 PROTOCOL = "remote-verification-receipt-v1"
 RECEIPT_PATH = Path("submission/verification.json")
 SCORE_PATH = Path(".catalyst/yukon/score.json")
+
+def retrieve_with_binding_wait(base, token, body):
+    """Bounded read retries while a hosted execution's owner binding is registered."""
+    seconds = 0
+    if os.environ.get("GITHUB_ACTIONS") == "true":
+        try:
+            seconds = int(os.environ.get("CATALYST_RECEIPT_AUTH_WAIT_SECONDS", "0"))
+        except ValueError:
+            raise CatalystError("Invalid receipt authorization wait.") from None
+        if not 0 <= seconds <= 60:
+            raise CatalystError("Receipt authorization wait must be between 0 and 60 seconds.")
+    deadline = time.monotonic() + seconds
+    notified = False
+    while True:
+        try:
+            return solver_fetch(base, "/verifications/retrieve", token, document=body)
+        except HTTPFailure as error:
+            remaining = deadline - time.monotonic()
+            if error.status != 403 or seconds == 0 or remaining <= 0:
+                raise
+            if not notified:
+                print("Waiting briefly for the hosted receipt authorization; no evaluation is started.",
+                      file=sys.stderr, flush=True)
+                notified = True
+            time.sleep(min(2, remaining))
 
 
 def problem_identity():
@@ -49,7 +76,7 @@ def check_receipt(root=None):
     problem = problem_identity()
     token, _ = authentication()
     body = {"protocol": PROTOCOL, "reference": reference, "problem": problem, "judge": requested}
-    result = json.loads(solver_fetch(endpoint(), "/verifications/retrieve", token, document=body))
+    result = json.loads(retrieve_with_binding_wait(endpoint(), token, body))
     if (not isinstance(result, dict) or result.get("protocol") != PROTOCOL
             or result.get("reference") != reference or result.get("problem") != problem
             or result.get("judge") != requested):

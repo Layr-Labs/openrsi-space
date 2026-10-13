@@ -1,8 +1,11 @@
 #!/bin/sh
 # Called only after successful renewal; unrelated certificates are ignored.
 set -eu
-if [ "${RENEWED_LINEAGE:-}" != "/etc/letsencrypt/live/35.92.254.142" ]; then
-    exit 0
-fi
+case "${RENEWED_LINEAGE:-}" in
+    /etc/letsencrypt/live/35.92.254.142|\
+    /etc/letsencrypt/live/catalyst-prod-ip|\
+    /etc/letsencrypt/live/catalyst-prod-domain) ;;
+    *) exit 0 ;;
+esac
 /usr/sbin/nginx -t
 /usr/sbin/nginx -s reload

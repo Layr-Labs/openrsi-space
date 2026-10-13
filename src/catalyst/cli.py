@@ -124,6 +124,23 @@ def publish_content(state, server, content):
     return Catalog(state / "catalog").publish(content)
 
 
+def model_access_notice(args, client, evaluation=None):
+    if not any(getattr(args, name, None) for name in (
+            "codex_auth_file", "provider_access_file", "prompt_model_token", "model_token_stdin")):
+        return
+    budget = (f" Spending cap: {evaluation['max_model_credits']:g} normalized model credits."
+              if evaluation is not None else " The existing run's limits still apply.")
+    print(
+        f"REMOTE MODEL ACCESS: You are sending your model credential to {client.base}. "
+        "Catalyst runs your agent on its remote server using YOUR model account; "
+        "calls consume YOUR API credits or subscription allowance. "
+        "Use this credential option only if you authorize that remote use."
+        + budget + " Normalized credits are not a guaranteed cash-billing limit. "
+        "Your Yukon key is separate and does not fund model calls.",
+        file=sys.stderr, flush=True,
+    )
+
+
 def remote_command(args, state):
     from .remote import RemoteClient
     client = RemoteClient(state)
@@ -164,11 +181,12 @@ def remote_command(args, state):
         ) if getattr(args, key) is not None}
         # Validate choices before asking the solver for a credential.
         from .remote import evaluation_config
-        evaluation_config(Path(args.package) / "evaluation.json", overrides, check_pricing=False)
+        config = evaluation_config(Path(args.package) / "evaluation.json", overrides, check_pricing=False)
         for credential_file in (args.codex_auth_file, args.provider_access_file):
             if credential_file and Path(credential_file).expanduser().resolve().is_relative_to(
                     Path(args.package).resolve()):
                 raise CatalystError("Keep credential files outside the submitted source directory.")
+        model_access_notice(args, client, config)
         model_token = None
         if args.codex_auth_file:
             from .live_provider import encode_codex_access
@@ -340,13 +358,13 @@ def main(argv=None):
     remote_submit.add_argument("--max-seconds", type=int, help="Override the run's wall-time cap.")
     token_input = remote_submit.add_mutually_exclusive_group()
     token_input.add_argument("--provider-access-file",
-                             help="Read a private provider-to-credential JSON map; never include it in the submission.")
+                             help="Authorize remote use of your model accounts via a private credential map; never package it.")
     token_input.add_argument("--codex-auth-file", nargs="?", const=str(Path.home() / ".codex/auth.json"),
-                             help="Send temporary ChatGPT access from Codex login; keep refresh credentials local.")
+                             help="Authorize remote use of your ChatGPT allowance; send temporary Codex access, keeping refresh credentials local.")
     token_input.add_argument("--prompt-model-token", action="store_true",
-                             help="Read a provider token from a hidden terminal prompt; never save it.")
+                             help="Authorize remote use of your model account with a token entered at a hidden prompt.")
     token_input.add_argument("--model-token-stdin", action="store_true",
-                             help="Read one provider-token line from stdin; never save it.")
+                             help="Authorize remote use of your model account with one private provider-token line from stdin.")
     for operation, help_text in (
         ("status", "Read the current status of a submitted evaluation."),
         ("wait", "Wait for an existing evaluation; never enqueue another run."),

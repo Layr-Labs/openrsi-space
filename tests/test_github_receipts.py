@@ -235,6 +235,37 @@ class GitHubReceiptTests(unittest.TestCase):
         self.auth.config["tokens"][hashlib.sha256(b"solver-key").hexdigest()]["owner"] = str(uuid.uuid4())
         self.assertEqual(self.post(token="solver-key")[0], 403)
 
+    def test_hosted_binding_wait_retries_only_reads_and_still_fails_closed(self):
+        from catalyst.receipts import retrieve_with_binding_wait
+        body = {"reference": self.reference}
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "true",
+                                     "CATALYST_RECEIPT_AUTH_WAIT_SECONDS": "2"}), \
+                patch("catalyst.receipts.time.sleep") as sleep:
+            with patch("catalyst.receipts.time.monotonic", side_effect=[0, 0]), \
+                    patch("catalyst.receipts.solver_fetch",
+                          side_effect=[HTTPFailure(403), b"verified"]) as fetch:
+                self.assertEqual(retrieve_with_binding_wait(self.url, "fixture", body), b"verified")
+                self.assertEqual(fetch.call_count, 2)
+                for call in fetch.call_args_list:
+                    self.assertEqual(call.args[1], "/verifications/retrieve")
+                    self.assertEqual(call.kwargs["document"], body)
+            with patch("catalyst.receipts.time.monotonic", side_effect=[0, 0, 2]), \
+                    patch("catalyst.receipts.solver_fetch", side_effect=HTTPFailure(403)) as fetch:
+                with self.assertRaises(HTTPFailure) as denied:
+                    retrieve_with_binding_wait(self.url, "fixture", body)
+                self.assertEqual(denied.exception.status, 403)
+                self.assertEqual(fetch.call_count, 2)
+            with patch("catalyst.receipts.solver_fetch", side_effect=HTTPFailure(404)) as fetch:
+                with self.assertRaises(HTTPFailure):
+                    retrieve_with_binding_wait(self.url, "fixture", body)
+                self.assertEqual(fetch.call_count, 1)
+        with patch.dict(os.environ, {"GITHUB_ACTIONS": "",
+                                     "CATALYST_RECEIPT_AUTH_WAIT_SECONDS": "60"}), \
+                patch("catalyst.receipts.solver_fetch", side_effect=HTTPFailure(403)) as fetch:
+            with self.assertRaises(HTTPFailure):
+                retrieve_with_binding_wait(self.url, "fixture", body)
+            self.assertEqual(fetch.call_count, 1)
+
     def binding_fixture(self):
         from catalyst.yukon_binding import PROTOCOL
         self.auth.yukon = SimpleNamespace(api="https://api-dev.yukon.org")

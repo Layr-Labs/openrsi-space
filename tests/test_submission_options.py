@@ -99,8 +99,14 @@ class SubmissionOptionsTests(unittest.TestCase):
         client = RemoteClient(self.root / "state")
         identity = str(uuid.uuid4())
         calls = []
+        notices = io.StringIO()
 
         def accept(base, route, bearer, *, document, model_token):
+            self.assertIn("REMOTE MODEL ACCESS", notices.getvalue())
+            self.assertIn("https://evaluator.invalid", notices.getvalue())
+            self.assertIn("YOUR API credits or subscription allowance", notices.getvalue())
+            self.assertIn("Spending cap: 3", notices.getvalue())
+            self.assertNotIn(model_token, notices.getvalue())
             self.assertEqual(route, "/evaluations")
             self.assertEqual(model_token, "offline-kimi-membership-key")
             self.assertNotIn(model_token, json.dumps(document))
@@ -108,7 +114,7 @@ class SubmissionOptionsTests(unittest.TestCase):
             return json.dumps({"evaluation_id": identity, "request_id": document["request_id"]}).encode()
 
         with patch("catalyst.remote.solver_fetch", side_effect=accept), \
-                redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()), \
+                redirect_stdout(io.StringIO()), redirect_stderr(notices), \
                 patch("catalyst.cli.sys.stdin", io.StringIO("offline-kimi-membership-key\n")):
             status = main(["--state", str(self.root / "state"), "remote", "submit", str(self.source),
                            "--provider", "kimi-code", "--model", "k3", "--budget", "3",

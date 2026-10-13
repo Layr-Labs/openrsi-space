@@ -1,5 +1,15 @@
 # Temporary model access
 
+**Bring your own model account.** Catalyst receives the model credential you
+select and runs your agent on its remote server using that access. Calls consume
+your API credits or subscription allowance. Supplying a credential to
+`catalyst remote submit` authorizes that remote use for the selected run; it is
+not merely signing in locally. Review the provider, model and spending cap first.
+Your Yukon key authenticates you and does not pay for model calls.
+
+For the full human walkthrough, start with [the solver guide](solver-guide.md).
+Coding agents should read [the agent instructions](agent-prompt.md).
+
 The deployed [generic harness implementation](generic-harnesses.md) supports API
 provider access, model sets, and credentials owned by the gateway. The existing
 VM currently enables `openai-chatgpt` and `kimi-code`. The historical native
