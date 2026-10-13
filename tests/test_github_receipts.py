@@ -480,7 +480,7 @@ class GitHubWorkflowTests(unittest.TestCase):
         self.assertIn("workflow_dispatch", workflow["on"])
         self.assertEqual(workflow["permissions"], {"contents": "read", "id-token": "write"})
         job = workflow["jobs"]["benchmark"]
-        self.assertEqual(job["env"]["CATALYST_EVALUATOR_URL"], "https://35.92.254.142")
+        self.assertEqual(job["env"]["CATALYST_EVALUATOR_URL"], "https://3.21.93.126")
         for obsolete in ("CATALYST_SSH_", "secrets.", "github-tunnel", "CATALYST_API_TOKEN", "YUKON_API_TOKEN"):
             self.assertNotIn(obsolete, source)
         self.assertEqual([step["run"] for step in job["steps"] if "run" in step],

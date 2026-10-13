@@ -18,7 +18,7 @@ cd .catalyst/yukon-publish
 NEXT_PUBLIC_API_URL=https://api-dev.yukon.org \
 NEXT_PUBLIC_CATALYST_BENCHMARK_REF=8d3a2daa-afab-4685-b93a-7443c83049d2 \
 NEXT_PUBLIC_LIVE_CHALLENGES=catalyst \
-CATALYST_EVALUATOR_URL=https://35.92.254.142 \
+CATALYST_EVALUATOR_URL=https://3.21.93.126 \
 bun run dev:challenges
 ```
 

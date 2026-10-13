@@ -60,7 +60,7 @@ For a custom login-file location, pass
 ### Submit source and obtain the receipt
 
 ```sh
-export CATALYST_EVALUATOR_URL=https://35.92.254.142
+export CATALYST_EVALUATOR_URL=https://3.21.93.126
 unset CATALYST_API_TOKEN CATALYST_LOCAL_TEST CATALYST_LOCAL_ECDSA CATALYST_LOCAL_PROBLEM_SET
 .venv/bin/catalyst remote submit harnesses/ecdsa-research \
   --codex-auth-file --wait

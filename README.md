@@ -110,7 +110,7 @@ catalyst remote traces EVALUATION_ID
 ```
 
 Or submit and wait in one command: `catalyst remote submit submission --wait`.
-Configure `CATALYST_EVALUATOR_URL=https://35.92.254.142` and use your existing
+Configure `CATALYST_EVALUATOR_URL=https://3.21.93.126` and use your existing
 Yukon login or `YUKON_API_TOKEN`. No separate Catalyst password is needed.
 Catalyst validates the key with its configured Yukon API and returns a 15-minute
 solver session, renewed automatically by the client. Keys and sessions are never
@@ -133,7 +133,10 @@ A subsequent `submit` after completion deliberately requests a fresh evaluation;
 See [the client contract](docs/remote-evaluation.md#standalone-client),
 [the local service setup](docs/local-evaluation.md), and
 [the deployed VM commands](docs/remote-vm.md). The private service runs on the
-existing `openclaw` VM, reached through HTTPS, with optional temporary ChatGPT access.
+dedicated `catalyst-prod` VM, reached through HTTPS, with temporary provider access.
+Existing evaluations and receipt identities have been copied from Openclaw.
+This endpoint still authenticates against Yukon dev; see
+[the verifier endpoint](docs/verifier-endpoint.md).
 
 The real Codex/Astra/high test completed at **0.887796 model credits** and
 independently verified **10,704,574,395** (3,942,753 average Toffoli gates ×

@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      CATALYST_EVALUATOR_URL: https://35.92.254.142
+      CATALYST_EVALUATOR_URL: https://3.21.93.126
     steps:
       - name: Checkout dispatched source
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
