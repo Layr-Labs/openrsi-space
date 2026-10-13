@@ -26,15 +26,33 @@ def pricing_schedule() -> dict:
     return read_json(Path(__file__).parent / "problem-set/pricing.json")
 
 
-def pricing_digest() -> str:
-    return hashlib.sha256(canonical(pricing_schedule())).hexdigest()
+def pricing_digest(schedule=None) -> str:
+    return hashlib.sha256(canonical(pricing_schedule() if schedule is None else schedule)).hexdigest()
 
 
-def model_prices(model: dict) -> dict:
-    for entry in pricing_schedule()["entries"]:
+def model_prices(model: dict, schedule=None) -> dict:
+    for entry in (pricing_schedule() if schedule is None else schedule)["entries"]:
         if entry["provider"] == model.get("provider") and model.get("name") in entry["request_models"]:
             return entry
     raise CatalystError("Provider/model is absent from the pinned credit pricing schedule.")
+
+
+def evaluation_models(config: dict) -> list[dict]:
+    return config.get("models", [config["model"]])
+
+
+def usage_model(event: dict, allowed) -> dict:
+    """Legacy single-model receipts remain valid; ensembles identify each call."""
+    models = allowed if isinstance(allowed, list) else [allowed]
+    recorded = event.get("model")
+    if recorded is None and len(models) == 1:
+        return models[0]
+    if not isinstance(recorded, dict) or set(recorded) != {"provider", "name"}:
+        raise CatalystError("Multi-model usage requires a provider/model identity.")
+    matches = [m for m in models if all(m.get(k) == v for k, v in recorded.items())]
+    if len(matches) != 1:
+        raise CatalystError("Usage includes a model outside the authorized model set.")
+    return matches[0]
 
 
 def integer(value, label, minimum=0) -> int:
@@ -43,7 +61,7 @@ def integer(value, label, minimum=0) -> int:
     return value
 
 
-def credits(usage: dict, model: dict) -> Decimal:
+def credits(usage: dict, model: dict, schedule=None) -> Decimal:
     """Price inclusive input/output counts; cache buckets are input subsets."""
     keys = {"input_tokens", "output_tokens", "cached_read_tokens", "cache_write_tokens"}
     if not isinstance(usage, dict) or set(usage) != keys:
@@ -52,7 +70,7 @@ def credits(usage: dict, model: dict) -> Decimal:
     uncached = counts["input_tokens"] - counts["cached_read_tokens"] - counts["cache_write_tokens"]
     if uncached < 0:
         raise CatalystError("Cached token counts exceed inclusive input tokens.")
-    prices = model_prices(model)
+    prices = model_prices(model, schedule)
     long_context = prices.get("long_context")
     if long_context and counts["input_tokens"] > long_context["threshold_input_tokens"]:
         prices = long_context
@@ -80,14 +98,14 @@ def credit_limit(value) -> Decimal:
     return limit
 
 
-def project_observation(observation: dict, model: dict, max_model_credits, limits: dict) -> dict:
+def project_observation(observation: dict, model: dict, max_model_credits, limits: dict, schedule=None) -> dict:
     """Recompute costs and bind verified observations to settled usage.
 
     Spending authority is separate from display budgets. Legacy checkpoint
     records are validated when present, but never decide view eligibility.
     """
     funded_limit = credit_limit(max_model_credits)
-    if observation.get("pricing_digest") != pricing_digest():
+    if observation.get("pricing_digest") != pricing_digest(schedule):
         raise CatalystError("Observation uses a different pricing schedule.")
     end = integer(observation.get("end_sequence"), "end_sequence", 1)
     seen = set()
@@ -114,7 +132,7 @@ def project_observation(observation: dict, model: dict, max_model_credits, limit
             raise CatalystError("Usage must be ordered, uniquely identified and settled.")
         previous = seq
         requests.add(request_id)
-        total += credits(event.get("tokens"), model)
+        total += credits(event.get("tokens"), usage_model(event, model), schedule)
         # Native Dungeness budgets use its cache-weighted counter. Preserve raw
         # provider counts for pricing, and legacy records' original semantics.
         tokens += integer(event.get("budget_tokens",
@@ -182,6 +200,6 @@ def project_observation(observation: dict, model: dict, max_model_credits, limit
         summaries.append({"budget_tier": budget, "status": status, "best": best})
     best = min(points, key=lambda p: (p["performance"], p["normalized_model_usd"],
                                       p["captured_sequence"]), default=None)
-    return {"normalized_model_usd": float(total), "pricing_digest": pricing_digest(),
+    return {"normalized_model_usd": float(total), "pricing_digest": pricing_digest(schedule),
             "curve": points, "tiers": summaries, "best": best,
             "checkpoints": [{"budget_tier": budget, "sequence": seq} for budget, seq in seals.items()]}

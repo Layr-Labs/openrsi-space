@@ -1,0 +1,156 @@
+--- a/services/gateway/gateway_runtime.py
++++ b/services/gateway/gateway_runtime.py
+@@ -61,6 +61,19 @@
+ BACKGROUND_TASKS: set[asyncio.Task[None]] = set()
+ 
+ 
++def rejected_before_generation(body: bytes, content_type: str, http_status: int | None) -> bool:
++    """Recognize an explicit input-validation rejection, never a missing receipt."""
++    if http_status != 400 or "application/json" not in content_type:
++        return False
++    try:
++        document = json.loads(body)
++    except (ValueError, UnicodeError):
++        return False
++    return (isinstance(document, dict) and set(document) == {"error"}
++            and isinstance(document["error"], dict)
++            and document["error"].get("type") == "invalid_request_error")
++
++
+ class Gateway:
+     """One trusted gateway instance and budget ledger for one benchmark run."""
+ 
+@@ -512,6 +525,7 @@
+         request_pricing: dict[str, Any] | None = None
+         request_id = request.state.request_id
+         finalized = False
++        upstream_status = None
+ 
+         def finalize(response_body: bytes, content_type: str) -> None:
+             """Account for one model request exactly once, including streams."""
+@@ -521,6 +535,14 @@
+                 return
+             finalized = True
+             usage = extract(response_body, content_type)
++            accounting_basis = "provider_usage" if usage else "unavailable"
++            if (not usage and status == "provider_error"
++                    and rejected_before_generation(response_body, content_type, upstream_status)):
++                # A rejected input did not generate tokens. Successful,
++                # interrupted, and ambiguous error responses still fail closed.
++                usage = {"input_tokens": 0, "output_tokens": 0, "cached_input_tokens": 0,
++                         "cache_write_input_tokens": 0, "total_tokens": 0}
++                accounting_basis = "input_rejected_before_generation"
+             # Charge the token budget using the active tier's relative cache
+             # rates. USD accounting below remains the exact stopping criterion.
+             billed_tokens = request_budget_tokens(usage, request_pricing)
+@@ -628,6 +650,8 @@
+                     "billed_usd": billed_usd,
+                     "pricing_tier": pricing_tier,
+                     "accounting_method": "gateway" if usage else "unavailable",
++                    "accounting_basis": accounting_basis,
++                    "http_status": upstream_status,
+                     "duration_ms": duration_ms,
+                     "status": status,
+                 },
+@@ -736,6 +760,7 @@
+                 content=body,
+             )
+             upstream = await self.client.send(upstream_request, stream=True)
++            upstream_status = upstream.status_code
+             content_type = upstream.headers.get("content-type", "application/json")
+             status = "success" if upstream.is_success else "provider_error"
+             # ChatGPT's Codex backend currently returns Responses SSE framing
+--- a/verifiers/ecdsa-fail/benchmark-sh/grade.py
++++ b/verifiers/ecdsa-fail/benchmark-sh/grade.py
+@@ -45,6 +45,9 @@
+     ) as tmp:
+         json.dump(value, tmp, indent=2, sort_keys=True)
+         tmp.write("\n")
++        # Harbor copies these root-produced results back to an unprivileged
++        # host worker. Keep the score readable without making it writable.
++        os.fchmod(tmp.fileno(), 0o644)
+         tmp_path = Path(tmp.name)
+     os.replace(tmp_path, path)
+ 
+--- a/services/gateway/tests/test_command_gateway.py
++++ b/services/gateway/tests/test_command_gateway.py
+@@ -15,6 +15,58 @@
+ 
+ 
+ class CommandGatewayTests(unittest.IsolatedAsyncioTestCase):
++    async def test_explicit_input_rejection_settles_zero_and_allows_corrected_request(self):
++        with tempfile.TemporaryDirectory() as temp, patch.dict(os.environ, {
++            "TESTBED_USAGE_DIR": temp, "DUNGENESS_ALLOWED_MODELS": '[["kimi-code","k3"]]',
++            "MAX_MODEL_REQUESTS": "20", "MAX_MODEL_TOKENS": "100000",
++        }):
++            runtime = Gateway()
++            await runtime.client.aclose()
++            calls = []
++
++            def upstream(request):
++                body = json.loads(request.content)
++                calls.append(body)
++                if body["messages"][0]["content"] == "":
++                    return httpx.Response(400, json={"error": {
++                        "type": "invalid_request_error", "message": "system must not be empty"}})
++                return httpx.Response(200, json={"choices": [], "usage": {
++                    "prompt_tokens": 100, "completion_tokens": 10, "total_tokens": 110}})
++
++            runtime.client = httpx.AsyncClient(transport=httpx.MockTransport(upstream))
++            try:
++                with patch.object(gateway, "gateway", runtime):
++                    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=gateway.app),
++                                                 base_url="http://gateway") as client:
++                        for text, expected in (("", 400), ("solve", 200)):
++                            reply = await client.post("/model/kimi-code/v1/chat/completions", json={
++                                "model": "k3", "messages": [{"role": "system", "content": text}]})
++                            self.assertEqual(reply.status_code, expected, reply.text)
++                events = [json.loads(line) for line in (Path(temp) / "events.jsonl").read_text().splitlines()]
++                receipts = [e["data"] for e in events if e["kind"] == "model.accounting"]
++                self.assertEqual(len(calls), 2)
++                self.assertEqual(receipts[0]["accounting_method"], "gateway")
++                self.assertEqual(receipts[0]["accounting_basis"], "input_rejected_before_generation")
++                self.assertEqual(receipts[0]["http_status"], 400)
++                self.assertEqual(receipts[0]["normalized_usd"], 0)
++                self.assertEqual(receipts[1]["accounting_basis"], "provider_usage")
++                self.assertGreater(receipts[1]["normalized_usd"], 0)
++                self.assertEqual(runtime.ledger.model_inflight, {})
++            finally:
++                await runtime.client.aclose()
++
++    def test_ambiguous_errors_never_become_zero_cost_receipts(self):
++        from gateway_runtime import rejected_before_generation
++        error = {"error": {"type": "invalid_request_error", "message": "invalid"}}
++        for status, body, mime in (
++            (200, error, "application/json"), (500, error, "application/json"),
++            (400, {**error, "choices": [{"text": "generated"}]}, "application/json"),
++            (400, {"error": {"type": "server_error"}}, "application/json"),
++            (400, error, "text/event-stream"),
++        ):
++            with self.subTest(status=status, body=body):
++                self.assertFalse(rejected_before_generation(json.dumps(body).encode(), mime, status))
++
+     async def test_sdk_chat_clients_use_kimi_and_new_catalog_model_with_trusted_prices(self):
+         """No Codex client, provider-name spoofing, or model-specific agent."""
+         model = "example/new-model"
+--- a/tests/test_command_harness.py
++++ b/tests/test_command_harness.py
+@@ -32,6 +32,18 @@
+ 
+ 
+ class CommandHarnessTests(unittest.TestCase):
++    def test_verifier_results_are_readable_after_container_download(self):
++        grade = load("command_grade_contract", "verifiers/ecdsa-fail/benchmark-sh/grade.py")
++        with tempfile.TemporaryDirectory() as temp:
++            path = Path(temp) / "reward.json"
++            prior = os.umask(0o077)
++            try:
++                grade.atomic_write_json(path, {"ecdsafail_score": 123})
++            finally:
++                os.umask(prior)
++            self.assertEqual(json.loads(path.read_text()), {"ecdsafail_score": 123})
++            self.assertEqual(path.stat().st_mode & 0o777, 0o644)
++
+     def test_adapter_uses_real_harbor_exec_result_contract(self):
+         import asyncio
+         from unittest.mock import AsyncMock

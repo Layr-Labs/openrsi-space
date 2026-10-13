@@ -124,7 +124,8 @@ def capture_candidate(source, root, relative):
     return digest_files(files)
 
 
-def collect_usage(run_dir, evaluation):
+def collect_usage(run_dir, evaluation, schedule=None):
+    from .tiers import evaluation_models, usage_model
     events_file = run_dir / "usage/events.jsonl"
     if not events_file.is_file():
         raise CatalystError("Dungeness did not retain its trusted usage ledger.")
@@ -134,9 +135,9 @@ def collect_usage(run_dir, evaluation):
         if event.get("source") != "gateway" or event.get("kind") != "model.accounting":
             continue
         data = event["data"]
-        if (data.get("accounting_method") != "gateway"
-                or data.get("provider") != evaluation["model"]["provider"]
-                or data.get("model") != evaluation["model"]["name"]):
+        identity = {"provider": data.get("provider"), "name": data.get("model")}
+        model = usage_model({"model": identity}, evaluation_models(evaluation))
+        if data.get("accounting_method") != "gateway":
             raise CatalystError("Missing usage or unexpected model in Dungeness accounting.")
         request_id = event.get("request_id")
         if not isinstance(request_id, str) or not request_id or request_id in seen:
@@ -146,7 +147,7 @@ def collect_usage(run_dir, evaluation):
         tokens = {"input_tokens": data.get("input_tokens"), "output_tokens": data.get("output_tokens"),
                   "cached_read_tokens": data.get("cached_input_tokens", 0),
                   "cache_write_tokens": data.get("cache_write_input_tokens", 0)}
-        cost = credits(tokens, evaluation["model"])
+        cost = credits(tokens, model, schedule)
         rounded = Decimal(str(data.get("normalized_usd", data.get("usd", float(cost)))))
         if not rounded.is_finite() or abs(rounded - cost) > Decimal("0.000000500001"):
             raise CatalystError("Gateway pricing disagrees with pinned token prices.")
@@ -156,7 +157,7 @@ def collect_usage(run_dir, evaluation):
             continue
         total += cost
         entry = {"sequence": len(ledger) + 1, "request_id": request_id,
-                 "settled": True, "tokens": tokens}
+                 "settled": True, "tokens": tokens, "model": identity}
         if "billed_tokens" in data:
             entry["budget_tokens"] = integer(data["billed_tokens"], "Dungeness budget tokens")
         ledger.append(entry)
@@ -221,14 +222,16 @@ class DungenessLocalBackend:
             raise CatalystError("Fixture worker requires the local circuit problem.")
         relative = request["problem_set"][0]["candidate_paths"][0]
         evaluation = request["evaluation"]
+        from .tiers import evaluation_models
+        models = evaluation_models(evaluation)
         live = real and temporary_access(evaluation)
         if live and (self.config["mode"] != "remote" or self.config.get("model_access") != "temporary"):
             raise CatalystError("Temporary model access is not enabled by the worker.")
-        if not live and evaluation["model"] != {"provider": "openai", "name": "gpt-5.6-sol"}:
+        if not live and models != [{"provider": "openai", "name": "gpt-5.6-sol"}]:
             raise CatalystError("The local mock provider supports only the pinned fixture model.")
         if live:
             from .live_provider import PROVIDERS
-            if evaluation["model"]["provider"] not in PROVIDERS:
+            if any(model["provider"] not in PROVIDERS for model in models):
                 raise CatalystError("Unsupported temporary model provider.")
         work_state = Path(self.config["state"])
         source = artifacts / "source"
@@ -244,9 +247,9 @@ class DungenessLocalBackend:
                           "image_identity_kind": "docker-image-id", "evidence": self.config["mode"]}
         write_json(artifacts / "build.json", build_identity)
         if live:
-            from .live_provider import CodexAccess
+            from .live_provider import ProviderAccess
             model_token = take_worker_token(self.credential_connection, job["id"])
-            provider_context = CodexAccess(evaluation, model_token)
+            provider_context = ProviderAccess(evaluation, model_token)
             model_token = None
         else:
             provider_context = MockProvider(evaluation, allow_model_calls=not real)
@@ -262,6 +265,7 @@ class DungenessLocalBackend:
                                    evaluation["max_model_credits"], evaluation["limits"]["max_model_tokens"],
                                    env_file=str(env_file), build_id=built["id"], model=evaluation["model"]["name"],
                                    provider=evaluation["model"]["provider"],
+                                   models=models, pricing=request["pricing"],
                                    reasoning_effort=evaluation["model"].get("reasoning_effort"))
                 write_json(artifacts / "runtime.json", metadata)
                 runtime = Path(metadata["runtime"])
@@ -270,7 +274,7 @@ class DungenessLocalBackend:
                 environment = {key: os.environ[key] for key in
                                ("PATH", "HOME", "TMPDIR", "USER", "LOGNAME", "DOCKER_HOST", "DOCKER_CONTEXT")
                                if key in os.environ}
-                if live:
+                if live and provider.auth_file is not None:
                     environment["DUNGENESS_CODEX_AUTH_FILE"] = str(provider.auth_file)
                 environment["UV_CACHE_DIR"] = str(work_state / "uv-cache")
                 if not real:
@@ -288,7 +292,7 @@ class DungenessLocalBackend:
                 )
                 if real and not live and provider.attempts:
                     raise CatalystError("The harness requested a model, but this ECDSA service disables model access.")
-                ledger, total = collect_usage(run_dir, evaluation)
+                ledger, total = collect_usage(run_dir, evaluation, request["pricing"])
                 if live and not ledger:
                     raise CatalystError("Dungeness returned no settled model usage for the live run.")
                 if not live and (total != provider.total or [entry["tokens"] for entry in ledger] != provider.receipts):
@@ -333,7 +337,7 @@ class DungenessLocalBackend:
                 if real:
                     from .ecdsa_history import project_history
                     ledger, points, end_sequence, omitted = project_history(
-                        run_dir, ledger, points, evaluation["model"])
+                        run_dir, ledger, points, models, request["pricing"])
                     write_json(artifacts / "usage.json", ledger)
                     write_json(artifacts / "evaluation-history.json", {
                         "curve": points, "unordered_evaluations_omitted": omitted,
@@ -341,7 +345,7 @@ class DungenessLocalBackend:
                 observation = {
                     "problem_id": request["problem_set"][0]["id"],
                     "problem_commit": request["problem_set"][0]["repository"]["commit"],
-                    "pricing_digest": pricing_digest(), "normalized_model_usd": float(total),
+                    "pricing_digest": pricing_digest(request["pricing"]), "normalized_model_usd": float(total),
                     "end_sequence": end_sequence, "usage": ledger, "curve": points, "checkpoints": [],
                 }
                 label = "Pinned ecdsa.fail results" if real else "Local circuit fixture (not ECDSA)"
@@ -400,6 +404,15 @@ def run_one(store, backend):
         result.update(status="failed", reason="Worker failed; inspect the private trace archive.",
                       trace_available=True)
         store.transition(evaluation_id, "failed", result)
+    # Export is independent of scoring: a storage outage must not rerun a paid
+    # evaluation or alter its judgment. A later owner download/sync retries it.
+    try:
+        from .artifacts import seal
+        seal(store, evaluation_id)
+    except Exception:
+        write_json(folder / "artifact-export-error.json", {
+            "error": "Artifact export incomplete; retained evidence can be exported again.",
+        })
     return evaluation_id
 
 

@@ -1,0 +1,11 @@
+{
+  "schema_version": 4,
+  "llm_access": {"grant_id": "grant_temporary_provider"},
+  "model": {"provider": "openai", "name": "gpt-5.6-sol"},
+  "models": [
+    {"provider": "openai", "name": "gpt-5.6-sol"},
+    {"provider": "openai", "name": "gpt-6-astra"}
+  ],
+  "max_model_credits": 3,
+  "limits": {"max_model_tokens": 100000, "max_seconds": 900}
+}

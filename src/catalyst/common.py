@@ -176,7 +176,8 @@ def open_bundle(content: bytes) -> tuple[dict, dict[str, bytes]]:
         raise CatalystError(f"Invalid bundle: {error}") from error
 
 
-def snapshot_directory(path: Path, *, exclude: frozenset[str] = frozenset()) -> tuple[dict, bytes]:
+def snapshot_directory(path: Path, *, exclude: frozenset[str] = frozenset(),
+                       harness_document=None) -> tuple[dict, bytes]:
     if not path.is_dir():
         raise CatalystError(f"Not a package directory: {path}")
     files = {}
@@ -190,6 +191,10 @@ def snapshot_directory(path: Path, *, exclude: frozenset[str] = frozenset()) -> 
             raise CatalystError(f"Package symlinks are unsupported: {relative}")
         if item.is_file() and item.name != RESERVED:
             files[relative.as_posix()] = item.read_bytes()
+    if harness_document is not None:
+        if "harness.json" in files:
+            raise CatalystError("Use the existing harness.json entrypoint or remove the launch override.")
+        files["harness.json"] = canonical(harness_document)
     return make_bundle(files)
 
 

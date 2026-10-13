@@ -15,11 +15,12 @@ def launch(task_file, execution_file="/opt/catalyst/execution.json"):
         CATALYST_TASK=task_file,
         CATALYST_WORKSPACE=task["workspace"],
         CATALYST_MODEL=task.get("model") or "",
+        CATALYST_MODELS=json.dumps(task.get("models", [])),
     )
     # The gateway placeholder is public. Raw upstream credentials never belong here.
     if task.get("gateway"):
         environment["OPENAI_BASE_URL"] = task["gateway"]
-        if task.get("model_provider") == "openai-chatgpt":
+        if task.get("model_provider") == "openai-chatgpt" and task.get("gateway_auth") != "placeholder":
             environment.pop("OPENAI_API_KEY", None)
         else:
             environment["OPENAI_API_KEY"] = "testbed"

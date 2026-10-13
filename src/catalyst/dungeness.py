@@ -1,4 +1,4 @@
-"""A file/CLI adapter. No Dungeness implementation is imported or vendored."""
+"""A file/CLI adapter with a pinned, reviewable Dungeness compatibility patch."""
 from __future__ import annotations
 
 import hashlib
@@ -87,9 +87,38 @@ def write_yaml(path: Path, value: dict) -> None:
     path.write_text(yaml.safe_dump(value, sort_keys=False))
 
 
+def apply_runtime_patch(runtime: Path) -> list[str]:
+    """Apply the reviewed patch to the isolated checkout, never the user's repo."""
+    compiler = runtime / "src/dungeness/compiler.py"
+    if not compiler.is_file():  # Minimal offline test fixtures do not run Dungeness.
+        return []
+    changed = []
+    patches = Path(__file__).parent / "runtime"
+    for name, installed in (
+        ("dungeness-command.patch", lambda: "def command_execution(" in compiler.read_text()),
+        ("dungeness-provider-contract.patch", lambda: "def validate_declared_request(" in
+         (runtime / "services/gateway/gateway_models.py").read_text()),
+        ("dungeness-command-runtime.patch", lambda: '    "model_access",\n' in
+         (runtime / "dungeness").read_text() and "result.return_code" in
+         (runtime / "adapters/harbor/command_agent.py").read_text()),
+        ("dungeness-response-rejection.patch", lambda: "def rejected_before_generation(" in
+         (runtime / "services/gateway/gateway_runtime.py").read_text() and
+         "os.fchmod(tmp.fileno(), 0o644)" in
+         (runtime / "verifiers/ecdsa-fail/benchmark-sh/grade.py").read_text()),
+    ):
+        if installed():
+            continue
+        patch_file = patches / name
+        git(runtime, "apply", "--check", str(patch_file))
+        git(runtime, "apply", str(patch_file))
+        changed.extend(line[6:] for line in patch_file.read_text().splitlines() if line.startswith("+++ b/"))
+    return sorted(set(changed))
+
+
 def prepare(state: Path, problem_path: Path, harness_path: Path, budget: float,
             max_tokens: int, resume: str | None = None, env_file: str | None = None, *,
-            build_id: str | None = None, model: str | None = None, provider="openai", reasoning_effort=None) -> dict:
+            build_id: str | None = None, model: str | None = None, provider="openai", reasoning_effort=None,
+            models: list[dict] | None = None, pricing=None) -> dict:
     finite_number(budget, nonnegative=True)
     if budget <= 0 or max_tokens < 1:
         raise CatalystError("Evaluation requires a positive budget and token cap.")
@@ -103,6 +132,7 @@ def prepare(state: Path, problem_path: Path, harness_path: Path, budget: float,
     p, h = problem["document"], harness["document"]
     build_record = None
     executable_model = None
+    executable_models = []
     if "execution" in h:
         from .executable import inspect_build, model_profile
         if not build_id or not model:
@@ -110,9 +140,14 @@ def prepare(state: Path, problem_path: Path, harness_path: Path, budget: float,
         build_record = inspect_build(state, build_id)
         if build_record["source_digest"] != harness["version"]:
             raise CatalystError("Harness source changed since this build. Build the current source first.")
-        executable_model = model_profile(source, model, provider)
+        executable_model = model_profile(source, model, provider, pricing)
         if reasoning_effort:
             executable_model["defaults"] = {"reasoning_effort": reasoning_effort}
+        for choice in models or [{"provider": provider, "name": model, "reasoning_effort": reasoning_effort}]:
+            profile = model_profile(source, choice["name"], choice["provider"], pricing)
+            if choice.get("reasoning_effort"):
+                profile["defaults"] = {"reasoning_effort": choice["reasoning_effort"]}
+            executable_models.append(profile)
     else:
         if build_id or model:
             raise CatalystError("--build and --model apply only to executable harnesses.")
@@ -159,7 +194,17 @@ def prepare(state: Path, problem_path: Path, harness_path: Path, budget: float,
         raise CatalystError(result.stderr)
     git(runtime, "checkout", "--quiet", "--detach", config["commit"])
     agent_ref = h.get("agent")
-    added_agent_paths = []
+    added_agent_paths = apply_runtime_patch(runtime) if build_record else []
+    if pricing is not None:
+        # The service validated this immutable snapshot before enqueueing.
+        # It lives only in the trusted runtime, never in submitted source.
+        pricing_path = "services/gateway/pricing.yaml"
+        write_yaml(runtime / pricing_path, {
+            "schema_version": 1, "type": "policy", "namespace": "system/dungeness",
+            "id": "model-pricing", "entries": pricing["entries"],
+            "catalyst_snapshot_sha256": hashlib.sha256(canonical(pricing)).hexdigest(),
+        })
+        added_agent_paths.append(pricing_path)
     if native and p.get("id") == "ecdsa.fail":
         from .cheat_filter import install_sidecar_screen
         added_agent_paths.extend(install_sidecar_screen(runtime))
@@ -174,14 +219,6 @@ def prepare(state: Path, problem_path: Path, harness_path: Path, budget: float,
         }
         agent_ref, agent_paths = install_agent(runtime, build_record, executable_model, task_input)
         added_agent_paths.extend(agent_paths)
-        if provider == "openai-chatgpt":
-            launcher = runtime / "dungeness"
-            original = launcher.read_text()
-            before = 'tempfile.mkdtemp(prefix="dungeness-codex-auth-", dir="/tmp")'
-            if original.count(before) != 1:
-                raise CatalystError("Pinned Dungeness credential staging has changed.")
-            launcher.write_text(original.replace(before, before.replace("/tmp", "/dev/shm")))
-            added_agent_paths.append("dungeness")
     token = "catalyst-" + problem["version"]
     namespace = "projects/catalyst"
     task_path = runtime / "tasks" / namespace / token / "task.yaml"
@@ -218,8 +255,10 @@ def prepare(state: Path, problem_path: Path, harness_path: Path, budget: float,
         "data": {"objective": p.get("description", p["title"]), "metric": p["metric"]},
     })
     instruction = (problem_path / "instructions.md").read_text()
-    strategy = (harness_path / "instructions.md").read_text()
-    (task_path.parent / "statement.md").write_text(instruction + "\n\n## Harness method\n\n" + strategy)
+    strategy_path = harness_path / "instructions.md"
+    strategy = strategy_path.read_text() if strategy_path.is_file() else ""
+    (task_path.parent / "statement.md").write_text(
+        instruction + ("\n\n## Harness method\n\n" + strategy if strategy else ""))
 
     kb_id = "catalyst-" + harness["version"]
     kb_path = runtime / "knowledge-bases" / namespace / kb_id
@@ -270,6 +309,9 @@ def prepare(state: Path, problem_path: Path, harness_path: Path, budget: float,
     }
     if h.get("agent_options"):
         spec["agent_options"] = h["agent_options"]
+    if build_record:
+        spec["model_access"] = {"models": executable_models, "max_parallel_requests": 4,
+                                "request_reservation_usd": min(budget / 4, 1)}
     spec_path = runtime / "run-specs" / namespace / f"{run_id}.yaml"
     write_yaml(spec_path, spec)
     # The upstream remains pinned. Generated research inputs get their own commit.

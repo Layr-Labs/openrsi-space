@@ -46,6 +46,9 @@ budget views. See [budget accounting](../../docs/tier-accounting.md).
 `challenge-ui.patch` and `challenge-ui-base-revision.txt` contain the new
 ECDSA-only board for stock Yukon's Challenges UI. This is a UI patch; it does not
 change the backend, CLI, API authentication or worker.
+The UI includes a same-origin public artifact metadata route. It calls the
+configured verification service only when a visitor opens a run's **Source &
+traces** disclosure, and never proxies private downloads or solver credentials.
 The local preview is `.catalyst/yukon-publish` at `/catalyst`. See
 [UI setup and handoff](../../docs/challenge-ui.md) for the command and hosting
 configuration. The preserved patches below are older prototypes.

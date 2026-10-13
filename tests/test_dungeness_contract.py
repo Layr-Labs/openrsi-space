@@ -30,7 +30,23 @@ class DungenessContractTest(unittest.TestCase):
     def test_submitted_executable_compiles_with_generic_adapter_in_real_dungeness(self):
         self.compile_harness(executable=True)
 
-    def compile_harness(self, executable):
+    def test_model_ensemble_keeps_all_credentials_in_gateway(self):
+        self.compile_harness(executable=True, models=[
+            {"provider": "openai-chatgpt", "name": "gpt-6-astra"},
+            {"provider": "anthropic", "name": "claude-opus-5"},
+        ])
+
+    def test_kimi_subscription_uses_generic_adapter_and_gateway_credentials(self):
+        self.compile_harness(executable=True, models=[{"provider": "kimi-code", "name": "k3"}])
+
+    def test_new_model_compiles_from_frozen_service_prices_without_upstream_catalog_edit(self):
+        model = {"provider": "openrouter", "name": "example/new-model"}
+        prices = {"entries": [{"provider": "openrouter", "upstream_id": model["name"],
+                              "request_models": [model["name"]], "input_per_mtok": 2,
+                              "cached_read_per_mtok": .2, "output_per_mtok": 6, "text_only": True}]}
+        self.compile_harness(executable=True, models=[model], pricing=prices)
+
+    def compile_harness(self, executable, models=None, pricing=None):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             state, problem, harness = root / "state", root / "problem", root / "harness"
@@ -41,18 +57,25 @@ class DungenessContractTest(unittest.TestCase):
                 self.assertEqual(main(["--state", str(state), "harness", "create", "notes",
                                        "--output", str(harness), *(["--executable"] if executable else [])]), 0)
             if executable:
+                # Arbitrary executable repositories do not need this optional
+                # Catalyst starter file.
+                (harness / "instructions.md").unlink()
                 snapshot, _ = snapshot_directory(harness)
                 build_record = {"id": "a" * 64, "source_digest": snapshot["version"],
                                 "image_id": "sha256:" + "b" * 64,
                                 "artifact_tag": "catalyst-image:" + "b" * 64}
                 with patch("catalyst.executable.inspect_build", return_value=build_record):
+                    chosen = models or [{"provider": "openai", "name": "gpt-5.6-sol"}]
                     meta = prepare(state, problem, harness, 1, 10000,
-                                   build_id=build_record["id"], model="gpt-5.6-sol")
+                                   build_id=build_record["id"], model=chosen[0]["name"],
+                                   provider=chosen[0]["provider"], models=chosen, pricing=pricing)
             else:
                 meta = prepare(state, problem, harness, 1, 10000)
             runtime = Path(meta["runtime"])
             spec = yaml.safe_load(Path(meta["spec_path"]).read_text())
             cli = runpy.run_path(str(runtime / "dungeness"), run_name="contract_check")
+            _, loaded_spec = cli["load_run_spec"](meta["spec_path"])
+            self.assertEqual(loaded_spec, spec)
             cli["validate_run_spec_knowledge_base"](spec)
             cli["validate_run_spec_web_search"](spec)
             module_spec = importlib.util.spec_from_file_location("dungeness_contract_compiler", runtime / "src/dungeness/compiler.py")
@@ -87,10 +110,32 @@ class DungenessContractTest(unittest.TestCase):
                 if executable:
                     job = yaml.safe_load((rendered / "harbor-job.yaml").read_text())
                     adapter = job["agents"][0]
-                    self.assertEqual(adapter["import_path"], "catalyst_executable:CatalystExecutable")
+                    self.assertEqual(adapter["import_path"], "command_agent:CommandAgent")
                     self.assertNotIn("name", adapter)
                     self.assertEqual(adapter["kwargs"]["task_input"]["candidate_paths"], ["solution.py"])
-                    self.assertEqual(adapter["env"], {"OPENAI_API_KEY": "testbed"})
+                    self.assertEqual(adapter["env"], {})
+                    import json
+                    gateway = compose["services"]["gateway"]
+                    if pricing is not None:
+                        self.assertEqual(yaml.safe_load((runtime / "services/gateway/pricing.yaml").read_text())["entries"],
+                                         pricing["entries"])
+                    main_service = compose["services"]["main"]
+                    self.assertEqual(json.loads(gateway["environment"]["DUNGENESS_ALLOWED_MODELS"]),
+                                     [[m["provider"], m["name"]] for m in chosen])
+                    self.assertNotIn("codex-subscription-proxy", compose["services"])
+                    self.assertNotIn("HTTP_PROXY", main_service["environment"])
+                    self.assertNotIn("codex-auth", repr(main_service.get("volumes")))
+                    if any(m["provider"] == "openai-chatgpt" for m in chosen):
+                        self.assertIn("DUNGENESS_CHATGPT_AUTH_FILE", gateway["environment"])
+                        self.assertTrue(any("/run/dungeness/auth.json:ro" in v for v in gateway["volumes"]))
+                    if any(m["provider"] == "anthropic" for m in chosen):
+                        self.assertIn("ANTHROPIC_API_KEY", gateway["environment"])
+                        self.assertEqual(main_service["environment"]["ANTHROPIC_API_KEY"], "testbed")
+                    if any(m["provider"] == "kimi-code" for m in chosen):
+                        self.assertIn("TESTBED_KIMI_CODE_API_KEY", gateway["environment"]["KIMI_CODE_API_KEY"])
+                        self.assertNotIn("KIMI_CODE_API_KEY", main_service["environment"])
+                        self.assertEqual(adapter["kwargs"]["models"][0]["base_url"],
+                                         "http://gateway:8080/model/kimi-code/v1")
                     self.assertIn(build_record["artifact_tag"],
                                   (rendered / "environment/Dockerfile").read_text())
             finally:

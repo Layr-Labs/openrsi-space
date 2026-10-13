@@ -214,7 +214,7 @@ index 00000000..11aec2b4
 +}
 diff --git a/apps/challenges-ui/challenges/catalyst/components/__snapshots__/snapshots.test.tsx.snap b/apps/challenges-ui/challenges/catalyst/components/__snapshots__/snapshots.test.tsx.snap
 new file mode 100644
-index 00000000..b0b46d2b
+index 00000000..4a5b9d6b
 --- /dev/null
 +++ b/apps/challenges-ui/challenges/catalyst/components/__snapshots__/snapshots.test.tsx.snap
 @@ -0,0 +1,11 @@
@@ -224,11 +224,11 @@ index 00000000..b0b46d2b
 +
 +exports[`hero with no submissions 1`] = `"<div class="relative overflow-hidden rounded-2xl bg-hero px-5 py-6 text-hero-ink shadow-lift sm:px-9 sm:py-10"><div class="grid items-start gap-7 lg:grid-cols-[minmax(0,1fr)_auto]"><div data-hero-reveal="true"><p class="mb-4 font-mono text-xs uppercase tracking-widest">Autonomous research · ECDSA.fail</p><h1 class="max-w-3xl text-balance font-display text-4xl leading-tight sm:text-5xl">Better circuits.<br/>Every model credit counted.</h1><p class="mt-5 max-w-2xl text-sm leading-relaxed">Submit the harness. Measure the research. Compare independently verified quantum circuits by performance and normalized model credits.</p></div><div data-hero-reveal="true" class="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap lg:justify-end" style="opacity:0"><button type="button" class="rounded-md bg-hero-ink px-3.5 py-1.5 text-sm font-medium text-hero transition-[transform,opacity,box-shadow] duration-150 ease-out-expo will-change-transform hover:-translate-y-px hover:opacity-90 hover:shadow-xs motion-reduce:transform-none active:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-record">How it works</button><button type="button" class="rounded-md bg-hero-ink px-3.5 py-1.5 text-sm font-medium text-hero transition-[transform,opacity,box-shadow] duration-150 ease-out-expo will-change-transform hover:-translate-y-px hover:opacity-90 hover:shadow-xs motion-reduce:transform-none active:translate-y-0 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-record">Participate</button></div></div><div class="mt-8 grid gap-6 rounded-xl border border-hero-dim/30 p-5 sm:grid-cols-[1fr_2fr]"><div><p class="text-xs uppercase tracking-widest">Best verified performance</p><p class="mt-3 font-mono text-3xl">—</p><p class="mt-2 text-sm">average Toffoli × peak qubits</p><p class="mt-3 text-sm">Awaiting a verified harness result</p></div><div><p class="py-8 text-sm">The performance–cost curve appears as verified results arrive.</p><p class="text-xs">Each point is a verified evaluation. Lower performance and fewer credits are better.</p></div></div></div>"`;
 +
-+exports[`leaderboard with a populated leaderboard 1`] = `"<section aria-label="Verified harness results" class="min-w-0"><h2 class="mb-3 text-xl font-semibold text-ink">Verified harness results</h2><p class="mb-4 text-sm text-ink-dim">Compare every budget side by side. Each cell shows the best verified Toffoli × qubits and credits used. Lower is better. Select a column to rank by that budget.</p><div class="overflow-x-auto rounded-xl border border-line"><table aria-label="Harness performance by model-credit budget" class="w-full min-w-[760px] text-left text-sm"><thead class="bg-surface text-ink-dim"><tr><th scope="col" class="sticky left-0 z-10 bg-bg p-4">Harness / solver</th><th scope="col" class="border-l border-line p-4 "><button type="button" aria-pressed="false" class="rounded-sm text-left underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent">Within $20 <span aria-hidden="true">↕</span></button><p class="mt-1 text-xs font-normal text-ink-dim">Toffoli × qubits</p></th><th scope="col" class="border-l border-line p-4 "><button type="button" aria-pressed="false" class="rounded-sm text-left underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent">Within $200 <span aria-hidden="true">↕</span></button><p class="mt-1 text-xs font-normal text-ink-dim">Toffoli × qubits</p></th><th scope="col" aria-sort="ascending" class="border-l border-line p-4 bg-accent-soft text-accent-strong"><button type="button" aria-pressed="true" class="rounded-sm text-left underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent">Best overall <span aria-hidden="true">↓</span></button><p class="mt-1 text-xs font-normal text-ink-dim">Toffoli × qubits</p></th></tr></thead><tbody><tr id="result-verified-grace" data-solver="grace" class="border-t border-line text-ink"><th scope="row" class="sticky left-0 z-10 bg-bg p-4 font-normal"><a class="font-medium text-accent-strong" href="/solver/grace?benchmark=ca7a1000-0000-4000-8000-000000000001">grace</a><p class="mt-1 font-mono text-xs text-ink-dim">Run verified</p><p class="mt-1 text-xs text-ink-dim"><time dateTime="2026-06-14T00:00:00.000Z" class="invisible">Jun 14, 2026 at 12:00 AM UTC</time></p></th><td class="border-l border-line p-4 "><p class="font-mono font-medium tabular-nums">10,600,000,000</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$19 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td><td class="border-l border-line p-4 "><p class="font-mono font-medium tabular-nums">10,000,000,000</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$25 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td><td class="border-l border-line p-4 bg-accent-soft/40"><p class="font-mono font-medium tabular-nums">10,000,000,000</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$25 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td></tr><tr id="result-verified-ada" data-solver="ada" class="border-t border-line text-ink"><th scope="row" class="sticky left-0 z-10 bg-bg p-4 font-normal"><a class="font-medium text-accent-strong" href="/solver/ada?benchmark=ca7a1000-0000-4000-8000-000000000001">ada</a><p class="mt-1 text-xs text-ink-dim">gpt-6-astra</p><p class="mt-1 font-mono text-xs text-ink-dim">Run verified</p><p class="mt-1 text-xs text-ink-dim"><time dateTime="2026-06-14T00:00:00.000Z" class="invisible">Jun 14, 2026 at 12:00 AM UTC</time></p></th><td class="border-l border-line p-4 "><p class="font-mono font-medium tabular-nums">10,704,574,395</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$0.887796 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td><td class="border-l border-line p-4 "><p class="font-mono font-medium tabular-nums">10,704,574,395</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$0.887796 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td><td class="border-l border-line p-4 bg-accent-soft/40"><p class="font-mono font-medium tabular-nums">10,704,574,395</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$0.887796 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td></tr></tbody></table></div><p class="mt-3 text-xs text-ink-dim">A cheaper run qualifies for both budget columns. — means no verified observation within that budget. Frontier marks results unbeaten on both performance and credits in that column.</p><section aria-labelledby="_R_5_-heading" class="mt-8 rounded-xl border border-line bg-surface p-4 sm:p-6"><div class="flex flex-wrap items-start justify-between gap-4"><div><h3 id="_R_5_-heading" class="text-lg font-semibold text-ink">Research progress</h3><p class="mt-1 text-sm text-ink-dim">Every recorded evaluation stays visible, including regressions. The line shows the best score so far.</p></div><label class="grid gap-1 text-xs text-ink-dim">Run<select aria-label="Research run" class="max-w-full rounded-md border border-line bg-bg px-3 py-2 text-sm text-ink"><option value="verified-ada" selected="">ada · verified</option><option value="verified-grace">grace · verified</option></select></label></div><figure class="mt-5"><svg viewBox="0 0 800 270" class="w-full" role="img" aria-labelledby="_R_5_-heading _R_5_-caption"><g class="text-ink-dim"><line x1="88" x2="748" y1="220" y2="220" stroke="currentColor" opacity=".15"></line><text x="76" y="224" text-anchor="end" fill="currentColor" font-size="12">10.65B</text><text x="88" y="242" text-anchor="middle" fill="currentColor" font-size="12">$0</text></g><g class="text-ink-dim"><line x1="88" x2="748" y1="130" y2="130" stroke="currentColor" opacity=".15"></line><text x="76" y="134" text-anchor="end" fill="currentColor" font-size="12">10.7B</text><text x="418" y="242" text-anchor="middle" fill="currentColor" font-size="12">$0.5</text></g><g class="text-ink-dim"><line x1="88" x2="748" y1="40" y2="40" stroke="currentColor" opacity=".15"></line><text x="76" y="44" text-anchor="end" fill="currentColor" font-size="12">10.76B</text><text x="748" y="242" text-anchor="middle" fill="currentColor" font-size="12">$1</text></g><text x="88" y="18" class="fill-ink-dim" font-size="12">Toffoli × qubits ↓</text><text x="748" y="266" text-anchor="end" class="fill-ink-dim" font-size="12">Cumulative model credits →</text><path d="M673.94536,130" fill="none" class="stroke-accent" stroke-width="2.5"></path><circle cx="673.94536" cy="130" r="4" class="fill-accent" opacity="1"><title>10,704,574,395 at $0.887796</title></circle></svg><figcaption id="_R_5_-caption" class="mt-3 text-sm text-ink-dim">Best overall: <strong class="font-mono text-ink">10,704,574,395</strong> at $0.887796. Credits use pinned model prices and may differ from cash charges.</figcaption></figure><details class="mt-4 text-sm text-ink-dim"><summary class="cursor-pointer">View 1 recorded evaluation</summary><ol class="mt-3 grid gap-2"><li class="flex flex-wrap justify-between gap-2 border-b border-line-faint py-2"><span>Evaluation 1 · $0.887796</span><span class="font-mono text-ink">10,704,574,395</span></li></ol></details></section></section>"`;
++exports[`leaderboard with a populated leaderboard 1`] = `"<section aria-label="Verified harness results" class="min-w-0"><h2 class="mb-3 text-xl font-semibold text-ink">Verified harness results</h2><p class="mb-4 text-sm text-ink-dim">Compare every budget side by side. Each cell shows the best verified Toffoli × qubits and credits used. Lower is better. Select a column to rank by that budget.</p><div class="overflow-x-auto rounded-xl border border-line"><table aria-label="Harness performance by model-credit budget" class="w-full min-w-[760px] text-left text-sm"><thead class="bg-surface text-ink-dim"><tr><th scope="col" class="sticky left-0 z-10 bg-bg p-4">Harness / solver</th><th scope="col" class="border-l border-line p-4 "><button type="button" aria-pressed="false" class="rounded-sm text-left underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent">Within $20 <span aria-hidden="true">↕</span></button><p class="mt-1 text-xs font-normal text-ink-dim">Toffoli × qubits</p></th><th scope="col" class="border-l border-line p-4 "><button type="button" aria-pressed="false" class="rounded-sm text-left underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent">Within $200 <span aria-hidden="true">↕</span></button><p class="mt-1 text-xs font-normal text-ink-dim">Toffoli × qubits</p></th><th scope="col" aria-sort="ascending" class="border-l border-line p-4 bg-accent-soft text-accent-strong"><button type="button" aria-pressed="true" class="rounded-sm text-left underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent">Best overall <span aria-hidden="true">↓</span></button><p class="mt-1 text-xs font-normal text-ink-dim">Toffoli × qubits</p></th></tr></thead><tbody><tr id="result-verified-grace" data-solver="grace" class="border-t border-line text-ink"><th scope="row" class="sticky left-0 z-10 bg-bg p-4 font-normal"><a class="font-medium text-accent-strong" href="/solver/grace?benchmark=ca7a1000-0000-4000-8000-000000000001">grace</a><p class="mt-1 font-mono text-xs text-ink-dim">Run verified</p><p class="mt-1 text-xs text-ink-dim"><time dateTime="2026-06-14T00:00:00.000Z" class="invisible">Jun 14, 2026 at 12:00 AM UTC</time></p></th><td class="border-l border-line p-4 "><p class="font-mono font-medium tabular-nums">10,600,000,000</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$19 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td><td class="border-l border-line p-4 "><p class="font-mono font-medium tabular-nums">10,000,000,000</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$25 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td><td class="border-l border-line p-4 bg-accent-soft/40"><p class="font-mono font-medium tabular-nums">10,000,000,000</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$25 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td></tr><tr id="result-verified-ada" data-solver="ada" class="border-t border-line text-ink"><th scope="row" class="sticky left-0 z-10 bg-bg p-4 font-normal"><a class="font-medium text-accent-strong" href="/solver/ada?benchmark=ca7a1000-0000-4000-8000-000000000001">ada</a><p class="mt-1 text-xs text-ink-dim">gpt-6-astra</p><p class="mt-1 font-mono text-xs text-ink-dim">Run verified</p><p class="mt-1 text-xs text-ink-dim"><time dateTime="2026-06-14T00:00:00.000Z" class="invisible">Jun 14, 2026 at 12:00 AM UTC</time></p><details class="mt-3"><summary class="cursor-pointer text-xs text-accent-strong">Source &amp; traces</summary></details></th><td class="border-l border-line p-4 "><p class="font-mono font-medium tabular-nums">10,704,574,395</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$0.887796 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td><td class="border-l border-line p-4 "><p class="font-mono font-medium tabular-nums">10,704,574,395</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$0.887796 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td><td class="border-l border-line p-4 bg-accent-soft/40"><p class="font-mono font-medium tabular-nums">10,704,574,395</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$0.887796 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td></tr></tbody></table></div><p class="mt-3 text-xs text-ink-dim">A cheaper run qualifies for both budget columns. — means no verified observation within that budget. Frontier marks results unbeaten on both performance and credits in that column.</p><section aria-labelledby="_R_5_-heading" class="mt-8 rounded-xl border border-line bg-surface p-4 sm:p-6"><div class="flex flex-wrap items-start justify-between gap-4"><div><h3 id="_R_5_-heading" class="text-lg font-semibold text-ink">Research progress</h3><p class="mt-1 text-sm text-ink-dim">Every recorded evaluation stays visible, including regressions. The line shows the best score so far.</p></div><label class="grid gap-1 text-xs text-ink-dim">Run<select aria-label="Research run" class="max-w-full rounded-md border border-line bg-bg px-3 py-2 text-sm text-ink"><option value="verified-ada" selected="">ada · verified</option><option value="verified-grace">grace · verified</option></select></label></div><figure class="mt-5"><svg viewBox="0 0 800 270" class="w-full" role="img" aria-labelledby="_R_5_-heading _R_5_-caption"><g class="text-ink-dim"><line x1="88" x2="748" y1="220" y2="220" stroke="currentColor" opacity=".15"></line><text x="76" y="224" text-anchor="end" fill="currentColor" font-size="12">10.65B</text><text x="88" y="242" text-anchor="middle" fill="currentColor" font-size="12">$0</text></g><g class="text-ink-dim"><line x1="88" x2="748" y1="130" y2="130" stroke="currentColor" opacity=".15"></line><text x="76" y="134" text-anchor="end" fill="currentColor" font-size="12">10.7B</text><text x="418" y="242" text-anchor="middle" fill="currentColor" font-size="12">$0.5</text></g><g class="text-ink-dim"><line x1="88" x2="748" y1="40" y2="40" stroke="currentColor" opacity=".15"></line><text x="76" y="44" text-anchor="end" fill="currentColor" font-size="12">10.76B</text><text x="748" y="242" text-anchor="middle" fill="currentColor" font-size="12">$1</text></g><text x="88" y="18" class="fill-ink-dim" font-size="12">Toffoli × qubits ↓</text><text x="748" y="266" text-anchor="end" class="fill-ink-dim" font-size="12">Cumulative model credits →</text><path d="M673.94536,130" fill="none" class="stroke-accent" stroke-width="2.5"></path><circle cx="673.94536" cy="130" r="4" class="fill-accent" opacity="1"><title>10,704,574,395 at $0.887796</title></circle></svg><figcaption id="_R_5_-caption" class="mt-3 text-sm text-ink-dim">Best overall: <strong class="font-mono text-ink">10,704,574,395</strong> at $0.887796. Credits use pinned model prices and may differ from cash charges.</figcaption></figure><details class="mt-4 text-sm text-ink-dim"><summary class="cursor-pointer">View 1 recorded evaluation</summary><ol class="mt-3 grid gap-2"><li class="flex flex-wrap justify-between gap-2 border-b border-line-faint py-2"><span>Evaluation 1 · $0.887796</span><span class="font-mono text-ink">10,704,574,395</span></li></ol></details></section></section>"`;
 +
 +exports[`leaderboard with no submissions 1`] = `"<section aria-label="Verified harness results" class="min-w-0"><h2 class="mb-3 text-xl font-semibold text-ink">Verified harness results</h2><p class="mb-4 text-sm text-ink-dim">Compare every budget side by side. Each cell shows the best verified Toffoli × qubits and credits used. Lower is better. Select a column to rank by that budget.</p><p class="rounded-xl border border-line p-8 text-center text-ink-dim">No verified harness results yet.</p><p class="mt-3 text-xs text-ink-dim">A cheaper run qualifies for both budget columns. — means no verified observation within that budget. Frontier marks results unbeaten on both performance and credits in that column.</p></section>"`;
 +
-+exports[`leaderboard lower-is-better 1`] = `"<section aria-label="Verified harness results" class="min-w-0"><h2 class="mb-3 text-xl font-semibold text-ink">Verified harness results</h2><p class="mb-4 text-sm text-ink-dim">Compare every budget side by side. Each cell shows the best verified Toffoli × qubits and credits used. Lower is better. Select a column to rank by that budget.</p><div class="overflow-x-auto rounded-xl border border-line"><table aria-label="Harness performance by model-credit budget" class="w-full min-w-[760px] text-left text-sm"><thead class="bg-surface text-ink-dim"><tr><th scope="col" class="sticky left-0 z-10 bg-bg p-4">Harness / solver</th><th scope="col" class="border-l border-line p-4 "><button type="button" aria-pressed="false" class="rounded-sm text-left underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent">Within $20 <span aria-hidden="true">↕</span></button><p class="mt-1 text-xs font-normal text-ink-dim">Toffoli × qubits</p></th><th scope="col" class="border-l border-line p-4 "><button type="button" aria-pressed="false" class="rounded-sm text-left underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent">Within $200 <span aria-hidden="true">↕</span></button><p class="mt-1 text-xs font-normal text-ink-dim">Toffoli × qubits</p></th><th scope="col" aria-sort="ascending" class="border-l border-line p-4 bg-accent-soft text-accent-strong"><button type="button" aria-pressed="true" class="rounded-sm text-left underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent">Best overall <span aria-hidden="true">↓</span></button><p class="mt-1 text-xs font-normal text-ink-dim">Toffoli × qubits</p></th></tr></thead><tbody><tr id="result-verified-grace" data-solver="grace" class="border-t border-line text-ink"><th scope="row" class="sticky left-0 z-10 bg-bg p-4 font-normal"><a class="font-medium text-accent-strong" href="/solver/grace?benchmark=ca7a1000-0000-4000-8000-000000000001">grace</a><p class="mt-1 font-mono text-xs text-ink-dim">Run verified</p><p class="mt-1 text-xs text-ink-dim"><time dateTime="2026-06-14T00:00:00.000Z" class="invisible">Jun 14, 2026 at 12:00 AM UTC</time></p></th><td class="border-l border-line p-4 "><p class="font-mono font-medium tabular-nums">10,600,000,000</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$19 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td><td class="border-l border-line p-4 "><p class="font-mono font-medium tabular-nums">10,000,000,000</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$25 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td><td class="border-l border-line p-4 bg-accent-soft/40"><p class="font-mono font-medium tabular-nums">10,000,000,000</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$25 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td></tr><tr id="result-verified-ada" data-solver="ada" class="border-t border-line text-ink"><th scope="row" class="sticky left-0 z-10 bg-bg p-4 font-normal"><a class="font-medium text-accent-strong" href="/solver/ada?benchmark=ca7a1000-0000-4000-8000-000000000001">ada</a><p class="mt-1 text-xs text-ink-dim">gpt-6-astra</p><p class="mt-1 font-mono text-xs text-ink-dim">Run verified</p><p class="mt-1 text-xs text-ink-dim"><time dateTime="2026-06-14T00:00:00.000Z" class="invisible">Jun 14, 2026 at 12:00 AM UTC</time></p></th><td class="border-l border-line p-4 "><p class="font-mono font-medium tabular-nums">10,704,574,395</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$0.887796 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td><td class="border-l border-line p-4 "><p class="font-mono font-medium tabular-nums">10,704,574,395</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$0.887796 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td><td class="border-l border-line p-4 bg-accent-soft/40"><p class="font-mono font-medium tabular-nums">10,704,574,395</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$0.887796 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td></tr></tbody></table></div><p class="mt-3 text-xs text-ink-dim">A cheaper run qualifies for both budget columns. — means no verified observation within that budget. Frontier marks results unbeaten on both performance and credits in that column.</p><section aria-labelledby="_R_5_-heading" class="mt-8 rounded-xl border border-line bg-surface p-4 sm:p-6"><div class="flex flex-wrap items-start justify-between gap-4"><div><h3 id="_R_5_-heading" class="text-lg font-semibold text-ink">Research progress</h3><p class="mt-1 text-sm text-ink-dim">Every recorded evaluation stays visible, including regressions. The line shows the best score so far.</p></div><label class="grid gap-1 text-xs text-ink-dim">Run<select aria-label="Research run" class="max-w-full rounded-md border border-line bg-bg px-3 py-2 text-sm text-ink"><option value="verified-ada" selected="">ada · verified</option><option value="verified-grace">grace · verified</option></select></label></div><figure class="mt-5"><svg viewBox="0 0 800 270" class="w-full" role="img" aria-labelledby="_R_5_-heading _R_5_-caption"><g class="text-ink-dim"><line x1="88" x2="748" y1="220" y2="220" stroke="currentColor" opacity=".15"></line><text x="76" y="224" text-anchor="end" fill="currentColor" font-size="12">10.65B</text><text x="88" y="242" text-anchor="middle" fill="currentColor" font-size="12">$0</text></g><g class="text-ink-dim"><line x1="88" x2="748" y1="130" y2="130" stroke="currentColor" opacity=".15"></line><text x="76" y="134" text-anchor="end" fill="currentColor" font-size="12">10.7B</text><text x="418" y="242" text-anchor="middle" fill="currentColor" font-size="12">$0.5</text></g><g class="text-ink-dim"><line x1="88" x2="748" y1="40" y2="40" stroke="currentColor" opacity=".15"></line><text x="76" y="44" text-anchor="end" fill="currentColor" font-size="12">10.76B</text><text x="748" y="242" text-anchor="middle" fill="currentColor" font-size="12">$1</text></g><text x="88" y="18" class="fill-ink-dim" font-size="12">Toffoli × qubits ↓</text><text x="748" y="266" text-anchor="end" class="fill-ink-dim" font-size="12">Cumulative model credits →</text><path d="M673.94536,130" fill="none" class="stroke-accent" stroke-width="2.5"></path><circle cx="673.94536" cy="130" r="4" class="fill-accent" opacity="1"><title>10,704,574,395 at $0.887796</title></circle></svg><figcaption id="_R_5_-caption" class="mt-3 text-sm text-ink-dim">Best overall: <strong class="font-mono text-ink">10,704,574,395</strong> at $0.887796. Credits use pinned model prices and may differ from cash charges.</figcaption></figure><details class="mt-4 text-sm text-ink-dim"><summary class="cursor-pointer">View 1 recorded evaluation</summary><ol class="mt-3 grid gap-2"><li class="flex flex-wrap justify-between gap-2 border-b border-line-faint py-2"><span>Evaluation 1 · $0.887796</span><span class="font-mono text-ink">10,704,574,395</span></li></ol></details></section></section>"`;
++exports[`leaderboard lower-is-better 1`] = `"<section aria-label="Verified harness results" class="min-w-0"><h2 class="mb-3 text-xl font-semibold text-ink">Verified harness results</h2><p class="mb-4 text-sm text-ink-dim">Compare every budget side by side. Each cell shows the best verified Toffoli × qubits and credits used. Lower is better. Select a column to rank by that budget.</p><div class="overflow-x-auto rounded-xl border border-line"><table aria-label="Harness performance by model-credit budget" class="w-full min-w-[760px] text-left text-sm"><thead class="bg-surface text-ink-dim"><tr><th scope="col" class="sticky left-0 z-10 bg-bg p-4">Harness / solver</th><th scope="col" class="border-l border-line p-4 "><button type="button" aria-pressed="false" class="rounded-sm text-left underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent">Within $20 <span aria-hidden="true">↕</span></button><p class="mt-1 text-xs font-normal text-ink-dim">Toffoli × qubits</p></th><th scope="col" class="border-l border-line p-4 "><button type="button" aria-pressed="false" class="rounded-sm text-left underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent">Within $200 <span aria-hidden="true">↕</span></button><p class="mt-1 text-xs font-normal text-ink-dim">Toffoli × qubits</p></th><th scope="col" aria-sort="ascending" class="border-l border-line p-4 bg-accent-soft text-accent-strong"><button type="button" aria-pressed="true" class="rounded-sm text-left underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-accent">Best overall <span aria-hidden="true">↓</span></button><p class="mt-1 text-xs font-normal text-ink-dim">Toffoli × qubits</p></th></tr></thead><tbody><tr id="result-verified-grace" data-solver="grace" class="border-t border-line text-ink"><th scope="row" class="sticky left-0 z-10 bg-bg p-4 font-normal"><a class="font-medium text-accent-strong" href="/solver/grace?benchmark=ca7a1000-0000-4000-8000-000000000001">grace</a><p class="mt-1 font-mono text-xs text-ink-dim">Run verified</p><p class="mt-1 text-xs text-ink-dim"><time dateTime="2026-06-14T00:00:00.000Z" class="invisible">Jun 14, 2026 at 12:00 AM UTC</time></p></th><td class="border-l border-line p-4 "><p class="font-mono font-medium tabular-nums">10,600,000,000</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$19 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td><td class="border-l border-line p-4 "><p class="font-mono font-medium tabular-nums">10,000,000,000</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$25 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td><td class="border-l border-line p-4 bg-accent-soft/40"><p class="font-mono font-medium tabular-nums">10,000,000,000</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$25 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td></tr><tr id="result-verified-ada" data-solver="ada" class="border-t border-line text-ink"><th scope="row" class="sticky left-0 z-10 bg-bg p-4 font-normal"><a class="font-medium text-accent-strong" href="/solver/ada?benchmark=ca7a1000-0000-4000-8000-000000000001">ada</a><p class="mt-1 text-xs text-ink-dim">gpt-6-astra</p><p class="mt-1 font-mono text-xs text-ink-dim">Run verified</p><p class="mt-1 text-xs text-ink-dim"><time dateTime="2026-06-14T00:00:00.000Z" class="invisible">Jun 14, 2026 at 12:00 AM UTC</time></p><details class="mt-3"><summary class="cursor-pointer text-xs text-accent-strong">Source &amp; traces</summary></details></th><td class="border-l border-line p-4 "><p class="font-mono font-medium tabular-nums">10,704,574,395</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$0.887796 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td><td class="border-l border-line p-4 "><p class="font-mono font-medium tabular-nums">10,704,574,395</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$0.887796 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td><td class="border-l border-line p-4 bg-accent-soft/40"><p class="font-mono font-medium tabular-nums">10,704,574,395</p><p class="mt-1 font-mono text-xs tabular-nums text-ink-dim">$0.887796 credits</p><p class="mt-2 text-xs text-accent-strong">Frontier</p></td></tr></tbody></table></div><p class="mt-3 text-xs text-ink-dim">A cheaper run qualifies for both budget columns. — means no verified observation within that budget. Frontier marks results unbeaten on both performance and credits in that column.</p><section aria-labelledby="_R_5_-heading" class="mt-8 rounded-xl border border-line bg-surface p-4 sm:p-6"><div class="flex flex-wrap items-start justify-between gap-4"><div><h3 id="_R_5_-heading" class="text-lg font-semibold text-ink">Research progress</h3><p class="mt-1 text-sm text-ink-dim">Every recorded evaluation stays visible, including regressions. The line shows the best score so far.</p></div><label class="grid gap-1 text-xs text-ink-dim">Run<select aria-label="Research run" class="max-w-full rounded-md border border-line bg-bg px-3 py-2 text-sm text-ink"><option value="verified-ada" selected="">ada · verified</option><option value="verified-grace">grace · verified</option></select></label></div><figure class="mt-5"><svg viewBox="0 0 800 270" class="w-full" role="img" aria-labelledby="_R_5_-heading _R_5_-caption"><g class="text-ink-dim"><line x1="88" x2="748" y1="220" y2="220" stroke="currentColor" opacity=".15"></line><text x="76" y="224" text-anchor="end" fill="currentColor" font-size="12">10.65B</text><text x="88" y="242" text-anchor="middle" fill="currentColor" font-size="12">$0</text></g><g class="text-ink-dim"><line x1="88" x2="748" y1="130" y2="130" stroke="currentColor" opacity=".15"></line><text x="76" y="134" text-anchor="end" fill="currentColor" font-size="12">10.7B</text><text x="418" y="242" text-anchor="middle" fill="currentColor" font-size="12">$0.5</text></g><g class="text-ink-dim"><line x1="88" x2="748" y1="40" y2="40" stroke="currentColor" opacity=".15"></line><text x="76" y="44" text-anchor="end" fill="currentColor" font-size="12">10.76B</text><text x="748" y="242" text-anchor="middle" fill="currentColor" font-size="12">$1</text></g><text x="88" y="18" class="fill-ink-dim" font-size="12">Toffoli × qubits ↓</text><text x="748" y="266" text-anchor="end" class="fill-ink-dim" font-size="12">Cumulative model credits →</text><path d="M673.94536,130" fill="none" class="stroke-accent" stroke-width="2.5"></path><circle cx="673.94536" cy="130" r="4" class="fill-accent" opacity="1"><title>10,704,574,395 at $0.887796</title></circle></svg><figcaption id="_R_5_-caption" class="mt-3 text-sm text-ink-dim">Best overall: <strong class="font-mono text-ink">10,704,574,395</strong> at $0.887796. Credits use pinned model prices and may differ from cash charges.</figcaption></figure><details class="mt-4 text-sm text-ink-dim"><summary class="cursor-pointer">View 1 recorded evaluation</summary><ol class="mt-3 grid gap-2"><li class="flex flex-wrap justify-between gap-2 border-b border-line-faint py-2"><span>Evaluation 1 · $0.887796</span><span class="font-mono text-ink">10,704,574,395</span></li></ol></details></section></section>"`;
 diff --git a/apps/challenges-ui/challenges/catalyst/components/hero.tsx b/apps/challenges-ui/challenges/catalyst/components/hero.tsx
 new file mode 100644
 index 00000000..84264572
@@ -325,10 +325,10 @@ index 00000000..84264572
 +}
 diff --git a/apps/challenges-ui/challenges/catalyst/components/leaderboard.tsx b/apps/challenges-ui/challenges/catalyst/components/leaderboard.tsx
 new file mode 100644
-index 00000000..079e061c
+index 00000000..f8afe0ef
 --- /dev/null
 +++ b/apps/challenges-ui/challenges/catalyst/components/leaderboard.tsx
-@@ -0,0 +1,195 @@
+@@ -0,0 +1,200 @@
 +"use client";
 +import { useEffect, useMemo, useState } from "react";
 +import Link from "next/link";
@@ -347,6 +347,7 @@ index 00000000..079e061c
 +import { ShareContributionButton } from "@/shared/sections/share-contribution-button";
 +import { solverProfileHref } from "@/shared/lib/solver-profile-href";
 +import { PerformanceChart } from "./performance-chart";
++import { RunArtifacts } from "./run-artifacts";
 +
 +const COLUMNS = [
 +  { budget: 20, label: "Within $20" },
@@ -460,6 +461,10 @@ index 00000000..079e061c
 +                      <p className="mt-1 text-xs text-ink-dim">
 +                        <LocalTime at={submission.createdAt} />
 +                      </p>
++                      <RunArtifacts
++                        submission={submission}
++                        owner={Boolean(username && username.toLowerCase() === viewerUsername?.toLowerCase())}
++                      />
 +                      {username?.toLowerCase() === viewerUsername?.toLowerCase() && username && (
 +                        <ShareContributionButton
 +                          routePrefix="/catalyst"
@@ -1110,10 +1115,10 @@ index 00000000..1244ff15
 +}
 diff --git a/apps/challenges-ui/challenges/catalyst/lib/test-fixtures.tsx b/apps/challenges-ui/challenges/catalyst/lib/test-fixtures.tsx
 new file mode 100644
-index 00000000..3fb032c3
+index 00000000..62e5c23b
 --- /dev/null
 +++ b/apps/challenges-ui/challenges/catalyst/lib/test-fixtures.tsx
-@@ -0,0 +1,76 @@
+@@ -0,0 +1,79 @@
 +import { submissionFactory } from "@/shared/lib/challenge-test-kit";
 +import type { PublicBenchmark, PublicSubmission } from "@/shared/lib/yukon-api-client";
 +
@@ -1154,6 +1159,9 @@ index 00000000..3fb032c3
 +    solverUsername: "ada",
 +    judgment: { valid: true, scores: [10_704_574_395, 0.887796] },
 +    officialMetrics: {
++      evaluationId: "c8e02a20-9d80-41e7-89e7-7b79d91f1b1d",
++      sourceDigest: "a".repeat(64),
++      evidenceMode: "remote",
 +      model: { name: "gpt-6-astra" },
 +      observations: [
 +        {
@@ -1251,8 +1259,34 @@ index e0570ef3..9c293538 100644
    {
      title: "The Proximity Prize",
      category: "Cryptography",
+diff --git a/apps/challenges-ui/lib/env.test.ts b/apps/challenges-ui/lib/env.test.ts
+index dbe91158..de4833de 100644
+--- a/apps/challenges-ui/lib/env.test.ts
++++ b/apps/challenges-ui/lib/env.test.ts
+@@ -18,6 +18,21 @@ import {
+ 
+ const SUPABASE_URL = "https://abcdefgh.supabase.co";
+ 
++test("the artifact verifier is an optional credential-free HTTPS origin", () => {
++  expect(parse({ CATALYST_EVALUATOR_URL: "https://verifier.example.test/" }).CATALYST_EVALUATOR_URL).toBe(
++    "https://verifier.example.test",
++  );
++  expect(parse({}).CATALYST_EVALUATOR_URL).toBeUndefined();
++  for (const value of [
++    "http://example.test",
++    "https://user:password@example.test",
++    "https://example.test/path",
++    "https://example.test/?token=secret",
++  ]) {
++    expect(() => parse({ CATALYST_EVALUATOR_URL: value })).toThrow(/credential-free HTTPS origin/);
++  }
++});
++
+ test("Virtual Embryo submitter releases require a credential-free HTTPS URL", () => {
+   const url = "https://github.com/MC1823315/ve-submit/releases/tag/v0.2.5-staging";
+   expect(
 diff --git a/apps/challenges-ui/lib/env.ts b/apps/challenges-ui/lib/env.ts
-index 591eea7b..66ce40fa 100644
+index 591eea7b..29db9d39 100644
 --- a/apps/challenges-ui/lib/env.ts
 +++ b/apps/challenges-ui/lib/env.ts
 @@ -79,6 +79,7 @@ const mlxfastLandingTrack = optional.check(
@@ -1263,23 +1297,39 @@ index 591eea7b..66ce40fa 100644
    "labinius",
    "siggolf",
    "virtualembryo",
-@@ -289,6 +290,7 @@ export const envSchema = z
+@@ -289,6 +290,22 @@ export const envSchema = z
      NEXT_PUBLIC_DATADOG_SITE: datadogSite,
      NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA: optional,
      NEXT_PUBLIC_API_URL: apiOrigin,
++    // Server-only: public artifact reads use a fixed verifier, never a solver URL.
++    CATALYST_EVALUATOR_URL: optionalString((value) => value.replace(/\/+$/, "")).check(
++      z.refine(
++        (value: string | undefined) => {
++          if (value === undefined) return true;
++          try {
++            const url = new URL(value);
++            return url.protocol === "https:" && url.origin === value && !url.username && !url.password;
++          } catch {
++            return false;
++          }
++        },
++        { error: "must be a credential-free HTTPS origin" },
++      ),
++    ),
 +    NEXT_PUBLIC_CATALYST_BENCHMARK_REF: benchmarkRefValue,
      NEXT_PUBLIC_VIRTUALEMBRYO_DATA_URL: httpsLink,
      NEXT_PUBLIC_VIRTUALEMBRYO_SUBMITTER_URL: httpsLink,
      NEXT_PUBLIC_LABINIUS_BENCHMARK_REF: benchmarkRefValue,
-@@ -463,6 +465,7 @@ export const env = envSchema.parse({
+@@ -463,6 +480,8 @@ export const env = envSchema.parse({
    NEXT_PUBLIC_DATADOG_SITE: process.env.NEXT_PUBLIC_DATADOG_SITE,
    NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA,
    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
++  CATALYST_EVALUATOR_URL: process.env.CATALYST_EVALUATOR_URL,
 +  NEXT_PUBLIC_CATALYST_BENCHMARK_REF: process.env.NEXT_PUBLIC_CATALYST_BENCHMARK_REF,
    NEXT_PUBLIC_VIRTUALEMBRYO_DATA_URL: process.env.NEXT_PUBLIC_VIRTUALEMBRYO_DATA_URL,
    NEXT_PUBLIC_VIRTUALEMBRYO_SUBMITTER_URL: process.env.NEXT_PUBLIC_VIRTUALEMBRYO_SUBMITTER_URL,
    NEXT_PUBLIC_LABINIUS_BENCHMARK_REF: process.env.NEXT_PUBLIC_LABINIUS_BENCHMARK_REF,
-@@ -646,6 +649,7 @@ type BenchmarkRefVariable = `NEXT_PUBLIC_${Uppercase<Exclude<ChallengeKey, "hash
+@@ -646,6 +665,7 @@ type BenchmarkRefVariable = `NEXT_PUBLIC_${Uppercase<Exclude<ChallengeKey, "hash
  // the challenge at runtime. The key type is derived from `ChallengeKey`, so adding a challenge without adding its
  // variable to the schema is a type error rather than a board that silently unpins.
  const BENCHMARK_REF: Record<ChallengeKey, BenchmarkRefVariable | undefined> = {
@@ -1287,7 +1337,7 @@ index 591eea7b..66ce40fa 100644
    labinius: "NEXT_PUBLIC_LABINIUS_BENCHMARK_REF",
    siggolf: "NEXT_PUBLIC_SIGGOLF_BENCHMARK_REF",
    virtualembryo: "NEXT_PUBLIC_VIRTUALEMBRYO_BENCHMARK_REF",
-@@ -902,6 +906,7 @@ export function appOrigin(source: PartialEnv = env): string {
+@@ -902,6 +922,7 @@ export function appOrigin(source: PartialEnv = env): string {
   * Full-segment matching prevents /mlxfast from matching /mlxfastest.
   */
  const CHALLENGE_ROUTE_PREFIXES: ReadonlyArray<readonly [string, ChallengeKey]> = [
@@ -1459,10 +1509,10 @@ index d3ec4994..940c62a4 100644
    solverAccountId: string | null;
 diff --git a/scripts/check-catalyst-ui.ts b/scripts/check-catalyst-ui.ts
 new file mode 100644
-index 00000000..2957906e
+index 00000000..9fdf08fb
 --- /dev/null
 +++ b/scripts/check-catalyst-ui.ts
-@@ -0,0 +1,71 @@
+@@ -0,0 +1,111 @@
 +// Local browser contract check; read-only against Yukon dev, then synthetic
 +// browser-only responses for multi-observation budget boundaries.
 +import { chromium } from "playwright-core";
@@ -1495,6 +1545,21 @@ index 00000000..2957906e
 +  await page.goto(`${origin}/solver/bxue-l2?as=bxue-l2`, { waitUntil: "networkidle" });
 +  await page.getByRole("heading", { name: /bxue-l2/ }).first().waitFor();
 +
++  let artifactReads = 0;
++  let artifactMode: "published" | "unpublished" | "mismatch" | "outage" = "published";
++  const evaluationId = "c8e02a20-9d80-41e7-89e7-7b79d91f1b1d";
++  const artifactPage = `https://verifier.example.test/public/evaluations/${evaluationId}`;
++  await page.route("**/api/catalyst/artifacts/*", (route) => {
++    artifactReads += 1;
++    if (artifactMode === "outage") return route.fulfill({ status: 502, json: { error: "artifact_service_unavailable" } });
++    if (artifactMode === "unpublished") return route.fulfill({ json: { status: "unpublished" } });
++    return route.fulfill({ json: {
++      status: "published", evaluationId, sourceDigest: (artifactMode === "mismatch" ? "c" : "a").repeat(64),
++      license: "MIT", pageUrl: artifactPage,
++      artifacts: [{ kind: "harness", sha256: "b".repeat(64), bytes: 123,
++        downloadUrl: `${artifactPage}/artifacts/harness/content` }],
++    } });
++  });
 +  await page.route("**/api/benchmarks/*/submissions*", (route) =>
 +    route.fulfill({ json: { submissions: [...SUBMISSIONS, {
 +      ...SUBMISSIONS[0], id: "late-result", solverUsername: "late",
@@ -1522,6 +1587,31 @@ index 00000000..2957906e
 +  await page.getByText("View 2 recorded evaluations", { exact: true }).click();
 +  await page.getByText("Evaluation 1 · $19", { exact: true }).waitFor();
 +  await page.getByText("Evaluation 2 · $25", { exact: true }).waitFor();
++  assert.equal(artifactReads, 0, "Collapsed rows must not contact the artifact service.");
++  const ada = matrix.locator('tr[data-solver="ada"]');
++  const disclosure = ada.getByText("Source & traces", { exact: true });
++  await disclosure.click();
++  const sourceLink = ada.getByRole("link", { name: "Download harness source", exact: true });
++  await sourceLink.waitFor();
++  assert.equal(await sourceLink.getAttribute("href"), `${artifactPage}/artifacts/harness/content`);
++  assert.equal(await ada.getByRole("link", { name: "Download sanitized traces", exact: true }).count(), 0);
++  assert.equal(await ada.getByText(/catalyst remote download/).count(), 0);
++  assert.equal(artifactReads, 1);
++  await page.screenshot({ path: "/tmp/catalyst-ui-artifacts.png", fullPage: true });
++  await disclosure.click();
++  artifactMode = "unpublished";
++  await disclosure.click();
++  await ada.getByText("No public source or traces are available for this run.", { exact: true }).waitFor();
++  assert.equal(await sourceLink.count(), 0);
++  await disclosure.click();
++  artifactMode = "mismatch";
++  await disclosure.click();
++  await ada.getByRole("button", { name: "Retry", exact: true }).waitFor();
++  assert.equal(await sourceLink.count(), 0, "Mismatched source identities cannot expose download links.");
++  artifactMode = "outage";
++  await ada.getByRole("button", { name: "Retry", exact: true }).click();
++  await ada.getByText("Artifacts are temporarily unavailable.", { exact: false }).waitFor();
++  await disclosure.click();
 +  await page.screenshot({ path: "/tmp/catalyst-ui-history.png", fullPage: true });
 +  await page.setViewportSize({ width: 390, height: 844 });
 +  await page.getByRole("button", { name: "Within $20", exact: true }).click();
@@ -1529,8 +1619,501 @@ index 00000000..2957906e
 +  if (overflow) throw new Error("Mobile page overflows its viewport.");
 +  await page.screenshot({ path: "/tmp/catalyst-ui-mobile.png", fullPage: true });
 +  if (errors.length) throw new Error(errors.join("\n"));
-+  console.log("Live matrix, all budget cells, missing observations, column ranking, sharing, history, and mobile layout passed.");
++  console.log("Live matrix, budget cells, ranking, sharing, history, lazy artifact reads, unpublication, source binding, outages, and mobile layout passed.");
 +} finally {
 +  await browser.close();
 +}
 +process.exit(0);
+diff --git a/apps/challenges-ui/app/api/catalyst/artifacts/[evaluationId]/route.ts b/apps/challenges-ui/app/api/catalyst/artifacts/[evaluationId]/route.ts
+new file mode 100644
+index 00000000..5da833bc
+--- /dev/null
++++ b/apps/challenges-ui/app/api/catalyst/artifacts/[evaluationId]/route.ts
+@@ -0,0 +1,13 @@
++import { artifactResponse } from "@/challenges/catalyst/lib/artifact-response";
++import { challengeIsLive, env } from "@/lib/env";
++
++export const runtime = "nodejs";
++
++export async function GET(_request: Request, context: { params: Promise<{ evaluationId: string }> }) {
++  const { evaluationId } = await context.params;
++  return artifactResponse({
++    evaluationId,
++    origin: env.CATALYST_EVALUATOR_URL,
++    live: challengeIsLive("catalyst"),
++  });
++}
+diff --git a/apps/challenges-ui/challenges/catalyst/components/run-artifacts.test.tsx b/apps/challenges-ui/challenges/catalyst/components/run-artifacts.test.tsx
+new file mode 100644
+index 00000000..64844c4e
+--- /dev/null
++++ b/apps/challenges-ui/challenges/catalyst/components/run-artifacts.test.tsx
+@@ -0,0 +1,16 @@
++import { expect, test } from "bun:test";
++import { render } from "@/shared/lib/challenge-test-kit";
++import { SUBMISSIONS } from "@/challenges/catalyst/lib/test-fixtures";
++import { RunArtifacts } from "./run-artifacts";
++
++test("initial render exposes the disclosure without fetching or exposing private commands", () => {
++  const html = render(<RunArtifacts submission={SUBMISSIONS[0]!} owner={false} />);
++  expect(html).toContain("Source &amp; traces");
++  expect(html).not.toContain("Checking public artifacts");
++  expect(html).not.toContain("catalyst remote");
++  expect(html).not.toContain("downloadUrl");
++});
++
++test("legacy submissions without a source binding have no invented artifact link", () => {
++  expect(render(<RunArtifacts submission={{ ...SUBMISSIONS[0]!, officialMetrics: null }} owner={false} />)).toBe("");
++});
+diff --git a/apps/challenges-ui/challenges/catalyst/components/run-artifacts.tsx b/apps/challenges-ui/challenges/catalyst/components/run-artifacts.tsx
+new file mode 100644
+index 00000000..c2323985
+--- /dev/null
++++ b/apps/challenges-ui/challenges/catalyst/components/run-artifacts.tsx
+@@ -0,0 +1,92 @@
++"use client";
++
++import { useState } from "react";
++import { useQuery } from "@tanstack/react-query";
++import { fetchApiJson } from "@/lib/telemetry/fetch";
++import { artifactBinding, type ArtifactBinding, type ArtifactResponse } from "@/challenges/catalyst/lib/artifacts";
++import type { PublicSubmission } from "@/shared/lib/yukon-api-client";
++
++function ArtifactPanel({ binding, owner }: { binding: ArtifactBinding; owner: boolean }) {
++  const { evaluationId, sourceDigest } = binding;
++  const path = `/api/catalyst/artifacts/${evaluationId}`;
++  const query = useQuery({
++    queryKey: ["catalyst-public-artifacts", evaluationId, sourceDigest],
++    queryFn: async ({ signal }) => {
++      const value = await fetchApiJson<ArtifactResponse>({ url: path, path, init: { signal, cache: "no-store" } });
++      if (
++        value.status === "published" &&
++        (value.evaluationId !== evaluationId || value.sourceDigest !== sourceDigest)
++      ) {
++        throw new Error("Artifact source does not match the verified result");
++      }
++      return value;
++    },
++    // No polling or requests for collapsed rows. Reopening refreshes publication;
++    // each actual download also checks the service's current sharing decision.
++    staleTime: 0,
++    retry: false,
++    refetchOnWindowFocus: false,
++  });
++  const data = query.isError ? undefined : query.data;
++  return (
++    <div className="mt-3 max-w-sm space-y-3 text-xs text-ink-dim">
++      {query.isPending && <p role="status">Checking public artifacts…</p>}
++      {query.isError && (
++        <p role="status">
++          Artifacts are temporarily unavailable.{" "}
++          <button type="button" className="text-accent-strong underline" onClick={() => void query.refetch()}>
++            Retry
++          </button>
++        </p>
++      )}
++      {data?.status === "unconfigured" && <p>Artifact browsing is not configured on this website yet.</p>}
++      {data?.status === "unpublished" && <p>No public source or traces are available for this run.</p>}
++      {data?.status === "published" && (
++        <>
++          <ul className="space-y-3">
++            {data.artifacts.map((item) => (
++              <li key={item.kind}>
++                <a href={item.downloadUrl} className="font-medium text-accent-strong underline">
++                  {item.kind === "harness" ? "Download harness source" : "Download sanitized traces"}
++                </a>
++                <p className="mt-1">
++                  ZIP · {item.bytes.toLocaleString("en-US")} bytes
++                  {item.kind === "harness" && data.license ? ` · ${data.license}` : ""}
++                </p>
++                <details className="mt-1">
++                  <summary className="cursor-pointer">SHA-256</summary>
++                  <code className="block break-all">{item.sha256}</code>
++                </details>
++              </li>
++            ))}
++          </ul>
++          <a href={data.pageUrl} target="_blank" rel="noreferrer" className="inline-block text-accent-strong underline">
++            Public artifact page
++          </a>
++        </>
++      )}
++      {owner && (
++        <div className="space-y-2 border-t border-line pt-3">
++          <p>Download your complete private bundle with your Yukon login:</p>
++          <code className="block whitespace-normal break-all text-ink">
++            catalyst remote download {evaluationId} --kind complete --output complete.zip
++          </code>
++          <p>Source and traces stay private until you publish them separately.</p>
++          <code className="block whitespace-normal break-all text-ink">catalyst remote publish --help</code>
++        </div>
++      )}
++    </div>
++  );
++}
++
++export function RunArtifacts({ submission, owner }: { submission: PublicSubmission; owner: boolean }) {
++  const [open, setOpen] = useState(false);
++  const binding = artifactBinding(submission);
++  if (!binding) return null;
++  return (
++    <details className="mt-3" onToggle={(event) => setOpen(event.currentTarget.open)}>
++      <summary className="cursor-pointer text-xs text-accent-strong">Source &amp; traces</summary>
++      {open && <ArtifactPanel binding={binding} owner={owner} />}
++    </details>
++  );
++}
+diff --git a/apps/challenges-ui/challenges/catalyst/lib/artifact-response.ts b/apps/challenges-ui/challenges/catalyst/lib/artifact-response.ts
+new file mode 100644
+index 00000000..840f3d86
+--- /dev/null
++++ b/apps/challenges-ui/challenges/catalyst/lib/artifact-response.ts
+@@ -0,0 +1,66 @@
++import { isEvaluationId, parsePublicArtifacts } from "./artifacts";
++
++const MAX_MANIFEST_BYTES = 128 * 1024;
++const headers = { "Cache-Control": "no-store" };
++export type ArtifactFetch = (url: string, init?: RequestInit) => Promise<Response>;
++
++async function readManifest(response: Response): Promise<unknown> {
++  if (!response.body) throw new Error("Missing manifest");
++  const reader = response.body.getReader();
++  const chunks: Uint8Array[] = [];
++  let size = 0;
++  try {
++    while (true) {
++      const { done, value } = await reader.read();
++      if (done) break;
++      size += value.byteLength;
++      if (size > MAX_MANIFEST_BYTES) throw new Error("Manifest exceeds size limit");
++      chunks.push(value);
++    }
++    const bytes = new Uint8Array(size);
++    let offset = 0;
++    for (const chunk of chunks) {
++      bytes.set(chunk, offset);
++      offset += chunk.byteLength;
++    }
++    return JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes));
++  } finally {
++    await reader.cancel();
++  }
++}
++
++export async function artifactResponse({
++  evaluationId,
++  origin,
++  live,
++  request = fetch,
++}: {
++  evaluationId: string;
++  origin: string | undefined;
++  live: boolean;
++  request?: ArtifactFetch;
++}): Promise<Response> {
++  if (!live || !isEvaluationId(evaluationId)) {
++    return Response.json({ error: "not_found" }, { status: 404, headers });
++  }
++  if (!origin) return Response.json({ status: "unconfigured" }, { headers });
++  try {
++    const url = new URL(origin);
++    if (url.protocol !== "https:" || url.origin !== origin || url.username || url.password) {
++      throw new Error("Invalid verifier origin");
++    }
++    const response = await request(`${origin}/public/evaluations/${evaluationId}/artifacts`, {
++      headers: { Accept: "application/json" },
++      credentials: "omit",
++      redirect: "error",
++      cache: "no-store",
++      signal: AbortSignal.timeout(8_000),
++    });
++    if (response.status === 404) return Response.json({ status: "unpublished" }, { headers });
++    if (!response.ok) throw new Error("Verifier unavailable");
++    return Response.json(parsePublicArtifacts(await readManifest(response), evaluationId, origin), { headers });
++  } catch {
++    // An outage or malformed response must not be displayed as a privacy choice.
++    return Response.json({ error: "artifact_service_unavailable" }, { status: 502, headers });
++  }
++}
+diff --git a/apps/challenges-ui/challenges/catalyst/lib/artifacts.test.ts b/apps/challenges-ui/challenges/catalyst/lib/artifacts.test.ts
+new file mode 100644
+index 00000000..3aec2df2
+--- /dev/null
++++ b/apps/challenges-ui/challenges/catalyst/lib/artifacts.test.ts
+@@ -0,0 +1,163 @@
++import { describe, expect, test } from "bun:test";
++import { artifactBinding, parsePublicArtifacts } from "./artifacts";
++import { artifactResponse, type ArtifactFetch } from "./artifact-response";
++import { SUBMISSIONS } from "./test-fixtures";
++
++const identity = "c8e02a20-9d80-41e7-89e7-7b79d91f1b1d";
++const origin = "https://verifier.example.test";
++const source = "a".repeat(64);
++const entry = { media_type: "application/zip", sha256: "b".repeat(64), bytes: 123 };
++const manifest = () => ({
++  protocol: "catalyst-artifacts-v1",
++  evaluation_id: identity,
++  source_digest: source,
++  sharing: { harness: true, traces: false, license: "MIT" },
++  artifacts: { harness: entry },
++});
++const published =
++  (value: unknown = manifest(), status = 200): ArtifactFetch =>
++  async () =>
++    Response.json(value, { status });
++const response = (request: ArtifactFetch) => artifactResponse({ evaluationId: identity, origin, live: true, request });
++
++describe("verified artifact identity", () => {
++  const submission = {
++    ...SUBMISSIONS[0]!,
++    officialMetrics: { evaluationId: identity, sourceDigest: source, evidenceMode: "remote" },
++  };
++  test("reads the original evaluation binding instead of the Yukon submission UUID", () => {
++    expect(artifactBinding(submission)).toEqual({ evaluationId: identity, sourceDigest: source });
++  });
++  test("does not make artifact links for missing, invalid or local evidence", () => {
++    expect(artifactBinding({ ...submission, officialMetrics: null })).toBeNull();
++    expect(artifactBinding({ ...submission, status: "rejected" })).toBeNull();
++    for (const override of [
++      { evaluationId: "../../credentials" },
++      { sourceDigest: "unbound" },
++      { evidenceMode: "local-test" },
++    ]) {
++      expect(
++        artifactBinding({ ...submission, officialMetrics: { ...submission.officialMetrics, ...override } }),
++      ).toBeNull();
++    }
++    expect(
++      artifactBinding({ ...submission, judgment: { valid: false, reason: "Invalid fixture", scores: [1, 0] } }),
++    ).toBeNull();
++  });
++});
++
++describe("public artifact proxy", () => {
++  test("requests only the fixed public endpoint without browser credentials or redirects", async () => {
++    const calls: [string, RequestInit | undefined][] = [];
++    const request = (async (url: string, init?: RequestInit) => {
++      calls.push([url, init]);
++      return Response.json(manifest());
++    }) satisfies ArtifactFetch;
++    const result = await response(request);
++    expect(result.status).toBe(200);
++    expect(result.headers.get("Cache-Control")).toBe("no-store");
++    expect(calls.length).toBe(1);
++    expect(calls[0]?.[0]).toBe(`${origin}/public/evaluations/${identity}/artifacts`);
++    expect(calls[0]?.[1]).toMatchObject({
++      credentials: "omit",
++      redirect: "error",
++      cache: "no-store",
++      headers: { Accept: "application/json" },
++    });
++    expect(calls[0]?.[1]?.signal).toBeInstanceOf(AbortSignal);
++  });
++  test("unpublished artifacts stay distinct from outages", async () => {
++    const hidden = await response(published({}, 404));
++    expect(hidden.status).toBe(200);
++    expect(await hidden.json()).toEqual({ status: "unpublished" });
++    for (const status of [401, 403, 500]) {
++      const failure = await response(published({}, status));
++      expect(failure.status).toBe(502);
++      expect(await failure.json()).toEqual({ error: "artifact_service_unavailable" });
++    }
++  });
++  test("unpublishing is visible on the next read, with no stale server cache", async () => {
++    expect((await response(published())).status).toBe(200);
++    expect(await (await response(published({}, 404))).json()).toEqual({ status: "unpublished" });
++  });
++  test("unconfigured, disabled and malformed requests never contact a service", async () => {
++    let calls = 0;
++    const request = (async () => {
++      calls += 1;
++      throw new Error("unexpected request");
++    }) satisfies ArtifactFetch;
++    const base = { evaluationId: identity, origin, live: true, request };
++    expect(await (await artifactResponse({ ...base, origin: undefined })).json()).toEqual({ status: "unconfigured" });
++    expect((await artifactResponse({ ...base, live: false })).status).toBe(404);
++    expect((await artifactResponse({ ...base, evaluationId: "../private" })).status).toBe(404);
++    for (const value of ["http://example.test", "https://user:password@example.test", `${origin}/path`]) {
++      expect((await artifactResponse({ ...base, origin: value })).status).toBe(502);
++    }
++    expect(calls).toBe(0);
++  });
++  test("caps streamed manifest size and rejects malformed responses", async () => {
++    const oversized: ArtifactFetch = async () => new Response("x".repeat(128 * 1024 + 1));
++    expect((await response(oversized)).status).toBe(502);
++    const invalid: ArtifactFetch = async () => new Response("not json");
++    expect((await response(invalid)).status).toBe(502);
++    expect((await response(published({ ...manifest(), evaluation_id: "wrong" }))).status).toBe(502);
++    const timeout = (async () => {
++      throw new DOMException("Timeout", "TimeoutError");
++    }) satisfies ArtifactFetch;
++    expect((await response(timeout)).status).toBe(502);
++  });
++  test("projects only published source and traces; never returns private storage or complete bundles", () => {
++    const data = manifest();
++    const result = parsePublicArtifacts(
++      {
++        ...data,
++        owner_email: "private@example.test",
++        artifacts: {
++          harness: { ...entry, download: "https://untrusted.test/leak", storage: { key: "private-key" } },
++          complete: entry,
++        },
++      },
++      identity,
++      origin,
++    );
++    expect(result).toEqual({
++      status: "published",
++      evaluationId: identity,
++      sourceDigest: source,
++      license: "MIT",
++      pageUrl: `${origin}/public/evaluations/${identity}`,
++      artifacts: [
++        {
++          kind: "harness",
++          sha256: entry.sha256,
++          bytes: 123,
++          downloadUrl: `${origin}/public/evaluations/${identity}/artifacts/harness/content`,
++        },
++      ],
++    });
++  });
++  test("independent source/traces visibility and valid hash/size/license are required", () => {
++    const data = manifest();
++    expect(
++      parsePublicArtifacts(
++        {
++          ...data,
++          sharing: { harness: false, traces: true, license: null },
++          artifacts: { traces: entry },
++        },
++        identity,
++        origin,
++      ),
++    ).toMatchObject({ license: null, artifacts: [{ kind: "traces" }] });
++    for (const override of [
++      { sharing: { harness: false, traces: false } },
++      { sharing: { harness: true, license: null } },
++      { artifacts: {} },
++      { artifacts: { harness: { ...entry, sha256: "bad" } } },
++      { artifacts: { harness: { ...entry, bytes: -1 } } },
++      { artifacts: { harness: { ...entry, bytes: 512 * 1024 * 1024 + 1 } } },
++    ]) {
++      expect(() => parsePublicArtifacts({ ...data, ...override }, identity, origin)).toThrow();
++    }
++  });
++});
+diff --git a/apps/challenges-ui/challenges/catalyst/lib/artifacts.ts b/apps/challenges-ui/challenges/catalyst/lib/artifacts.ts
+new file mode 100644
+index 00000000..c1ed4986
+--- /dev/null
++++ b/apps/challenges-ui/challenges/catalyst/lib/artifacts.ts
+@@ -0,0 +1,107 @@
++import type { PublicSubmission } from "@/shared/lib/yukon-api-client";
++import { resultAt } from "./metrics";
++
++const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
++const SHA256 = /^[0-9a-f]{64}$/;
++export const ARTIFACT_KINDS = ["harness", "traces"] as const;
++export type ArtifactKind = (typeof ARTIFACT_KINDS)[number];
++export interface ArtifactBinding {
++  evaluationId: string;
++  sourceDigest: string;
++}
++export interface PublicArtifact {
++  kind: ArtifactKind;
++  sha256: string;
++  bytes: number;
++  downloadUrl: string;
++}
++export type ArtifactResponse =
++  | { status: "unpublished" | "unconfigured" }
++  | (ArtifactBinding & {
++      status: "published";
++      license: string | null;
++      pageUrl: string;
++      artifacts: PublicArtifact[];
++    });
++
++function object(value: unknown): Record<string, unknown> | null {
++  return value !== null && typeof value === "object" && !Array.isArray(value)
++    ? (value as Record<string, unknown>)
++    : null;
++}
++
++export function isEvaluationId(value: string): boolean {
++  return UUID.test(value);
++}
++
++// Read only the official packet's binding. Notes, claimed scores and arbitrary
++// artifact URLs supplied by a solver never select the verifier or evaluation.
++export function artifactBinding(submission: PublicSubmission): ArtifactBinding | null {
++  if (!resultAt(submission, "best")) return null;
++  const metrics = object(submission.officialMetrics);
++  if (
++    metrics?.evidenceMode !== "remote" ||
++    typeof metrics.evaluationId !== "string" ||
++    !isEvaluationId(metrics.evaluationId) ||
++    typeof metrics.sourceDigest !== "string" ||
++    !SHA256.test(metrics.sourceDigest)
++  ) {
++    return null;
++  }
++  return { evaluationId: metrics.evaluationId, sourceDigest: metrics.sourceDigest };
++}
++
++export function parsePublicArtifacts(value: unknown, evaluationId: string, origin: string): ArtifactResponse {
++  const data = object(value);
++  const sharing = object(data?.sharing);
++  const entries = object(data?.artifacts);
++  if (
++    data?.protocol !== "catalyst-artifacts-v1" ||
++    data.evaluation_id !== evaluationId ||
++    typeof data.source_digest !== "string" ||
++    !SHA256.test(data.source_digest) ||
++    !sharing ||
++    !entries
++  ) {
++    throw new Error("Invalid public artifact manifest");
++  }
++  const pageUrl = `${origin}/public/evaluations/${evaluationId}`;
++  const artifacts: PublicArtifact[] = [];
++  for (const kind of ARTIFACT_KINDS) {
++    if (!(kind in entries)) continue;
++    const entry = object(entries[kind]);
++    if (
++      sharing[kind] !== true ||
++      entry?.media_type !== "application/zip" ||
++      typeof entry.sha256 !== "string" ||
++      !SHA256.test(entry.sha256) ||
++      typeof entry.bytes !== "number" ||
++      !Number.isSafeInteger(entry.bytes) ||
++      entry.bytes <= 0 ||
++      entry.bytes > 512 * 1024 * 1024
++    ) {
++      throw new Error("Invalid published artifact");
++    }
++    artifacts.push({
++      kind,
++      sha256: entry.sha256,
++      bytes: entry.bytes,
++      // Stable service URL rechecks publication at download time. Never forward
++      // storage descriptors, arbitrary upstream URLs or temporary signed links.
++      downloadUrl: `${pageUrl}/artifacts/${kind}/content`,
++    });
++  }
++  if (!artifacts.length) throw new Error("Empty public artifact manifest");
++  const license = typeof sharing.license === "string" && sharing.license.length <= 80 ? sharing.license : null;
++  if (artifacts.some((item) => item.kind === "harness") && !license) {
++    throw new Error("Published source has no license");
++  }
++  return {
++    status: "published",
++    evaluationId,
++    sourceDigest: data.source_digest,
++    license,
++    pageUrl,
++    artifacts,
++  };
++}

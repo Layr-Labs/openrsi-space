@@ -1,0 +1,453 @@
+diff --git a/.github/workflows/ci.yml b/.github/workflows/ci.yml
+index 84c7456d..f4c4b5c2 100644
+--- a/.github/workflows/ci.yml
++++ b/.github/workflows/ci.yml
+@@ -105,6 +105,7 @@ jobs:
+         run: >-
+           bun test tests/integration/pareto*.test.ts
+           tests/integration/baseline-recovery.test.ts
++          tests/integration/baseline-retry.test.ts
+           tests/integration/benchmark-reorg.test.ts
+           tests/integration/concurrent-promotions.test.ts
+           tests/integration/simple-submission-review.test.ts
+diff --git a/docs/benchmark-remediation.md b/docs/benchmark-remediation.md
+index bf478c1d..c16e2850 100644
+--- a/docs/benchmark-remediation.md
++++ b/docs/benchmark-remediation.md
+@@ -125,6 +125,42 @@ In those cases, build an explicit mapping from old promoted commits to repaired
+ - No queued or running promotion jobs remain for disqualified submissions.
+ - A fresh test submission validates against the fixed harness.
+ 
++## Retry a failed initial validation
++
++For a standalone scalar or Pareto import that has never completed initial
++validation or received submissions, use `POST /api/benchmarks/:id/baseline-retry`
++with the owner's importer credential:
++
++```http
++POST /api/benchmarks/<benchmark UUID>/baseline-retry
++Authorization: Bearer <owner API key>
++Content-Type: application/json
++
++{"expectedJobId":"<latest failed baseline job UUID>"}
++```
++
++Read `GET /api/benchmarks/:id/jobs` to identify the latest baseline attempt. A
++baseline job can have status `succeeded` while its `output.run.ok` is `false`;
++the benchmark must be `failed`. The API resolves the saved repository's branch
++again, pins the current commit, refreshes the execution configuration and queues
++a new job. The benchmark UUID, name, ownership and old attempts remain intact.
++No archive, re-import or database edit is needed.
++
++The response is HTTP 202 with `{benchmark, job}`. Poll the normal benchmark/job
++endpoints. Successful validation makes the benchmark `ready`; opening it remains
++a separate action. If this attempt fails, inspect it and retry using its new job
++ID. Concurrent requests and requests naming an older attempt return 409 without
++queuing another job. After a timeout, read the job history before retrying; do not
++automatically substitute a newer job ID.
++
++The shared TypeScript client exposes
++`client.retryBenchmarkBaseline(benchmarkId, expectedJobId)`. Only the existing
++owner with import permission may call it. It cannot change the source repository,
++branch, root, mode, objectives, score direction or editable paths. Existing
++submissions (including archived submissions), a completed initial evaluation,
++active jobs or a reorg failure require the existing reorg path. Multi-track failed
++imports continue to use challenge reconciliation.
++
+ ## Automated benchmark reorg
+ 
+ After pushing a harness fix, sign into the benchmark author workspace with the importing
+diff --git a/packages/api-client/src/index.ts b/packages/api-client/src/index.ts
+index 43f31019..fb6760d4 100644
+--- a/packages/api-client/src/index.ts
++++ b/packages/api-client/src/index.ts
+@@ -700,6 +700,12 @@ export class YukonApiClient {
+     return await this.request(`/api/benchmarks/${encodeURIComponent(id)}/reorg`, { method: "POST", body: JSON.stringify(options) });
+   }
+ 
++  async retryBenchmarkBaseline(id: string, expectedJobId: string): Promise<{ benchmark: Benchmark; job: Job }> {
++    return await this.request(`/api/benchmarks/${encodeURIComponent(id)}/baseline-retry`, {
++      method: "POST", body: JSON.stringify({ expectedJobId }),
++    });
++  }
++
+   async pauseBenchmark(id: string): Promise<PauseBenchmarkResponse> {
+     return await this.request(`/api/benchmarks/${encodeURIComponent(id)}/pause`, { method: "POST" });
+   }
+diff --git a/src/api/openapi.ts b/src/api/openapi.ts
+index 7e9890ab..5a3b472d 100644
+--- a/src/api/openapi.ts
++++ b/src/api/openapi.ts
+@@ -423,6 +423,26 @@ export const openApiSpec = {
+         },
+       },
+     },
++    "/api/benchmarks/{id}/baseline-retry": {
++      post: {
++        summary: "Retry a failed standalone initial validation",
++        tags: ["benchmarks"], security: [{ bearer: [] }],
++        description: "Requires the owner and benchmark-import permission. Resolves the saved repository, branch and root at its latest commit and queues a fresh baseline job, preserving benchmark UUID, name, ownership and previous attempts. expectedJobId must identify the latest baseline attempt; stale or concurrent retries return 409. Only failed standalone imports with no completed initial evaluation, solver history or active jobs qualify. Mode, objectives, direction and editable paths cannot change. Supports scalar and Pareto imports. Success leaves the benchmark ready, never open. Failed retries can be retried using their new job ID. Multi-track imports use reconciliation; established benchmarks use reorg.",
++        parameters: [{ name: "id", in: "path", required: true, schema: { type: "string" }, description: "Benchmark UUID or name" }],
++        requestBody: { required: true, content: { "application/json": { schema: {
++          type: "object", additionalProperties: false, required: ["expectedJobId"],
++          properties: { expectedJobId: { type: "string", format: "uuid" } },
++        } } } },
++        responses: {
++          "202": { description: "Existing benchmark in validating state and new queued baseline job" },
++          "400": { description: "Invalid request or manifest" },
++          "401": { description: "Authentication required" },
++          "403": { description: "Owner and benchmark-import permission required" },
++          "404": { description: "Benchmark not found or archived" },
++          "409": { description: "Stale attempt, active jobs, incompatible source or ineligible benchmark" },
++        },
++      },
++    },
+     "/api/benchmarks/{id}/baseline-recovery": {
+       post: {
+         summary: "Preview or recover an interrupted original baseline",
+diff --git a/src/api/routes.ts b/src/api/routes.ts
+index 570ecb05..14816b5f 100644
+--- a/src/api/routes.ts
++++ b/src/api/routes.ts
+@@ -931,6 +931,25 @@ export function registerApiRoutes(
+     return c.json({ ...result, tracks: await publicBenchmarkRows(result.tracks) }, 202);
+   });
+ 
++  // Resolve fresh source, but retain the failed standalone benchmark and attempt history.
++  app.post("/api/benchmarks/:id/baseline-retry", accountAuth, benchmarkImporterOnly, benchmarkImportLimit, jsonBodyLimit, async (c) => {
++    const body = await parseJsonBody(c, z.object({ expectedJobId: z.string().uuid() }).strict());
++    const benchmark = await visibleBenchmarkRef(c, c.req.param("id"));
++    requireBenchmarkOwner(c, benchmark.setterAccountId);
++    if (benchmark.challengeId !== null) throw new HttpError(409, "conflict", "use challenge reconciliation to retry failed tracks");
++    if (benchmark.status !== "failed") throw new HttpError(409, "conflict", "only failed initial validations can be retried");
++    const source = await deps.repositoryGateway.resolve({
++      sourceUrl: benchmark.sourceUrl, sourceBranch: benchmark.sourceBranch, rootDir: benchmark.rootDir,
++    });
++    if (source.repositoryManifest.schemaVersion !== 1) throw new HttpError(409, "conflict", "retry requires the existing standalone manifest");
++    const result = await deps.store.retryBenchmarkBaseline({
++      benchmarkId: benchmark.id, accountId: authFromContext(c).account.id, expectedJobId: body.expectedJobId,
++      manifest: source.repositoryManifest, sourceUrl: source.sourceUrl, sourceRef: source.sourceRef,
++      sourceBranch: source.sourceBranch, rootDir: benchmark.rootDir,
++    });
++    return c.json({ ...result, benchmark: await publicBenchmarkRow(result.benchmark) }, 202);
++  });
++
+   // Reads the saved source again and appends only newly declared schema-v2 tracks.
+   app.post("/api/benchmarks/:id/import-tracks", accountAuth, benchmarkImporterOnly, benchmarkImportLimit, jsonBodyLimit, async (c) => {
+     const ref = decodeURIComponent(c.req.param("id"));
+diff --git a/src/store/postgres.ts b/src/store/postgres.ts
+index 6c48df0a..2385271d 100644
+--- a/src/store/postgres.ts
++++ b/src/store/postgres.ts
+@@ -88,6 +88,7 @@ import {
+   type Submission,
+ } from "../db/schema/index.ts";
+ import type {
++  RetryBenchmarkBaselineInput,
+   AuthenticatedApiKey,
+   CalculateRewardsInput,
+   CancelSubmissionValidationInput,
+@@ -1838,6 +1839,51 @@ export class PostgresYukonStore implements YukonStore {
+     return completed[0]!;
+   }
+ 
++  // Retry a failed standalone import without replacing its identity or old jobs.
++  async retryBenchmarkBaseline(input: RetryBenchmarkBaselineInput): Promise<{ benchmark: Benchmark; job: Job }> {
++    return await this.db.transaction(async (tx) => {
++      const current = await loadBenchmarkForUpdate(tx, input.benchmarkId);
++      if (current.deletedAt !== null) throw new StoreNotFoundError("benchmark", current.id);
++      if (current.setterAccountId !== input.accountId) throw new StoreForbiddenError("only the benchmark owner can retry its baseline");
++      if (current.challengeId !== null) throw new StoreInvariantError("use challenge reconciliation to retry failed tracks");
++      if (current.status !== "failed") throw new StoreInvariantError("only failed initial validations can be retried");
++      if (current.sourceUrl !== input.sourceUrl || current.sourceBranch !== input.sourceBranch || current.rootDir !== input.rootDir) {
++        throw new StoreInvariantError("retry must use the saved repository, branch and root directory");
++      }
++      const [latest] = await tx.select().from(jobs).where(and(
++        eq(jobs.benchmarkId, current.id), eq(jobs.kind, "benchmark_baseline"),
++      )).orderBy(desc(jobs.createdAt), desc(jobs.id)).limit(1);
++      if (!latest || latest.id !== input.expectedJobId) throw new StoreInvariantError("baseline attempt changed; inspect the latest job before retrying");
++      const [active] = await tx.select({ id: jobs.id }).from(jobs).where(and(
++        eq(jobs.benchmarkId, current.id), inArray(jobs.status, ["queued", "running"]),
++      )).limit(1);
++      if (active) throw new StoreInvariantError("wait for queued/running jobs before retrying");
++      const [submission] = await tx.select({ id: submissions.id }).from(submissions)
++        .where(eq(submissions.benchmarkId, current.id)).limit(1);
++      if (current.openedAt !== null || current.activeEvaluationId !== null || submission
++          || latest.input.reorgId !== undefined || latest.input.evaluationId !== undefined) {
++        throw new StoreInvariantError("benchmarks with completed initial validation or solver history require reorg");
++      }
++      const manifest = input.manifest;
++      if ((manifest.mode ?? "scalar") !== current.mode || !isDeepStrictEqual(manifest.objectives ?? null, current.objectives)
++          || manifest.direction !== current.direction
++          || !isDeepStrictEqual([...manifest.editablePaths].sort(), [...current.editablePaths].sort())) {
++        throw new StoreInvariantError("retry cannot change mode, objectives, score direction or editable paths");
++      }
++      const [row] = await tx.update(benchmarks).set({
++        ...activeManifestFields(manifest),
++        // Keep author metadata, access, rewards and identity independent of source refresh.
++        description: current.description, category: current.category,
++        sourceRef: input.sourceRef, status: "validating",
++        baselineScore: null, baselineMetrics: null, currentBestScore: null, currentBestMetrics: null,
++        setupSnapshotRef: null, updatedAt: new Date(),
++      }).where(eq(benchmarks.id, current.id)).returning();
++      const benchmark = requireRow(row, "benchmark", current.id);
++      const job = await insertBaselineJob(tx, { benchmark, accountId: input.accountId, retryOfJobId: latest.id });
++      return { benchmark, job };
++    });
++  }
++
+   // Transitions a benchmark to validating and creates its baseline job atomically.
+   async queueBenchmarkBaseline(input: { benchmarkId: string; accountId: string }): Promise<{ benchmark: Benchmark; job: Job }> {
+     return await this.db.transaction(async (tx) => {
+@@ -4758,6 +4804,7 @@ async function insertBaselineJob(db: DbOrTx, input: {
+   benchmark: Benchmark;
+   accountId: string;
+   baselineTrackIds?: string[];
++  retryOfJobId?: string;
+ }): Promise<Job> {
+   const id = randomUUID();
+   const [row] = await db
+@@ -4773,6 +4820,7 @@ async function insertBaselineJob(db: DbOrTx, input: {
+         sourceUrl: input.benchmark.sourceUrl,
+         sourceRef: input.benchmark.sourceRef,
+         ...(input.baselineTrackIds === undefined ? {} : { baselineTrackIds: input.baselineTrackIds }),
++        ...(input.retryOfJobId === undefined ? {} : { retryOfJobId: input.retryOfJobId }),
+       },
+     })
+     .returning();
+diff --git a/src/store/types.ts b/src/store/types.ts
+index cada8cd0..f88ccc8f 100644
+--- a/src/store/types.ts
++++ b/src/store/types.ts
+@@ -68,6 +68,17 @@ export interface CreateBenchmarkInput {
+   name?: string;
+ }
+ 
++export interface RetryBenchmarkBaselineInput {
++  benchmarkId: string;
++  accountId: string;
++  expectedJobId: string;
++  manifest: BenchmarkManifest;
++  sourceUrl: string;
++  sourceRef: string;
++  sourceBranch: string | null;
++  rootDir: string | null;
++}
++
+ export interface CreateChallengeTrack {
+   name: string;
+   manifest: BenchmarkManifest;
+@@ -605,6 +616,7 @@ export interface YukonStore {
+   revokeSession(token: string): Promise<void>;
+ 
+   queueBenchmarkReorg(input: QueueBenchmarkReorgInput): Promise<{ reorgId: string; sourceRef: string; benchmarkIds: string[]; jobIds: string[] }>;
++  retryBenchmarkBaseline(input: RetryBenchmarkBaselineInput): Promise<{ benchmark: Benchmark; job: Job }>;
+   createBenchmark(input: CreateBenchmarkInput): Promise<Benchmark>;
+   createChallenge(input: CreateChallengeInput, now?: Date): Promise<CreateChallengeResult>;
+   importChallengeTracks(input: ImportChallengeTracksInput): Promise<CreateChallengeResult>;
+diff --git a/tests/integration/baseline-retry.test.ts b/tests/integration/baseline-retry.test.ts
+new file mode 100644
+index 00000000..4bc2a984
+--- /dev/null
++++ b/tests/integration/baseline-retry.test.ts
+@@ -0,0 +1,175 @@
++import { describe, expect, test } from "bun:test";
++import { cp, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
++import os from "node:os";
++import path from "node:path";
++import { sql } from "drizzle-orm";
++import { createAccount, withTestApi, type TestApiContext } from "../helpers/api.ts";
++import type { Benchmark, Job } from "../../src/db/schema/index.ts";
++
++const pgTest = process.env.TEST_DATABASE_URL ? test : test.skip;
++type Attempt = { benchmark: Benchmark; job: Job };
++
++async function withFailedImport(mode: "scalar" | "pareto",
++  run: (ctx: TestApiContext & { sourceUrl: string; first: Attempt; token: string; accountId: string }) => Promise<void>) {
++  const root = await mkdtemp(path.join(os.tmpdir(), "yukon-baseline-retry-"));
++  try {
++    const sourceUrl = path.join(root, "repo");
++    await cp(mode === "pareto" ? "benchmarks/pareto" : "benchmarks/scoretxt", sourceUrl, { recursive: true });
++    await withTestApi(async ctx => {
++      const setter = await createAccount(ctx.app, "setter@example.com");
++      const manifestFile = path.join(sourceUrl, "benchmark.json");
++      const manifest = JSON.parse(await readFile(manifestFile, "utf8"));
++      await writeFile(manifestFile, JSON.stringify({ ...manifest, benchmarkCommand: ["false"] }));
++      const response = await ctx.app.request("/api/benchmarks", {
++        method: "POST", headers: { Authorization: `Bearer ${setter.token}`, "content-type": "application/json" },
++        body: JSON.stringify({ sourceUrl }),
++      });
++      expect(response.status).toBe(202);
++      const first = await response.json() as Attempt;
++      await ctx.worker.drain();
++      expect((await ctx.store.getBenchmark(first.benchmark.id))?.status).toBe("failed");
++      await writeFile(manifestFile, JSON.stringify(manifest));
++      await run({ ...ctx, sourceUrl, first, token: setter.token, accountId: setter.accountId });
++    });
++  } finally { await rm(root, { recursive: true, force: true }); }
++}
++
++function retry(ctx: { app: TestApiContext["app"]; token: string; first: Attempt }, expectedJobId: string, extra = {}) {
++  return ctx.app.request(`/api/benchmarks/${ctx.first.benchmark.id}/baseline-retry`, {
++    method: "POST", headers: { Authorization: `Bearer ${ctx.token}`, "content-type": "application/json" },
++    body: JSON.stringify({ expectedJobId, ...extra }),
++  });
++}
++
++describe("standalone initial baseline retry", () => {
++  for (const mode of ["scalar", "pareto"] as const) {
++    pgTest(`${mode}: failed retries retain UUID, history and owner metadata; corrected source becomes ready`, async () => {
++      await withFailedImport(mode, async ctx => {
++        const { store, worker, first, sourceUrl, app, token, repositoryGateway } = ctx;
++        const before = (await store.getBenchmark(first.benchmark.id))!;
++        const originalJob = await store.getJob(first.job.id);
++        const resolve = repositoryGateway.resolve.bind(repositoryGateway);
++        let revision = "b".repeat(40);
++        repositoryGateway.resolve = async input => ({ ...await resolve(input), sourceRef: revision });
++        await store.executeForTests(sql`UPDATE benchmarks SET description = 'Author metadata', category = 'research',
++          research_discussions_enabled = true WHERE id = ${before.id}::uuid`);
++        const manifestFile = path.join(sourceUrl, "benchmark.json");
++        const fixed = JSON.parse(await readFile(manifestFile, "utf8"));
++        await writeFile(manifestFile, JSON.stringify({ ...fixed, benchmarkCommand: ["false"] }));
++        const response = await retry(ctx, first.job.id);
++        expect(response.status).toBe(202);
++        const second = await response.json() as Attempt;
++        expect(second.benchmark).toMatchObject({ id: before.id, name: before.name, setterAccountId: before.setterAccountId,
++          status: "validating", sourceRef: revision, description: "Author metadata", category: "research", researchDiscussionsEnabled: true });
++        expect(second.job.id).not.toBe(first.job.id);
++        expect(second.job.input).toMatchObject({ sourceRef: revision, retryOfJobId: first.job.id });
++        expect((await retry(ctx, first.job.id)).status).toBe(409);
++        await worker.drain();
++        expect((await store.getBenchmark(before.id))?.status).toBe("failed");
++        expect((await retry(ctx, first.job.id)).status).toBe(409); // delayed duplicate cannot retry the new failure
++        const failedSecond = await store.getJob(second.job.id);
++        await writeFile(manifestFile, JSON.stringify(fixed));
++        revision = "c".repeat(40);
++        const thirdResponse = await retry(ctx, second.job.id);
++        expect(thirdResponse.status).toBe(202);
++        const third = await thirdResponse.json() as Attempt;
++        expect(third.job.input).toMatchObject({ sourceRef: revision, retryOfJobId: second.job.id });
++        await worker.drain();
++        const ready = (await store.getBenchmark(before.id))!;
++        expect(ready).toMatchObject({ id: before.id, name: before.name, status: "ready", sourceRef: revision });
++        if (mode === "pareto") expect(ready.activeEvaluationId).not.toBeNull();
++        expect(await store.getJob(first.job.id)).toEqual(originalJob);
++        expect(await store.getJob(second.job.id)).toEqual(failedSecond);
++        expect(await store.listJobsForBenchmark(before.id)).toHaveLength(3);
++        expect((await retry(ctx, third.job.id)).status).toBe(409);
++        const opened = await app.request(`/api/benchmarks/${before.id}/open`, {
++          method: "POST", headers: { Authorization: `Bearer ${token}`, "content-type": "application/json" }, body: "{}",
++        });
++        expect(opened.status).toBe(200);
++      });
++    });
++  }
++
++  pgTest("concurrent retries queue one job and do not permit stale worker results", async () => {
++    await withFailedImport("pareto", async ctx => {
++      const original = (await ctx.store.getJob(ctx.first.job.id))!;
++      const responses = await Promise.all([retry(ctx, ctx.first.job.id), retry(ctx, ctx.first.job.id)]);
++      expect(responses.map(r => r.status).sort()).toEqual([202, 409]);
++      expect(await ctx.store.listJobsForBenchmark(ctx.first.benchmark.id)).toHaveLength(2);
++      expect(await ctx.store.finishBaselineJob({ jobId: ctx.first.job.id, error: "late failure" })).toEqual(original);
++      expect((await ctx.store.getBenchmark(ctx.first.benchmark.id))?.status).toBe("validating");
++      // Even a stale process holding the old job as running cannot publish over a new attempt.
++      await ctx.store.executeForTests(sql`UPDATE jobs SET status = 'running' WHERE id = ${ctx.first.job.id}::uuid`);
++      expect((await ctx.store.finishBaselineJob({ jobId: ctx.first.job.id, error: "stale process" })).error)
++        .toBe("stale Pareto baseline result discarded");
++      await ctx.worker.drain();
++      expect((await ctx.store.getBenchmark(ctx.first.benchmark.id))?.status).toBe("ready");
++    });
++  });
++
++  pgTest("requires owner/import permission and rejects supplied source or scores", async () => {
++    await withFailedImport("pareto", async ctx => {
++      const stranger = await createAccount(ctx.app, "other@example.com");
++      process.env.YUKON_BENCHMARK_IMPORTER_EMAILS = "setter@example.com,other@example.com";
++      expect((await retry({ ...ctx, token: stranger.token }, ctx.first.job.id)).status).toBe(403);
++      expect((await retry({ ...ctx, token: "" }, ctx.first.job.id)).status).toBe(401);
++      process.env.YUKON_BENCHMARK_IMPORTER_EMAILS = "other@example.com";
++      expect((await retry(ctx, ctx.first.job.id)).status).toBe(403);
++      process.env.YUKON_BENCHMARK_IMPORTER_EMAILS = "setter@example.com";
++      for (const extra of [{ sourceRef: "attacker" }, { sourceUrl: "https://attacker.invalid" }, { scores: [1, 2] }]) {
++        expect((await retry(ctx, ctx.first.job.id, extra)).status).toBe(400);
++      }
++      expect(await ctx.store.listJobsForBenchmark(ctx.first.benchmark.id)).toHaveLength(1);
++    });
++  });
++
++  pgTest("rechecks owner and source under the store lock and refuses reorg failures", async () => {
++    await withFailedImport("pareto", async ctx => {
++      const { store, first, repositoryGateway, sourceUrl } = ctx;
++      const source = await repositoryGateway.resolve({ sourceUrl, sourceBranch: null, rootDir: null });
++      const input = { benchmarkId: first.benchmark.id, accountId: ctx.accountId, expectedJobId: first.job.id,
++        manifest: source.manifest, sourceUrl, sourceBranch: null, rootDir: null, sourceRef: "b".repeat(40) };
++      const stranger = await createAccount(ctx.app, "other@example.com");
++      await expect(store.retryBenchmarkBaseline({ ...input, accountId: stranger.accountId })).rejects.toThrow("owner");
++      for (const edit of [{ sourceUrl: "different" }, { sourceBranch: "different" }, { rootDir: "different" }]) {
++        await expect(store.retryBenchmarkBaseline({ ...input, ...edit })).rejects.toThrow("saved repository");
++      }
++      await store.executeForTests(sql`UPDATE jobs SET input = input || '{"reorgId":"old-reorg"}'::jsonb
++        WHERE id = ${first.job.id}::uuid`);
++      expect((await retry(ctx, first.job.id)).status).toBe(409);
++      expect(await store.listJobsForBenchmark(first.benchmark.id)).toHaveLength(1);
++    });
++  });
++
++  pgTest("rejects incompatible contracts, active work, prior activity and archived imports without changes", async () => {
++    await withFailedImport("pareto", async ctx => {
++      const { store, first, sourceUrl } = ctx;
++      const manifestFile = path.join(sourceUrl, "benchmark.json");
++      const manifest = JSON.parse(await readFile(manifestFile, "utf8"));
++      const before = await store.getBenchmark(first.benchmark.id);
++      for (const edit of [
++        { editablePaths: ["different"] },
++        { objectives: [{ name: "different", direction: "-" }] },
++        { mode: "scalar", direction: "-", objectives: undefined },
++      ]) {
++        await writeFile(manifestFile, JSON.stringify({ ...manifest, ...edit }));
++        expect((await retry(ctx, first.job.id)).status).toBe(409);
++        expect(await store.getBenchmark(first.benchmark.id)).toEqual(before);
++      }
++      await writeFile(manifestFile, JSON.stringify(manifest));
++      const active = await store.createJob({ kind: "benchmark_baseline", accountId: ctx.accountId,
++        benchmarkId: first.benchmark.id, input: { sourceRef: "local" } });
++      expect((await retry(ctx, active.id)).status).toBe(409);
++      await store.failJob({ jobId: active.id, error: "test" });
++      await store.executeForTests(sql`UPDATE benchmarks SET opened_at = now() WHERE id = ${first.benchmark.id}::uuid`);
++      expect((await retry(ctx, active.id)).status).toBe(409);
++      await store.executeForTests(sql`UPDATE benchmarks SET opened_at = NULL WHERE id = ${first.benchmark.id}::uuid`);
++      await store.executeForTests(sql`INSERT INTO submissions (benchmark_id, solver_account_id, status, candidate_archive_ref, deleted_at)
++        VALUES (${first.benchmark.id}::uuid, ${ctx.accountId}::uuid, 'failed', 'archived-test', now())`);
++      expect((await retry(ctx, active.id)).status).toBe(409); // archived history still counts
++      await store.archiveBenchmark(first.benchmark.id);
++      expect((await retry(ctx, active.id)).status).toBe(404);
++      expect(await store.listJobsForBenchmark(first.benchmark.id)).toHaveLength(2);
++    });
++  });
++});
+diff --git a/tests/unit/api-client-baseline-retry.test.ts b/tests/unit/api-client-baseline-retry.test.ts
+new file mode 100644
+index 00000000..bdb122be
+--- /dev/null
++++ b/tests/unit/api-client-baseline-retry.test.ts
+@@ -0,0 +1,19 @@
++import { expect, test } from "bun:test";
++import { YukonApiClient } from "../../packages/api-client/src/index.ts";
++
++test("baseline retry authenticates and binds the request to the observed failed job", async () => {
++  const previous = globalThis.fetch;
++  globalThis.fetch = (async (url: string | URL | Request, init?: RequestInit) => {
++    expect(String(url)).toBe("https://api.example.test/api/benchmarks/owner%2Fchallenge/baseline-retry");
++    expect(init?.method).toBe("POST");
++    expect(new Headers(init?.headers).get("authorization")).toBe("Bearer owner-token");
++    expect(JSON.parse(String(init?.body))).toEqual({ expectedJobId: "failed-job" });
++    return Response.json({ benchmark: { id: "same-benchmark" }, job: { id: "new-job" } }, { status: 202 });
++  }) as typeof fetch;
++  try {
++    const result = await new YukonApiClient({ baseUrl: "https://api.example.test", token: "owner-token" })
++      .retryBenchmarkBaseline("owner/challenge", "failed-job");
++    expect(result.benchmark.id).toBe("same-benchmark");
++    expect(result.job.id).toBe("new-job");
++  } finally { globalThis.fetch = previous; }
++});

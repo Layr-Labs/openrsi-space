@@ -30,6 +30,10 @@ def main():
     parser.add_argument("--base-image", default="python:3.12-slim-bookworm")
     parser.add_argument("--harness", type=Path, help="Use this harness instead of the generated fixture harness.")
     args = parser.parse_args()
+    # Fail before setting up state or starting the API when the session cannot
+    # access Docker. This integration needs actual containers, not a substitute.
+    subprocess.run(["docker", "info", "--format", "{{.ServerVersion}}"],
+                   check=True, timeout=15, stdout=subprocess.DEVNULL)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S")
     root = PROJECT / ".catalyst/local-mvp" / f"{stamp}-{uuid.uuid4().hex[:6]}"
     print(f"Local integration workspace: {root}", flush=True)
@@ -42,7 +46,17 @@ def main():
         extract_bundle(archive, solver / "submission")
     submitted_source, _ = snapshot_directory(solver / "submission", exclude=SOURCE_EXCLUDES)
     manifest = read_json(PROJECT / "benchmark.json")
-    manifest["benchmarkCommand"] = [sys.executable, "-m", "catalyst.cli", "yukon-run"]
+    # This benchmark uses a synthetic circuit, so bind its receipt checker to
+    # that fixture's identity. The stock challenge command stays pinned to ECDSA.
+    from catalyst.remote import digest
+    fixture_problem = {"id": "local-circuit-fixture",
+                       "version": digest(read_json(root / "problem-set.json"))}
+    fixture_runner = root / "check-fixture-receipt.py"
+    fixture_runner.write_text(
+        "from catalyst import receipts\n"
+        f"receipts.problem_identity = lambda: {fixture_problem!r}\n"
+        "receipts.check_receipt()\n")
+    manifest["benchmarkCommand"] = [sys.executable, str(fixture_runner)]
     write_json(solver / "benchmark.json", manifest)
     git(solver, "init", "--quiet")
     write_json(root / "yukon-config/yukon/config.json", {"telemetry": False})
@@ -66,7 +80,7 @@ def main():
             if service.poll() is not None:
                 raise RuntimeError(f"Service startup failed; see {service_log_path}")
             output = service_log_path.read_text()
-            address = re.search(r"Local-test verification API: (http://127.0.0.1:\d+)", output)
+            address = re.search(r"Catalyst verification API: (http://127.0.0.1:\d+)", output)
             managed = re.search(r"Managed worker: PID (\d+)", output)
             if address and managed:
                 base, worker_pid = address.group(1), int(managed.group(1))
@@ -84,7 +98,11 @@ def main():
             [sys.executable, "-m", "catalyst.cli", "remote", "submit"],
             cwd=solver, env=environment, check=True, capture_output=True, text=True, timeout=60)
         submitted_id = json.loads(submitted.stdout)["evaluation_id"]
-        print(f"Running the actual Yukon CLI to resume evaluation {submitted_id}…", flush=True)
+        print(f"Waiting for remote verification of {submitted_id}…", flush=True)
+        subprocess.run(
+            [sys.executable, "-m", "catalyst.cli", "remote", "wait", submitted_id],
+            cwd=solver, env=environment, check=True, timeout=1200)
+        print("Running the actual Yukon CLI to retrieve the completed receipt…", flush=True)
         subprocess.run(["bun", str(args.yukon.resolve() / "apps/cli/src/yukon.ts"), "run"],
                        cwd=solver, env=environment, check=True, timeout=1200)
         score = read_json(solver / manifest["scorePath"])
@@ -127,7 +145,8 @@ def main():
         summary = {"evidence": "local-test", "evaluation_id": evaluation_id, "scores": score["scores"],
                    "jobs": 1, "model_requests": len(job["result"]["observations"][0]["usage"]),
                    "workflow_replays": 2, "states": states, "workspace": str(root)}
-        summary["standalone_cli"] = "submit and wait passed; Yukon reused the same evaluation"
+        summary["standalone_cli"] = "submit and wait passed; Yukon retrieved the completed receipt"
+        summary["problem_binding"] = "Generated receipt runner pins the synthetic circuit fixture; production stays pinned to ECDSA."
         summary["harness"] = submitted_source["id"]
         summary["source_digest"] = submitted_source["version"]
         write_json(root / "summary.json", summary)

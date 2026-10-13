@@ -25,16 +25,23 @@ independent verification.
 """
     with tempfile.TemporaryDirectory(prefix="catalyst-codex-", dir="/dev/shm") as directory:
         home = Path(directory)
-        shutil.copyfile("/run/dungeness/codex-auth/auth.json", home / "auth.json")
-        (home / "auth.json").chmod(0o600)
+        placeholder = task.get("gateway_auth") == "placeholder"
+        if not placeholder:
+            shutil.copyfile("/run/dungeness/codex-auth/auth.json", home / "auth.json")
+            (home / "auth.json").chmod(0o600)
         (home / "config.toml").write_text(
             'cli_auth_credentials_store = "file"\nmodel_provider = "dungeness"\n'
             'model_context_window = 1050000\nweb_search = "disabled"\n'
             '[model_providers.dungeness]\nname = "Dungeness ChatGPT"\n'
             f'base_url = {json.dumps(task["gateway"])}\n'
-            'wire_api = "responses"\nrequires_openai_auth = true\nsupports_websockets = false\n')
+            'wire_api = "responses"\nsupports_websockets = false\n'
+            + ('env_key = "OPENAI_API_KEY"\nrequires_openai_auth = false\n' if placeholder
+               else 'requires_openai_auth = true\n'))
         environment = {**os.environ, "CODEX_HOME": directory}
-        environment.pop("OPENAI_API_KEY", None)
+        if placeholder:
+            environment["OPENAI_API_KEY"] = "testbed"
+        else:
+            environment.pop("OPENAI_API_KEY", None)
         result = subprocess.run([
             "codex", "exec", "--dangerously-bypass-approvals-and-sandbox", "--skip-git-repo-check",
             "--model", task["model"], "--json", "--enable", "unified_exec", "--disable", "apps",

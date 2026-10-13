@@ -70,8 +70,10 @@ class LocalIdentity:
         if principal["kind"] != "yukon-solver" or request["context"] != {"kind": "yukon-solver"}:
             raise APIError(403, "Only a solver can request an evaluation.")
         config = request["evaluation"]
+        from .tiers import evaluation_models
         grant = self.config["grants"].get(config["llm_access"]["grant_id"])
         if (not grant or grant["owner"] != principal["owner"] or grant["model"] != config["model"]
+                or evaluation_models(config) != evaluation_models(grant)
                 or config["max_model_credits"] > grant["max_model_credits"]
                 or any(config["limits"][key] > grant["limits"][key] for key in grant["limits"])):
             raise APIError(403, "The model grant does not authorize these evaluation limits.")
@@ -84,7 +86,8 @@ class LocalIdentity:
         return None
 
 
-def validate_request(request, problem_set, *, submission=False, evidence_mode="local-test"):
+def validate_request(request, problem_set, *, submission=False, evidence_mode="local-test",
+                     pricing_validator=None):
     required = {"protocol", "source", "evaluation", "problem_set", "pricing", "judge", "context", "evidence_mode"}
     if not submission:
         required.add("request_id")
@@ -94,9 +97,13 @@ def validate_request(request, problem_set, *, submission=False, evidence_mode="l
         identity(request["request_id"])
     if request["protocol"] != PROTOCOL or request["evidence_mode"] != evidence_mode:
         raise APIError(400, "Evaluation evidence mode differs from this service.")
-    if request["problem_set"] != problem_set or request["pricing"] != pricing_schedule():
+    if request["problem_set"] != problem_set:
         raise APIError(400, "Problem or pricing policy differs from the service pin.")
-    validate_evaluation_config(request["evaluation"])
+    if pricing_validator is not None:
+        pricing_validator(request)
+    elif request["pricing"] != pricing_schedule():
+        raise APIError(400, "Pricing policy differs from the service pin.")
+    validate_evaluation_config(request["evaluation"], pricing=request["pricing"])
     judge_input(json.dumps(request["judge"]))
     if not isinstance(request["context"], dict):
         raise APIError(400, "Missing request context.")
@@ -281,6 +288,9 @@ class JobStore:
 
 
 def handler_for(store, auth, problem_set, evidence_mode="local-test", credentials=None):
+    from .pricing import PricingQuotes
+    quotes = PricingQuotes(store)
+
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *args):
             pass  # Never log bearer tokens, source or request bodies.
@@ -292,12 +302,54 @@ def handler_for(store, auth, problem_set, evidence_mode="local-test", credential
             self.send_header("Content-Length", str(len(body)))
             self.send_header("Cache-Control", "no-store")
             self.send_header("X-Content-Type-Options", "nosniff")
+            if mime.startswith("text/html"):
+                self.send_header("Content-Security-Policy",
+                                 "default-src 'none'; style-src 'unsafe-inline'; base-uri 'none'; frame-ancestors 'none'")
             self.end_headers()
             self.wfile.write(body)
+
+        def artifact(self, evaluation_id, kind, *, public=False, content=False):
+            from .artifacts import download
+            item, signed, path = download(store, evaluation_id, kind, public=public)
+            scope = "/public" if public else ""
+            if not content:
+                return self.send(200, {
+                    **{k: v for k, v in item.items() if k != "storage"},
+                    "url": signed or f"{scope}/evaluations/{evaluation_id}/artifacts/{kind}/content",
+                })
+            if signed:
+                # Public permalink browsers can follow this; API credentials never
+                # go to S3. CLI uses the descriptor URL with no Authorization header.
+                self.send_response(303)
+                self.send_header("Location", signed)
+                self.send_header("Cache-Control", "no-store")
+                self.end_headers()
+                return
+            self.send_response(200)
+            self.send_header("Content-Type", "application/zip")
+            self.send_header("Content-Length", str(item["bytes"]))
+            self.send_header("Content-Disposition", f'attachment; filename="{kind}.zip"')
+            self.send_header("Cache-Control", "no-store")
+            self.send_header("X-Content-Type-Options", "nosniff")
+            self.end_headers()
+            with path.open("rb") as stream:
+                import shutil
+                shutil.copyfileobj(stream, self.wfile)
 
         def dispatch(self):
             try:
                 parts = self.path.strip("/").split("/")
+                if self.command == "GET" and len(parts) == 3 and parts[:2] == ["public", "evaluations"]:
+                    from .artifacts import public_page
+                    return self.send(200, public_page(store, parts[2]), "text/html; charset=utf-8")
+                if self.command == "GET" and len(parts) >= 4 and parts[:2] == ["public", "evaluations"]:
+                    from .artifacts import manifest
+                    if parts[3:] == ["artifacts"]:
+                        return self.send(200, manifest(store, parts[2], public=True))
+                    if len(parts) in {5, 6} and parts[3] == "artifacts" and (
+                            len(parts) == 5 or parts[5] == "content"):
+                        return self.artifact(parts[2], parts[4], public=True, content=len(parts) == 6)
+                    raise APIError(404, "Not found.")
                 login = self.command == "POST" and parts == ["auth", "yukon"]
                 binding = self.command == "POST" and parts == ["verifications", "yukon-bind"]
                 if login or binding:
@@ -328,11 +380,17 @@ def handler_for(store, auth, problem_set, evidence_mode="local-test", credential
                     if parts == ["yukon", "v1", "retrieve"]:
                         from .hosted import retrieve_verification
                         return self.send(200, retrieve_verification(store, principal, request))
+                    if parts == ["pricing", "quote"]:
+                        if (evidence_mode != "remote" or principal["kind"] != "yukon-solver"
+                                or not isinstance(request, dict) or set(request) != {"models"}):
+                            raise APIError(403, "Pricing quotes require an authenticated solver.")
+                        return self.send(200, {"pricing": quotes.issue(request["models"])})
                     if len(parts) == 3 and parts[0] == "evaluations" and parts[2] == "yukon":
                         from .hosted import retrieve_for_yukon
                         return self.send(200, retrieve_for_yukon(store, parts[1], principal, request))
                     if parts == ["evaluations"]:
-                        validate_request(request, problem_set, evidence_mode=evidence_mode)
+                        validate_request(request, problem_set, evidence_mode=evidence_mode,
+                            pricing_validator=lambda value: quotes.validate(value, owner=principal.get("owner")))
                         auth.authorize_run(principal, request)
                         from .model_access import TOKEN_HEADER, temporary_access
                         token = self.headers.get(TOKEN_HEADER)
@@ -350,10 +408,15 @@ def handler_for(store, auth, problem_set, evidence_mode="local-test", credential
                                 raise APIError(400, "This evaluation does not request temporary model access.")
                             evaluation_id = store.create(principal["owner"], request, auth.creation_limits())
                         return self.send(202, {"request_id": request["request_id"], "evaluation_id": evaluation_id})
+                    if len(parts) == 3 and parts[0] == "evaluations" and parts[2] == "sharing":
+                        store.own(parts[1], principal)
+                        from .artifacts import publish
+                        return self.send(200, publish(store, parts[1], request))
                     if len(parts) == 3 and parts[0] == "evaluations" and parts[2] == "submissions":
-                        validate_request(request, problem_set, submission=True, evidence_mode=evidence_mode)
+                        validate_request(request, problem_set, submission=True, evidence_mode=evidence_mode,
+                            pricing_validator=lambda value: quotes.validate(value, historical=True))
                         return self.send(200, store.publish(parts[1], principal, request, auth))
-                elif self.command == "GET" and len(parts) in {2, 3} and parts[0] == "evaluations":
+                elif self.command == "GET" and 2 <= len(parts) <= 5 and parts[0] == "evaluations":
                     store.own(parts[1], principal)
                     if len(parts) == 2:
                         return self.send(200, store.view(parts[1]))
@@ -362,6 +425,15 @@ def handler_for(store, auth, problem_set, evidence_mode="local-test", credential
                         if not path.is_file():
                             raise APIError(404, "Traces are not available yet.")
                         return self.send(200, path.read_bytes(), "application/zip")
+                    if parts[2:] == ["sharing"]:
+                        from .artifacts import sharing
+                        return self.send(200, sharing(store, parts[1]))
+                    if parts[2:] == ["artifacts"]:
+                        from .artifacts import manifest
+                        return self.send(200, manifest(store, parts[1]))
+                    if len(parts) in {4, 5} and parts[2] == "artifacts" and (
+                            len(parts) == 4 or parts[4] == "content"):
+                        return self.artifact(parts[1], parts[3], content=len(parts) == 5)
                 raise APIError(404, "Not found.")
             except APIError as error:
                 if self.command == "POST" and parts == ["verifications", "retrieve"] and error.status in {401, 403}:

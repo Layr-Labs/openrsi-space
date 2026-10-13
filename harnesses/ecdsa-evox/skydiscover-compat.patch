@@ -1,0 +1,16 @@
+--- a/skydiscover/optimize/llm/openai.py
++++ b/skydiscover/optimize/llm/openai.py
+@@ -126,10 +126,11 @@
+         self, system_message: str, messages: List[Dict[str, Any]], **kwargs
+     ) -> str:
+         system_content = system_message if system_message is not None else ""
+-        formatted_messages = [{"role": "system", "content": system_content}]
++        formatted_messages = [{"role": "system", "content": system_content}] if system_content else []
+         formatted_messages.extend(messages)
+ 
+-        is_reasoning = is_openai_reasoning_model(self.model, self.api_base)
++        # K3 uses the same completion-limit field and fixed sampling parameters.
++        is_reasoning = is_openai_reasoning_model(self.model, self.api_base) or self.model == "k3"
+ 
+         if is_reasoning:
+             params = {

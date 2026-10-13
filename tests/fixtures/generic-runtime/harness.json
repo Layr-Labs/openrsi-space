@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "kind": "harness",
+  "id": "generic-runtime-check",
+  "title": "Generic worker runtime checks",
+  "execution": {
+    "interface": "catalyst-exec-v1",
+    "dockerfile": "Dockerfile",
+    "entrypoint": ["python3", "/opt/harness/agent.py"]
+  }
+}

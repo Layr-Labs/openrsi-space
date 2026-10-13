@@ -7,6 +7,7 @@ from pathlib import Path
 import subprocess
 import tempfile
 import unittest
+import yaml
 from unittest.mock import patch
 
 from catalyst.cli import main
@@ -116,8 +117,9 @@ class ExecutableTests(unittest.TestCase):
             self.assertEqual(subprocess.check_output(["git", "-C", str(source), "status",
                                                       "--porcelain"]), b"")
             runtime = Path(one["runtime"])
-            adapter = runtime / "adapters/harbor/catalyst_executable.py"
-            self.assertEqual(adapter.read_bytes(), (RUNTIME / "harbor_agent.py").read_bytes())
+            spec = yaml.safe_load(Path(one["spec_path"]).read_text())
+            self.assertEqual(spec["model_access"]["models"][0]["request_model"], "explicit-test-model")
+            self.assertFalse((runtime / "adapters/harbor/catalyst_executable.py").exists())
             (self.harness / "agent.py").write_text("print('unbuilt change')")
             with self.assertRaisesRegex(CatalystError, "changed since"):
                 prepare(self.state, problem, self.harness, 1, 10000,
@@ -142,7 +144,11 @@ class ExecutableTests(unittest.TestCase):
 
     @unittest.skipUnless(os.environ.get("CATALYST_DUNGENESS"), "Set CATALYST_DUNGENESS for native compiler contract")
     def test_subscription_package_compiles_with_native_dungeness(self):
-        source = Path(os.environ["CATALYST_DUNGENESS"])
+        from catalyst.dungeness import apply_runtime_patch
+        source = self.root / "patched-dungeness"
+        subprocess.run(["git", "clone", "--quiet", "--shared", os.environ["CATALYST_DUNGENESS"],
+                        str(source)], check=True)
+        apply_runtime_patch(source)
         spec = importlib.util.spec_from_file_location("dungeness_compiler_contract",
                                                      source / "src/dungeness/compiler.py")
         compiler = importlib.util.module_from_spec(spec)
@@ -156,12 +162,17 @@ class ExecutableTests(unittest.TestCase):
         import yaml
         folder = runtime / paths[0]
         agent = yaml.safe_load((folder / "agent.yaml").read_text())
+        self.assertNotIn("harbor", agent)
+        self.assertNotIn("authentication", agent)
+        self.assertNotIn("CODEX_VERSION", (folder / "Dockerfile").read_text())
+        agent["model"] = model
+        agent["model_access"] = {"models": [model]}
         compiler.render_agent_dockerfile(folder / "Dockerfile", agent)
         job = yaml.safe_load(compiler.build_harbor_job("contract", agent, self.root / "task"))
         entry = job["agents"][0]
-        self.assertEqual(entry["import_path"], "catalyst_executable:CatalystExecutable")
+        self.assertEqual(entry["import_path"], "command_agent:CommandAgent")
         self.assertEqual(entry["model_name"], "gpt-6-astra")
-        self.assertEqual(entry["kwargs"]["reasoning_effort"], "high")
+        self.assertEqual(entry["kwargs"]["models"][0]["defaults"]["reasoning_effort"], "high")
         self.assertEqual(entry["env"], {})
 
 

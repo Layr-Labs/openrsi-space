@@ -12,10 +12,12 @@ finite spending cap; there is no $2,000 comparison tier.
 Keep the complete performance–cost curve and every attempt, including failures
 and regressions. Infrastructure costs are accounted for separately.
 
-Model credits use the immutable reference rates in
-[`pricing.json`](src/catalyst/problem-set/pricing.json), with its content hash
-bound into every evaluation and verification reference. These are comparison
-rates, not live provider quotes. Subscription usage can consume account
+Model credits retain existing immutable reference rates in
+[`pricing.json`](src/catalyst/problem-set/pricing.json).
+The service resolves additional declared models through a
+[service-issued OpenRouter pricing snapshot](docs/generic-harnesses.md#reference-prices-for-declared-models).
+The exact schedule's content hash is bound into every evaluation and
+verification reference. These are comparison rates. Subscription usage can consume account
 allowance without representing a cash charge. Unknown usage or unpriced models
 cannot establish tier eligibility.
 
@@ -32,6 +34,11 @@ See [budget accounting](docs/tier-accounting.md) for exact eligibility and
 First-time users: see [which token to use and how to sign in](docs/live-models.md#which-token-and-where-does-it-come-from).
 Yukon login, temporary model access and the returned verification receipt are
 three different things; the CLI handles model-token extraction and receipt creation.
+For your own agent, including its knowledge base and dependencies, see the
+[general source submission flow](docs/generic-harnesses.md#submit-your-own-agent).
+The CLI accepts per-run `--provider`, `--model` and `--budget` options,
+and `--entrypoint` lets an existing repository run without `harness.json`;
+generic remote execution is deployed on the existing VM.
 
 The root [`benchmark.json`](benchmark.json) is one schema-v1 Yukon benchmark,
 using stock Yukon's GitHub Actions runner. Only `submission/verification.json`
@@ -73,6 +80,10 @@ remains undecided; preserve attempts and show counts rather than hiding repeats.
 
 The client downloads private traces and writes `verification.json` in the harness
 directory. Copy that receipt into `submission/verification.json`.
+For complete source and recorded run evidence, use
+[`catalyst remote download`](docs/artifact-sharing.md). Harness source and
+sanitized traces can be published separately by their owner; both remain
+private by default.
 The helper's stock `yukon submit` call uploads only that receipt.
 Yukon creates the candidate commit and dispatches the repository's workflow. That
 workflow authenticates with GitHub OIDC and retrieves the existing evaluation.
@@ -174,10 +185,15 @@ that workflow publication reuses the completed job. Only external identity,
 submission registration and model responses are fixtures; its tiny circuit is
 explicitly labeled local-test evidence and cannot count as an ECDSA result.
 
-The remote Codex/ChatGPT run and stock Yukon dev receipt workflow have succeeded.
+Remote Codex/ChatGPT and SkyDiscover/EvoX with Kimi K3 runs have completed
+independent verification and the stock Yukon dev receipt workflow.
 The benchmark is `layr-labs/catalyst` in Pareto mode. The UI, existing-history
-export and deterministic cheat screening are implemented locally; these changes
-still need a reviewed rollout. Renewal and user cancellation remain separate work.
+export and deterministic cheat screening are implemented. History export and
+screening are running on the VM, together with private artifact downloads and
+opt-in source/trace publication. The challenge UI's score matrix and artifact
+disclosures are maintained in the isolated Yukon branch and are not yet hosted.
+Artifact storage currently uses the VM; S3 activation is deferred.
+Renewal and user cancellation remain separate work.
 
 Develop and test on the Mac first. The initial remote MVP hosts the API and runs
 the harness worker inside the existing VM accessible through `ssh openclaw`.
@@ -250,9 +266,11 @@ uv run catalyst init --dungeness /Users/bxue/Documents/dungeness-main
 Catalyst records the checkout's exact commit. A moved or dirty checkout is
 rejected until you deliberately update the pin with `init`.
 
-There is no vendored Dungeness code or fork. For each evaluation, Catalyst
-creates an isolated dependency checkout of that commit, stages the frozen
-research inputs, commits them locally, and invokes the existing Dungeness CLI.
+For each evaluation, Catalyst creates an isolated dependency checkout of that
+commit, stages the frozen research inputs, records them in a local runtime
+commit, and invokes the Dungeness CLI. Executable runs apply the reviewed
+[generic command interface patch](src/catalyst/runtime/dungeness-command.patch)
+when the upstream pin does not already provide that interface.
 The original checkout remains unchanged. Both the upstream commit and the
 execution-input commit are recorded.
 
@@ -323,7 +341,12 @@ uv run catalyst harness create improved --from harnesses/notes
 
 The new manifest retains the exact source harness ID and snapshot hash.
 Executable packages use the new generic adapter rather than requiring a new
-host integration per submitted runtime. See [the executable contract](docs/executable-harness.md).
+host integration per submitted runtime. The
+[generic harness implementation](docs/generic-harnesses.md) supports multiple
+models and gateway-owned credentials, with a two-process Python example in
+`harnesses/ecdsa-ensemble`. The deployed runtime has also completed a live
+EvoX/Kimi run and hosted Yukon receipt validation.
+See [the executable contract](docs/executable-harness.md).
 
 ## Evaluate and continue locally
 

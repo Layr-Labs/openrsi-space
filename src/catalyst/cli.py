@@ -127,11 +127,55 @@ def publish_content(state, server, content):
 def remote_command(args, state):
     from .remote import RemoteClient
     client = RemoteClient(state)
+    if args.operation in {"artifacts", "download", "sharing", "publish", "unpublish"}:
+        if args.operation == "artifacts":
+            result = client.artifacts(args.id)
+        elif args.operation == "download":
+            result = client.download_artifact(args.id, args.kind, args.output)
+        elif args.operation == "sharing":
+            result = client.sharing(args.id)
+        else:
+            if not (args.harness or args.traces):
+                raise CatalystError("Select --harness and/or --traces explicitly.")
+            changes = {kind: args.operation == "publish"
+                       for kind in ("harness", "traces") if getattr(args, kind)}
+            if args.operation == "publish":
+                if args.harness and not args.license:
+                    raise CatalystError("Publishing a harness requires --license.")
+                if args.traces and not args.confirm_traces_reviewed:
+                    raise CatalystError("Download/review sanitized traces, then use --confirm-traces-reviewed.")
+                if args.license:
+                    changes["license"] = args.license
+                if args.traces:
+                    changes["traces_reviewed"] = True
+            result = client.sharing(args.id, changes)
+        print(json.dumps(result, indent=2))
+        return
     if args.operation == "submit":
+        execution = None
+        if args.entrypoint is not None:
+            import shlex
+            execution = {"interface": "catalyst-exec-v1", "dockerfile": args.dockerfile or "Dockerfile",
+                         "entrypoint": shlex.split(args.entrypoint)}
+        elif args.dockerfile is not None:
+            raise CatalystError("--dockerfile requires --entrypoint.")
+        overrides = {key: getattr(args, key) for key in (
+            "provider", "model", "reasoning_effort", "budget", "max_tokens", "max_seconds"
+        ) if getattr(args, key) is not None}
+        # Validate choices before asking the solver for a credential.
+        from .remote import evaluation_config
+        evaluation_config(Path(args.package) / "evaluation.json", overrides, check_pricing=False)
+        for credential_file in (args.codex_auth_file, args.provider_access_file):
+            if credential_file and Path(credential_file).expanduser().resolve().is_relative_to(
+                    Path(args.package).resolve()):
+                raise CatalystError("Keep credential files outside the submitted source directory.")
         model_token = None
         if args.codex_auth_file:
             from .live_provider import encode_codex_access
             model_token = encode_codex_access(args.codex_auth_file)
+        elif args.provider_access_file:
+            from .live_provider import encode_provider_access
+            model_token = encode_provider_access(read_json(Path(args.provider_access_file).expanduser()))
         elif args.prompt_model_token:
             import getpass
             if not sys.stdin.isatty():
@@ -143,7 +187,9 @@ def remote_command(args, state):
             validate_token(model_token)
         try:
             accepted = client.submit(Path(args.package), **(
-                {"model_token": model_token} if model_token is not None else {}))
+                {"model_token": model_token} if model_token is not None else {}),
+                **({"evaluation_overrides": overrides} if overrides else {}),
+                **({"execution": execution} if execution else {}))
         finally:
             model_token = None
         if not args.wait:
@@ -284,7 +330,17 @@ def main(argv=None):
     remote_submit = remote_sub.add_parser("submit", help="Upload harness source and queue one evaluation.")
     remote_submit.add_argument("package", nargs="?", default="submission", help="Harness directory (default: submission).")
     remote_submit.add_argument("--wait", action="store_true", help="Wait, validate the result and save its verification reference.")
+    remote_submit.add_argument("--entrypoint", help="Launch argv for an existing repository without harness.json; parsed without a shell.")
+    remote_submit.add_argument("--dockerfile", help="Relative build recipe for --entrypoint (default: Dockerfile).")
+    remote_submit.add_argument("--provider", help="Model provider; use with --model (for example, kimi-code).")
+    remote_submit.add_argument("--model", help="Exact declared model name; prices are resolved before execution (for example, k3).")
+    remote_submit.add_argument("--reasoning-effort", choices=["low", "medium", "high", "xhigh", "max"])
+    remote_submit.add_argument("--budget", type=float, help="Run spending cap in normalized model credits.")
+    remote_submit.add_argument("--max-tokens", type=int, help="Override the run's model-token cap.")
+    remote_submit.add_argument("--max-seconds", type=int, help="Override the run's wall-time cap.")
     token_input = remote_submit.add_mutually_exclusive_group()
+    token_input.add_argument("--provider-access-file",
+                             help="Read a private provider-to-credential JSON map; never include it in the submission.")
     token_input.add_argument("--codex-auth-file", nargs="?", const=str(Path.home() / ".codex/auth.json"),
                              help="Send temporary ChatGPT access from Codex login; keep refresh credentials local.")
     token_input.add_argument("--prompt-model-token", action="store_true",
@@ -298,6 +354,24 @@ def main(argv=None):
     ):
         remote_action = remote_sub.add_parser(operation, help=help_text)
         remote_action.add_argument("id", help="Evaluation UUID returned by submit.")
+    for operation in ("artifacts", "sharing"):
+        action = remote_sub.add_parser(operation, help="Inspect artifact downloads or sharing for an owned run.")
+        action.add_argument("id")
+    download = remote_sub.add_parser("download", help="Download a checksummed private evidence bundle.")
+    download.add_argument("id")
+    download.add_argument("--kind", choices=["complete", "harness", "traces"], default="complete")
+    download.add_argument("--output", required=True)
+    for operation in ("publish", "unpublish"):
+        action = remote_sub.add_parser(operation, help="Explicitly publish or stop serving selected run artifacts.")
+        action.add_argument("id")
+        action.add_argument("--harness", action="store_true")
+        action.add_argument("--traces", action="store_true")
+        if operation == "publish":
+            action.add_argument("--license", help="Source license; preserves existing third-party notices.")
+            action.add_argument("--confirm-traces-reviewed", action="store_true",
+                                help="Confirm that you reviewed the sanitized trace bundle for public release.")
+    artifact_sync = commands.add_parser("artifact-sync", help="Operator: export/migrate retained evidence without rerunning jobs.")
+    artifact_sync.add_argument("id", nargs="?", help="Evaluation UUID; omit to export all stopped jobs.")
     local_init = commands.add_parser("local-evaluator-init", help="Create an isolated mock-provider integration workspace.")
     local_init.add_argument("directory")
     local_init.add_argument("--dungeness", required=True)
@@ -476,6 +550,28 @@ def main(argv=None):
             print(json.dumps(bind_job(Path.cwd(), args.job_id, args.benchmark_id), indent=2))
         elif args.command == "remote":
             remote_command(args, state)
+        elif args.command == "artifact-sync":
+            from .artifacts import seal
+            from .evaluator import JobStore
+            store = JobStore(state)
+            with store.connect() as db:
+                identities = ([args.id] if args.id else [
+                    row["id"] for row in db.execute(
+                        "SELECT id FROM jobs WHERE status IN ('completed','failed','cancelled') ORDER BY created_at")])
+            results = []
+            for identity in identities:
+                try:
+                    exported = seal(store, identity)
+                    results.append({"evaluation_id": identity, "status": "exported",
+                                    "artifacts": {kind: item["sha256"]
+                                                  for kind, item in exported["artifacts"].items()},
+                                    "missing": exported["missing"]})
+                except Exception:
+                    results.append({"evaluation_id": identity, "status": "export-failed",
+                                    "reason": "Retained evidence needs attention; no evaluation was rerun."})
+            print(json.dumps(results, indent=2))
+            if any(result["status"] == "export-failed" for result in results):
+                return 1
         elif args.command == "local-evaluator-init":
             from .local_run import initialize
             print(json.dumps(initialize(Path(args.directory), Path(args.dungeness), args.base_image)))

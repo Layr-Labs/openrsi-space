@@ -1,16 +1,35 @@
 # Existing VM deployment record
 
 **Current integration:** use [GitHub Actions end to end](github-actions-e2e.md).
-Release `20261008-yukon-pareto-binding-1` is running under `screen` on the existing
-VM. Stock `yukon run` retrieved the real receipt, and `catalyst yukon-submit`
-completed the hosted Pareto submission flow through stock Yukon.
+Release `20261013-generic-runtime-1` is running under `screen` on the existing
+VM. It runs arbitrary command harnesses through Dungeness, with model credentials
+kept in the gateway. The current provider policy enables `openai-chatgpt` and
+`kimi-code`. It includes explicit input-rejection accounting and readable
+verifier output for the unprivileged host worker. The previous release and a
+database/configuration backup are retained under
+`/var/lib/catalyst/evaluator/backups/20261013-generic-runtime-1`.
+See [generic harness execution and validation](generic-harnesses.md).
+
+The current release completed a live SkyDiscover/EvoX run using Kimi Code `k3`:
+evaluation `0b48d992-00e9-4567-ad47-459767195757`. Ten settled model calls
+used 0.685212 normalized credits under a three-credit cap. The agent reached
+its 900-second timeout; the independent verifier accepted its retained
+baseline candidate. Receipt retrieval through stock `yukon run` passed.
+Yukon dev subsequently accepted submission
+`22f76880-5436-497d-a403-beab576a4f14` through its hosted GitHub Actions
+workflow, with the exact verified pair `[10758874395, 0.000276]`.
+The second coordinate is credits at the earliest best observation; the total
+run cost remains 0.685212 credits.
+
+Earlier releases completed the hosted Pareto submission flow through stock
+`yukon run` and `catalyst yukon-submit`.
 Jobs and credentials were preserved, and no evaluation was started by retrieval.
 The service is now reachable through **https://35.92.254.142**, with a trusted
 IP certificate and tested automatic renewal. Nginx forwards to the existing
 loopback API; the API remains screen-managed. See [HTTPS operations](https.md).
 
-Yukon login is active against **https://api-dev.yukon.org**, with 117 tests passing
-on the Mac (two optional skips) and VM (three optional skips). The local dev
+Yukon login is active against **https://api-dev.yukon.org**. The generic runtime's
+server suite passed 200 tests with eight optional skips. The local dev
 login is valid. Legacy Catalyst solver passwords remain disabled.
 The starter receipt points to the dev account's original evaluation
 `03586584-86c1-4b9d-9a09-1a13701efabe`, with scores `[10758874395, 0]`.
@@ -23,12 +42,14 @@ and restarted the API (invalidating existing sessions). Both evaluations and
 their original owners remain intact. No evaluation was rerun for this correction.
 The issuer audit and pre-change snapshot are under
 `/var/lib/catalyst/evaluator/backups/20261007-return-to-dev`.
-The latest release backup is `/var/lib/catalyst/evaluator/backups/20261007-dev-pipeline-1`.
-The service accepts solver-selected spending caps above the $20/$200 comparison
-checkpoints while retaining the model-disabled runtime policy. HTTPS receipt
-retrieval passed after the release switch without creating another evaluation.
+That historical release's backup is
+`/var/lib/catalyst/evaluator/backups/20261007-dev-pipeline-1`.
+It enabled solver-selected spending caps above the $20/$200 comparison
+checkpoints while still using a model-disabled runtime policy. HTTPS receipt
+retrieval passed after that release switch without creating another evaluation.
+The current release enables metered model access as described above.
 
-The details below record the **earlier direct-backend prototype**, including its
+The details below record **earlier deployments and the direct-backend prototype**, including its
 historical release and tests. Do not apply the custom Yukon provider or follow
 its registration steps for the GitHub Actions integration.
 

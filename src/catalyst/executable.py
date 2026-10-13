@@ -44,7 +44,7 @@ def create_starter(target: Path) -> dict:
     """Add editable source; problem toolchains belong in the solver's Dockerfile."""
     (target / "Dockerfile").write_text(
         "FROM python:3.12-slim-bookworm\n"
-        "COPY agent.py /opt/harness/agent.py\n"
+        "COPY . /opt/harness/\n"
         "WORKDIR /workspace/repo\n"
     )
     (target / "agent.py").write_text(
@@ -222,19 +222,21 @@ def smoke(state: Path, identity: str, workspace: Path, *, problem=None, timeout=
     return result
 
 
-def model_profile(source: Path, requested: str, provider="openai") -> dict:
+def model_profile(source: Path, requested: str, provider="openai", pricing=None) -> dict:
     """Resolve model identity from Dungeness's trusted accounting policy."""
     from .dungeness import yaml_file
     if not requested or not isinstance(requested, str):
         raise CatalystError("An executable evaluation requires an explicit --model.")
-    prices = yaml_file(source / "services/gateway/pricing.yaml")
+    prices = yaml_file(source / "services/gateway/pricing.yaml") if pricing is None else pricing
     matches = [entry for entry in prices.get("entries", [])
                if entry.get("provider") == provider
                and requested in entry.get("request_models", [])]
     if len(matches) != 1:
         raise CatalystError("Select a provider/model from the pinned Dungeness pricing policy.")
     return {"provider": provider, "upstream_id": matches[0]["upstream_id"],
-            "request_model": requested, "api": "openai-responses" if provider == "openai-chatgpt" else "openai-completions",
+            "request_model": requested, "api": ("anthropic-messages" if provider == "anthropic"
+                else "openai-responses" if provider in {"openai-chatgpt", "moonshot", "kimi-code"}
+                else "openai-completions"),
             "name_format": "request", **({"context_window": 1050000,
             "supported_reasoning_efforts": ["low", "medium", "high", "xhigh", "max"]}
             if provider == "openai-chatgpt" else {})}
@@ -247,24 +249,17 @@ def install_agent(runtime: Path, build_record: dict, model: dict, task_input: di
     agent_dir = runtime / "agents" / namespace / token
     agent_dir.mkdir(parents=True)
     from .dungeness import write_yaml
-    subscription = model["provider"] == "openai-chatgpt"
     write_yaml(agent_dir / "agent.yaml", {
         "schema_version": 1, "type": "agent", "namespace": namespace, "id": token,
         "execution_mode": "installed",
         "package": {"name": INTERFACE, "version": build_record["source_digest"]},
-        "model": model,
-        "environment": {} if subscription else {"OPENAI_API_KEY": "testbed"},
-        **({"authentication": {"mode": "chatgpt-subscription", "credential": "codex", "isolation": "reduced"}} if subscription else {}),
-        "harbor": {"agent": "codex" if subscription else "catalyst-executable", "import_path": "catalyst_executable:CatalystExecutable",
-                   "kwargs": {"task_input": task_input, **({"web_search": "disabled"} if subscription else {})}},
+        "execution": {"interface": "dungeness-command-v1",
+                      "entrypoint": ["python3", "/opt/catalyst/launch.py", "/tmp/dungeness-task.json"]},
+        "task_input": {**task_input, "gateway_auth": "placeholder"},
     })
     # Source was built once. Dungeness adds only its pinned task workspace and clients.
     (agent_dir / "Dockerfile").write_text(
         f"FROM {build_record['artifact_tag']}\nUSER root\n"
-        # Dungeness requires this marker for Codex runtime images. The actual
-        # executable and its version are already bound by the built source.
-        + ("ARG CODEX_VERSION=source\n" if subscription else "")
-        +
         "COPY workspace/ /workspace/repo/\n"
         "COPY web_client.py /usr/local/bin/web\n"
         "COPY evaluate.py /usr/local/bin/evaluate\n"
@@ -275,8 +270,4 @@ def install_agent(runtime: Path, build_record: dict, model: dict, task_input: di
         "/usr/local/bin/run-status /usr/local/bin/candidate-state /usr/local/bin/knowledge-base\n"
         "WORKDIR /workspace/repo\n"
     )
-    adapter = runtime / "adapters" / "harbor" / "catalyst_executable.py"
-    adapter.parent.mkdir(parents=True, exist_ok=True)
-    shutil.copyfile(RUNTIME / "harbor_agent.py", adapter)
-    return f"agent:{namespace}/{token}", [str(agent_dir.relative_to(runtime)),
-                                         str(adapter.relative_to(runtime))]
+    return f"agent:{namespace}/{token}", [str(agent_dir.relative_to(runtime))]

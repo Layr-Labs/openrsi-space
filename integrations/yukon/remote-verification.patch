@@ -1,5 +1,45 @@
+diff --git a/apps/cli/src/core/cli.ts b/apps/cli/src/core/cli.ts
+index b4d7d422..727f4a61 100644
+--- a/apps/cli/src/core/cli.ts
++++ b/apps/cli/src/core/cli.ts
+@@ -10,7 +10,7 @@ import path from "node:path";
+ import { Command } from "commander";
+ import * as tar from "tar";
+ import { SUBMISSION_ARCHIVE_MAX_BYTES, SUBMISSION_NOTE_MAX_BYTES, YukonApiClient, YukonApiError, type Benchmark, type ChallengeWithTracks, type CliTelemetryStatus, type CreateCliEventRequest, type Submission } from "../../../../packages/api-client/src/index.ts";
+-import { loadBenchmarkManifest, loadRepositoryBenchmarkManifest, type BenchmarkManifest } from "../../../../src/benchmark/manifest.ts";
++import { loadBenchmarkManifest, loadRepositoryBenchmarkManifest, submissionPaths, type BenchmarkManifest } from "../../../../src/benchmark/manifest.ts";
+ import { readBenchmarkScore } from "../../../../src/benchmark/score.ts";
+ import { assertNotReservedRepoPath, normalizeRepoPath, resolveRepoPath } from "../../../../src/benchmark/paths.ts";
+ import { cliVersion } from "../../../../src/version.ts";
+@@ -1741,6 +1741,26 @@ async function createSubmissionArchive(repoPath: string, manifest: BenchmarkMani
+ }
+ 
+ export async function resolveSubmissionArchiveEntries(repoPath: string, manifest: BenchmarkManifest, json = false): Promise<string[]> {
++  if (manifest.runner?.provider === "remote-verification") {
++    const receiptPath = manifest.runner.receiptPath;
++    // Do not recursively archive the harness directory, config or private files.
++    try {
++      // Reject symlinks in every component, including a symlinked parent directory.
++      const parts = receiptPath.split("/");
++      for (let index = 1; index <= parts.length; index++) {
++        const info = await lstat(resolveRepoPath(repoPath, parts.slice(0, index).join("/")));
++        if (info.isSymbolicLink() || (index < parts.length ? !info.isDirectory() : !info.isFile() || info.size > 65536)) {
++          throw new Error(`verification receipt must be a regular JSON file of at most 64 KiB: ${receiptPath}`);
++        }
++      }
++    } catch (error) {
++      if (error instanceof Error && "code" in error && error.code === "ENOENT") {
++        throw new Error(`verification receipt is missing: ${receiptPath}. Complete the Catalyst evaluation before submitting to Yukon.`);
++      }
++      throw error;
++    }
++    return submissionPaths(manifest);
++  }
+   const optionalPaths = new Set(manifest.optionalEditablePaths ?? []);
+   const entries: string[] = [];
+   for (const editablePath of manifest.editablePaths) {
 diff --git a/src/benchmark/manifest.ts b/src/benchmark/manifest.ts
-index 1f3b7df4..7d55404e 100644
+index 1f3b7df4..0befc407 100644
 --- a/src/benchmark/manifest.ts
 +++ b/src/benchmark/manifest.ts
 @@ -46,6 +46,11 @@ const CommandSchema = z
@@ -9,11 +49,42 @@ index 1f3b7df4..7d55404e 100644
 +  z.object({
 +    provider: z.literal("remote-verification"),
 +    service: z.string().regex(/^[a-z][a-z0-9-]{0,62}$/),
-+    submissionPath: z.string().regex(/^[A-Za-z0-9_-]+(?:\/[A-Za-z0-9_-]+)*$/),
++    receiptPath: z.string().regex(/^(?:[A-Za-z0-9_-]+\/)*[A-Za-z0-9_-]+\.json$/),
 +  }).strict(),
    z
      .object({
        provider: z.literal("github-actions"),
+@@ -157,6 +162,13 @@ export interface BenchmarkTrackManifest extends Omit<BenchmarkManifest, "schemaV
+   name: string;
+ }
+ 
++// Local harness edits remain allowed; the remote verifier already retains that
++// source. Only its receipt is submitted to Yukon or preserved in a submission commit.
++export function submissionPaths(manifest: Pick<BenchmarkManifest, "editablePaths" | "runner">): string[] {
++  return manifest.runner?.provider === "remote-verification"
++    ? [manifest.runner.receiptPath] : [...manifest.editablePaths];
++}
++
+ export interface SingleBenchmarkManifest extends Omit<BenchmarkManifest, "schemaVersion"> {
+   schemaVersion: 1;
+ }
+@@ -305,6 +317,16 @@ function normalizeBenchmarkConfig(
+       throw new RepoPathError("editablePaths", "must not contain duplicates");
+     }
+     assertNoOverlappingRepoPaths(uniqueEditablePaths, "editablePaths");
++    if (parsed.runner?.provider === "remote-verification") {
++      if (!pareto || parsed.promotionMode !== "manual") {
++        throw new BenchmarkManifestError(["remote-verification requires manual Pareto mode"]);
++      }
++      const receiptPath = parsed.runner.receiptPath;
++      assertNotReservedRepoPath(receiptPath, "runner.receiptPath");
++      if (!uniqueEditablePaths.some(editable => isRepoPathEqualOrDescendant(receiptPath, editable))) {
++        throw new BenchmarkManifestError(["runner.receiptPath must be within editablePaths"]);
++      }
++    }
+ 
+     // An optional path only means "this declared editable path may be omitted", so it must name one
+     // of them exactly. A typo would otherwise be silently inert and leave the path required.
 diff --git a/src/cli/yukond.ts b/src/cli/yukond.ts
 index 59d1f521..00636f01 100644
 --- a/src/cli/yukond.ts
@@ -43,6 +114,54 @@ index 70c6269d..be6b6316 100644
  export * from "./github-actions.ts";
  export * from "./routing.ts";
 +export * from "./remote-verification.ts";
+diff --git a/src/execution/submission.ts b/src/execution/submission.ts
+index 8edd910e..e6939a55 100644
+--- a/src/execution/submission.ts
++++ b/src/execution/submission.ts
+@@ -4,7 +4,7 @@ import path from "node:path";
+ import { fileURLToPath } from "node:url";
+ import * as tar from "tar";
+ import { SUBMISSION_ARCHIVE_MAX_EXPANDED_BYTES } from "@yukon/api-client";
+-import type { BenchmarkManifest } from "../benchmark/manifest.ts";
++import { submissionPaths, type BenchmarkManifest } from "../benchmark/manifest.ts";
+ import {
+   assertRepoPathEditable,
+   isRepoPathEqualOrDescendant,
+@@ -214,9 +214,10 @@ interface RawTarEntry {
+ // This mirrors the CLI, which skips an absent optional path when building the archive and tells the
+ // participant the benchmark keeps its default copy — the server must not then delete that copy.
+ export function editablePathsToClear(
+-  manifest: Pick<BenchmarkManifest, "editablePaths" | "optionalEditablePaths">,
++  manifest: Pick<BenchmarkManifest, "editablePaths" | "optionalEditablePaths" | "runner">,
+   suppliedRepoPaths: readonly string[],
+ ): string[] {
++  if (manifest.runner?.provider === "remote-verification") return submissionPaths(manifest);
+   const optionalPaths = new Set(manifest.optionalEditablePaths ?? []);
+   if (optionalPaths.size === 0) return [...manifest.editablePaths];
+   return manifest.editablePaths.filter((editablePath) =>
+@@ -240,8 +241,9 @@ async function inspectTarEntries(
+   manifest: BenchmarkManifest,
+   limits: SubmissionArchiveLimits,
+ ): Promise<InspectedTarEntry[]> {
+-  const maxEntries = limits.maxEntries ?? SUBMISSION_ARCHIVE_MAX_ENTRIES;
+-  const maxExpandedBytes = limits.maxExpandedBytes ?? SUBMISSION_ARCHIVE_MAX_EXPANDED_BYTES;
++  const receiptOnly = manifest.runner?.provider === "remote-verification";
++  const maxEntries = Math.min(limits.maxEntries ?? SUBMISSION_ARCHIVE_MAX_ENTRIES, receiptOnly ? 1 : Infinity);
++  const maxExpandedBytes = Math.min(limits.maxExpandedBytes ?? SUBMISSION_ARCHIVE_MAX_EXPANDED_BYTES, receiptOnly ? 65536 : Infinity);
+   const rawEntries: RawTarEntry[] = [];
+   let entryCount = 0;
+   let declaredBytes = 0;
+@@ -281,6 +283,10 @@ function validateTarEntry(
+   manifest: BenchmarkManifest,
+ ): InspectedTarEntry {
+   const repoPath = validateSubmissionRepoPath(entryPath, manifest, "submission archive path");
++  if (manifest.runner?.provider === "remote-verification"
++    && (repoPath !== manifest.runner.receiptPath || !["File", "OldFile", "ContiguousFile"].includes(entryType))) {
++    throw new SubmissionApplicationError(["remote verification accepts only the receipt file"]);
++  }
+ 
+   if (entryType === "Directory") {
+     return { repoPath, kind: "directory" };
 diff --git a/src/execution/types.ts b/src/execution/types.ts
 index e24662a7..a62912ad 100644
 --- a/src/execution/types.ts
@@ -56,6 +175,44 @@ index e24662a7..a62912ad 100644
    pareto?: ParetoJudgeInput;
    source: BenchmarkSourceRef;
    submission: SubmissionArchive;
+diff --git a/src/integrations/git-submission.ts b/src/integrations/git-submission.ts
+index a09705d9..0aa1cc0a 100644
+--- a/src/integrations/git-submission.ts
++++ b/src/integrations/git-submission.ts
+@@ -19,6 +19,8 @@ export interface PushGitSubmissionInput {
+   editablePaths: string[];
+   rootDir?: string | null;
+   signal?: AbortSignal;
++  /** Receipt submissions may reference the same evaluation as the benchmark baseline. */
++  allowUnchanged?: boolean;
+   assertChanges: (tree: GitTreeEntry[], readBlob: (sha: string) => Promise<Buffer>) => Promise<void>;
+   publish: (treeSha: string) => Promise<string>;
+ }
+@@ -97,8 +99,10 @@ export async function pushGitSubmission(input: PushGitSubmissionInput): Promise<
+     }
+     const treeSha = (await git(["write-tree"])).toString().trim();
+     const baseTreeSha = (await git(["rev-parse", `${input.baseRef}^{tree}`])).toString().trim();
+-    if (treeSha === baseTreeSha) throw new SubmissionApplicationError(["submission does not contain code changes"]);
+-    await input.assertChanges(tree, async (sha) => await git(["cat-file", "blob", sha]));
++    if (!input.allowUnchanged) {
++      if (treeSha === baseTreeSha) throw new SubmissionApplicationError(["submission does not contain code changes"]);
++      await input.assertChanges(tree, async (sha) => await git(["cat-file", "blob", sha]));
++    }
+     log.info("uploading submission git tree", { branchName: input.branchName, treeSha });
+     uploadStarted = true;
+     await git(["push", "--no-verify", input.remoteUrl, `+${treeSha}:${uploadRef}`], undefined, true);
+diff --git a/src/integrations/github.ts b/src/integrations/github.ts
+index d110be80..f8322e73 100644
+--- a/src/integrations/github.ts
++++ b/src/integrations/github.ts
+@@ -722,6 +722,7 @@ export class OctokitGitHubRepositoryGateway implements GitHubRepositoryGateway,
+           remoteUrl: `https://github.com/${repository.owner}/${repository.repo}.git`,
+           token, baseRef: input.baseRef, branchName: input.branchName,
+           files, editablePaths: editable, rootDir: input.rootDir,
++          allowUnchanged: manifest.runner?.provider === "remote-verification",
+           signal: input.signal,
+           assertChanges: async (tree, readBlob) => await assertGitHubSubmissionHasSemanticChanges(files, input.rootDir, editable, tree, readBlob),
+           publish: async (treeSha) => await this.publishSubmissionTree(octokit, input, treeSha),
 diff --git a/src/worker/worker.ts b/src/worker/worker.ts
 index 7d1ab033..043bfd66 100644
 --- a/src/worker/worker.ts
@@ -68,12 +225,1026 @@ index 7d1ab033..043bfd66 100644
            source: benchmarkSource(benchmark),
            pareto: paretoJudgeInput(benchmark, { scores: input.paretoScores === true, validity: input.paretoValidity === true }),
            pinSource: benchmark.mode === "pareto",
+diff --git a/tests/unit/git-submission.test.ts b/tests/unit/git-submission.test.ts
+index ec43856b..f7b72bae 100644
+--- a/tests/unit/git-submission.test.ts
++++ b/tests/unit/git-submission.test.ts
+@@ -126,6 +126,18 @@ test("only replaces optional paths when supplied, including benchmarks under a r
+   }
+ });
+ 
++test("a receipt-only submission can preserve the baseline receipt without requiring code changes", async () => {
++  const receipt = '{"evaluation_id":"33333333-3333-4333-8333-333333333333"}';
++  const f = await fixture({ "submission/verification.json": receipt });
++  const sha = await f.push([file("submission/verification.json", receipt)], {
++    editablePaths: ["submission/verification.json"], allowUnchanged: true,
++    assertChanges: async () => { throw new Error("receipt submissions must not require source changes"); },
++  });
++  expect(sha).not.toBe(f.baseRef);
++  expect((await git(f.remote, "show", `${sha}:submission/verification.json`)).toString()).toBe(receipt);
++  expect((await git(f.remote, "rev-parse", `${sha}^`)).toString().trim()).toBe(f.baseRef);
++});
++
+ test("rejects byte-identical and formatting-only submissions before creating any remote branch", async () => {
+   const f = await fixture();
+   for (const content of ["int answer() { return 42; }\n", "// only formatting\nint answer(){return 42;}\n"]) {
+diff --git a/docs/catalyst-receipt-local.md b/docs/catalyst-receipt-local.md
+new file mode 100644
+index 00000000..b060f115
+--- /dev/null
++++ b/docs/catalyst-receipt-local.md
+@@ -0,0 +1,163 @@
++# Local Catalyst receipt integration
++
++This is a local integration exercise, not an official research submission.
++The accompanying check uses this document as its submission note so the actual
++Yukon CLI follows its normal note and attribution requirements. No optimization
++claim is made. The baseline harness used for the initial live check retained
++the pinned ECDSA implementation, used zero model credits, and was independently
++verified by Catalyst before this Yukon integration test.
++
++The current provider implements the project-independent
++[`yukon-remote-verification-v1` contract](remote-verification.md). It posts to
++`/yukon/v1/retrieve`; only Catalyst interprets the receipt's internal fields.
++The original live VM test below used the older `catalyst-yukon-v2` endpoint.
++The VM has not been upgraded in this contract change. Before using the current
++checkout against that VM, update the Catalyst service to provide the generic
++endpoint. No new harness execution is needed; the existing receipt remains valid.
++
++## Components and ownership
++
++Catalyst and Yukon are separate services. Catalyst accepts the harness source,
++builds it, runs it through Dungeness, independently verifies the resulting
++candidate, and retains source, configuration, artifacts, accounting and scores.
++It returns a verification receipt referring to that completed evaluation.
++
++Yukon receives only this receipt. Its CLI sends the receipt through the ordinary
++submission upload endpoint. The API authenticates the local solver, stores the
++upload and queues validation in PostgreSQL. The real Yukon worker claims that
++job and invokes RemoteVerificationExecutionProvider. The provider calls the
++configured Catalyst service, carrying the receipt, the account ID from Yukon's
++stored submission record, the benchmark and submission IDs, and the requested
++Pareto policies and fields. Scores supplied by a solver are not authoritative.
++
++Catalyst checks the owner and exact receipt against its retained evaluation.
++The receipt binds the evaluation ID, source digest, configuration, problem,
++pricing, policies and image identity. The worker parses the returned judgment
++using Yukon's existing Pareto parser and records it through the normal store.
++The test reads the completed scores from Yukon's HTTP API, after persistence.
++This is different from calling the provider directly: API authentication, CLI
++packaging, archive storage, the durable queue, worker dispatch and PostgreSQL
++result storage all participate.
++
++## Start the local API and worker
++
++Install the locked dependencies in this Yukon checkout:
++
++```sh
++cd /Users/bxue/Documents/yukon/yukon
++bun install --frozen-lockfile --ignore-scripts
++```
++
++Keep a private connection to the existing Catalyst VM in one terminal. If you
++already have this exact tunnel running, reuse it:
++
++```sh
++ssh -N -o ExitOnForwardFailure=yes \
++  -L 127.0.0.1:8878:127.0.0.1:8778 openclaw
++```
++
++In a second terminal, start the local Yukon service:
++
++```sh
++cd /Users/bxue/Documents/yukon/yukon
++bun scripts/catalyst-local-api.ts \
++  /Users/bxue/Documents/catalyst/.catalyst/yukon-local \
++  /Users/bxue/Documents/catalyst/.catalyst/remote-vm/yukon-receipt-workspace \
++  /Users/bxue/Documents/catalyst/.catalyst/remote-vm/yukon-verifiers.json
++```
++
++The arguments are a private state directory, a workspace containing benchmark.json
++and a completed remote verification receipt, and a private verifier configuration.
++Paths above are the prepared local environment; another operator supplies their
++own paths and provisioned identities. No credential appears in the command.
++The consumer configuration maps the manifest's service name to a URL, consumer
++token and baseline owner ID. It must point to a service supporting
++`yukon-remote-verification-v1`. Plain HTTP is permitted only for the loopback SSH tunnel.
++The private service entry also needs `benchmarks[benchmarkId]` with
++`enabled: true` and the expected `problem: {id, version}`. The Catalyst consumer
++key needs the same scoped grant. See [the shared contract](remote-verification.md).
++The launcher never creates these permissions. On a fresh import it reports the
++assigned benchmark UUID and stops with the baseline queued, before starting any
++worker. Configure both operator grants and restart to continue.
++
++The launcher creates a dedicated local PostgreSQL Docker container for this
++state directory, with a port bound to 127.0.0.1. It never accepts a production
++database URL and never clears existing tables. It applies the repository's real
++database migrations. PostgreSQL remains available after Ctrl+C so records can
++be inspected and survive a server restart. The container name and port are
++recorded in the private state directory's database.json.
++
++The launcher provisions a local test account whose UUID matches the configured
++Catalyst owner. This is explicit local test provisioning, not hosted login or
++an impersonation feature exposed by the production server. A private local API
++key and CLI config are written under the state directory. The user's normal
++Yukon login and hosted account are not modified.
++
++The launcher imports Catalyst through the real local Yukon HTTP endpoint and
++lets the worker retrieve the baseline judgment from Catalyst. It then opens
++that local benchmark and prints READY. The benchmark UUID belongs only to this
++local Yukon database. The launcher starts the API and worker together; there is
++no separate manual worker command and it does not submit a solver receipt.
++
++## Submit separately through the actual CLI
++
++After READY, run this in another terminal:
++
++```sh
++cd /Users/bxue/Documents/yukon/yukon
++bun scripts/check-catalyst-local.ts \
++  /Users/bxue/Documents/catalyst/.catalyst/yukon-local
++```
++
++This check runs the actual Yukon CLI `submit` command with the isolated local
++configuration and the prepared receipt. The child environment excludes hosted
++API tokens and disables telemetry and trace synchronization. The result is
++polled from the local Yukon HTTP API and saved to last-result.json. The output
++includes the Yukon submission and job IDs, the Pareto tuple, validity, and the
++stored evaluator/commit provenance.
++
++To use the CLI manually, consult connection.json for the local benchmark ID,
++API URL, client workspace and configuration directory. Set YUKON_CONFIG_DIR to
++that private configuration directory, unset inherited YUKON_API_TOKEN,
++HILBERT_API_TOKEN and SUPABASE_ACCESS_TOKEN, set YUKON_API_URL to the local API,
++and run the checkout's apps/cli/src/yukon.ts from the client workspace. Supply
++the benchmark ID, --model, --harness and a real --note-file as usual. The check
++script provides the same isolated invocation automatically.
++
++Only the configured receipt file is allowed in a submission archive, capped at
++64 KiB. Source files, evaluation settings, credentials, symlinks and additional
++archive entries are refused. Changing a local harness after evaluation cannot
++change what a receipt denotes. A new harness evaluation produces its own
++receipt; the existing receipt continues to refer to the retained source.
++
++## Evidence and limits of the test
++
++The remote harness evaluation is reused. No setup or benchmark command executes
++in the Yukon retrieval provider, and this test cannot enqueue Catalyst work.
++The provisioned consumer credential can retrieve verified judgments but cannot
++start evaluations or download private traces. Retrying a retrieval is safe.
++Submitting the same archive again is deduplicated by Yukon's normal API/store
++logic, and does not create a new validation job or another model run.
++
++The local repository adapter replaces GitHub network publication with Git
++objects in a private local repository under the state directory. It uses the
++same validated receipt archive and submission-tree builder. Actual commit SHAs
++are created locally so Yukon's normal Pareto evidence requirements are tested.
++These are test records, not commits or pushes to the user's source checkout.
++The first solver may submit the same receipt used as the baseline: receipt
++submissions must therefore support a commit whose tree equals the baseline.
++Ordinary source submissions continue to require code changes.
++
++The API, worker, store, archive validation and remote scoring provider are real
++Yukon components. The private receipt service supplies the real stored result.
++The local account bootstrap and local Git adapter are development plumbing.
++This test does not exercise hosted Yukon login, GitHub App permissions, hosted
++network connectivity, public registration, a hosted leaderboard, billing or
++provider credential renewal. Those remain release and deployment work.
++
++Stop the local API and worker with Ctrl+C. To stop the dedicated database,
++read its container name from database.json and run `docker stop` on that exact
++container. Do not remove the container if you want to retain the local records.
++Restarting the launcher reuses the state, account, benchmark and stored results.
++Closing the private SSH tunnel stops connectivity to Catalyst but does not stop
++the Catalyst VM service or erase any evaluations.
+diff --git a/docs/remote-verification.md b/docs/remote-verification.md
+new file mode 100644
+index 00000000..c0ac3786
+--- /dev/null
++++ b/docs/remote-verification.md
+@@ -0,0 +1,209 @@
++# Remote verification contract v1
++
++Yukon can publish results that another service has already verified. A solver
++sends source or other work to that service, receives a public receipt, and
++submits only the receipt to Yukon. Yukon's worker retrieves the authoritative
++judgment using a private service credential. Retrieval never starts execution
++or incurs model usage. Services do not need to be Catalyst or run harnesses.
++
++The normative wire schemas live in
++`src/execution/remote-verification-contract.ts`; the JSON Schema export is
++`docs/remote-verification-v1.schema.json`. The protocol is
++`yukon-remote-verification-v1`. Version 1 supports manual Pareto benchmarks.
++Scalar scoring and automatic source promotion are outside this version.
++
++## Registration and trust
++
++A pinned benchmark manifest selects a service alias and a receipt path:
++
++```json
++{
++  "provider": "remote-verification",
++  "service": "compression-lab",
++  "receiptPath": "submission/verification.json"
++}
++```
++
++The Yukon operator configures each approved alias in the private JSON file
++selected by `YUKON_REMOTE_VERIFIERS_FILE`:
++
++```json
++{
++  "compression-lab": {
++    "url": "https://verifier.example",
++    "token": "<private service credential>",
++    "baselineOwnerId": "<provisioned Yukon account UUID>",
++    "benchmarks": {
++      "22222222-2222-4222-8222-222222222222": {
++        "enabled": true,
++        "problem": {"id": "compression", "version": "dataset-sha256:1234"}
++      }
++    }
++  }
++}
++```
++
++The manifest is not an authorization. Before any retrieval request, Yukon
++requires an operator-controlled entry enabling this exact benchmark under this
++service alias. Missing entries, a missing `benchmarks` map, and `enabled: false`
++all deny retrieval. The problem binding comes from this entry, never the receipt
++or an editable manifest. The flag applies to baseline and submission retrieval.
++Changes require reloading/restarting the worker; configuration is read at startup.
++
++Use a separate scoped service token for each integration. The verifier must
++authenticate Yukon, independently authorize that consumer for the benchmark and
++expected problem/version, map the account UUID to an authorized evaluation owner,
++and compare the evaluated problem/version in its **retained run metadata** with
++the authorized problem binding. Also check supported policies/objectives. A submitted owner
++claim is never authorization. Yukon sends the account ID from its stored,
++authenticated submission record; baseline retrieval uses the operator's
++configured owner. How a verifier provisions those identities is service-specific.
++
++The alias, endpoint and credential are operator decisions. Receipts cannot
++choose a destination, redirect a request or supply credentials. HTTPS is
++required; loopback HTTP supports a private tunnel or local test. Redirects
++are rejected. Receipt archives contain exactly one regular JSON file, at most
++64 KiB. Its object contents are opaque to Yukon. They must be public-safe:
++receipts are retained in submission Git history, and judgment metrics are
++published as evaluation evidence.
++
++## Retrieval
++
++Send `POST /yukon/v1/retrieve` under the configured base URL, with
++`Authorization: Bearer <service token>` and `Content-Type: application/json`.
++
++```json
++{
++  "protocol": "yukon-remote-verification-v1",
++  "kind": "submission",
++  "owner_id": "11111111-1111-4111-8111-111111111111",
++  "benchmark_id": "22222222-2222-4222-8222-222222222222",
++  "benchmark_revision": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
++  "submission_id": "44444444-4444-4444-8444-444444444444",
++  "problem": {"id": "compression", "version": "dataset-sha256:1234"},
++  "reference": {"experiment": "compression/run:17", "artifact": {"revision": "sha256:abc"}},
++  "objectives": [
++    {"name": "compressedBytes", "direction": "-"},
++    {"name": "decodeSeconds", "direction": "-"}
++  ],
++  "judge": {
++    "policies": {"scoring": {"version": "compression-v1"}, "validity": {"version": "lossless-v1"}},
++    "fields": {"scores": true, "validity": true}
++  }
++}
++```
++
++All listed keys are required. No extra top-level keys are allowed. The receipt
++is an arbitrary JSON object; policy values are arbitrary JSON owned by the
++benchmark. `problem.id` identifies the logical task; `problem.version` identifies
++an immutable dataset or task-contract revision, preferably a content digest.
++The verifier defines that namespace and verifies it from stored execution
++evidence. It must not just echo the requested problem or trust receipt labels.
++`benchmark_revision` separately identifies the pinned Yukon benchmark source.
++The ordered objective names and directions come from that same manifest.
++At least one judgment field must be requested. Scores follow objective order.
++Unknown versions, policies or objectives must fail closed.
++
++For `kind: "baseline"`, there is no solver submission. `submission_id` equals
++`benchmark_id`, and the receipt comes from the pinned benchmark repository.
++It is still a read of completed evidence. Registration never launches work.
++
++A successful response is HTTP 200:
++
++```json
++{
++  "protocol": "yukon-remote-verification-v1",
++  "request": "<the complete request object, echoed exactly as JSON>",
++  "artifact": {"kind": "solution-source", "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"},
++  "judgment": {
++    "scores": [120, 4],
++    "valid": true,
++    "reason": "Lossless output independently verified.",
++    "metrics": {"experiment": "compression/run:17"}
++  }
++}
++```
++
++`request` is an object; the string above abbreviates it. Object key order does
++not matter. Yukon checks equality of every request field, validates the
++judgment using its existing Pareto parser, and retains the requested fields.
++`artifact` identifies the actual verified submission: the service defines its
++kind and canonical hashing scheme and returns a lowercase SHA-256 digest computed
++from the retained artifact. For Catalyst, it is the canonical harness source
++manifest digest with kind `harness-source`. A solver's descriptive harness name
++is not this identity. Yukon stores `{service, problem, artifact}` in the reserved
++`judgment.metrics.remoteVerification` namespace alongside the score, preserving
++other public service metrics. A service-provided value in that reserved namespace
++cannot overwrite the checked binding.
++
++A minimal receipt may be `{"token":"<opaque random lookup ID>"}`. The verifier
++resolves it to an immutable record containing owner, problem/version, artifact
++digest, policy and judgment. A token is a reference, not a credential or ownership
++proof. Copying it must not confer permission to claim another owner's result.
++An authenticated lookup needs no separately signed token. Signatures become
++necessary only for a future design accepting evidence without consulting the service.
++When scores are requested, a measurable result has exactly one finite number
++per objective. Tuple elements cannot be null or missing. The entire score tuple
++may be null for an unscored result, following Yukon's existing Pareto rules.
++When validity is requested, `valid` is required and invalid results require a
++nonempty reason. `metrics` is optional public JSON, never private traces,
++credentials, source archives or account details. The service must return only
++public result data. Scores claimed inside a receipt are not authoritative.
++
++Yukon caps responses at 4 MiB, uses a 30-second request timeout, and honors
++submission cancellation. This is a completed-result interface, not a polling
++or execution API. A service must resolve its own receipt against immutable
++stored evidence before responding.
++
++## Retries and errors
++
++The service atomically binds `(authenticated consumer, benchmark_id,
++submission_id)` to the receipt, owner, retrieval kind, expected problem/version, benchmark revision,
++ordered objectives and policies. Repeated retrievals return the same evidence
++without execution. A retry may request a different subset of judgment fields.
++Rebinding to different evidence must fail with HTTP 409. Services may store
++retrieval audit records. Yukon handles duplicate solver submissions through
++its existing submission deduplication.
++
++Errors use a non-2xx HTTP status and an optional public `{"error":"..."}` body:
++
++| Status | Meaning |
++| --- | --- |
++| 400 | Malformed request or unsupported protocol version |
++| 401 / 403 | Missing service authentication or unauthorized owner |
++| 404 | Unknown receipt/result |
++| 409 | Incomplete result, evidence/policy/objective mismatch or conflicting binding |
++| 429 / 503 | Service temporarily unavailable |
++
++Yukon accepts a judgment only from a valid success envelope. It does not log
++service response bodies or credentials on failures, start a new evaluation, or
++fall back to scores in the receipt. Automatic polling/backoff is not part of v1;
++a failed retrieval can be retried through normal Yukon job handling.
++
++## Adding a project
++
++Implement this endpoint on the verifier, provision account ownership and a
++consumer token, and configure a service alias in Yukon. Import a manual Pareto
++manifest with the appropriate objective order, policies and starter receipt
++while holding its baseline job. Once Yukon assigns the benchmark UUID, an
++operator enables that UUID and the independently reviewed problem/version in
++both services. Then release the baseline job. Never auto-enable a benchmark
++based on uploaded source, a manifest or a receipt. The local launcher leaves a
++new benchmark queued until these explicit entries exist.
++No project-specific Yukon provider code is needed.
++
++Catalyst is one implementation. It interprets its own receipt version,
++evaluation UUID, source/image/problem/pricing digests, checkpoint evidence and
++ECDSA policies. Its adapter returns the standard judgment. Those fields and
++rules are not part of Yukon's shared wire contract.
++
++Catalyst defines the problem ID as `ecdsa.fail` and the version as the SHA-256
++digest of the complete pinned problem-set document used in the evaluation.
++It derives both from the stored run request and checks them against its private
++consumer grant before releasing a score. A correct service key alone cannot
++authorize another benchmark or make a receipt for another problem acceptable.
++
++The provider tests exercise distinct compression and robotics receipts without
++Catalyst fields, and reject mismatched identities, revisions, objectives,
++policies and protocol versions. Deployment and network provisioning are separate
++from protocol conformance.
+diff --git a/docs/remote-verification-v1.schema.json b/docs/remote-verification-v1.schema.json
+new file mode 100644
+index 00000000..26b8fcfc
+--- /dev/null
++++ b/docs/remote-verification-v1.schema.json
+@@ -0,0 +1,538 @@
++{
++  "$schema": "https://json-schema.org/draft/2020-12/schema",
++  "anyOf": [
++    {
++      "type": "object",
++      "properties": {
++        "protocol": {
++          "type": "string",
++          "const": "yukon-remote-verification-v1"
++        },
++        "kind": {
++          "type": "string",
++          "enum": [
++            "baseline",
++            "submission"
++          ]
++        },
++        "owner_id": {
++          "type": "string",
++          "format": "uuid",
++          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
++        },
++        "benchmark_id": {
++          "type": "string",
++          "format": "uuid",
++          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
++        },
++        "benchmark_revision": {
++          "type": "string",
++          "minLength": 1,
++          "maxLength": 1024
++        },
++        "submission_id": {
++          "type": "string",
++          "format": "uuid",
++          "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
++        },
++        "problem": {
++          "type": "object",
++          "properties": {
++            "id": {
++              "type": "string",
++              "minLength": 1,
++              "maxLength": 256
++            },
++            "version": {
++              "type": "string",
++              "minLength": 1,
++              "maxLength": 256
++            }
++          },
++          "required": [
++            "id",
++            "version"
++          ],
++          "additionalProperties": false
++        },
++        "reference": {
++          "type": "object",
++          "propertyNames": {
++            "type": "string"
++          },
++          "additionalProperties": {
++            "$ref": "#/$defs/__schema0"
++          }
++        },
++        "objectives": {
++          "minItems": 1,
++          "maxItems": 8,
++          "type": "array",
++          "items": {
++            "type": "object",
++            "properties": {
++              "name": {
++                "type": "string",
++                "maxLength": 64,
++                "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$"
++              },
++              "direction": {
++                "type": "string",
++                "enum": [
++                  "+",
++                  "-"
++                ]
++              }
++            },
++            "required": [
++              "name",
++              "direction"
++            ],
++            "additionalProperties": false
++          }
++        },
++        "judge": {
++          "type": "object",
++          "properties": {
++            "policies": {
++              "type": "object",
++              "properties": {
++                "scoring": {
++                  "$ref": "#/$defs/__schema1"
++                },
++                "validity": {
++                  "$ref": "#/$defs/__schema2"
++                }
++              },
++              "required": [
++                "scoring",
++                "validity"
++              ],
++              "additionalProperties": false
++            },
++            "fields": {
++              "anyOf": [
++                {
++                  "type": "object",
++                  "properties": {
++                    "scores": {
++                      "type": "boolean",
++                      "const": true
++                    },
++                    "validity": {
++                      "type": "boolean"
++                    }
++                  },
++                  "required": [
++                    "scores",
++                    "validity"
++                  ],
++                  "additionalProperties": false
++                },
++                {
++                  "type": "object",
++                  "properties": {
++                    "scores": {
++                      "type": "boolean",
++                      "const": false
++                    },
++                    "validity": {
++                      "type": "boolean",
++                      "const": true
++                    }
++                  },
++                  "required": [
++                    "scores",
++                    "validity"
++                  ],
++                  "additionalProperties": false
++                }
++              ]
++            }
++          },
++          "required": [
++            "policies",
++            "fields"
++          ],
++          "additionalProperties": false
++        }
++      },
++      "required": [
++        "protocol",
++        "kind",
++        "owner_id",
++        "benchmark_id",
++        "benchmark_revision",
++        "submission_id",
++        "problem",
++        "reference",
++        "objectives",
++        "judge"
++      ],
++      "additionalProperties": false
++    },
++    {
++      "type": "object",
++      "properties": {
++        "protocol": {
++          "type": "string",
++          "const": "yukon-remote-verification-v1"
++        },
++        "request": {
++          "type": "object",
++          "properties": {
++            "protocol": {
++              "type": "string",
++              "const": "yukon-remote-verification-v1"
++            },
++            "kind": {
++              "type": "string",
++              "enum": [
++                "baseline",
++                "submission"
++              ]
++            },
++            "owner_id": {
++              "type": "string",
++              "format": "uuid",
++              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
++            },
++            "benchmark_id": {
++              "type": "string",
++              "format": "uuid",
++              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
++            },
++            "benchmark_revision": {
++              "type": "string",
++              "minLength": 1,
++              "maxLength": 1024
++            },
++            "submission_id": {
++              "type": "string",
++              "format": "uuid",
++              "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
++            },
++            "problem": {
++              "type": "object",
++              "properties": {
++                "id": {
++                  "type": "string",
++                  "minLength": 1,
++                  "maxLength": 256
++                },
++                "version": {
++                  "type": "string",
++                  "minLength": 1,
++                  "maxLength": 256
++                }
++              },
++              "required": [
++                "id",
++                "version"
++              ],
++              "additionalProperties": false
++            },
++            "reference": {
++              "type": "object",
++              "propertyNames": {
++                "type": "string"
++              },
++              "additionalProperties": {
++                "$ref": "#/$defs/__schema0"
++              }
++            },
++            "objectives": {
++              "minItems": 1,
++              "maxItems": 8,
++              "type": "array",
++              "items": {
++                "type": "object",
++                "properties": {
++                  "name": {
++                    "type": "string",
++                    "maxLength": 64,
++                    "pattern": "^[a-zA-Z][a-zA-Z0-9_]*$"
++                  },
++                  "direction": {
++                    "type": "string",
++                    "enum": [
++                      "+",
++                      "-"
++                    ]
++                  }
++                },
++                "required": [
++                  "name",
++                  "direction"
++                ],
++                "additionalProperties": false
++              }
++            },
++            "judge": {
++              "type": "object",
++              "properties": {
++                "policies": {
++                  "type": "object",
++                  "properties": {
++                    "scoring": {
++                      "$ref": "#/$defs/__schema1"
++                    },
++                    "validity": {
++                      "$ref": "#/$defs/__schema2"
++                    }
++                  },
++                  "required": [
++                    "scoring",
++                    "validity"
++                  ],
++                  "additionalProperties": false
++                },
++                "fields": {
++                  "anyOf": [
++                    {
++                      "type": "object",
++                      "properties": {
++                        "scores": {
++                          "type": "boolean",
++                          "const": true
++                        },
++                        "validity": {
++                          "type": "boolean"
++                        }
++                      },
++                      "required": [
++                        "scores",
++                        "validity"
++                      ],
++                      "additionalProperties": false
++                    },
++                    {
++                      "type": "object",
++                      "properties": {
++                        "scores": {
++                          "type": "boolean",
++                          "const": false
++                        },
++                        "validity": {
++                          "type": "boolean",
++                          "const": true
++                        }
++                      },
++                      "required": [
++                        "scores",
++                        "validity"
++                      ],
++                      "additionalProperties": false
++                    }
++                  ]
++                }
++              },
++              "required": [
++                "policies",
++                "fields"
++              ],
++              "additionalProperties": false
++            }
++          },
++          "required": [
++            "protocol",
++            "kind",
++            "owner_id",
++            "benchmark_id",
++            "benchmark_revision",
++            "submission_id",
++            "problem",
++            "reference",
++            "objectives",
++            "judge"
++          ],
++          "additionalProperties": false
++        },
++        "artifact": {
++          "type": "object",
++          "properties": {
++            "kind": {
++              "type": "string",
++              "minLength": 1,
++              "maxLength": 64
++            },
++            "sha256": {
++              "type": "string",
++              "pattern": "^[a-f0-9]{64}$"
++            }
++          },
++          "required": [
++            "kind",
++            "sha256"
++          ],
++          "additionalProperties": false
++        },
++        "judgment": {
++          "type": "object",
++          "properties": {
++            "scores": {
++              "anyOf": [
++                {
++                  "minItems": 1,
++                  "type": "array",
++                  "items": {
++                    "type": "number"
++                  }
++                },
++                {
++                  "type": "null"
++                }
++              ]
++            },
++            "valid": {
++              "type": "boolean"
++            },
++            "reason": {
++              "type": "string",
++              "minLength": 1,
++              "maxLength": 4000
++            },
++            "metrics": {
++              "$ref": "#/$defs/__schema3"
++            }
++          },
++          "additionalProperties": false
++        }
++      },
++      "required": [
++        "protocol",
++        "request",
++        "artifact",
++        "judgment"
++      ],
++      "additionalProperties": false
++    }
++  ],
++  "$defs": {
++    "__schema0": {
++      "anyOf": [
++        {
++          "type": "string"
++        },
++        {
++          "type": "number"
++        },
++        {
++          "type": "boolean"
++        },
++        {
++          "type": "null"
++        },
++        {
++          "type": "array",
++          "items": {
++            "$ref": "#/$defs/__schema0"
++          }
++        },
++        {
++          "type": "object",
++          "propertyNames": {
++            "type": "string"
++          },
++          "additionalProperties": {
++            "$ref": "#/$defs/__schema0"
++          }
++        }
++      ]
++    },
++    "__schema1": {
++      "anyOf": [
++        {
++          "type": "string"
++        },
++        {
++          "type": "number"
++        },
++        {
++          "type": "boolean"
++        },
++        {
++          "type": "null"
++        },
++        {
++          "type": "array",
++          "items": {
++            "$ref": "#/$defs/__schema1"
++          }
++        },
++        {
++          "type": "object",
++          "propertyNames": {
++            "type": "string"
++          },
++          "additionalProperties": {
++            "$ref": "#/$defs/__schema1"
++          }
++        }
++      ]
++    },
++    "__schema2": {
++      "anyOf": [
++        {
++          "type": "string"
++        },
++        {
++          "type": "number"
++        },
++        {
++          "type": "boolean"
++        },
++        {
++          "type": "null"
++        },
++        {
++          "type": "array",
++          "items": {
++            "$ref": "#/$defs/__schema2"
++          }
++        },
++        {
++          "type": "object",
++          "propertyNames": {
++            "type": "string"
++          },
++          "additionalProperties": {
++            "$ref": "#/$defs/__schema2"
++          }
++        }
++      ]
++    },
++    "__schema3": {
++      "anyOf": [
++        {
++          "type": "string"
++        },
++        {
++          "type": "number"
++        },
++        {
++          "type": "boolean"
++        },
++        {
++          "type": "null"
++        },
++        {
++          "type": "array",
++          "items": {
++            "$ref": "#/$defs/__schema3"
++          }
++        },
++        {
++          "type": "object",
++          "propertyNames": {
++            "type": "string"
++          },
++          "additionalProperties": {
++            "$ref": "#/$defs/__schema3"
++          }
++        }
++      ]
++    }
++  },
++  "title": "Yukon remote verification v1"
++}
+diff --git a/scripts/catalyst-local-api.ts b/scripts/catalyst-local-api.ts
+new file mode 100644
+index 00000000..400ed878
+--- /dev/null
++++ b/scripts/catalyst-local-api.ts
+@@ -0,0 +1,6 @@
++#!/usr/bin/env bun
++import { serveCatalystLocal } from "../src/development/catalyst-local.ts";
++const [state, workspace, verifiers] = process.argv.slice(2);
++if (!state || !workspace || !verifiers) throw new Error(
++  "Usage: bun scripts/catalyst-local-api.ts STATE_DIRECTORY RECEIPT_WORKSPACE PRIVATE_VERIFIERS_JSON");
++await serveCatalystLocal(state, workspace, verifiers);
+diff --git a/scripts/check-catalyst-local.ts b/scripts/check-catalyst-local.ts
+new file mode 100644
+index 00000000..a0fcb79b
+--- /dev/null
++++ b/scripts/check-catalyst-local.ts
+@@ -0,0 +1,45 @@
++#!/usr/bin/env bun
++// Runs the actual CLI upload, then reads the result from Yukon's API.
++// Requires the separately started local API/worker; never runs the harness.
++import path from "node:path";
++import { readFile, writeFile } from "node:fs/promises";
++
++const [stateArg] = process.argv.slice(2);
++if (!stateArg) throw new Error("Usage: bun scripts/check-catalyst-local.ts STATE_DIRECTORY");
++const state = path.resolve(stateArg);
++const connection = JSON.parse(await readFile(path.join(state, "connection.json"), "utf8"));
++const base = new URL(connection.apiBaseUrl);
++if (base.protocol !== "http:" || base.hostname !== "127.0.0.1") throw new Error("This check only targets the local Yukon API");
++const repo = path.resolve(import.meta.dir, "..");
++const note = await readFile(path.join(repo, "docs/catalyst-receipt-local.md"), "utf8");
++const notePath = path.join(state, "local-test-note.md");
++await writeFile(notePath, note, { mode: 0o600 });
++// Explicitly isolated login and endpoint: never inherit hosted Yukon credentials.
++const environment = { PATH: process.env.PATH, HOME: process.env.HOME, TMPDIR: process.env.TMPDIR,
++  YUKON_CONFIG_DIR: connection.configDir, YUKON_API_URL: base.href };
++const cli = path.join(repo, "apps/cli/src/yukon.ts");
++const child = Bun.spawn([process.execPath, cli, "submit", connection.benchmarkId,
++  "--model", "disabled (baseline receipt)", "--harness", "ecdsa-baseline",
++  "--note-file", notePath, "--json"], { cwd: connection.workspace, env: environment, stdout: "pipe", stderr: "pipe" });
++const [out, err, code] = await Promise.all([new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited]);
++if (code !== 0) throw new Error(`Yukon CLI submission failed: ${err || out}`);
++const submitted = JSON.parse(out);
++const id = submitted.submission.id;
++let submission;
++for (let attempt = 0; attempt < 300; attempt++) {
++  const response = await fetch(new URL(`/api/submissions/${id}`, base));
++  if (!response.ok) throw new Error(`Yukon result read returned ${response.status}`);
++  submission = (await response.json() as any).submission;
++  if (submission?.evaluation?.scores?.values) break;
++  if (["failed", "rejected", "cancelled"].includes(submission?.status)) throw new Error(JSON.stringify(submission));
++  if (attempt === 299) throw new Error("Yukon worker did not record scores within 60 seconds");
++  await Bun.sleep(200);
++}
++if (!submission?.evaluation?.validity?.valid) throw new Error("Expected a valid completed baseline receipt");
++const result = { localYukonApi: connection.apiBaseUrl, benchmarkId: connection.benchmarkId,
++  submissionId: id, jobId: submitted.job?.id ?? null, deduplicated: submitted.job === null,
++  scores: submission.evaluation.scores.values, valid: submission.evaluation.validity.valid,
++  evidence: submission.evaluation.scores.evidence, resultSource: "Yukon HTTP API backed by PostgreSQL",
++  submittedFiles: [connection.receiptPath] };
++await writeFile(path.join(state, "last-result.json"), JSON.stringify(result, null, 2) + "\n", { mode: 0o600 });
++console.log(JSON.stringify(result, null, 2));
 diff --git a/scripts/check-remote-verification.ts b/scripts/check-remote-verification.ts
 new file mode 100644
-index 00000000..3ad4d330
+index 00000000..a988bd37
 --- /dev/null
 +++ b/scripts/check-remote-verification.ts
-@@ -0,0 +1,46 @@
+@@ -0,0 +1,50 @@
 +#!/usr/bin/env bun
 +// Exercise the actual backend provider against an already completed evaluation.
 +// Does not enqueue Catalyst work, publish a Yukon submission, or push a Git commit.
@@ -87,9 +1258,9 @@ index 00000000..3ad4d330
 +import { RemoteVerificationExecutionProvider } from "../src/execution/remote-verification.ts";
 +import { LocalDirectoryBenchmarkSourceProvider } from "../src/source/local.ts";
 +
-+const [workspaceArg, receiptArg] = process.argv.slice(2);
-+if (!workspaceArg || !receiptArg || !process.env.YUKON_REMOTE_VERIFIERS_FILE) {
-+  throw new Error("Usage: YUKON_REMOTE_VERIFIERS_FILE=private.json bun scripts/check-remote-verification.ts WORKSPACE RECEIPT.json");
++const [workspaceArg, receiptArg, benchmarkId, benchmarkRevision] = process.argv.slice(2);
++if (!workspaceArg || !receiptArg || !benchmarkId || !benchmarkRevision || !process.env.YUKON_REMOTE_VERIFIERS_FILE) {
++  throw new Error("Usage: YUKON_REMOTE_VERIFIERS_FILE=private.json bun scripts/check-remote-verification.ts WORKSPACE OUTPUT.json AUTHORIZED_TEST_BENCHMARK_UUID BENCHMARK_REVISION");
 +}
 +const workspace = path.resolve(workspaceArg);
 +const manifest = await loadBenchmarkManifest(workspace);
@@ -97,14 +1268,17 @@ index 00000000..3ad4d330
 +const services = JSON.parse(await readFile(process.env.YUKON_REMOTE_VERIFIERS_FILE, "utf8"));
 +const owner = services[manifest.runner.service]?.baselineOwnerId;
 +if (typeof owner !== "string") throw new Error("Configured owner is required.");
++if (services[manifest.runner.service]?.benchmarks?.[benchmarkId]?.enabled !== true) {
++  throw new Error("The operator must enable this test benchmark and problem version on both services first.");
++}
 +const temporary = await mkdtemp(path.join(os.tmpdir(), "yukon-remote-check-"));
 +try {
 +  const archive = path.join(temporary, "submission.tar.gz");
-+  await tar.c({ file: archive, gzip: true, cwd: workspace }, [manifest.runner.submissionPath]);
++  await tar.c({ file: archive, gzip: true, cwd: workspace }, [manifest.runner.receiptPath]);
 +  const provider = RemoteVerificationExecutionProvider.fromEnv(new LocalDirectoryBenchmarkSourceProvider());
-+  const input = { source: { sourceUrl: pathToFileURL(workspace).href, sourceRef: "local", sourceBranch: null },
++  const input = { source: { sourceUrl: pathToFileURL(workspace).href, sourceRef: benchmarkRevision, sourceBranch: null },
 +    submission: { url: pathToFileURL(archive).href }, solverAccountId: owner,
-+    submissionId: randomUUID(), benchmarkId: randomUUID(), runner: manifest.runner, currentBestScore: null };
++    submissionId: randomUUID(), benchmarkId, runner: manifest.runner, currentBestScore: null };
 +  const baseline = await provider.runBaseline(input);
 +  const result = await provider.validateSubmission(input);
 +  const replay = await provider.validateSubmission(input);
@@ -114,37 +1288,267 @@ index 00000000..3ad4d330
 +  if (wrongOwner.ok) throw new Error("Cross-owner retrieval was accepted.");
 +  const receipt = { benchmarkId: input.benchmarkId, submissionId: input.submissionId,
 +    baseline: baseline.judgment, judgment: result.judgment, metrics: result.scoreMetrics,
-+    repeatedRetrievalMatches: true, wrongOwnerRejected: true, commandsExecuted: result.commands.length };
++    repeatedRetrievalMatches: true, wrongOwnerRejected: true, commandsExecuted: result.commands.length,
++    submittedFiles: [manifest.runner.receiptPath] };
 +  await writeFile(path.resolve(receiptArg), JSON.stringify(receipt, null, 2) + "\n", { mode: 0o600 });
 +  console.log(JSON.stringify(receipt, null, 2));
 +} finally {
 +  await rm(temporary, { recursive: true, force: true });
 +}
+diff --git a/src/development/catalyst-local.ts b/src/development/catalyst-local.ts
+new file mode 100644
+index 00000000..3e22149b
+--- /dev/null
++++ b/src/development/catalyst-local.ts
+@@ -0,0 +1,222 @@
++/** Local Yukon stack: real HTTP API, PostgreSQL, queue, worker and remote verifier.
++ * GitHub publication is replaced by a private local Git repository.
++ * This module is never imported by the hosted server.
++ */
++import { createHash } from "node:crypto";
++import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
++import os from "node:os";
++import path from "node:path";
++import { pathToFileURL } from "node:url";
++import * as tar from "tar";
++import postgres from "postgres";
++import { createYukonApi, LocalSubmissionArchiveStorage, LocalTraceStorage } from "../api/index.ts";
++import { loadBenchmarkManifest, loadRepositoryBenchmarkManifest, selectBenchmarkManifest } from "../benchmark/manifest.ts";
++import { RemoteVerificationExecutionProvider, type RemoteVerificationServices } from "../execution/remote-verification.ts";
++import { readSubmissionArchiveFiles } from "../execution/submission.ts";
++import { pushGitSubmission } from "../integrations/git-submission.ts";
++import type { GitHubRepositoryGateway, PushSubmissionBranchInput } from "../integrations/github.ts";
++import type { MaterializeBenchmarkSourceInput, ResolveBenchmarkSourceInput } from "../source/types.ts";
++import { PostgresYukonStore } from "../store/index.ts";
++import { WorkerPoller, YukonWorker, startWorkerPollerWithRecovery } from "../worker/index.ts";
++
++const repositoryRoot = path.resolve(import.meta.dir, "../..");
++const databaseName = "yukon_catalyst_local";
++const email = "catalyst-local@example.invalid";
++const username = "catalyst-local";
++const gitEnv = { PATH: process.env.PATH, GIT_CONFIG_NOSYSTEM: "1", GIT_CONFIG_GLOBAL: "/dev/null",
++  GIT_AUTHOR_NAME: "Local Yukon test", GIT_AUTHOR_EMAIL: email,
++  GIT_COMMITTER_NAME: "Local Yukon test", GIT_COMMITTER_EMAIL: email };
++
++async function command(args: string[], cwd = repositoryRoot, env?: NodeJS.ProcessEnv): Promise<string> {
++  const child = Bun.spawn(args, { cwd, env, stdout: "pipe", stderr: "pipe" });
++  const [out, err, code] = await Promise.all([new Response(child.stdout).text(), new Response(child.stderr).text(), child.exited]);
++  if (code !== 0) throw new Error(`${args[0]} failed (${code}): ${err}`);
++  return out.trim();
++}
++async function git(cwd: string, ...args: string[]) {
++  return command(["git", "-c", "core.hooksPath=/dev/null", "-c", "commit.gpgsign=false", ...args], cwd, gitEnv);
++}
++async function save(filename: string, value: unknown) {
++  await mkdir(path.dirname(filename), { recursive: true, mode: 0o700 });
++  await writeFile(filename, JSON.stringify(value, null, 2) + "\n", { mode: 0o600 });
++}
++async function json(filename: string) { return JSON.parse(await readFile(filename, "utf8")); }
++
++// Restrict source access to this launcher's own fixture repository, and always
++// materialize an exact Git revision. No solver source executes on the API host.
++export class LocalReceiptRepository implements GitHubRepositoryGateway {
++  readonly url: string;
++  constructor(readonly directory: string) { this.url = pathToFileURL(directory).href; }
++  private check(sourceUrl: string) {
++    if (sourceUrl !== this.url) throw new Error("Local Catalyst server accepts only its configured benchmark repository");
++  }
++  async resolve(input: ResolveBenchmarkSourceInput) {
++    this.check(input.sourceUrl);
++    const sourceRef = await git(this.directory, "rev-parse", "main");
++    const materialized = await this.materialize({ ...input, sourceRef, sourceBranch: "main" });
++    try {
++      const repositoryManifest = await loadRepositoryBenchmarkManifest(materialized.path, input.rootDir);
++      return { sourceUrl: this.url, sourceBranch: "main", sourceRef, repositoryPrivate: false,
++        repositoryManifest, manifest: selectBenchmarkManifest(repositoryManifest, { trackName: input.trackName }) };
++    } finally { await materialized.cleanup(); }
++  }
++  async materialize(input: MaterializeBenchmarkSourceInput) {
++    this.check(input.sourceUrl);
++    if (!/^[a-f0-9]{40}$/.test(input.sourceRef)) throw new Error("Exact local source commit required");
++    const temp = await mkdtemp(path.join(os.tmpdir(), "yukon-local-receipt-"));
++    const destination = path.join(temp, "repo");
++    try {
++      await mkdir(destination);
++      await git(this.directory, "archive", "--format=tar", `--output=${path.join(temp, "source.tar")}`, input.sourceRef);
++      await tar.x({ file: path.join(temp, "source.tar"), cwd: destination });
++      return { path: destination, sourceRef: input.sourceRef, cleanup: async () => { await rm(temp, { recursive: true, force: true }); } };
++    } catch (error) { await rm(temp, { recursive: true, force: true }); throw error; }
++  }
++  async createRepositoryAccessToken(): Promise<string> { throw new Error("Local Git has no access token"); }
++  async findAcceptedSubmissionCommit() { return null; }
++  async resolveGitHubUserId() { return null; }
++  async pushSubmissionBranch(input: PushSubmissionBranchInput) {
++    const source = await this.materialize({ ...input, sourceRef: input.baseRef });
++    try {
++      const manifest = await loadBenchmarkManifest(source.path, input.rootDir);
++      if (manifest.runner?.provider !== "remote-verification") throw new Error("Receipt benchmark required");
++      const files = await readSubmissionArchiveFiles(input.submissionArchivePath, manifest);
++      const commitSha = await pushGitSubmission({
++        remoteUrl: this.directory, baseRef: input.baseRef, branchName: input.branchName,
++        files, editablePaths: [manifest.runner.receiptPath], allowUnchanged: true,
++        assertChanges: async () => {},
++        publish: async treeSha => {
++          const sha = await git(this.directory, "commit-tree", treeSha, "-p", input.baseRef, "-m", input.message);
++          await git(this.directory, "update-ref", `refs/heads/${input.branchName}`, sha);
++          return sha;
++        },
++      });
++      return { commitSha, manifest };
++    } finally { await source.cleanup(); }
++  }
++}
++
++async function startDatabase(state: string): Promise<string> {
++  // A dedicated container per state directory, never a supplied or production DB.
++  const name = `yukon-catalyst-${createHash("sha256").update(state).digest("hex").slice(0, 12)}`;
++  let container;
++  try { container = JSON.parse(await command(["docker", "inspect", name]))[0]; } catch { /* create below */ }
++  if (!container) {
++    await command(["docker", "run", "-d", "--name", name, "--label", `yukon.catalyst.state=${state}`,
++      "-e", "POSTGRES_PASSWORD=yukon-local-only", "-e", `POSTGRES_DB=${databaseName}`,
++      "-p", "127.0.0.1::5432", "postgres:16-alpine"]);
++  } else {
++    if (container.Config.Labels?.["yukon.catalyst.state"] !== state) throw new Error("Database container ownership mismatch");
++    if (!container.State.Running) await command(["docker", "start", name]);
++  }
++  container = JSON.parse(await command(["docker", "inspect", name]))[0];
++  const binding = container.NetworkSettings.Ports["5432/tcp"][0];
++  if (binding.HostIp !== "127.0.0.1") throw new Error("Local database must bind only to loopback");
++  for (let attempt = 0; attempt < 60; attempt++) {
++    try { await command(["docker", "exec", name, "pg_isready", "-U", "postgres"]); break; }
++    catch { if (attempt === 59) throw new Error("Local Postgres did not become ready"); await Bun.sleep(250); }
++  }
++  await save(path.join(state, "database.json"), { container: name, port: binding.HostPort });
++  return `postgres://postgres:yukon-local-only@127.0.0.1:${binding.HostPort}/${databaseName}`;
++}
++
++export async function serveCatalystLocal(stateArg: string, workspaceArg: string, verifiersArg: string) {
++  const state = path.resolve(stateArg);
++  const workspace = path.resolve(workspaceArg);
++  process.chdir(repositoryRoot);
++  await mkdir(state, { recursive: true, mode: 0o700 });
++  const manifest = await loadBenchmarkManifest(workspace);
++  if (manifest.runner?.provider !== "remote-verification") throw new Error("Remote-verification manifest required");
++  const services: RemoteVerificationServices = await json(path.resolve(verifiersArg));
++  const owner = services[manifest.runner.service]?.baselineOwnerId;
++  if (!owner || !/^[a-f0-9-]{36}$/.test(owner)) throw new Error("Provisioned Catalyst owner UUID required");
++  const repo = path.join(state, "benchmark");
++  if (!await Bun.file(path.join(repo, ".git/HEAD")).exists()) {
++    await mkdir(path.join(repo, path.dirname(manifest.runner.receiptPath)), { recursive: true });
++    await writeFile(path.join(repo, "benchmark.json"), await readFile(path.join(workspace, "benchmark.json")));
++    await writeFile(path.join(repo, manifest.runner.receiptPath), await readFile(path.join(workspace, manifest.runner.receiptPath)));
++    await git(repo, "init", "--initial-branch=main", "--template=");
++    await git(repo, "add", "benchmark.json", manifest.runner.receiptPath);
++    await git(repo, "commit", "-m", "Local Catalyst receipt benchmark");
++  }
++  const databaseUrl = await startDatabase(state);
++  const store = PostgresYukonStore.connect(databaseUrl);
++  await store.migrate();
++  // A provisioned local account with the same owner UUID as Catalyst's receipt.
++  // This bootstrap never authenticates or modifies an account in hosted Yukon.
++  const sql = postgres(databaseUrl, { max: 1 });
++  try {
++    await sql`INSERT INTO accounts (id, email, username) VALUES (${owner}, ${email}, ${username})
++      ON CONFLICT (id) DO NOTHING`;
++  } finally { await sql.end(); }
++  const account = await store.getAccount(owner);
++  if (account?.email !== email) throw new Error("Local database account differs from configured test identity");
++  const configPath = path.join(state, "cli/yukon/config.json");
++  const previous = await Bun.file(configPath).exists() ? await json(configPath) : null;
++  const token = previous?.token ?? (await store.mintApiKey({ accountId: owner, name: "local-catalyst" })).token;
++  process.env.YUKON_BENCHMARK_IMPORTER_EMAILS = email;
++  const repositoryGateway = new LocalReceiptRepository(repo);
++  const archiveStorage = new LocalSubmissionArchiveStorage(path.join(state, "archives"));
++  const executionProvider = new RemoteVerificationExecutionProvider(repositoryGateway, services);
++  const worker = new YukonWorker({ store, repositoryGateway, archiveStorage, executionProvider });
++  const app = createYukonApi({ store, repositoryGateway, archiveStorage, executionProvider,
++    traceStorage: new LocalTraceStorage(path.join(state, "traces")) });
++  const server = Bun.serve({ hostname: "127.0.0.1", port: previous ? new URL(previous.apiBaseUrl).port : 0,
++    fetch: request => app.fetch(request) });
++  const base = `http://127.0.0.1:${server.port}`;
++  const poller = new WorkerPoller(worker, { concurrency: 1, intervalMs: 100,
++    onError: error => console.error("Local worker:", error),
++    onJobProcessed: result => console.log("Yukon worker:", result.jobId, result.status) });
++  let stopping = false;
++  const stop = async () => {
++    if (stopping) return; stopping = true;
++    poller.stop(); await server.stop(true); await store.close(); process.exit(0);
++  };
++  process.once("SIGINT", () => void stop());
++  process.once("SIGTERM", () => void stop());
++  try {
++    await save(configPath, { apiBaseUrl: base, token, accountId: owner, telemetry: false, traceCapture: false });
++    async function api(route: string, document: unknown) {
++      const response = await fetch(base + route, { method: "POST",
++        headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
++        body: JSON.stringify(document) });
++      if (!response.ok) throw new Error(`Local Yukon ${route}: ${response.status} ${await response.text()}`);
++      return response.json() as Promise<any>;
++    }
++    let benchmark = await store.getBenchmarkByName(`${username}/catalyst`);
++    if (!benchmark) {
++      const imported = await api("/api/benchmarks", { sourceUrl: repositoryGateway.url, sourceBranch: "main", name: `${username}/catalyst` });
++      benchmark = imported.benchmark;
++    }
++    const benchmarkId = benchmark!.id;
++    // Import assigns the ID before workers run, so operators can authorize it
++    // on both services without letting an unapproved baseline contact a verifier.
++    if (services[manifest.runner.service]?.benchmarks?.[benchmarkId]?.enabled !== true) {
++      throw new Error(`Benchmark ${benchmarkId} is queued. Enable this exact benchmark and problem version in the private Yukon verifier config and Catalyst consumer grant, then restart. No worker was started.`);
++    }
++    await startWorkerPollerWithRecovery(worker, poller);
++    for (let attempt = 0; attempt < 300; attempt++) {
++      benchmark = await store.getBenchmark(benchmarkId);
++      if (benchmark?.status === "ready" || benchmark?.status === "open") break;
++      if (benchmark?.status === "failed") throw new Error("Catalyst baseline retrieval failed; check tunnel, protocol and receipt");
++      if (attempt === 299) throw new Error("Baseline retrieval did not finish within 60 seconds");
++      await Bun.sleep(200);
++    }
++    if (benchmark?.status === "ready") await api(`/api/benchmarks/${benchmarkId}/open`, {});
++    const clientWorkspace = path.join(state, "solver");
++    await mkdir(path.join(clientWorkspace, path.dirname(manifest.runner.receiptPath)), { recursive: true });
++    await writeFile(path.join(clientWorkspace, "benchmark.json"), await readFile(path.join(repo, "benchmark.json")));
++    if (!await Bun.file(path.join(clientWorkspace, manifest.runner.receiptPath)).exists()) {
++      await writeFile(path.join(clientWorkspace, manifest.runner.receiptPath), await readFile(path.join(repo, manifest.runner.receiptPath)));
++    }
++    if (!await Bun.file(path.join(clientWorkspace, ".git/HEAD")).exists()) await git(clientWorkspace, "init", "--template=");
++    await save(path.join(state, "connection.json"), { apiBaseUrl: base, benchmarkId, workspace: clientWorkspace,
++      configDir: path.join(state, "cli"), repository: repo, receiptPath: manifest.runner.receiptPath });
++    console.log(`READY: local Yukon API and worker at ${base}`);
++    console.log(`Benchmark: ${benchmarkId}; client workspace: ${clientWorkspace}`);
++    console.log(`Submit separately: bun scripts/check-catalyst-local.ts ${state}`);
++    console.log("Ctrl+C stops API/worker. PostgreSQL retains state; container name is in database.json.");
++  } catch (error) {
++    poller.stop(); await server.stop(true); await store.close(); throw error;
++  }
++}
 diff --git a/src/execution/remote-verification.ts b/src/execution/remote-verification.ts
 new file mode 100644
-index 00000000..9654fdd7
+index 00000000..ff250dc6
 --- /dev/null
 +++ b/src/execution/remote-verification.ts
-@@ -0,0 +1,198 @@
-+import { createHash } from "node:crypto";
-+import { readFile, readdir, lstat } from "node:fs/promises";
+@@ -0,0 +1,189 @@
++import { readFile, lstat } from "node:fs/promises";
 +import { readFileSync } from "node:fs";
-+import path from "node:path";
 +import { loadBenchmarkManifest, type BenchmarkManifest } from "../benchmark/manifest.ts";
 +import { joinRootDir, resolveRepoPath } from "../benchmark/paths.ts";
 +import { paretoJudgeInput } from "../benchmark/pareto.ts";
 +import { parseBenchmarkScore, sanitizeScoreForOutput } from "../benchmark/score.ts";
 +import type { BenchmarkSourceMaterializer } from "../source/types.ts";
-+import { applySubmissionToWorkspace, manifestWithMaxSubmissionBytes, materializeSubmissionArchive,
++import { readSubmissionArchiveFiles, manifestWithMaxSubmissionBytes, materializeSubmissionArchive,
 +  submissionArchiveLimitsForManifest } from "./submission.ts";
 +import type { BaselineRunResult, BenchmarkRunInput, BenchmarkRunResult, ExecutionProvider,
 +  RecoverSubmissionValidationInput, SubmissionPromotionInput, SubmissionPromotionResult,
 +  SubmissionValidationInput, SubmissionValidationResult } from "./types.ts";
++import { REMOTE_VERIFICATION_PROTOCOL, REMOTE_VERIFICATION_PATH, REMOTE_RECEIPT_MAX_BYTES,
++  RemoteVerificationReferenceSchema, RemoteVerificationRequestSchema,
++  RemoteVerificationResponseSchema, RemoteVerificationProblemSchema,
++  type RemoteVerificationProblem } from "./remote-verification-contract.ts";
 +
-+const PROTOCOL = "catalyst-yukon-v1";
 +const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/;
-+const IGNORED = new Set([".git", ".catalyst", ".venv", "__pycache__", ".DS_Store", ".env"]);
-+type Service = { url: string; token: string; baselineOwnerId: string };
++type Service = { url: string; token: string; baselineOwnerId: string;
++  benchmarks: Record<string, { enabled: boolean; problem: RemoteVerificationProblem }> };
 +export type RemoteVerificationServices = Record<string, Service>;
 +
 +/** The deployment selects destinations and credentials. A manifest only names a service. */
@@ -199,48 +1603,62 @@ index 00000000..9654fdd7
 +        || (input.runner && stable(input.runner) !== stable(runner))) throw new Error("Remote verification requires a pinned manual Pareto manifest.");
 +      const service = this.services[runner.service];
 +      if (!service) throw new Error("Remote verification service is not configured.");
++      // A manifest is not permission to contact a verifier. Only operator
++      // configuration may enable a service for this exact stored benchmark.
++      const authorization = input.benchmarkId ? service.benchmarks?.[input.benchmarkId] : undefined;
++      if (authorization?.enabled !== true) throw new Error("Remote verification is not enabled for this benchmark.");
++      const problem = RemoteVerificationProblemSchema.parse(authorization.problem);
 +      const base = trustedEndpoint(service);
-+      if (!manifest.editablePaths.includes(runner.submissionPath)) throw new Error("Submission path must be an editable directory.");
++      let reference: Record<string, unknown>;
 +      if (submission) {
 +        const archive = await materializeSubmissionArchive(submission.submission.url);
 +        if (archive instanceof Error) throw new Error("Cannot read submission archive.");
 +        cleanupArchive = () => archive.cleanup();
-+        await applySubmissionToWorkspace({ submission: archive, workspacePath: materialized.path,
-+          manifest, limits: submissionArchiveLimitsForManifest(manifest), rootDir: input.rootDir });
++        const files = await readSubmissionArchiveFiles(archive.path, manifest, submissionArchiveLimitsForManifest(manifest));
++        if (files.length !== 1 || files[0]!.repoPath !== runner.receiptPath) {
++          throw new Error("A completed remote verification receipt is the only accepted submission file.");
++        }
++        reference = parseReference(files[0]!.content.toString("utf8"));
++      } else {
++        reference = await jsonFile(resolveRepoPath(materialized.path, joinRootDir(input.rootDir, runner.receiptPath)));
 +      }
 +      submission?.signal?.throwIfAborted();
-+      const folder = resolveRepoPath(materialized.path, joinRootDir(input.rootDir, runner.submissionPath));
-+      const reference = await jsonFile(path.join(folder, "verification.json"));
-+      const evaluation = await jsonFile(path.join(folder, "evaluation.json"));
-+      if (reference.schema_version !== 2 || reference.evidence_mode !== "remote"
-+        || typeof reference.evaluation_id !== "string" || !UUID.test(reference.evaluation_id)) {
-+        throw new Error("A completed remote verification reference is required.");
-+      }
 +      const owner = submission ? submission.solverAccountId : service.baselineOwnerId;
-+      const submissionId = submission ? submission.submissionId : reference.evaluation_id;
++      // Baselines have no solver submission record. Use the immutable benchmark
++      // identity instead of interpreting a service-specific receipt identifier.
++      const submissionId = submission ? submission.submissionId : input.benchmarkId;
 +      if (!owner || !UUID.test(owner) || !input.benchmarkId || !UUID.test(input.benchmarkId)
 +        || !submissionId || !UUID.test(submissionId)) throw new Error("Stored owner, benchmark and submission IDs are required.");
-+      const files = await sourceHashes(folder);
 +      const judge = input.pareto ?? paretoJudgeInput(manifest);
-+      if (!judge || stable(judge.policies) !== stable(manifest.paretoPolicies)) throw new Error("Evaluation policies differ from the pinned manifest.");
++      if (!judge || stable(judge.policies) !== stable(manifest.paretoPolicies)
++        || (!judge.fields.scores && !judge.fields.validity)) throw new Error("Evaluation policies or fields differ from the pinned manifest.");
++      const request = RemoteVerificationRequestSchema.parse({
++        protocol: REMOTE_VERIFICATION_PROTOCOL, kind: submission ? "submission" : "baseline",
++        owner_id: owner, benchmark_id: input.benchmarkId, benchmark_revision: input.source.sourceRef,
++        submission_id: submissionId, problem, reference, objectives: manifest.objectives, judge,
++      });
 +      if (submission?.cancellationCheck && await submission.cancellationCheck()) throw new Error("Submission cancelled.");
 +      const signal = submission?.signal
 +        ? AbortSignal.any([submission.signal, AbortSignal.timeout(30_000)]) : AbortSignal.timeout(30_000);
-+      const response = await fetch(`${base}/evaluations/${reference.evaluation_id}/yukon`, {
++      const response = await fetch(`${base}${REMOTE_VERIFICATION_PATH}`, {
 +        method: "POST", redirect: "error", signal,
 +        headers: { Authorization: `Bearer ${service.token}`, "Content-Type": "application/json" },
-+        body: JSON.stringify({ protocol: PROTOCOL, kind: submission ? "submission" : "baseline",
-+          owner_id: owner, benchmark_id: input.benchmarkId, submission_id: submissionId,
-+          reference, source_files: files, evaluation, judge }),
++        body: JSON.stringify(request),
 +      });
-+      if (!response.ok) {
++      if (response.status !== 200) {
 +        await response.body?.cancel();
 +        throw new Error(`Remote verification returned HTTP ${response.status}.`);
 +      }
-+      const result = await boundedJson(response);
-+      if (result.protocol !== PROTOCOL || result.evaluation_id !== reference.evaluation_id
-+        || stable(result.reference) !== stable(reference)) throw new Error("Remote verification result identity mismatch.");
-+      const score = sanitizeScoreForOutput(parseBenchmarkScore(result.judgment, manifest, judge.fields));
++      const result = RemoteVerificationResponseSchema.parse(await boundedJson(response));
++      if (stable(result.request) !== stable(request)) throw new Error("Remote verification result identity mismatch.");
++      const suppliedMetrics = result.judgment.metrics;
++      const metrics = suppliedMetrics && typeof suppliedMetrics === "object" && !Array.isArray(suppliedMetrics)
++        ? suppliedMetrics : { serviceMetrics: suppliedMetrics ?? null };
++      // Always retain the authoritative artifact/problem binding with the score.
++      // Keep public service metrics, but reserve this namespace for checked data.
++      const score = sanitizeScoreForOutput(parseBenchmarkScore({ ...result.judgment, metrics: {
++        ...metrics, remoteVerification: { service: runner.service, problem, artifact: result.artifact },
++      } }, manifest, judge.fields));
 +      return { ok: true, manifest, score: score.score, judgment: score.judgment,
 +        scoreMetrics: score.metrics, scoreRaw: score.raw, commands: [] };
 +    } catch (error) {
@@ -268,37 +1686,13 @@ index 00000000..9654fdd7
 +
 +async function jsonFile(filename: string): Promise<Record<string, unknown>> {
 +  const info = await lstat(filename);
-+  if (!info.isFile() || info.isSymbolicLink() || info.size > 64 * 1024) throw new Error("Invalid reference file.");
-+  const result: unknown = JSON.parse(await readFile(filename, "utf8"));
-+  if (!result || typeof result !== "object" || Array.isArray(result)) throw new Error("Invalid reference JSON.");
-+  return result as Record<string, unknown>;
++  if (!info.isFile() || info.isSymbolicLink() || info.size > REMOTE_RECEIPT_MAX_BYTES) throw new Error("Invalid reference file.");
++  return parseReference(await readFile(filename, "utf8"));
 +}
 +
-+export async function sourceHashes(folder: string): Promise<Record<string, string>> {
-+  const hashes: Record<string, string> = Object.create(null);
-+  let bytes = 0;
-+  let entries = 0;
-+  async function visit(directory: string, prefix: string) {
-+    const info = await lstat(directory);
-+    if (!info.isDirectory() || info.isSymbolicLink()) throw new Error("Invalid source directory.");
-+    for (const entry of await readdir(directory, { withFileTypes: true })) {
-+      if (IGNORED.has(entry.name) || entry.name.startsWith(".env")) continue;
-+      const relative = prefix + entry.name;
-+      if (relative === "verification.json" || relative === "evaluation.json") continue;
-+      if (++entries > 4000) throw new Error("Source has too many entries.");
-+      const filename = path.join(directory, entry.name);
-+      if (entry.isDirectory()) await visit(filename, relative + "/");
-+      else {
-+        if (!entry.isFile()) throw new Error("Source must contain regular files.");
-+        const info = await lstat(filename);
-+        bytes += info.size;
-+        if (bytes > 8 * 1024 * 1024 || Object.keys(hashes).length >= 2000) throw new Error("Source exceeds limits.");
-+        hashes[relative] = createHash("sha256").update(await readFile(filename)).digest("hex");
-+      }
-+    }
-+  }
-+  await visit(folder, "");
-+  return hashes;
++function parseReference(content: string): Record<string, unknown> {
++  if (Buffer.byteLength(content) > REMOTE_RECEIPT_MAX_BYTES) throw new Error("Invalid reference file.");
++  return RemoteVerificationReferenceSchema.parse(JSON.parse(content));
 +}
 +
 +function stable(value: unknown): string {
@@ -324,36 +1718,197 @@ index 00000000..9654fdd7
 +  } finally { await reader.cancel(); }
 +  return JSON.parse(Buffer.concat(chunks).toString("utf8")) as Record<string, unknown>;
 +}
+diff --git a/src/execution/remote-verification-contract.ts b/src/execution/remote-verification-contract.ts
+new file mode 100644
+index 00000000..adaad5c3
+--- /dev/null
++++ b/src/execution/remote-verification-contract.ts
+@@ -0,0 +1,54 @@
++import { z } from "zod/v4";
++import { ParetoObjectivesSchema } from "../benchmark/pareto.ts";
++
++/** Shared by every service implementing stored verification retrieval. */
++export const REMOTE_VERIFICATION_PROTOCOL = "yukon-remote-verification-v1";
++export const REMOTE_VERIFICATION_PATH = "/yukon/v1/retrieve";
++export const REMOTE_RECEIPT_MAX_BYTES = 64 * 1024;
++
++// Service-specific evidence is opaque to Yukon. It is never a URL or credential.
++export const RemoteVerificationReferenceSchema = z.record(z.string(), z.json());
++// An operator-selected logical problem and immutable dataset/contract version.
++export const RemoteVerificationProblemSchema = z.object({
++  id: z.string().min(1).max(256),
++  version: z.string().min(1).max(256),
++}).strict();
++export const RemoteVerificationRequestSchema = z.object({
++  protocol: z.literal(REMOTE_VERIFICATION_PROTOCOL),
++  kind: z.enum(["baseline", "submission"]),
++  owner_id: z.uuid(),
++  benchmark_id: z.uuid(),
++  benchmark_revision: z.string().min(1).max(1024),
++  submission_id: z.uuid(),
++  problem: RemoteVerificationProblemSchema,
++  reference: RemoteVerificationReferenceSchema,
++  objectives: ParetoObjectivesSchema,
++  judge: z.object({
++    policies: z.object({ scoring: z.json(), validity: z.json() }).strict(),
++    fields: z.union([
++      z.object({ scores: z.literal(true), validity: z.boolean() }).strict(),
++      z.object({ scores: z.literal(false), validity: z.literal(true) }).strict(),
++    ]),
++  }).strict(),
++}).strict();
++
++export const RemoteVerificationResponseSchema = z.object({
++  protocol: z.literal(REMOTE_VERIFICATION_PROTOCOL),
++  // Echo binds the response to every requested identity, policy and field.
++  request: RemoteVerificationRequestSchema,
++  // Computed from the verified submission by the service, never a solver label.
++  artifact: z.object({
++    kind: z.string().min(1).max(64),
++    sha256: z.string().regex(/^[a-f0-9]{64}$/),
++  }).strict(),
++  // Field selection and tuple length are validated by Yukon's Pareto parser.
++  judgment: z.object({
++    scores: z.array(z.number().finite()).min(1).nullable().optional(),
++    valid: z.boolean().optional(),
++    reason: z.string().min(1).max(4000).optional(),
++    metrics: z.json().optional(),
++  }).strict(),
++}).strict();
++
++export type RemoteVerificationRequest = z.infer<typeof RemoteVerificationRequestSchema>;
++export type RemoteVerificationProblem = z.infer<typeof RemoteVerificationProblemSchema>;
+diff --git a/tests/unit/cli-submit-receipt.test.ts b/tests/unit/cli-submit-receipt.test.ts
+new file mode 100644
+index 00000000..5cd698ed
+--- /dev/null
++++ b/tests/unit/cli-submit-receipt.test.ts
+@@ -0,0 +1,84 @@
++import { afterEach, beforeEach, expect, test } from "bun:test";
++import { mkdir, mkdtemp, readFile, rm, symlink, writeFile } from "node:fs/promises";
++import os from "node:os";
++import path from "node:path";
++import * as tar from "tar";
++import { createSubmissionArchiveForTest } from "../../apps/cli/src/core/cli.ts";
++import { parseBenchmarkManifest } from "../../src/benchmark/manifest.ts";
++import { applySubmissionToWorkspace, editablePathsToClear, readSubmissionArchiveFiles } from "../../src/execution/submission.ts";
++
++const receiptPath = "submission/verification.json";
++const manifest = parseBenchmarkManifest({
++  schemaVersion: 1, name: "catalyst", description: "Receipt submission", category: "research",
++  mode: "pareto", promotionMode: "manual",
++  objectives: [{ name: "performance", direction: "-" }, { name: "credits", direction: "-" }],
++  editablePaths: ["submission"], setupCommand: ["true"], benchmarkCommand: ["true"], scorePath: "score.json",
++  runner: { provider: "remote-verification", service: "catalyst", receiptPath },
++});
++const receipt = '{"schema_version":2,"evaluation_id":"33333333-3333-4333-8333-333333333333","evidence_mode":"remote"}';
++let root: string;
++const archives: string[] = [];
++
++beforeEach(async () => {
++  root = await mkdtemp(path.join(os.tmpdir(), "yukon-receipt-cli-"));
++  await mkdir(path.join(root, "submission"));
++  await writeFile(path.join(root, receiptPath), receipt);
++  await writeFile(path.join(root, "submission/agent.py"), "modified local harness");
++  await writeFile(path.join(root, "submission/evaluation.json"), '{"max_model_credits":200}');
++  await writeFile(path.join(root, "submission/.env"), "PRIVATE_FIXTURE_VALUE");
++});
++afterEach(async () => {
++  await Promise.all([root, ...archives.splice(0)].map(directory => rm(directory, { recursive: true, force: true })));
++});
++
++test("actual CLI upload carries only the receipt even when harness, settings and secrets exist", async () => {
++  const archive = await createSubmissionArchiveForTest(root, manifest);
++  archives.push(archive.tempDir);
++  const entries: string[] = [];
++  await tar.t({ file: archive.path, onReadEntry: entry => { entries.push(entry.path); } });
++  expect(entries).toEqual([receiptPath]);
++  const files = await readSubmissionArchiveFiles(archive.path, manifest);
++  expect(files.map(file => file.repoPath)).toEqual([receiptPath]);
++  expect(files[0]!.content.toString()).toBe(receipt);
++});
++
++test("receipt commits and workspace application preserve the existing harness and settings", async () => {
++  const archive = await createSubmissionArchiveForTest(root, manifest);
++  archives.push(archive.tempDir);
++  const destination = path.join(root, "destination");
++  await mkdir(path.join(destination, "submission"), { recursive: true });
++  await writeFile(path.join(destination, "submission/agent.py"), "benchmark starter harness");
++  await writeFile(path.join(destination, "submission/evaluation.json"), "{}");
++  await writeFile(path.join(destination, receiptPath), "old receipt");
++  expect(editablePathsToClear(manifest, [receiptPath])).toEqual([receiptPath]);
++  await applySubmissionToWorkspace({ submission: archive, workspacePath: destination, manifest });
++  expect(await readFile(path.join(destination, "submission/agent.py"), "utf8")).toBe("benchmark starter harness");
++  expect(await readFile(path.join(destination, "submission/evaluation.json"), "utf8")).toBe("{}");
++  expect(await readFile(path.join(destination, receiptPath), "utf8")).toBe(receipt);
++});
++
++test("submission needs no harness or evaluation settings and never falls back to uploading them", async () => {
++  await rm(path.join(root, "submission/agent.py"));
++  await rm(path.join(root, "submission/evaluation.json"));
++  const archive = await createSubmissionArchiveForTest(root, manifest);
++  archives.push(archive.tempDir);
++  expect((await readSubmissionArchiveFiles(archive.path, manifest)).length).toBe(1);
++  await rm(path.join(root, receiptPath));
++  await expect(createSubmissionArchiveForTest(root, manifest)).rejects.toThrow("verification receipt is missing");
++});
++
++test("rejects oversized receipts, directories and symlinked receipts or parents", async () => {
++  await writeFile(path.join(root, receiptPath), "x".repeat(65537));
++  await expect(createSubmissionArchiveForTest(root, manifest)).rejects.toThrow("regular JSON file");
++  await rm(path.join(root, receiptPath));
++  await mkdir(path.join(root, receiptPath));
++  await expect(createSubmissionArchiveForTest(root, manifest)).rejects.toThrow("regular JSON file");
++  await rm(path.join(root, receiptPath), { recursive: true });
++  await symlink(".env", path.join(root, receiptPath));
++  await expect(createSubmissionArchiveForTest(root, manifest)).rejects.toThrow("regular JSON file");
++  await rm(path.join(root, "submission"), { recursive: true });
++  await mkdir(path.join(root, "private"));
++  await writeFile(path.join(root, "private/verification.json"), receipt);
++  await symlink("private", path.join(root, "submission"));
++  await expect(createSubmissionArchiveForTest(root, manifest)).rejects.toThrow("regular JSON file");
++});
 diff --git a/tests/unit/remote-verification.test.ts b/tests/unit/remote-verification.test.ts
 new file mode 100644
-index 00000000..b73efd30
+index 00000000..ff5ff071
 --- /dev/null
 +++ b/tests/unit/remote-verification.test.ts
-@@ -0,0 +1,148 @@
+@@ -0,0 +1,282 @@
 +import { afterEach, beforeEach, describe, expect, test } from "bun:test";
-+import { cp, mkdtemp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
++import { cp, mkdtemp, mkdir, rm, writeFile } from "node:fs/promises";
 +import os from "node:os";
 +import path from "node:path";
 +import { pathToFileURL } from "node:url";
 +import * as tar from "tar";
++import { z } from "zod/v4";
 +import { RemoteVerificationExecutionProvider } from "../../src/execution/remote-verification.ts";
++import { RemoteVerificationRequestSchema, RemoteVerificationResponseSchema } from "../../src/execution/remote-verification-contract.ts";
 +import { parseBenchmarkManifest } from "../../src/benchmark/manifest.ts";
 +import type { BenchmarkSourceMaterializer } from "../../src/source/types.ts";
 +import type { SubmissionValidationInput } from "../../src/execution/types.ts";
 +
 +const OWNER = "11111111-1111-4111-8111-111111111111";
 +const BENCHMARK = "22222222-2222-4222-8222-222222222222";
-+const EVALUATION = "33333333-3333-4333-8333-333333333333";
 +const SUBMISSION = "44444444-4444-4444-8444-444444444444";
-+const runner = { provider: "remote-verification" as const, service: "catalyst", submissionPath: "submission" };
-+const manifest = { schemaVersion: 1, name: "catalyst", description: "Remote ECDSA", category: "research",
++const problem = { id: "compression", version: "dataset-sha256:1234" };
++const benchmarks = { [BENCHMARK]: { enabled: true, problem } };
++const runner = { provider: "remote-verification" as const, service: "lab", receiptPath: "submission/verification.json" };
++const manifest = { schemaVersion: 1, name: "compression-lab", description: "Stored compression results", category: "research",
 +  mode: "pareto", promotionMode: "manual",
 +  objectives: [{ name: "performance", direction: "-" }, { name: "credits", direction: "-" }],
 +  paretoPolicies: { scoring: { version: "scoring" }, validity: { version: "validity" } },
 +  editablePaths: ["submission"], setupCommand: ["touch", "MUST_NOT_RUN_SETUP"],
 +  benchmarkCommand: ["touch", "MUST_NOT_RUN_BENCHMARK"], scorePath: "score.json", runner };
-+const reference = { schema_version: 2, evaluation_id: EVALUATION, evidence_mode: "remote",
-+  source_digest: "a".repeat(64), evaluation_config_digest: "b".repeat(64) };
++// A non-Catalyst receipt with no evaluation UUID, schema_version or evidence_mode.
++const reference = { experiment: "compression/run:17", artifact: { revision: "sha256:abc" } };
++
++test("published JSON Schema matches the shared runtime contract", async () => {
++  const schema = await Bun.file(new URL("../../docs/remote-verification-v1.schema.json", import.meta.url)).json();
++  expect(schema).toEqual({
++    ...z.toJSONSchema(z.union([RemoteVerificationRequestSchema, RemoteVerificationResponseSchema])),
++    title: "Yukon remote verification v1",
++  });
++});
 +
 +describe("stored remote verification provider", () => {
 +  let root: string;
@@ -380,7 +1935,7 @@ index 00000000..b73efd30
 +      await writeFile(path.join(base, "submission/agent.py"), 'raise Exception("must not execute")\n');
 +    }
 +    const archive = path.join(root, "submission.tgz");
-+    await tar.c({ file: archive, gzip: true, cwd: archiveSource }, ["submission"]);
++    await tar.c({ file: archive, gzip: true, cwd: archiveSource }, [runner.receiptPath]);
 +    let counter = 0;
 +    materializer = { async materialize(source) {
 +      const folder = path.join(root, `workspace-${counter++}`);
@@ -394,19 +1949,20 @@ index 00000000..b73efd30
 +    } };
 +    server = Bun.serve({ hostname: "127.0.0.1", port: 0, async fetch(request) {
 +      expect(request.method).toBe("POST");
-+      expect(new URL(request.url).pathname).toBe(`/evaluations/${EVALUATION}/yukon`);
++      expect(new URL(request.url).pathname).toBe("/yukon/v1/retrieve");
 +      expect(request.headers.get("Authorization")).toBe("Bearer consumer-test-key");
 +      const body = await request.json() as Record<string, any>;
 +      calls.push(body);
-+      return Response.json(responseTransform({ protocol: "catalyst-yukon-v1",
-+        evaluation_id: EVALUATION, reference,
-+        judgment: { scores: [10758874395, 0], valid: true, reason: "Verified", metrics: { evaluationId: EVALUATION } },
++      return Response.json(responseTransform({ protocol: "yukon-remote-verification-v1", request: body,
++        artifact: { kind: "solution-source", sha256: "b".repeat(64) },
++        judgment: { scores: [120, 4], valid: true, reason: "Verified", metrics: { experiment: "compression/run:17" } },
 +      }), { status });
 +    } });
-+    provider = new RemoteVerificationExecutionProvider(materializer, { catalyst: {
++    provider = new RemoteVerificationExecutionProvider(materializer, { lab: {
 +      url: `http://127.0.0.1:${server.port}`, token: "consumer-test-key", baselineOwnerId: OWNER,
++      benchmarks,
 +    } });
-+    input = { source: { sourceUrl: "https://github.com/example/catalyst", sourceRef: "a".repeat(40), sourceBranch: "main" },
++    input = { source: { sourceUrl: "https://github.com/example/compression-lab", sourceRef: "a".repeat(40), sourceBranch: "main" },
 +      submission: { url: pathToFileURL(archive).href }, solverAccountId: OWNER,
 +      benchmarkId: BENCHMARK, submissionId: SUBMISSION, runner, currentBestScore: null };
 +  });
@@ -418,14 +1974,21 @@ index 00000000..b73efd30
 +    expect(first.ok).toBe(true);
 +    expect(retry.ok).toBe(true);
 +    if (!first.ok) throw new Error("expected successful retrieval");
-+    expect(first.judgment?.scores).toEqual([10758874395, 0]);
++    expect(first.judgment?.scores).toEqual([120, 4]);
++    expect(first.scoreMetrics).toMatchObject({ remoteVerification: {
++      service: "lab", problem, artifact: { kind: "solution-source", sha256: "b".repeat(64) },
++    } });
 +    expect(first.commands).toEqual([]);
 +    expect(first.improved).toBe(false);
 +    expect(calls.length).toBe(2);
 +    expect(calls[0]).toEqual(calls[1]);
 +    expect(calls[0]?.owner_id).toBe(OWNER);
-+    expect(calls[0]?.source_files).toEqual({ "agent.py": new Bun.CryptoHasher("sha256")
-+      .update('raise Exception("must not execute")\n').digest("hex") });
++    expect(Object.keys(calls[0]!).sort()).toEqual(
++      ["protocol", "kind", "owner_id", "benchmark_id", "benchmark_revision", "submission_id", "problem", "reference", "objectives", "judge"].sort());
++    expect(calls[0]?.reference).toEqual(reference);
++    expect(calls[0]?.problem).toEqual(problem);
++    expect(calls[0]?.objectives).toEqual(manifest.objectives);
++    expect(calls[0]?.benchmark_revision).toBe(input.source.sourceRef);
 +    expect(JSON.stringify(first)).not.toContain("consumer-test-key");
 +  });
 +
@@ -435,6 +1998,33 @@ index 00000000..b73efd30
 +    if (result.ok) expect(result.setupSnapshotRef).toStartWith("remote-verification:");
 +    expect(calls[0]?.kind).toBe("baseline");
 +    expect(calls[0]?.owner_id).toBe(OWNER);
++    expect(calls[0]?.submission_id).toBe(BENCHMARK);
++  });
++
++  test("retrieves with only a receipt, independent of local harness or evaluation settings", async () => {
++    await rm(path.join(root, "template/submission"), { recursive: true });
++    await rm(path.join(root, "archive-source"), { recursive: true });
++    // The archive contains the receipt; neither the uploaded harness nor a
++    // baseline receipt is needed to resolve a solver's completed evaluation.
++    expect((await provider.validateSubmission(input)).ok).toBe(true);
++    expect(calls[0]?.reference).toEqual(reference);
++  });
++
++  test("rejects source, settings, secrets, extra files and oversized receipts before retrieval", async () => {
++    const source = path.join(root, "archive-source");
++    const archive = path.join(root, "bad.tgz");
++    await writeFile(path.join(source, "submission/.env"), "PRIVATE_TEST_VALUE");
++    for (const entries of [
++      ["submission/agent.py"], ["submission/evaluation.json"], ["submission/.env"],
++      [runner.receiptPath, "submission/agent.py"],
++    ]) {
++      await tar.c({ file: archive, gzip: true, cwd: source }, entries);
++      expect((await provider.validateSubmission({ ...input, submission: { url: pathToFileURL(archive).href } })).ok).toBe(false);
++    }
++    await writeFile(path.join(source, runner.receiptPath), " ".repeat(65537));
++    await tar.c({ file: archive, gzip: true, cwd: source }, [runner.receiptPath]);
++    expect((await provider.validateSubmission({ ...input, submission: { url: pathToFileURL(archive).href } })).ok).toBe(false);
++    expect(calls).toEqual([]);
 +  });
 +
 +  test("partial Pareto passes respect requested fields", async () => {
@@ -451,8 +2041,9 @@ index 00000000..b73efd30
 +  test("rejects missing trusted owners, unconfigured services and HTTP destinations", async () => {
 +    expect((await provider.validateSubmission({ ...input, solverAccountId: null })).ok).toBe(false);
 +    expect((await new RemoteVerificationExecutionProvider(materializer, {}).validateSubmission(input)).ok).toBe(false);
-+    const unsafe = new RemoteVerificationExecutionProvider(materializer, { catalyst: {
++    const unsafe = new RemoteVerificationExecutionProvider(materializer, { lab: {
 +      url: "http://untrusted.invalid", token: "consumer-test-key", baselineOwnerId: OWNER,
++      benchmarks,
 +    } });
 +    expect((await unsafe.validateSubmission(input)).ok).toBe(false);
 +    expect(calls).toEqual([]);
@@ -462,19 +2053,106 @@ index 00000000..b73efd30
 +    status = 403;
 +    expect((await provider.validateSubmission(input)).ok).toBe(false);
 +    status = 200;
-+    responseTransform = value => ({ ...value, evaluation_id: SUBMISSION });
-+    expect((await provider.validateSubmission(input)).ok).toBe(false);
++    for (const [key, value] of Object.entries({
++      owner_id: SUBMISSION, submission_id: OWNER, benchmark_id: OWNER, kind: "baseline",
++      benchmark_revision: "other", reference: { other: "receipt" },
++      objectives: [...manifest.objectives].reverse(), judge: { fields: { scores: false, validity: true }, policies: manifest.paretoPolicies },
++      problem: { ...problem, version: "different-dataset" },
++    })) {
++      responseTransform = result => ({ ...result, request: { ...result.request, [key]: value } });
++      expect((await provider.validateSubmission(input)).ok).toBe(false);
++    }
 +    responseTransform = value => ({ ...value, judgment: { valid: true, scores: [1, null] } });
 +    expect((await provider.validateSubmission(input)).ok).toBe(false);
-+    responseTransform = value => ({ ...value, reference: { ...reference, source_digest: "different" } });
++    responseTransform = value => ({ ...value, protocol: "catalyst-yukon-v2" });
++    expect((await provider.validateSubmission(input)).ok).toBe(false);
++    responseTransform = value => ({ ...value, artifact: undefined });
++    expect((await provider.validateSubmission(input)).ok).toBe(false);
++    responseTransform = value => ({ ...value, artifact: { kind: "solution", sha256: "solver-label" } });
++    expect((await provider.validateSubmission(input)).ok).toBe(false);
++    responseTransform = value => value;
++    status = 202;
 +    expect((await provider.validateSubmission(input)).ok).toBe(false);
 +    status = 302;
 +    expect((await provider.validateSubmission(input)).ok).toBe(false);
 +  });
 +
++  test("another project needs only service configuration and an opaque receipt", async () => {
++    const otherRunner = { ...runner, service: "robotics" };
++    const otherManifest = { ...manifest, runner: otherRunner,
++      objectives: [{ name: "successRate", direction: "+" }, { name: "energy", direction: "-" }] };
++    await writeFile(path.join(root, "template/benchmark.json"), JSON.stringify(otherManifest));
++    const otherReference = { report: "robotics/2026/42", url: "https://untrusted.invalid/must-not-fetch" };
++    await writeFile(path.join(root, "archive-source", runner.receiptPath), JSON.stringify(otherReference));
++    const archive = path.join(root, "robotics.tgz");
++    await tar.c({ file: archive, gzip: true, cwd: path.join(root, "archive-source") }, [runner.receiptPath]);
++    const other = new RemoteVerificationExecutionProvider(materializer, { robotics: {
++      url: `http://127.0.0.1:${server.port}`, token: "consumer-test-key", baselineOwnerId: OWNER,
++      benchmarks: { [BENCHMARK]: { enabled: true, problem: { id: "robotics", version: "mission-v4" } } },
++    } });
++    const result = await other.validateSubmission({ ...input, runner: otherRunner,
++      submission: { url: pathToFileURL(archive).href } });
++    expect(result.ok).toBe(true);
++    expect(calls[0]?.reference).toEqual(otherReference);
++    expect(calls[0]?.objectives).toEqual(otherManifest.objectives);
++    expect(calls[0]?.problem).toEqual({ id: "robotics", version: "mission-v4" });
++  });
++
++  test("a manifest cannot enable remote retrieval or choose the authorized problem", async () => {
++    const deniedConfigs: Array<Record<string, { enabled: boolean; problem: typeof problem }>> = [
++      {}, { [BENCHMARK]: { enabled: false, problem } }, { [SUBMISSION]: { enabled: true, problem } },
++    ];
++    for (const allowed of deniedConfigs) {
++      const denied = new RemoteVerificationExecutionProvider(materializer, { lab: {
++        url: `http://127.0.0.1:${server.port}`, token: "consumer-test-key", baselineOwnerId: OWNER,
++        benchmarks: allowed,
++      } });
++      const result = await denied.validateSubmission(input);
++      expect(result.ok).toBe(false);
++      if (!result.ok) expect(result.error.message).toContain("not enabled");
++    }
++    expect(calls).toEqual([]);
++    // Even a reference containing a problem claim cannot overwrite operator config.
++    const forged = { ...reference, problem: { id: "easier-problem", version: "old" } };
++    await writeFile(path.join(root, "archive-source", runner.receiptPath), JSON.stringify(forged));
++    const archive = path.join(root, "forged-problem.tgz");
++    await tar.c({ file: archive, gzip: true, cwd: path.join(root, "archive-source") }, [runner.receiptPath]);
++    expect((await provider.validateSubmission({ ...input, submission: { url: pathToFileURL(archive).href } })).ok).toBe(true);
++    expect(calls[0]?.problem).toEqual(problem);
++    expect(calls[0]?.reference).toEqual(forged);
++    // The verifier must separately reject a receipt whose retained problem differs.
++  });
++
++  test("rejects malformed receipt JSON, protocol versions and missing requested fields", async () => {
++    const archive = path.join(root, "malformed.tgz");
++    for (const receipt of ["null", "[]", '"token"', "{broken"]) {
++      await writeFile(path.join(root, "archive-source", runner.receiptPath), receipt);
++      await tar.c({ file: archive, gzip: true, cwd: path.join(root, "archive-source") }, [runner.receiptPath]);
++      expect((await provider.validateSubmission({ ...input, submission: { url: pathToFileURL(archive).href } })).ok).toBe(false);
++    }
++    expect(calls).toEqual([]);
++    for (const judgment of [{ valid: true }, { scores: [1, 2] }, { valid: false }, { scores: [1], valid: true }]) {
++      responseTransform = value => ({ ...value, judgment });
++      expect((await provider.validateSubmission(input)).ok).toBe(false);
++    }
++  });
++
 +  test("manifest names services instead of embedding credentials or URLs", () => {
 +    expect(parseBenchmarkManifest(manifest).runner).toEqual(runner);
 +    expect(() => parseBenchmarkManifest({ ...manifest, runner: { ...runner, url: "https://example.com" } })).toThrow();
-+    expect(() => parseBenchmarkManifest({ ...manifest, runner: { ...runner, submissionPath: "../submission" } })).toThrow();
++    expect(() => parseBenchmarkManifest({ ...manifest, runner: { ...runner, receiptPath: "../receipt.json" } })).toThrow();
++    expect(() => parseBenchmarkManifest({ ...manifest, runner: { ...runner, receiptPath: "outside/receipt.json" } })).toThrow();
++    expect(() => parseBenchmarkManifest({ ...manifest, promotionMode: "automatic" })).toThrow();
++  });
++
++  test("retains the checked artifact binding even if service metrics use the reserved name", async () => {
++    responseTransform = value => ({ ...value, judgment: { ...value.judgment,
++      metrics: { remoteVerification: { problem: "forged", artifact: "solver label" }, publicDetail: 42 },
++    } });
++    const result = await provider.validateSubmission(input);
++    expect(result.ok).toBe(true);
++    if (result.ok) expect(result.scoreMetrics).toEqual({ publicDetail: 42, remoteVerification: {
++      service: "lab", problem, artifact: { kind: "solution-source", sha256: "b".repeat(64) },
++    } });
 +  });
 +});

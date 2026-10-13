@@ -1,0 +1,13 @@
+{
+  "arxiv_id": "2606.02235v1",
+  "title": "Optimized Point Addition Circuits for Elliptic Curve Discrete Logarithms",
+  "author": "André Schrottenloher",
+  "submitted": "2026-06-01",
+  "retrieved": "2026-10-09",
+  "source_url": "https://arxiv.org/pdf/2606.02235v1",
+  "license": "CC-BY-4.0",
+  "license_url": "https://creativecommons.org/licenses/by/4.0/",
+  "sha256": {
+    "paper.pdf": "8744ef6db6c60b62d952a1dd24e5bd433242af970f4755c8b49b020a731584af"
+  }
+}

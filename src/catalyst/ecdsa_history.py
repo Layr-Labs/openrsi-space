@@ -9,10 +9,10 @@ from decimal import Decimal
 import json
 
 from .common import CatalystError, version_id
-from .tiers import amount, credits, integer
+from .tiers import amount, credits, integer, usage_model
 
 
-def project_history(run_dir, ledger, final_points, model):
+def project_history(run_dir, ledger, final_points, model, schedule=None):
     events = []
     previous = 0
     omitted = 0
@@ -94,7 +94,7 @@ def project_history(run_dir, ledger, final_points, model):
     result_ledger, curve, cost = [], [], Decimal(0)
     for sequence, (_, kind, item) in enumerate(ordered, 1):
         if kind == 0:
-            cost += credits(item["tokens"], model)
+            cost += credits(item["tokens"], usage_model(item, model), schedule)
             item["sequence"] = sequence
             result_ledger.append(item)
         else:

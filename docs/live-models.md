@@ -1,5 +1,16 @@
 # Temporary model access
 
+The deployed [generic harness implementation](generic-harnesses.md) supports API
+provider access, model sets, and credentials owned by the gateway. The existing
+VM currently enables `openai-chatgpt` and `kimi-code`. The historical native
+Codex mode described below predates this command interface; its credential
+exposure does not apply to generic execution.
+
+For Kimi Code subscription keys and other supported providers, use the
+[general source submission flow](generic-harnesses.md#submit-your-own-agent).
+The provider/model belongs to the run configuration. There is no required
+provider-specific harness and no model account registration on the server.
+
 The MVP uses Dungeness's native Codex/ChatGPT provider. Submit source with the
 provider, model, reasoning effort and spending cap in `evaluation.json`.
 `harnesses/ecdsa-research` selects `openai-chatgpt`, `gpt-6-astra`, `high`, and

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import base64
+import copy
 from contextlib import contextmanager
 import fcntl
 import hashlib
@@ -22,7 +23,7 @@ from .common import (
 )
 from .executable import IMAGE_RE, SOURCE_EXCLUDES, validate_execution
 from .problems import initial_problems
-from .tiers import SCORING, VALIDITY, credit_limit, model_prices, pricing_schedule, project_observation
+from .tiers import SCORING, VALIDITY, credit_limit, evaluation_models, model_prices, pricing_schedule, project_observation
 
 PROTOCOL = "catalyst-evaluation-v3"
 MAX_SOURCE_BYTES = 8 * 1024 * 1024
@@ -50,29 +51,70 @@ def judge_input(value: str | None) -> dict:
 
 
 
-def evaluation_config(path: Path) -> dict:
-    return validate_evaluation_config(read_json(path))
+def evaluation_config(path: Path, overrides: dict | None = None, *, check_pricing=True, pricing=None) -> dict:
+    """Resolve run settings independently of the submitted source bundle."""
+    overrides = overrides or {}
+    allowed = {"provider", "model", "reasoning_effort", "budget", "max_tokens", "max_seconds"}
+    if set(overrides) - allowed:
+        raise CatalystError("Unknown evaluation setting.")
+    if path.is_file():
+        config = copy.deepcopy(read_json(path))
+        if not isinstance(config, dict):
+            raise CatalystError("evaluation.json must be an object.")
+    else:
+        if not {"provider", "model", "budget"} <= set(overrides):
+            raise CatalystError("Supply evaluation.json or --provider, --model and --budget.")
+        config = {
+            "schema_version": 3,
+            "llm_access": {"grant_id": "grant_temporary_provider"},
+            "model": {},
+            "max_model_credits": overrides["budget"],
+            "limits": {"max_model_tokens": 100000, "max_seconds": 900},
+        }
+    if ("provider" in overrides) != ("model" in overrides):
+        raise CatalystError("Set --provider and --model together.")
+    if {"provider", "model", "reasoning_effort"} & set(overrides):
+        if config.get("schema_version") == 4:
+            raise CatalystError("For a model ensemble, edit models in evaluation.json instead of model flags.")
+        if "provider" in overrides:
+            # Never carry provider-specific reasoning settings to another model.
+            config["model"] = {"provider": overrides["provider"], "name": overrides["model"]}
+        if "reasoning_effort" in overrides:
+            if not isinstance(config.get("model"), dict):
+                raise CatalystError("model must be an object.")
+            config["model"]["reasoning_effort"] = overrides["reasoning_effort"]
+    if "budget" in overrides:
+        config["max_model_credits"] = overrides["budget"]
+    for option, key in (("max_tokens", "max_model_tokens"), ("max_seconds", "max_seconds")):
+        if option in overrides:
+            if not isinstance(config.get("limits"), dict):
+                raise CatalystError("limits must be an object.")
+            config["limits"][key] = overrides[option]
+    return validate_evaluation_config(config, check_pricing=check_pricing, pricing=pricing)
 
 
 
-def validate_evaluation_config(config: dict) -> dict:
+def validate_evaluation_config(config: dict, *, check_pricing=True, pricing=None) -> dict:
+    version = config.get("schema_version") if isinstance(config, dict) else None
     if (not isinstance(config, dict)
-            or set(config) != {"schema_version", "llm_access", "model", "max_model_credits", "limits"}
-            or type(config["schema_version"]) is not int or config["schema_version"] != 3):
-        raise CatalystError("evaluation.json v3 requires llm_access, model, max_model_credits and limits.")
+            or set(config) != {"schema_version", "llm_access", "model", "max_model_credits", "limits"} | ({"models"} if version == 4 else set())
+            or type(version) is not int or version not in (3, 4)):
+        raise CatalystError("evaluation.json requires v3, or v4 with an explicit models list.")
     access = config["llm_access"]
     if (not isinstance(access, dict) or set(access) != {"grant_id"}
             or not isinstance(access["grant_id"], str)
             or not re.fullmatch(r"grant_[A-Za-z0-9_-]{8,100}", access["grant_id"])):
         raise CatalystError("Set llm_access.grant_id to a private evaluator grant reference; never include a token.")
-    model = config["model"]
-    if (not isinstance(model, dict) or (not {"provider", "name"} <= set(model) or set(model) - {"provider", "name", "reasoning_effort"})
-            or any(not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9._/-]{1,120}", value)
-                   for value in model.values())):
-        raise CatalystError("model requires a provider and exact model name.")
-    if "reasoning_effort" in model and model["reasoning_effort"] not in {"low", "medium", "high", "xhigh", "max"}:
-        raise CatalystError("Unsupported reasoning effort.")
-    model_prices(model)
+    models = evaluation_models(config)
+    if not isinstance(models, list) or not 1 <= len(models) <= 16 or config["model"] != models[0]:
+        raise CatalystError("models must contain 1..16 entries, starting with the default model.")
+    seen = set()
+    for model in models:
+        validate_model(model, check_pricing=check_pricing, pricing=pricing)
+        key = (model["provider"], model["name"])
+        if key in seen:
+            raise CatalystError("Duplicate allowed model.")
+        seen.add(key)
     credit_limit(config["max_model_credits"])
     limits = config["limits"]
     if not isinstance(limits, dict) or set(limits) != {"max_model_tokens", "max_seconds"}:
@@ -81,6 +123,20 @@ def validate_evaluation_config(config: dict) -> dict:
         if type(limits[key]) is not int or limits[key] <= 0:
             raise CatalystError(f"{key} must be a positive integer.")
     return config
+
+
+def validate_model(model, *, check_pricing=True, pricing=None):
+    if (not isinstance(model, dict) or (not {"provider", "name"} <= set(model) or set(model) - {"provider", "name", "reasoning_effort"})
+            or any(not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9._/:-]{1,120}", value)
+                   for value in model.values())):
+        raise CatalystError("model requires a provider and exact model name.")
+    if "reasoning_effort" in model and model["reasoning_effort"] not in {"low", "medium", "high", "xhigh", "max"}:
+        raise CatalystError("Unsupported reasoning effort.")
+    from .live_provider import PROVIDERS
+    if model["provider"] not in PROVIDERS:
+        raise CatalystError("Provider requires an authentication/protocol adapter.")
+    if check_pricing:
+        model_prices(model, pricing)
 
 
 
@@ -97,7 +153,7 @@ class HTTPFailure(CatalystError):
 
 
 def fetch(url: str, token: str, *, document=None, limit=4 * 1024 * 1024, timeout=30,
-          model_token=None) -> bytes:
+          model_token=None, output=None, expected_sha256=None, expected_size=None) -> bytes:
     private_headers = {}
     if model_token is not None:
         from .model_access import TOKEN_HEADER, validate_token
@@ -115,7 +171,31 @@ def fetch(url: str, token: str, *, document=None, limit=4 * 1024 * 1024, timeout
     )
     try:
         with urllib.request.build_opener(NoRedirect()).open(request, timeout=timeout) as response:
-            content = response.read(limit + 1)
+            if output is None:
+                content = response.read(limit + 1)
+            else:
+                import tempfile
+                target = Path(output)
+                target.parent.mkdir(parents=True, exist_ok=True)
+                temporary = None
+                try:
+                    with tempfile.NamedTemporaryFile(dir=target.parent, prefix=".artifact-", delete=False) as stream:
+                        temporary = Path(stream.name)
+                        hasher, size = hashlib.sha256(), 0
+                        while chunk := response.read(1024 * 1024):
+                            size += len(chunk)
+                            if size > limit:
+                                raise CatalystError("Artifact exceeds its declared download limit.")
+                            hasher.update(chunk)
+                            stream.write(chunk)
+                    if size != expected_size or hasher.hexdigest() != expected_sha256:
+                        raise CatalystError("Downloaded artifact does not match its verified checksum and size.")
+                    temporary.replace(target)
+                    temporary = None
+                    return b""
+                finally:
+                    if temporary is not None:
+                        temporary.unlink(missing_ok=True)
     except urllib.error.HTTPError as error:
         # Bodies may contain provider details; never echo them or authorization.
         status = error.code
@@ -133,8 +213,11 @@ def fetch(url: str, token: str, *, document=None, limit=4 * 1024 * 1024, timeout
 _solver_sessions = {}
 
 
-def solver_fetch(base, route, bearer, *, document=None, limit=4 * 1024 * 1024, model_token=None):
+def solver_fetch(base, route, bearer, *, document=None, limit=4 * 1024 * 1024, model_token=None,
+                 output=None, expected_sha256=None, expected_size=None):
     private = {"model_token": model_token} if model_token is not None else {}
+    if output is not None:
+        private.update(output=output, expected_sha256=expected_sha256, expected_size=expected_size)
     if not bearer.startswith("ykn_"):
         return fetch(base + route, bearer, document=document, limit=limit, **private)
     parts = urllib.parse.urlsplit(base)
@@ -230,7 +313,8 @@ def judgment(result: dict, request: dict) -> dict:
             raise CatalystError("Remote observation has a wrong or duplicate problem binding.")
         seen.add(identity)
         config = request["evaluation"]
-        projected = project_observation(observation, config["model"], config["max_model_credits"], config["limits"])
+        projected = project_observation(observation, evaluation_models(config), config["max_model_credits"],
+                                        config["limits"], request["pricing"])
         public.append({"problem_id": identity, "problem_commit": observation["problem_commit"], **projected})
     if result["valid"]:
         if seen != {p["id"] for p in request["problem_set"]}:
@@ -248,6 +332,7 @@ def judgment(result: dict, request: dict) -> dict:
         "evaluationId": result["evaluation_id"], "sourceDigest": request["source"]["digest"],
         "buildId": built["id"], "imageDigest": built["image_digest"],
         "model": request["evaluation"]["model"], "observations": public,
+        "models": evaluation_models(request["evaluation"]),
         "problemSetDigest": digest(request["problem_set"]),
         "evaluationConfigDigest": digest(request["evaluation"]),
         "pricingDigest": digest(request["pricing"]),
@@ -320,9 +405,11 @@ def solver_token() -> str:
     return bearer
 
 
-def request_body(submission: Path, base: str, *, judge=None, context=None) -> dict:
-    config = evaluation_config(submission / "evaluation.json")
-    snapshot, archive = snapshot_directory(submission, exclude=SOURCE_EXCLUDES)
+def request_body(submission: Path, base: str, *, judge=None, context=None,
+                 evaluation_overrides=None, pricing=None, check_pricing=True, execution=None) -> dict:
+    config = evaluation_config(submission / "evaluation.json", evaluation_overrides,
+                               pricing=pricing, check_pricing=check_pricing)
+    snapshot, archive = source_snapshot(submission, execution)
     if snapshot["kind"] != "harness":
         raise CatalystError("Submission must contain an executable harness.")
     execution = snapshot["document"].get("execution")
@@ -345,9 +432,18 @@ def request_body(submission: Path, base: str, *, judge=None, context=None) -> di
         problem_set, mode = read_json(Path(fixture_path)), "local-test"
     return {"protocol": PROTOCOL,
             "source": {"digest": snapshot["version"], "archive_base64": base64.b64encode(archive).decode()},
-            "evaluation": config, "problem_set": problem_set, "pricing": pricing_schedule(),
+            "evaluation": config, "problem_set": problem_set,
+            "pricing": pricing_schedule() if pricing is None else pricing,
             "evidence_mode": mode, "judge": judge if judge is not None else judge_input(None),
             "context": context if context is not None else {"kind": "yukon-solver"}}
+
+def source_snapshot(submission, execution=None):
+    document = None
+    if execution is not None:
+        validate_execution(execution)
+        document = {"schema_version": 1, "kind": "harness", "id": "submitted-agent",
+                    "title": "Submitted agent", "execution": execution}
+    return snapshot_directory(submission, exclude=SOURCE_EXCLUDES, harness_document=document)
 
 
 def evaluation_id(value):
@@ -381,11 +477,30 @@ class RemoteClient:
         legacy = self.state / "yukon/pending" / name
         return legacy if legacy.is_file() else self.state / "remote/pending" / name
 
-    def submit(self, submission: Path, *, judge=None, model_token=None):
+    def submit(self, submission: Path, *, judge=None, model_token=None, evaluation_overrides=None,
+               execution=None, _quote_retry=False):
         if os.environ.get("GITHUB_ACTIONS") == "true":
             raise CatalystError("GitHub Actions must retrieve an existing result through catalyst yukon-run.")
         submission = submission.resolve()
-        body = request_body(submission, self.base, judge=judge)
+        body = request_body(submission, self.base, judge=judge, evaluation_overrides=evaluation_overrides,
+                            check_pricing=False, execution=execution)
+        quote_path = None
+        try:
+            validate_evaluation_config(body["evaluation"])
+        except CatalystError:
+            # Shape/provider checks have already passed; resolve new model prices
+            # at the service before sending any model credential.
+            quote_path = self.state / "remote/quotes" / (digest({"base": self.base, "body": body}) + ".json")
+            with request_lock(quote_path):
+                if quote_path.is_file():
+                    body["pricing"] = read_json(quote_path)
+                else:
+                    reply = json.loads(solver_fetch(self.base, "/pricing/quote", self.bearer,
+                        document={"models": evaluation_models(body["evaluation"])}))
+                    body["pricing"] = reply["pricing"]
+                    validate_evaluation_config(body["evaluation"], pricing=body["pricing"])
+                    private_json(quote_path, body["pricing"])
+            validate_evaluation_config(body["evaluation"], pricing=body["pricing"])
         from .model_access import temporary_access, validate_token
         if temporary_access(body["evaluation"]):
             validate_token(model_token)
@@ -401,14 +516,32 @@ class RemoteClient:
                 request = {**body, "request_id": str(uuid.uuid4())}
                 private_json(pending, request)
             private = {"model_token": model_token} if model_token is not None else {}
-            accepted = json.loads(solver_fetch(self.base, "/evaluations", self.bearer,
-                                               document=request, **private))
-            identity = evaluation_id(accepted.get("evaluation_id") if isinstance(accepted, dict) else None)
-            if accepted.get("request_id") != request["request_id"]:
-                raise CatalystError("Evaluator accepted a different operation key.")
-            private_json(self.folder(identity) / "session.json", {
-                "base": self.base, "request": request, "submission": str(submission),
-            })
+            try:
+                accepted = json.loads(solver_fetch(self.base, "/evaluations", self.bearer,
+                                                   document=request, **private))
+            except HTTPFailure as error:
+                if error.status != 410 or quote_path is None or _quote_retry:
+                    raise
+                # 410 is an explicit service guarantee that this operation has
+                # not been accepted. Unknown outcomes never reach this path.
+                pending.unlink()
+                quote_path.unlink(missing_ok=True)
+                accepted = None
+            if accepted is None:
+                identity = None
+            else:
+                identity = evaluation_id(accepted.get("evaluation_id") if isinstance(accepted, dict) else None)
+                if accepted.get("request_id") != request["request_id"]:
+                    raise CatalystError("Evaluator accepted a different operation key.")
+                private_json(self.folder(identity) / "session.json", {
+                    "base": self.base, "request": request, "submission": str(submission),
+                    **({"evaluation_overrides": evaluation_overrides} if evaluation_overrides else {}),
+                    **({"pricing_quote": str(quote_path)} if quote_path else {}),
+                    **({"execution": execution} if execution else {}),
+                })
+        if identity is None:
+            return self.submit(submission, judge=judge, model_token=model_token,
+                               evaluation_overrides=evaluation_overrides, execution=execution, _quote_retry=True)
         return {"evaluation_id": identity, "request_id": request["request_id"],
                 "source_digest": body["source"]["digest"], "evidence_mode": body["evidence_mode"]}
 
@@ -435,6 +568,8 @@ class RemoteClient:
         with request_lock(pending):
             if pending.is_file() and read_json(pending) == session["request"]:
                 pending.unlink()
+            if session.get("pricing_quote"):
+                Path(session["pricing_quote"]).unlink(missing_ok=True)
 
     def wait(self, identity):
         folder = self.folder(identity)
@@ -462,9 +597,11 @@ class RemoteClient:
     def export_reference(self, identity, submission=None):
         session = self.session(identity)
         submission = Path(submission).resolve() if submission is not None else Path(session["submission"])
-        snapshot, _ = snapshot_directory(submission, exclude=SOURCE_EXCLUDES)
+        snapshot, _ = source_snapshot(submission, session.get("execution"))
         if (snapshot["version"] != session["request"]["source"]["digest"]
-                or evaluation_config(submission / "evaluation.json") != session["request"]["evaluation"]):
+                or evaluation_config(submission / "evaluation.json", session.get("evaluation_overrides"),
+                                     pricing=session["request"]["pricing"])
+                != session["request"]["evaluation"]):
             raise CatalystError("Submission changed during evaluation; its original result is retained in remote state.")
         reference = read_json(self.folder(identity) / "verification.json")
         write_json(submission / "verification.json", reference)
@@ -477,3 +614,48 @@ class RemoteClient:
         folder = self.folder(identity)
         download_traces(self.base, self.bearer, identity, folder)
         return folder / "traces.zip"
+
+    def artifacts(self, identity):
+        identity = evaluation_id(identity)
+        document = json.loads(solver_fetch(
+            self.base, f"/evaluations/{identity}/artifacts", self.bearer))
+        if document.get("protocol") != "catalyst-artifacts-v1" or document.get("evaluation_id") != identity:
+            raise CatalystError("Artifact manifest does not match this evaluation.")
+        return document
+
+    def download_artifact(self, identity, kind, output):
+        identity = evaluation_id(identity)
+        if kind not in {"complete", "harness", "traces"}:
+            raise CatalystError("Unknown artifact kind.")
+        manifest = self.artifacts(identity)
+        expected = manifest["artifacts"][kind]
+        descriptor = json.loads(solver_fetch(
+            self.base, f"/evaluations/{identity}/artifacts/{kind}", self.bearer))
+        if any(descriptor.get(k) != expected.get(k) for k in ("sha256", "bytes", "media_type")):
+            raise CatalystError("Download descriptor does not match the artifact manifest.")
+        size, sha = descriptor["bytes"], descriptor["sha256"]
+        if (type(size) is not int or not 0 < size <= 512 * 1024 * 1024
+                or not isinstance(sha, str) or not re.fullmatch(r"[0-9a-f]{64}", sha)):
+            raise CatalystError("Invalid artifact size or checksum.")
+        options = {"limit": size, "output": output, "expected_sha256": sha, "expected_size": size}
+        url = descriptor["url"]
+        local = f"/evaluations/{identity}/artifacts/{kind}/content"
+        if url == local:
+            solver_fetch(self.base, local, self.bearer, **options)
+        else:
+            parts = urllib.parse.urlsplit(url)
+            if parts.scheme != "https" or not parts.hostname or parts.username or parts.password or parts.fragment:
+                raise CatalystError("Artifact object downloads require HTTPS.")
+            fetch(url, "", **options)  # Never forward the solver's credential to object storage.
+        return {"evaluation_id": identity, "kind": kind, "sha256": sha,
+                "bytes": size, "path": str(Path(output).resolve())}
+
+    def sharing(self, identity, changes=None):
+        identity = evaluation_id(identity)
+        route = f"/evaluations/{identity}/sharing"
+        body = {"protocol": "catalyst-artifacts-v1", **changes} if changes is not None else None
+        result = json.loads(solver_fetch(self.base, route, self.bearer, document=body))
+        if result.get("harness") or result.get("traces"):
+            result["public_manifest"] = self.base + f"/public/evaluations/{identity}/artifacts"
+            result["public_page"] = self.base + f"/public/evaluations/{identity}"
+        return result

@@ -1,0 +1,1187 @@
+--- /dev/null
++++ b/adapters/harbor/command_agent.py
+@@ -0,0 +1,73 @@
++"""Trusted adapter for arbitrary commands inside the Harbor sandbox.
++
++Solver code is executed only in the container, never imported by the host.
++The run's model policy and the evaluator remain outside the harness.
++"""
++import json
++from pathlib import Path
++import time
++
++from harbor.agents.installed.base import BaseInstalledAgent
++
++
++class CommandAgent(BaseInstalledAgent):
++    def __init__(self, *args, execution, task_input=None, models=None,
++                 continuation_max_resumes=0, continuation_min_remaining_sec=60,
++                 continuation_timeout_sec=3600, **kwargs):
++        self.execution = execution
++        self.task_input = task_input or {}
++        self.models = models or []
++        self.max_resumes = continuation_max_resumes
++        self.min_remaining = continuation_min_remaining_sec
++        self.timeout = continuation_timeout_sec
++        for key in ("reasoning_effort", "reasoning_summary", "model_context_window", "web_search"):
++            kwargs.pop(key, None)
++        super().__init__(*args, **kwargs)
++
++    @staticmethod
++    def name():
++        return "dungeness-command"
++
++    def get_version_command(self):
++        return None
++
++    def parse_version(self, stdout):
++        return None
++
++    async def install(self, environment):
++        result = await self.exec_as_agent(environment, command="command -v python3")
++        if result.return_code:
++            raise RuntimeError("Command harness images must include Python 3.")
++
++    async def run(self, instruction, environment, context):
++        task = {**self.task_input, "schema_version": 1, "instruction": instruction,
++                "workspace": "/workspace/repo", "models": self.models,
++                "model": self.model_name, "execution": self.execution}
++        if self.models:
++            task["gateway"] = self.models[0]["base_url"]
++            task["model_provider"] = self.models[0]["provider"]
++        await environment.upload_file(Path(__file__).with_name("command_runner.py"),
++                                      "/tmp/dungeness-launch.py")
++        started = time.monotonic()
++        for attempt in range(self.max_resumes + 1):
++            task["resume"] = attempt > 0
++            task["remaining_seconds"] = max(0, self.timeout - (time.monotonic() - started))
++            path = self.logs_dir / "dungeness-task.json"
++            path.write_text(json.dumps(task))
++            await environment.upload_file(path, "/tmp/dungeness-task.json")
++            result = await self.exec_as_agent(
++                environment, command="python3 /tmp/dungeness-launch.py /tmp/dungeness-task.json",
++                cwd=task["workspace"],
++            )
++            (self.logs_dir / f"harness-output-{attempt}.txt").write_text(
++                (result.stdout or "") + "\n" + (result.stderr or ""))
++            if result.return_code == 0:
++                return
++            if (result.return_code != 75 or attempt >= self.max_resumes
++                    or not self.execution.get("resume_entrypoint")
++                    or self.timeout - (time.monotonic() - started) < self.min_remaining):
++                raise RuntimeError(f"Harness exited with status {result.return_code}.")
++
++    def populate_context_post_run(self, context):
++        # Accounting comes only from the gateway.
++        pass
+--- /dev/null
++++ b/adapters/harbor/command_runner.py
+@@ -0,0 +1,50 @@
++"""In-container command lifecycle. This file uses only the standard library."""
++import json
++import os
++from pathlib import Path
++import signal
++import subprocess
++import sys
++
++
++def launch(task_path):
++    task_path = str(Path(task_path).resolve())
++    task = json.loads(Path(task_path).read_text())
++    execution = task["execution"]
++    argv = execution["resume_entrypoint"] if task.get("resume") else execution["entrypoint"]
++    environment = {**os.environ, "DUNGENESS_TASK": task_path,
++                   "DUNGENESS_WORKSPACE": task["workspace"]}
++    process = subprocess.Popen(argv, cwd=task["workspace"], env=environment, start_new_session=True)
++    received = []
++
++    def terminate(signum, _frame):
++        received.append(signum)
++        try:
++            os.killpg(process.pid, signal.SIGTERM)
++        except ProcessLookupError:
++            pass
++
++    previous = {s: signal.signal(s, terminate) for s in (signal.SIGTERM, signal.SIGINT)}
++    try:
++        while True:
++            try:
++                return process.wait(timeout=1)
++            except subprocess.TimeoutExpired:
++                if received:
++                    try:
++                        return process.wait(timeout=5)
++                    except subprocess.TimeoutExpired:
++                        return 128 + received[0]
++    finally:
++        # Also remove background workers when the entrypoint exits normally.
++        try:
++            os.killpg(process.pid, signal.SIGKILL)
++        except ProcessLookupError:
++            pass
++        process.wait()
++        for signum, handler in previous.items():
++            signal.signal(signum, handler)
++
++
++if __name__ == "__main__":
++    raise SystemExit(launch(sys.argv[1]))
+--- a/agents/common/evaluate.py
++++ b/agents/common/evaluate.py
+@@ -33,6 +33,7 @@
+     parser.add_argument(
+         "solution", nargs="?", default=os.environ.get("CANDIDATE_PATH")
+     )
++    parser.add_argument("--json", action="store_true", help="Print the trusted evaluator response as JSON.")
+     args = parser.parse_args()
+ 
+     if not args.solution:
+@@ -68,6 +69,10 @@
+     except urllib.error.URLError as error:
+         raise SystemExit(f"evaluate: cannot reach eval sidecar: {error}") from error
+ 
++    if args.json:
++        print(json.dumps(result, sort_keys=True))
++        return
++
+     # `status` is present when the sidecar builds/runs the candidate (ecdsa-fail);
+     # a non-ok status carries the agent's own build/correctness output in `detail`.
+     status = result.get("status")
+--- /dev/null
++++ b/docs/command-harness.md
+@@ -0,0 +1,79 @@
++# Command harnesses
++
++`dungeness-command-v1` runs arbitrary installed software inside Harbor's
++container through a trusted adapter. The harness does not choose a host Python
++import, and need not identify as Codex, Claude Code, Pi, or another built-in agent.
++Existing agent descriptors retain their original behavior.
++
++An agent descriptor has the ordinary identity fields, `execution_mode: installed`,
++a Dockerfile, and:
++
++```yaml
++execution:
++  interface: dungeness-command-v1
++  entrypoint: ["python3", "/opt/harness/agent.py"]
++```
++
++The Dockerfile needs Python 3 for the runner. Install all dependencies at build
++time; the execution container has no direct internet route.
++
++The run-spec selects access independently of the harness:
++
++```yaml
++model_access:
++  models:
++    - provider: openai
++      upstream_id: openai/gpt-6-astra
++      request_model: gpt-6-astra
++      api: openai-responses
++      name_format: request
++  max_parallel_requests: 4
++  request_reservation_usd: 0.5
++```
++
++All models require entries in the trusted pricing schedule. Credentials come
++from the operator's environment file using `TESTBED_<PROVIDER>_API_KEY`.
++ChatGPT instead uses `DUNGENESS_CODEX_AUTH_FILE`, pointing to a private temporary
++file with `tokens.access_token` and `tokens.account_id`. Mount that file only
++into the gateway; no native credentials or refresh proxy are supplied to a
++command harness. The caller owns credential lifetime and cleanup.
++
++The pricing schedule is runtime data, not a source-code model whitelist.
++An enclosing service such as Catalyst can install a frozen, authenticated
++catalog snapshot into the isolated runtime's `services/gateway/pricing.yaml`
++before compiling a run. The same snapshot is used by the compiler, gateway
++and downstream verifier. Submitted agents cannot set their own rates.
++
++Kimi Code and Moonshot accept ordinary OpenAI-compatible Chat Completions at
++`/model/<provider>/v1/chat/completions`, in addition to the existing Responses
++adapter. Agents can use SDKs directly without a Codex dependency.
++Streaming chat requests always ask for usage. When a pricing entry declares
++`text_only: true`, non-text inputs/outputs are rejected and reference costs
++are never presented as actual billed dollars.
++Command runs reject undeclared model fallbacks, asynchronous background
++inference, paid provider tools and service-tier overrides whose costs cannot
++be established by the request's token ledger. Harness-executed function and
++custom tools remain available.
++
++`DUNGENESS_TASK` names the JSON task file. It contains `instruction`, `workspace`,
++`models` (including gateway `base_url`), and `resume`. Subagents may be ordinary
++processes or threads inside the same container. All model traffic shares the
++gateway allowlist, budget and concurrency envelope.
++
++`evaluate --json PATH` prints the existing sidecar's structured response. Each
++call uploads candidate bytes; workers need not overwrite one shared path.
++ECDSA verification is serialized while model work may proceed concurrently.
++The evaluator and gateway logs are the authoritative evidence, not harness logs.
++
++The runner terminates remaining process-group children on exit and forwards
++termination signals. Container teardown handles detached processes. An optional
++`execution.resume_entrypoint` is selected after exit code 75 when the run has
++remaining `runtime.continuation.max_resumes` and time. Normal nonzero exits fail.
++No automatic host-failure recovery is implied.
++
++Credit reservations bound admission while responses are in flight and are
++released only after upstream draining/accounting. They are not enforceable
++provider billing limits. Calls can cost more than their allowance; actual usage
++controls subsequent admission, and missing usage stops it. A consuming benchmark
++must reject over-cap or incomplete evidence. Strict dollar caps require further
++provider-specific request bounds or provider-side limits.
+--- a/dungeness
++++ b/dungeness
+@@ -46,6 +46,7 @@
+     "run_id",
+     "labels",
+     "budget",
++    "model_access",
+     "agent_options",
+     "initialization",
+     "web_search",
+@@ -174,6 +175,11 @@
+     args: argparse.Namespace,
+ ):
+     agent = selected_agent_manifest(args)
++    if agent.get("execution", {}).get("interface") == "dungeness-command-v1":
++        # Generic harnesses never receive native provider credentials. The
++        # caller supplies a tmpfs access file mounted only into the gateway.
++        yield {}
++        return
+     authentication = agent.get("authentication")
+     if not (
+         isinstance(authentication, dict)
+@@ -185,7 +191,7 @@
+     source = codex_auth_path()
+     load_chatgpt_auth(source)
+     temporary_root = Path(
+-        tempfile.mkdtemp(prefix="dungeness-codex-auth-", dir="/tmp")
++        tempfile.mkdtemp(prefix="dungeness-codex-auth-", dir=os.environ.get("DUNGENESS_AUTH_TMPDIR", "/tmp"))
+     )
+     temporary_root.chmod(0o700)
+     temporary_auth = temporary_root / "auth.json"
+--- a/services/gateway/gateway.py
++++ b/services/gateway/gateway.py
+@@ -390,6 +390,8 @@
+ 
+ async def model_moonshot(request: Request) -> Response:
+     try:
++        if request.path_params["path"].strip("/") == "chat/completions":
++            return await gateway.proxy_model("moonshot", request.path_params["path"], request)
+         return await gateway.proxy_kimi(
+             "moonshot",
+             request.path_params["path"],
+@@ -415,6 +417,8 @@
+ 
+ async def model_kimi_code(request: Request) -> Response:
+     try:
++        if request.path_params["path"].strip("/") == "chat/completions":
++            return await gateway.proxy_model("kimi-code", request.path_params["path"], request)
+         return await gateway.proxy_kimi(
+             "kimi-code",
+             request.path_params["path"],
+--- a/services/gateway/gateway_models.py
++++ b/services/gateway/gateway_models.py
+@@ -21,11 +21,48 @@
+     "models",
+ }
+ CHATGPT_ROUTES = {"responses", "responses/compact"}
+-MOONSHOT_ROUTES = {"responses"}
+-KIMI_CODE_ROUTES = {"responses"}
++MOONSHOT_ROUTES = {"responses", "chat/completions"}
++KIMI_CODE_ROUTES = {"responses", "chat/completions"}
+ RESEARCH_STATE_CONTEXT_MARKER = (
+     "## Current Dungeness research-effort state (per-request)"
+ )
++
++def validate_declared_request(payload, pricing):
++    """Keep measured inference on the exact declared model and priced units."""
++    if any(key in payload for key in ("models", "route", "plugins", "web_search_options")):
++        raise ValueError("model fallbacks and provider-hosted paid tools need separate accounting")
++    if payload.get("background"):
++        raise ValueError("background inference cannot settle within this request")
++    if payload.get("service_tier") not in (None, "auto", "default"):
++        raise ValueError("service tiers require a separate reference pricing policy")
++
++    def tools(items):
++        if not isinstance(items, list):
++            raise ValueError("tools must be a list")
++        for tool in items:
++            if not isinstance(tool, dict) or tool.get("type", "function") not in ("function", "custom", "namespace"):
++                raise ValueError("only harness-executed tools are metered by this contract")
++            if tool.get("type") == "namespace":
++                tools(tool.get("tools", []))
++    tools(payload.get("tools", []))
++    if not pricing.get("text_only"):
++        return
++    media_types = {"image", "image_url", "input_image", "audio", "input_audio",
++                   "file", "input_file", "video", "video_url"}
++
++    def content(value):
++        if isinstance(value, list):
++            for item in value:
++                content(item)
++        elif isinstance(value, dict):
++            if value.get("type") in media_types or set(value) & {"image_url", "input_audio", "video_url"}:
++                raise ValueError("this reference pricing snapshot supports text input only")
++            for item in value.values():
++                content(item)
++    if payload.get("modalities", ["text"]) != ["text"] or "audio" in payload:
++        raise ValueError("this reference pricing snapshot supports text output only")
++    content(payload.get("input", []))
++    content(payload.get("messages", []))
+ 
+ 
+ def decode_body(body: bytes) -> bytes:
+@@ -627,6 +664,15 @@
+     """Resolve upstream authentication without ever logging credential values."""
+ 
+     if provider == "openai-chatgpt":
++        auth_file = os.environ.get("DUNGENESS_CHATGPT_AUTH_FILE")
++        if auth_file:
++            document = json.loads(Path(auth_file).read_text())
++            tokens = document.get("tokens", {})
++            access = tokens.get("access_token")
++            account = tokens.get("account_id")
++            if not isinstance(access, str) or not access or not isinstance(account, str) or not account:
++                raise ValueError("gateway ChatGPT access is unavailable")
++            return {"authorization": f"Bearer {access}", "chatgpt-account-id": account}
+         authorization = (
+             request_headers.get("authorization") if request_headers is not None else None
+         )
+--- a/services/gateway/gateway_pricing.py
++++ b/services/gateway/gateway_pricing.py
+@@ -3,6 +3,7 @@
+ from __future__ import annotations
+ 
+ import os
++import math
+ from pathlib import Path
+ from typing import Any
+ 
+@@ -33,6 +34,7 @@
+         if (
+             not isinstance(value, (int, float))
+             or isinstance(value, bool)
++            or not math.isfinite(value)
+             or value < 0
+         ):
+             raise ValueError(
+@@ -43,6 +45,7 @@
+     if cache_write is not None and (
+         not isinstance(cache_write, (int, float))
+         or isinstance(cache_write, bool)
++        or not math.isfinite(cache_write)
+         or cache_write < 0
+     ):
+         raise ValueError(
+--- a/services/gateway/gateway_runtime.py
++++ b/services/gateway/gateway_runtime.py
+@@ -61,6 +61,19 @@
+ BACKGROUND_TASKS: set[asyncio.Task[None]] = set()
+ 
+ 
++def rejected_before_generation(body: bytes, content_type: str, http_status: int | None) -> bool:
++    """Recognize an explicit input-validation rejection, never a missing receipt."""
++    if http_status != 400 or "application/json" not in content_type:
++        return False
++    try:
++        document = json.loads(body)
++    except (ValueError, UnicodeError):
++        return False
++    return (isinstance(document, dict) and set(document) == {"error"}
++            and isinstance(document["error"], dict)
++            and document["error"].get("type") == "invalid_request_error")
++
++
+ class Gateway:
+     """One trusted gateway instance and budget ledger for one benchmark run."""
+ 
+@@ -83,6 +96,8 @@
+         # Keep the approval metadata so retrieval can be checked against the
+         # exact search-time decision rather than authorizing a raw URL forever.
+         self.allowed_fetch_targets: dict[str, dict[str, Any]] = {}
++        allowed = os.environ.get("DUNGENESS_ALLOWED_MODELS")
++        self.allowed_models = {tuple(pair) for pair in json.loads(allowed)} if allowed else None
+         # Model reasoning can legitimately take longer than an ordinary web
+         # request. Responses are streamed to the agent as they arrive, while a
+         # bounded overall timeout still prevents abandoned provider calls.
+@@ -477,6 +492,18 @@
+                 status=status,
+             )
+ 
++    async def admit_model(self, provider: str, request: Request) -> None:
++        if self.allowed_models is None:
++            self.ledger.reserve("model_requests")
++            return
++        payload = await request.json()
++        if (not isinstance(payload, dict) or not isinstance(payload.get("model"), str)
++                or (provider, payload["model"]) not in self.allowed_models):
++            raise ValueError("model is not authorized for this run")
++        from gateway_models import validate_declared_request
++        validate_declared_request(payload, pricing_for_request(provider, payload["model"]))
++        self.ledger.admit_model(request.state.request_id)
++
+     async def proxy_model(
+         self, provider: str, path: str, request: Request
+     ) -> Response:
+@@ -490,7 +517,7 @@
+             return JSONResponse(
+                 {"error": "unsupported model operation"}, status_code=404
+             )
+-        self.ledger.reserve("model_requests")
++        await self.admit_model(provider, request)
+         started = time.monotonic()
+         status = "error"
+         usage: dict[str, int] = {}
+@@ -498,6 +525,7 @@
+         request_pricing: dict[str, Any] | None = None
+         request_id = request.state.request_id
+         finalized = False
++        upstream_status = None
+ 
+         def finalize(response_body: bytes, content_type: str) -> None:
+             """Account for one model request exactly once, including streams."""
+@@ -507,6 +535,14 @@
+                 return
+             finalized = True
+             usage = extract(response_body, content_type)
++            accounting_basis = "provider_usage" if usage else "unavailable"
++            if (not usage and status == "provider_error"
++                    and rejected_before_generation(response_body, content_type, upstream_status)):
++                # A rejected input did not generate tokens. Successful,
++                # interrupted, and ambiguous error responses still fail closed.
++                usage = {"input_tokens": 0, "output_tokens": 0, "cached_input_tokens": 0,
++                         "cache_write_input_tokens": 0, "total_tokens": 0}
++                accounting_basis = "input_rejected_before_generation"
+             # Charge the token budget using the active tier's relative cache
+             # rates. USD accounting below remains the exact stopping criterion.
+             billed_tokens = request_budget_tokens(usage, request_pricing)
+@@ -521,7 +557,7 @@
+                 if request_pricing is not None
+                 else "unavailable"
+             )
+-            billed_usd = usd if cfg.get("billed", True) else None
++            billed_usd = usd if cfg.get("billed", True) and not (request_pricing or {}).get("text_only") else None
+             self.ledger.add_model_usage(
+                 billed_tokens=billed_tokens,
+                 normalized_usd=usd,
+@@ -614,6 +650,8 @@
+                     "billed_usd": billed_usd,
+                     "pricing_tier": pricing_tier,
+                     "accounting_method": "gateway" if usage else "unavailable",
++                    "accounting_basis": accounting_basis,
++                    "http_status": upstream_status,
+                     "duration_ms": duration_ms,
+                     "status": status,
+                 },
+@@ -642,6 +680,8 @@
+                 status=status,
+                 usage=usage,
+             )
++            if self.allowed_models is not None:
++                self.ledger.finish_model(request_id, accounted=bool(usage))
+ 
+         response_body = bytearray()
+         content_type = "application/json"
+@@ -655,6 +695,8 @@
+                 raise ValueError("model request body must be a JSON object")
+             model = bounded_model_name(payload.get("model"))
+             request_pricing = pricing_for_request(provider, model)
++            if normalized == "chat/completions" and payload.get("stream"):
++                payload["stream_options"] = {**(payload.get("stream_options") or {}), "include_usage": True}
+             if provider == "openrouter" and model == "moonshotai/kimi-k3":
+                 reasoning = payload.get("reasoning")
+                 if reasoning is None:
+@@ -705,16 +747,20 @@
+                     # parse them for accounting, so a compressed body would be
+                     # unreadable to BOTH the agent and the usage parser.
+                     "accept-encoding": "identity",
++                    "user-agent": "dungeness-gateway/1",
+                     **{
+                         name: request.headers[name]
+                         for name in cfg["passthrough"]
+                         if name in request.headers
++                        and not (name == "chatgpt-account-id"
++                                 and os.environ.get("DUNGENESS_CHATGPT_AUTH_FILE"))
+                     },
+                 },
+                 params=request.query_params,
+                 content=body,
+             )
+             upstream = await self.client.send(upstream_request, stream=True)
++            upstream_status = upstream.status_code
+             content_type = upstream.headers.get("content-type", "application/json")
+             status = "success" if upstream.is_success else "provider_error"
+             # ChatGPT's Codex backend currently returns Responses SSE framing
+@@ -805,7 +851,7 @@
+             return JSONResponse(
+                 {"error": "unsupported model operation"}, status_code=404
+             )
+-        self.ledger.reserve("model_requests")
++        await self.admit_model(provider, request)
+         started = time.monotonic()
+         status = "error"
+         response_body = bytearray()
+@@ -862,7 +908,7 @@
+                 if request_pricing is not None
+                 else "unavailable"
+             )
+-            billed_usd = usd if config.get("billed", True) else None
++            billed_usd = usd if config.get("billed", True) and not (request_pricing or {}).get("text_only") else None
+             self.ledger.add_model_usage(
+                 billed_tokens=billed_tokens,
+                 normalized_usd=usd,
+@@ -951,6 +997,8 @@
+                 status=status,
+                 usage=usage,
+             )
++            if self.allowed_models is not None:
++                self.ledger.finish_model(request_id, accounted=bool(usage))
+ 
+         try:
+             body = await request.body()
+--- a/services/gateway/gateway_usage.py
++++ b/services/gateway/gateway_usage.py
+@@ -258,6 +258,10 @@
+         # criterion). Unset -> effectively no cap; USD is still recorded.
+         self.usd_limit = float(os.environ.get("MAX_MODEL_USD") or "inf")
+         self.usd_spent = 0.0
++        self.model_inflight: dict[str, float] = {}
++        self.model_accounting_incomplete = False
++        self.max_parallel_requests = int(os.environ.get("DUNGENESS_MAX_PARALLEL_REQUESTS", "4"))
++        self.request_reservation_usd = float(os.environ.get("DUNGENESS_REQUEST_RESERVATION_USD", "1"))
+         self.billed_usd_spent = 0.0
+         self.billed_usd_known = True
+         self.event_sequence = 0
+@@ -478,6 +482,32 @@
+             self.counts[name] += 1
+             self._write_summary_locked()
+ 
++    def admit_model(self, request_id: str) -> None:
++        """Reserve shared credits until the upstream stream has fully drained.
++
++        A reservation is an admission allowance, not a provider billing promise.
++        Providers without enforceable per-call limits can exceed it. Actual
++        settled usage always wins; incomplete usage stops further admissions.
++        """
++        with self.lock:
++            if self.model_accounting_incomplete:
++                raise BudgetExceeded("model accounting is incomplete")
++            if request_id in self.model_inflight:
++                raise BudgetExceeded("duplicate active request")
++            if len(self.model_inflight) >= self.max_parallel_requests:
++                raise BudgetExceeded("model concurrency limit reached; retry after active calls settle")
++            available = self.usd_limit - self.usd_spent - sum(self.model_inflight.values())
++            if available <= 0:
++                raise BudgetExceeded("model credits are reserved or exhausted")
++            self.reserve("model_requests")
++            self.model_inflight[request_id] = min(available, self.request_reservation_usd)
++
++    def finish_model(self, request_id: str, *, accounted: bool) -> None:
++        with self.lock:
++            self.model_inflight.pop(request_id, None)
++            if not accounted:
++                self.model_accounting_incomplete = True
++
+     def add_model_tokens(self, total: int) -> None:
+         with self.lock:
+             self.counts["model_tokens"] += max(0, total)
+--- /dev/null
++++ b/services/gateway/tests/test_command_gateway.py
+@@ -0,0 +1,214 @@
++"""Generic harness gateway tests against an in-process mock provider."""
++import asyncio
++import json
++import os
++from pathlib import Path
++import tempfile
++import unittest
++from unittest.mock import patch
++
++import httpx
++import test_gateway  # Establish the same offline gateway environment.
++import gateway
++import gateway_pricing
++from gateway_runtime import Gateway
++
++
++class CommandGatewayTests(unittest.IsolatedAsyncioTestCase):
++    async def test_explicit_input_rejection_settles_zero_and_allows_corrected_request(self):
++        with tempfile.TemporaryDirectory() as temp, patch.dict(os.environ, {
++            "TESTBED_USAGE_DIR": temp, "DUNGENESS_ALLOWED_MODELS": '[["kimi-code","k3"]]',
++            "MAX_MODEL_REQUESTS": "20", "MAX_MODEL_TOKENS": "100000",
++        }):
++            runtime = Gateway()
++            await runtime.client.aclose()
++            calls = []
++
++            def upstream(request):
++                body = json.loads(request.content)
++                calls.append(body)
++                if body["messages"][0]["content"] == "":
++                    return httpx.Response(400, json={"error": {
++                        "type": "invalid_request_error", "message": "system must not be empty"}})
++                return httpx.Response(200, json={"choices": [], "usage": {
++                    "prompt_tokens": 100, "completion_tokens": 10, "total_tokens": 110}})
++
++            runtime.client = httpx.AsyncClient(transport=httpx.MockTransport(upstream))
++            try:
++                with patch.object(gateway, "gateway", runtime):
++                    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=gateway.app),
++                                                 base_url="http://gateway") as client:
++                        for text, expected in (("", 400), ("solve", 200)):
++                            reply = await client.post("/model/kimi-code/v1/chat/completions", json={
++                                "model": "k3", "messages": [{"role": "system", "content": text}]})
++                            self.assertEqual(reply.status_code, expected, reply.text)
++                events = [json.loads(line) for line in (Path(temp) / "events.jsonl").read_text().splitlines()]
++                receipts = [e["data"] for e in events if e["kind"] == "model.accounting"]
++                self.assertEqual(len(calls), 2)
++                self.assertEqual(receipts[0]["accounting_method"], "gateway")
++                self.assertEqual(receipts[0]["accounting_basis"], "input_rejected_before_generation")
++                self.assertEqual(receipts[0]["http_status"], 400)
++                self.assertEqual(receipts[0]["normalized_usd"], 0)
++                self.assertEqual(receipts[1]["accounting_basis"], "provider_usage")
++                self.assertGreater(receipts[1]["normalized_usd"], 0)
++                self.assertEqual(runtime.ledger.model_inflight, {})
++            finally:
++                await runtime.client.aclose()
++
++    def test_ambiguous_errors_never_become_zero_cost_receipts(self):
++        from gateway_runtime import rejected_before_generation
++        error = {"error": {"type": "invalid_request_error", "message": "invalid"}}
++        for status, body, mime in (
++            (200, error, "application/json"), (500, error, "application/json"),
++            (400, {**error, "choices": [{"text": "generated"}]}, "application/json"),
++            (400, {"error": {"type": "server_error"}}, "application/json"),
++            (400, error, "text/event-stream"),
++        ):
++            with self.subTest(status=status, body=body):
++                self.assertFalse(rejected_before_generation(json.dumps(body).encode(), mime, status))
++
++    async def test_sdk_chat_clients_use_kimi_and_new_catalog_model_with_trusted_prices(self):
++        """No Codex client, provider-name spoofing, or model-specific agent."""
++        model = "example/new-model"
++        reference = {"provider": "openrouter", "upstream_id": model, "request_models": [model],
++                     "input_per_mtok": 2, "cached_read_per_mtok": .2,
++                     "cache_write_per_mtok": 2, "output_per_mtok": 6, "text_only": True}
++        with tempfile.TemporaryDirectory() as temp, patch.dict(os.environ, {
++            "TESTBED_USAGE_DIR": temp, "MAX_MODEL_REQUESTS": "20", "MAX_MODEL_TOKENS": "100000",
++            "DUNGENESS_ALLOWED_MODELS": json.dumps([["kimi-code", "k3"], ["openrouter", model]]),
++        }), patch.object(gateway_pricing, "MODEL_PRICING", [*gateway_pricing.MODEL_PRICING, reference]):
++            runtime = Gateway()
++            await runtime.client.aclose()
++            calls = []
++
++            async def upstream(request):
++                payload = json.loads(request.content)
++                calls.append(payload)
++                self.assertEqual(request.url.path, "/coding/v1/chat/completions" if payload["model"] == "k3"
++                                 else "/api/v1/chat/completions")
++                self.assertEqual(request.headers["user-agent"], "dungeness-gateway/1")
++                self.assertNotEqual(request.headers["authorization"], "Bearer testbed")
++                self.assertTrue(payload["stream_options"]["include_usage"])
++                response = {"id": "mock-response", "choices": [],
++                            "usage": {"prompt_tokens": 100, "completion_tokens": 10, "total_tokens": 110}}
++                class Stream(httpx.AsyncByteStream):
++                    async def __aiter__(self):
++                        yield ("data: " + json.dumps(response) + "\n\ndata: [DONE]\n\n").encode()
++                return httpx.Response(200, stream=Stream(),
++                                      headers={"content-type": "text/event-stream"})
++
++            runtime.client = httpx.AsyncClient(transport=httpx.MockTransport(upstream))
++            try:
++                with patch.object(gateway, "gateway", runtime):
++                    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=gateway.app),
++                                                 base_url="http://gateway") as client:
++                        for provider, name in (("kimi-code", "k3"), ("openrouter", model)):
++                            reply = await client.post(f"/model/{provider}/v1/chat/completions",
++                                headers={"Authorization": "Bearer testbed"},
++                                json={"model": name, "messages": [{"role": "user", "content": "solve"}],
++                                      "tools": [{"type": "function", "function": {"name": "evaluate",
++                                                "parameters": {"type": "object"}}}],
++                                      "stream": True, "stream_options": {"include_usage": False}})
++                            self.assertEqual(reply.status_code, 200, reply.text)
++                        for extra in (
++                            {"models": ["example/other"]},
++                            {"plugins": [{"id": "web"}]},
++                            {"tools": [{"type": "web_search"}]},
++                            {"messages": [{"role": "user", "content": [
++                                {"type": "image_url", "image_url": {"url": "https://example.invalid/image"}}]}]},
++                        ):
++                            reply = await client.post("/model/openrouter/v1/chat/completions",
++                                json={"model": model, "messages": [{"role": "user", "content": "solve"}], **extra})
++                            self.assertEqual(reply.status_code, 400, reply.text)
++                self.assertEqual(len(calls), 2)
++                self.assertAlmostEqual(runtime.ledger.usd_spent, .00071)
++                events = [json.loads(line) for line in (Path(temp) / "events.jsonl").read_text().splitlines()]
++                accounting = [event["data"] for event in events if event["kind"] == "model.accounting"]
++                self.assertEqual(len(accounting), 2)
++                self.assertTrue(all(item["billed_usd"] is None for item in accounting))
++                self.assertEqual(runtime.ledger.model_inflight, {})
++            finally:
++                await runtime.client.aclose()
++
++    async def test_missing_usage_on_generic_chat_blocks_more_inference(self):
++        with tempfile.TemporaryDirectory() as temp, patch.dict(os.environ, {
++            "TESTBED_USAGE_DIR": temp, "DUNGENESS_ALLOWED_MODELS": '[["kimi-code","k3"]]',
++        }):
++            runtime = Gateway()
++            await runtime.client.aclose()
++            calls = []
++
++            def upstream(request):
++                calls.append(request)
++                return httpx.Response(200, json={"choices": [{"message": {"content": "no usage"}}]})
++
++            runtime.client = httpx.AsyncClient(transport=httpx.MockTransport(upstream))
++            try:
++                with patch.object(gateway, "gateway", runtime):
++                    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=gateway.app),
++                                                 base_url="http://gateway") as client:
++                        payload = {"model": "k3", "messages": [{"role": "user", "content": "solve"}]}
++                        await client.post("/model/kimi-code/v1/chat/completions", json=payload)
++                        denied = await client.post("/model/kimi-code/v1/chat/completions", json=payload)
++                        self.assertEqual(denied.status_code, 429)
++                self.assertEqual(len(calls), 1)
++            finally:
++                await runtime.client.aclose()
++
++    async def test_parallel_models_are_authorized_and_share_admission_and_actual_usage(self):
++        with tempfile.TemporaryDirectory() as temp, patch.dict(os.environ, {
++            "TESTBED_USAGE_DIR": temp, "MAX_MODEL_REQUESTS": "20", "MAX_MODEL_TOKENS": "100000",
++            "DUNGENESS_MAX_PARALLEL_REQUESTS": "2", "DUNGENESS_REQUEST_RESERVATION_USD": ".5",
++            "DUNGENESS_ALLOWED_MODELS": json.dumps([
++                ["openai", "gpt-5.6-sol"], ["openai", "gpt-6-astra"]]),
++        }):
++            runtime = Gateway()
++            await runtime.client.aclose()
++            both_started, release = asyncio.Event(), asyncio.Event()
++            calls = []
++
++            async def provider(request):
++                payload = json.loads(request.content)
++                calls.append(payload["model"])
++                if len(calls) == 2:
++                    both_started.set()
++                await release.wait()
++                return httpx.Response(200, json={
++                    "id": payload["model"], "usage": {"input_tokens": 100, "output_tokens": 10},
++                    "output": []})
++
++            runtime.client = httpx.AsyncClient(transport=httpx.MockTransport(provider))
++            try:
++                with patch.object(gateway, "gateway", runtime):
++                    async with httpx.AsyncClient(transport=httpx.ASGITransport(app=gateway.app),
++                                                 base_url="http://gateway") as client:
++                        first = asyncio.create_task(client.post("/model/openai/v1/responses",
++                            json={"model": "gpt-5.6-sol", "input": "worker one"}))
++                        second = asyncio.create_task(client.post("/model/openai/v1/responses",
++                            json={"model": "gpt-6-astra", "input": "worker two"}))
++                        try:
++                            await asyncio.wait_for(both_started.wait(), 5)
++                            rejected = await client.post("/model/openai/v1/responses",
++                                json={"model": "gpt-5.6-sol", "input": "third worker"})
++                            self.assertEqual(rejected.status_code, 429)
++                        finally:
++                            release.set()
++                        replies = await asyncio.gather(first, second)
++                        self.assertEqual([r.status_code for r in replies], [200, 200])
++                        unauthorized = await client.post("/model/openai/v1/responses",
++                            json={"model": "unpriced-model", "input": "must not reach provider"})
++                        self.assertEqual(unauthorized.status_code, 400)
++                self.assertEqual(len(calls), 2)
++                self.assertEqual(runtime.ledger.counts["model_requests"], 2)
++                self.assertEqual(runtime.ledger.model_inflight, {})
++                self.assertAlmostEqual(runtime.ledger.usd_spent, .0023)
++                events = [json.loads(line) for line in (Path(temp) / "events.jsonl").read_text().splitlines()]
++                receipts = [e for e in events if e["kind"] == "model.accounting"]
++                self.assertEqual({e["data"]["model"] for e in receipts}, set(calls))
++                self.assertTrue(all(e["data"]["accounting_method"] == "gateway" for e in receipts))
++            finally:
++                await runtime.client.aclose()
++
++
++if __name__ == "__main__":
++    unittest.main()
+--- a/services/gateway/tests/test_gateway.py
++++ b/services/gateway/tests/test_gateway.py
+@@ -157,7 +157,7 @@
+ class SearchPolicyTests(unittest.TestCase):
+     def test_kimi_code_provider_uses_responses_adapter(self) -> None:
+         provider = MODEL_PROVIDERS["kimi-code"]
+-        self.assertEqual(provider["routes"], {"responses"})
++        self.assertEqual(provider["routes"], {"responses", "chat/completions"})
+         self.assertEqual(
+             provider["upstream_default"],
+             "https://api.kimi.com/coding/v1",
+--- a/src/dungeness/compiler.py
++++ b/src/dungeness/compiler.py
+@@ -2514,6 +2514,49 @@
+     )
+ 
+ 
++def command_execution(agent: dict[str, Any]) -> dict[str, Any] | None:
++    execution = agent.get("execution")
++    if execution is None:
++        return None
++    if (not isinstance(execution, dict)
++            or execution.get("interface") != "dungeness-command-v1"
++            or set(execution) - {"interface", "entrypoint", "resume_entrypoint"}):
++        raise ValueError("invalid dungeness-command-v1 execution")
++    for key in ("entrypoint", "resume_entrypoint"):
++        if key == "resume_entrypoint" and key not in execution:
++            continue
++        value = execution.get(key)
++        if (not isinstance(value, list) or not value
++                or any(not isinstance(arg, str) or not arg or "\0" in arg for arg in value)):
++            raise ValueError(f"execution.{key} must be a non-empty argv list")
++    if "harbor" in agent:
++        raise ValueError("command harnesses cannot select host Harbor adapters")
++    return execution
++
++
++def command_models(agent: dict[str, Any]) -> list[dict[str, Any]]:
++    """The compiler populates model_access from trusted run configuration."""
++    models = agent.get("model_access", {}).get("models", [agent_model(agent)])
++    if not isinstance(models, list) or not 1 <= len(models) <= 16:
++        raise ValueError("model_access.models requires 1..16 model profiles")
++    seen = set()
++    result = []
++    for model in models:
++        profile = {"model": model}
++        model = agent_model(profile)
++        provider = agent_provider(profile)
++        resolve_model_pricing(profile)
++        identity = (provider, model["request_model"])
++        if identity in seen:
++            raise ValueError("duplicate allowed model")
++        seen.add(identity)
++        route = "chatgpt" if provider == "openai-chatgpt" else provider
++        suffix = "" if model["api"] == "anthropic-messages" else "/v1"
++        result.append({**model, "name": model["request_model"],
++                       "base_url": f"http://gateway:8080/model/{route}{suffix}"})
++    return result
++
++
+ def agent_model(agent: dict[str, Any]) -> dict[str, Any]:
+     """Return the model/route configuration bundled into an agent profile."""
+ 
+@@ -2624,6 +2667,9 @@
+ ) -> dict[str, str]:
+     """Resolve run-level options without mutating the reusable agent manifest."""
+ 
++    if command_execution(agent) is not None:
++        defaults = agent_model(agent).get("defaults", {})
++        return {**defaults, **(overrides or {})}
+     harbor = agent.get("harbor")
+     if not isinstance(harbor, dict):
+         raise ValueError("agent harbor configuration must be a mapping")
+@@ -2809,6 +2855,23 @@
+ ) -> str:
+     """Build a one-trial Harbor job without putting provider keys in it."""
+ 
++    execution = command_execution(agent)
++    if execution is not None:
++        models = command_models(agent)
++        if continuation and continuation.get("max_resumes", 0) and not execution.get("resume_entrypoint"):
++            raise ValueError("command continuation requires execution.resume_entrypoint")
++        kwargs = {"execution": execution, "models": models,
++                  "task_input": agent.get("task_input", {})}
++        if continuation:
++            kwargs.update({f"continuation_{key}": value for key, value in continuation.items()})
++        return yaml.safe_dump({
++            "job_name": run_id, "jobs_dir": str(((run_dir or RUNS_ROOT / run_id) / "harbor").resolve()),
++            "n_attempts": 1, "n_concurrent_trials": 1,
++            "agents": [{"import_path": "command_agent:CommandAgent",
++                        "model_name": models[0]["request_model"], "kwargs": kwargs,
++                        "env": {}}],
++            "tasks": [{"path": str(task_path.resolve())}],
++        }, sort_keys=False)
+     package = agent.get("package")
+     harbor = agent.get("harbor")
+     environment = agent.get("environment")
+@@ -3135,6 +3198,7 @@
+     metric_direction: str = "minimize",
+     baseline_score: float | None = None,
+     readonly_workspace_paths: list[str] | None = None,
++    command_policy: dict[str, Any] | None = None,
+ ) -> str:
+     """Build the per-run agent/gateway topology consumed by Harbor Docker."""
+ 
+@@ -3207,7 +3271,7 @@
+     # Inject the real provider credential into the gateway only (never the agent),
+     # via a differently named host variable so Harbor's agent adapter can never
+     # receive it as the agent's own key.
+-    if provider == "openai-chatgpt":
++    if provider == "openai-chatgpt" and command_policy is None:
+         provider_secret_env = {
+             "CHATGPT_UPSTREAM_BASE_URL": (
+                 "${CHATGPT_UPSTREAM_BASE_URL:-"
+@@ -3333,7 +3397,37 @@
+             "external_egress": {},
+         },
+     }
+-    if provider == "openai-chatgpt":
++    if command_policy is not None:
++        models = command_policy["models"]
++        providers = {model["provider"] for model in models}
++        gateway_environment = document["services"]["gateway"]["environment"]
++        # No ambient provider can be used, even if a key was accidentally present.
++        gateway_environment["DUNGENESS_ALLOWED_MODELS"] = json.dumps(
++            [[model["provider"], model["request_model"]] for model in models])
++        gateway_environment["DUNGENESS_MAX_PARALLEL_REQUESTS"] = str(
++            command_policy.get("max_parallel_requests", 4))
++        gateway_environment["DUNGENESS_REQUEST_RESERVATION_USD"] = str(
++            command_policy.get("request_reservation_usd", min(max_usd or 1, 1)))
++        for api_provider, key in (
++            ("openai", "OPENAI_API_KEY"), ("anthropic", "ANTHROPIC_API_KEY"),
++            ("openrouter", "OPENROUTER_API_KEY"), ("moonshot", "MOONSHOT_API_KEY"),
++            ("kimi-code", "KIMI_CODE_API_KEY"),
++        ):
++            gateway_environment.pop(key, None)
++            if api_provider in providers:
++                gateway_environment[key] = "${TESTBED_" + key + ":?provider access required}"
++        if "openai-chatgpt" in providers:
++            # Short-lived access is mounted only into the trusted gateway.
++            gateway_environment["DUNGENESS_CHATGPT_AUTH_FILE"] = "/run/dungeness/auth.json"
++            document["services"]["gateway"]["volumes"].append(
++                "${DUNGENESS_CODEX_AUTH_FILE:?ChatGPT access required}:/run/dungeness/auth.json:ro")
++        main_environment["DUNGENESS_MODELS"] = json.dumps(models)
++        main_environment["OPENAI_API_KEY"] = "testbed"
++        main_environment["OPENAI_BASE_URL"] = models[0]["base_url"]
++        if "anthropic" in providers:
++            main_environment["ANTHROPIC_API_KEY"] = "testbed"
++            main_environment["ANTHROPIC_BASE_URL"] = "http://gateway:8080/model/anthropic"
++    if provider == "openai-chatgpt" and command_policy is None:
+         document["services"]["codex-subscription-proxy"] = {
+             "build": {"context": "./codex-subscription-proxy"},
+             "environment": {
+@@ -3990,6 +4084,22 @@
+         raise ValueError("an agent is required: pass --agent <id> (see agents/)")
+     agent_path, agent = load_agent_record(agent_id, agent_namespace)
+     agent_root = agent_path.parent
++    if command_execution(agent) is not None:
++        policy = (run_spec_manifest or {}).get("model_access")
++        if not isinstance(policy, dict) or set(policy) - {
++            "models", "max_parallel_requests", "request_reservation_usd",
++        }:
++            raise ValueError("command harnesses require run-spec model_access")
++        if not isinstance(policy.get("models"), list) or not policy["models"]:
++            raise ValueError("model_access.models must not be empty")
++        agent = {**agent, "model": policy["models"][0], "model_access": policy}
++        parallel = policy.get("max_parallel_requests", 4)
++        reservation = policy.get("request_reservation_usd", min(max_usd or 1, 1))
++        if type(parallel) is not int or not 1 <= parallel <= 16:
++            raise ValueError("max_parallel_requests must be 1..16")
++        if (type(reservation) not in (int, float) or not 0 < reservation < float("inf")):
++            raise ValueError("request_reservation_usd must be positive and finite")
++        command_models(agent)
+     model = agent_model(agent)
+     agent_option_overrides = {
+         key: value
+@@ -4515,6 +4625,8 @@
+             run_dir=resolved_run_dir,
+             max_usd=effective_max_usd,
+             model_pricing=model_pricing,
++            command_policy=({**agent["model_access"], "models": command_models(agent)}
++                            if command_execution(agent) is not None else None),
+             agent_timeout_sec=agent_res["timeout_sec"],
+             research_state=resolved_research_state,
+             knowledge_base=resolved_knowledge_base,
+--- /dev/null
++++ b/tests/test_command_harness.py
+@@ -0,0 +1,168 @@
++"""No Docker or paid model calls: command/compiler/ledger boundary contracts."""
++from concurrent.futures import ThreadPoolExecutor
++import importlib.util
++import json
++import os
++from pathlib import Path
++import subprocess
++import sys
++import tempfile
++import threading
++import unittest
++from unittest.mock import patch
++
++import yaml
++
++ROOT = Path(__file__).resolve().parents[1]
++
++
++def load(name, path):
++    spec = importlib.util.spec_from_file_location(name, ROOT / path)
++    module = importlib.util.module_from_spec(spec)
++    sys.modules[name] = module
++    spec.loader.exec_module(module)
++    return module
++
++
++compiler = load("command_compiler", "src/dungeness/compiler.py")
++usage = load("command_usage", "services/gateway/gateway_usage.py")
++models = load("command_models", "services/gateway/gateway_models.py")
++MODEL = {"provider": "openai-chatgpt", "request_model": "gpt-6-astra",
++         "upstream_id": "openai/gpt-6-astra", "api": "openai-responses", "name_format": "request"}
++
++
++class CommandHarnessTests(unittest.TestCase):
++    def test_verifier_results_are_readable_after_container_download(self):
++        grade = load("command_grade_contract", "verifiers/ecdsa-fail/benchmark-sh/grade.py")
++        with tempfile.TemporaryDirectory() as temp:
++            path = Path(temp) / "reward.json"
++            prior = os.umask(0o077)
++            try:
++                grade.atomic_write_json(path, {"ecdsafail_score": 123})
++            finally:
++                os.umask(prior)
++            self.assertEqual(json.loads(path.read_text()), {"ecdsafail_score": 123})
++            self.assertEqual(path.stat().st_mode & 0o777, 0o644)
++
++    def test_adapter_uses_real_harbor_exec_result_contract(self):
++        import asyncio
++        from unittest.mock import AsyncMock
++        try:
++            from harbor.environments.base import ExecResult
++        except ImportError:
++            self.skipTest("Harbor is required for the adapter API contract test.")
++        adapter = load("command_agent_contract", "adapters/harbor/command_agent.py")
++        with tempfile.TemporaryDirectory() as temp:
++            agent = adapter.CommandAgent(
++                logs_dir=Path(temp), model_name="test-model",
++                execution={"entrypoint": ["python3", "agent.py"]})
++            environment = AsyncMock()
++            with patch.object(agent, "exec_as_agent", new=AsyncMock(
++                    return_value=ExecResult(return_code=0, stdout="ok"))):
++                asyncio.run(agent.install(environment))
++                asyncio.run(agent.run("test task", environment, None))
++            self.assertEqual((Path(temp) / "harness-output-0.txt").read_text(), "ok\n")
++            with patch.object(agent, "exec_as_agent", new=AsyncMock(
++                    return_value=ExecResult(return_code=2, stderr="bad command"))):
++                with self.assertRaisesRegex(RuntimeError, "status 2"):
++                    asyncio.run(agent.run("test task", environment, None))
++
++    def test_generic_job_has_no_codex_identity_and_cannot_import_solver_host_code(self):
++        agent = {"execution": {"interface": "dungeness-command-v1", "entrypoint": ["python3", "harness.py"]},
++                 "model": MODEL, "model_access": {"models": [MODEL]}}
++        job = yaml.safe_load(compiler.build_harbor_job("sample", agent, ROOT))
++        self.assertEqual(job["agents"][0]["import_path"], "command_agent:CommandAgent")
++        self.assertEqual(job["agents"][0]["env"], {})
++        self.assertNotIn("name", job["agents"][0])
++        with self.assertRaises(ValueError):
++            compiler.build_harbor_job("sample", {**agent, "harbor": {"import_path": "evil:Host"}}, ROOT)
++        with self.assertRaises(ValueError):
++            compiler.build_harbor_job("sample", agent, ROOT, continuation={"max_resumes": 1})
++
++    def test_child_processes_run_inside_command_lifecycle(self):
++        with tempfile.TemporaryDirectory() as temp:
++            root = Path(temp)
++            # Two independent subprocess workers write separate candidates.
++            script = root / "harness.py"
++            script.write_text(
++                "import subprocess,sys\n"
++                "workers=[subprocess.Popen([sys.executable,'-c',"
++                "'from pathlib import Path; import sys; Path(sys.argv[1]).write_text(sys.argv[2])',"
++                "f'candidate-{i}',str(i)]) for i in range(2)]"
++                "\nfor worker in workers: assert worker.wait()==0\n")
++            task = root / "task.json"
++            task.write_text(json.dumps({"workspace": temp, "execution": {
++                "entrypoint": [sys.executable, str(script)]}}))
++            subprocess.run([sys.executable, str(ROOT / "adapters/harbor/command_runner.py"), str(task)],
++                           check=True, timeout=10)
++            self.assertEqual((root / "candidate-0").read_text(), "0")
++            self.assertEqual((root / "candidate-1").read_text(), "1")
++
++    def test_provider_protocol_controls_base_url_not_harness_name(self):
++        anthropic = {"provider": "anthropic", "request_model": "claude-opus-5",
++                     "upstream_id": "anthropic/claude-opus-5",
++                     "api": "anthropic-messages", "name_format": "request"}
++        resolved = compiler.command_models({"model": MODEL, "model_access": {"models": [MODEL, anthropic]}})
++        self.assertEqual(resolved[0]["base_url"], "http://gateway:8080/model/chatgpt/v1")
++        self.assertEqual(resolved[1]["base_url"], "http://gateway:8080/model/anthropic")
++
++    def test_concurrent_admission_reserves_one_shared_budget(self):
++        with tempfile.TemporaryDirectory() as temp, patch.dict(os.environ, {
++            "MAX_SEARCHES": "0", "MAX_FETCHES": "0", "MAX_MODEL_REQUESTS": "20",
++            "MAX_MODEL_TOKENS": "10000", "MAX_MODEL_USD": "1",
++            "DUNGENESS_MAX_PARALLEL_REQUESTS": "8", "DUNGENESS_REQUEST_RESERVATION_USD": ".5",
++        }):
++            ledger = usage.UsageLedger("test", Path(temp))
++            barrier = threading.Barrier(8)
++            def start(i):
++                barrier.wait()
++                try:
++                    ledger.admit_model(str(i))
++                    return str(i)
++                except usage.BudgetExceeded:
++                    return None
++            with ThreadPoolExecutor(8) as pool:
++                accepted = [x for x in pool.map(start, range(8)) if x is not None]
++            self.assertEqual(len(accepted), 2)
++            self.assertEqual(ledger.counts["model_requests"], 2)
++            ledger.add_model_usage(billed_tokens=10, normalized_usd=.25)
++            ledger.finish_model(accepted[0], accounted=True)
++            ledger.admit_model("next")
++            self.assertEqual(ledger.model_inflight["next"], .25)
++            ledger.finish_model("next", accounted=False)
++            with self.assertRaises(usage.BudgetExceeded):
++                ledger.admit_model("after-missing-usage")
++
++    def test_normal_exit_cleans_background_workers_and_resume_selects_hook(self):
++        with tempfile.TemporaryDirectory() as temp:
++            root = Path(temp)
++            script = root / "harness.py"
++            # The background process inherits stdout. Without process-group
++            # cleanup, communicate() cannot see EOF and hits the timeout.
++            script.write_text("import subprocess,sys\n"
++                              "subprocess.Popen([sys.executable,'-c','import time; time.sleep(30)'])\n")
++            task = root / "task.json"
++            execution = {"entrypoint": [sys.executable, str(script)],
++                         "resume_entrypoint": [sys.executable, "-c", "print('resumed')"]}
++            task.write_text(json.dumps({"workspace": temp, "execution": execution}))
++            subprocess.run([sys.executable, str(ROOT / "adapters/harbor/command_runner.py"), str(task)],
++                           check=True, capture_output=True, timeout=5)
++            task.write_text(json.dumps({"workspace": temp, "execution": execution, "resume": True}))
++            result = subprocess.run(
++                [sys.executable, str(ROOT / "adapters/harbor/command_runner.py"), str(task)],
++                check=True, capture_output=True, text=True, timeout=5)
++            self.assertEqual(result.stdout.strip(), "resumed")
++
++    def test_gateway_owns_chatgpt_auth_ignoring_harness_bearer(self):
++        with tempfile.TemporaryDirectory() as temp:
++            path = Path(temp) / "auth.json"
++            path.write_text(json.dumps({"tokens": {
++                "access_token": "synthetic-private-token", "account_id": "synthetic-account"}}))
++            with patch.dict(os.environ, {"DUNGENESS_CHATGPT_AUTH_FILE": str(path)}):
++                headers = models.provider_auth_headers("openai-chatgpt", {"authorization": "Bearer testbed"})
++            self.assertEqual(headers, {"authorization": "Bearer synthetic-private-token",
++                                      "chatgpt-account-id": "synthetic-account"})
++
++
++if __name__ == "__main__":
++    unittest.main()
+--- a/verifiers/ecdsa-fail/benchmark-sh/serve.py
++++ b/verifiers/ecdsa-fail/benchmark-sh/serve.py
+@@ -335,6 +335,9 @@
+ 
+         payload = {
+             "status": status,
++            "source_sha256": digest,
++            "evaluation_id": event_id,
++            "run_id": RUN_ID,
+             "score": score,
+             "avg_toffoli": details["avg_toffoli"],
+             "peak_qubits": details["peak_qubits"],
+--- a/verifiers/ecdsa-fail/benchmark-sh/grade.py
++++ b/verifiers/ecdsa-fail/benchmark-sh/grade.py
+@@ -45,6 +45,9 @@
+     ) as tmp:
+         json.dump(value, tmp, indent=2, sort_keys=True)
+         tmp.write("\n")
++        # Harbor copies these root-produced results back to an unprivileged
++        # host worker. Keep the score readable without making it writable.
++        os.fchmod(tmp.fileno(), 0o644)
+         tmp_path = Path(tmp.name)
+     os.replace(tmp_path, path)
+ 

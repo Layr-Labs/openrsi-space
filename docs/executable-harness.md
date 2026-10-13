@@ -3,8 +3,8 @@
 For the Yukon solver entrypoint, run `yukon setup` and `yukon run` from the
 Catalyst root, then edit `submission/`. The root `benchmark.json` connects those
 commands to the remote evaluation bridge. An older CLI needs `yukon update`.
-Remote runs require a configured evaluator and a private grant reference;
-the server is not connected yet. Submission reuses a matching remote result
+Remote runs require a configured evaluator and authorized model access.
+Submission reuses a matching remote result
 without another paid run. See [the remote contract](remote-evaluation.md).
 The commands below also document the standalone
 Catalyst tooling and individual real-problem development checks.
@@ -18,8 +18,10 @@ A persistent local API and Dungeness worker execute the actual pinned ECDSA
 baseline with model access disabled. A smaller circuit fixture tests model
 accounting and Yukon integration; see [the local checks](local-evaluation.md).
 Those local modes use fixture identities. The [private VM service](remote-vm.md)
-uses provisioned account keys and a dedicated Yukon consumer key. Temporary
-provider access and release of the hosted Yukon retrieval provider remain pending.
+supports Yukon solver authentication and temporary ChatGPT access, with
+GitHub OIDC for workflow retrieval. The new local
+[generic harness interface](generic-harnesses.md) adds model sets and gateway-owned
+credentials; it has not been deployed.
 
 ## Develop against a problem
 
@@ -58,6 +60,10 @@ starting candidate unchanged and makes no model calls.
 Replace `agent.py` with your solver. Install runtime dependencies and problem
 toolchains in its Dockerfile. Python 3 and Bash are required for the platform
 launcher and Dungeness clients; the solver can use any language.
+The starter copies the whole bundle into `/opt/harness/`, so knowledge files,
+prompts and helper modules travel with the agent. Use the
+[general remote submission flow](generic-harnesses.md#submit-your-own-agent)
+to choose provider, model and budget separately from those source files.
 
 The `execution` field in the ordinary harness manifest is:
 
@@ -74,7 +80,8 @@ instruction/knowledge packages remain supported.
 
 `CATALYST_TASK` points to a JSON file containing problem/harness references,
 instruction, writable workspace, candidate paths, budget, model and gateway
-URL. `CATALYST_WORKSPACE` and `CATALYST_MODEL` are convenience variables.
+URL, plus an allowed `models` list. `CATALYST_WORKSPACE`, `CATALYST_MODEL`
+and `CATALYST_MODELS` are convenience variables.
 During Dungeness execution, `OPENAI_BASE_URL` points at the metered gateway
 and `OPENAI_API_KEY` is only the public placeholder `testbed`. Smoke tests
 supply no gateway or model.
@@ -102,7 +109,7 @@ uv run catalyst evaluate problems/ecdsa-start harnesses/my-solver \
 ```
 
 Preparation inspects the Docker image but starts no containers or model calls.
-One trusted Harbor adapter is installed in a disposable Dungeness checkout.
+One trusted Dungeness command adapter runs through Harbor in an isolated checkout.
 Dungeness adds the frozen workspace, candidate transfer, verifier and metering.
 The built starter lacks Rust: add the pinned toolchain and offline dependencies
 before attempting a full ecdsa.fail run.
