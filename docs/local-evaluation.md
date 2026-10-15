@@ -29,36 +29,72 @@ Replace `BUILD_ID` with the build command's returned `id`. The smoke test runs
 on a copied workspace with no network, model access or host credentials. This
 checks packaging and launch behavior, not research quality.
 
-## Optional full agent run with Dungeness
+## Full local agent run with Dungeness
 
-[Dungeness](https://github.com/Layr-Labs/dungeness) is the publicly available
-research runtime used by Catalyst's remote service. Anyone can clone it:
+Install Git, Docker (running), and uv. Clone a clean copy of the public runtime:
 
 ```sh
-git clone https://github.com/Layr-Labs/dungeness.git
+git clone https://github.com/Layr-Labs/dungeness.git ../dungeness
 ```
 
-Local testing with it is optional and does not require the private
-`catalyst-verifier` service. Follow Dungeness's README and
-[command-harness guide](https://github.com/Layr-Labs/dungeness/blob/main/docs/command-harness.md)
-to install its dependencies, register your harness, and configure a run spec.
-Use the same pinned ECDSA problem/checkpoint and compatible runtime version as
-the remote service when comparing results. A Catalyst source package is not
-itself a Dungeness run spec; follow the harness adapter instructions.
-The public `main` branch and the deployed service may use different revisions;
-public repository access alone does not establish matching runtime behavior.
+From your Catalyst checkout, run your executable harness with one command:
 
-Dungeness can run the agent, meter gateway usage and verify intermediate and
-final candidates locally. The harness must use its declared metered endpoints.
-Model-enabled tests consume your own API credits or subscription allowance:
-choose limits and authorize model use before running them. Linux is required
-for the current clean no-network final verifier; macOS supports development
-and agent/sidecar runs but does not establish equivalent final verification.
+```sh
+uv run catalyst local run .catalyst/my-agent \
+  --dungeness ../dungeness \
+  --provider openai-chatgpt --model gpt-6-astra --reasoning-effort high \
+  --budget 1 --max-seconds 900 --codex-auth-file
+```
 
-Local runs are useful development evidence, **not official Catalyst results**.
-They cannot issue a receipt accepted by Yukon. When ready, submit the source
-to Catalyst so the service runs it under its pinned conditions and independently
-records the official scores and usage.
+This **uses your model account locally** and consumes your subscription allowance.
+Choose your own cap and authorize model use before running it. In-flight responses
+can exceed the normalized-credit cap. No Yukon login or private verifier repository
+is required, and the command does not contact Catalyst's hosted API.
+
+Catalyst builds your harness, snapshots the current public problem package, prepares
+a private copy of the chosen Dungeness revision, and starts the agent, model gateway,
+problem service and evaluator. **You do not need to start a server or expose a port.**
+The problem service is a local container on an internal Docker network. The launcher
+loads its statement into `CATALYST_TASK` before your agent starts.
+
+Add `--prepare-only` to build and inspect the generated configuration without reading
+model credentials or starting the agent. Remove that flag to run; unchanged harness
+builds are reused. If your package already has `evaluation.json`, provider/model,
+budget and token/time settings can come from it instead of command-line overrides.
+
+For an API-key model, use an existing environment variable instead of the Codex flag:
+
+```sh
+uv run catalyst local run .catalyst/my-agent \
+  --dungeness ../dungeness --provider openai --model gpt-5.6-sol \
+  --budget 1 --provider-token-env OPENAI_API_KEY
+```
+
+For ensembles, use `evaluation.json` with its models list and
+`--provider-access-file /private/path/providers.json` as described in
+[model access](live-models.md). Keep all credential files outside harness source.
+Temporary access is placed outside the retained run and removed on completion or
+interruption. ChatGPT refresh credentials stay in your original local login.
+
+Prices default to Catalyst's pinned schedule. `--pricing PATH` accepts a trusted
+local pricing JSON with `entries` for additional models; the selected schedule is
+saved in the generated runtime. Local pricing does not change official rates.
+
+The command streams Dungeness output and finishes with a JSON summary containing
+status, usage, metrics, and artifact paths. Results live under
+`.catalyst/local/LOCAL_RUN_ID/`: `run.json` is the summary, `problem.zip` and
+`harness.zip` contain the input snapshots, and `dungeness/runs/projects/catalyst/`
+contains Dungeness's records, usage events, traces and candidate artifacts. Ctrl-C
+asks Dungeness to stop its containers before temporary access is removed.
+
+The public CLI and remote service share task and harness assembly, so neither needs
+a second handwritten copy of Catalyst's problem configuration. The remote service
+additionally performs admission, source screening, isolated verification and receipt
+issuance. Local runs do not apply private anti-cheat policy or issue official receipts.
+Use the service's pinned runtime and prices when comparing development results.
+Linux is the supported platform for comparison with production verification; macOS
+Docker runs remain development evidence. Allow memory for both the 8 GiB verifier
+and the agent, in addition to Docker overhead.
 
 ## Move to the official evaluation
 

@@ -229,6 +229,26 @@ def build_parser():
             smoke.add_argument("--workspace", required=True)
             smoke.add_argument("--problem", help="Initial problem ID for the smoke-test task input.")
             smoke.add_argument("--timeout", type=int, default=120)
+    local = commands.add_parser("local", help="Run your harness locally with Dungeness; no hosted service or Yukon login.")
+    local_sub = local.add_subparsers(dest="operation", required=True)
+    local_run = local_sub.add_parser("run", help="Build, prepare, and run a harness with metered local model access.")
+    local_run.add_argument("package", help="Harness source directory.")
+    local_run.add_argument("--dungeness", required=True, help="Clean checkout of the public Dungeness runtime.")
+    local_run.add_argument("--problem", default="ecdsa.fail")
+    local_run.add_argument("--provider")
+    local_run.add_argument("--model")
+    local_run.add_argument("--reasoning-effort", choices=["low", "medium", "high", "xhigh", "max"])
+    local_run.add_argument("--budget", type=float, help="Normalized model-credit cap; may overshoot for an in-flight response.")
+    local_run.add_argument("--max-tokens", type=int)
+    local_run.add_argument("--max-seconds", type=int)
+    local_run.add_argument("--pricing", help="Optional trusted local pricing JSON; defaults to Catalyst's pinned schedule.")
+    local_run.add_argument("--prepare-only", action="store_true", help="Build and prepare the run without reading credentials or calling models.")
+    local_access = local_run.add_mutually_exclusive_group()
+    local_access.add_argument("--codex-auth-file", nargs="?", const=str(Path.home() / ".codex/auth.json"),
+                              help="Use temporary access from your local Codex login; refresh credentials stay outside the run.")
+    local_access.add_argument("--provider-token-env", metavar="NAME",
+                              help="Read an API token from this environment variable; never pass the token as an argument.")
+    local_access.add_argument("--provider-access-file", help="Private provider credential map for an ensemble.")
     commands.add_parser("yukon-setup", help="Download the pinned ecdsa.fail workspace for Yukon.")
     commands.add_parser("yukon-run", help="Trusted remote evaluation bridge invoked by Yukon.")
     yukon_submit = commands.add_parser("yukon-submit", help="Submit a receipt through stock Yukon and bind its Pareto execution.")
@@ -327,6 +347,9 @@ def dispatch(args):
                                    timeout=args.timeout)
                     print(json.dumps(result, indent=2))
                     return 0 if result["status"] == "completed" else 1
+        elif args.command == "local":
+            from .local import run
+            return run(args, state)
         elif args.command == "yukon-setup":
             from .yukon import setup_problems
             setup_problems(Path.cwd())

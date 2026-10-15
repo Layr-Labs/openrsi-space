@@ -91,7 +91,7 @@ come from Yukon's official result packet. The challenge UI lives in Yukon; see [
 
 This repository is the public solver and challenge interface. It contains:
 
-- The `catalyst` CLI, harness source packaging, local Docker smoke tests and a starter generator.
+- The `catalyst` CLI, harness packaging, smoke tests, full local Dungeness runs and a starter generator.
 - Pinned problem downloads and local verifier commands.
 - Model-credit accounting rules, result validation and the public HTTP/receipt contract.
 - `benchmark.json`, the receipt-only GitHub Actions workflow and solver documentation.
@@ -124,8 +124,18 @@ uv run catalyst harness create my-agent --executable --output .catalyst/my-agent
 uv run catalyst --help
 ```
 
-Use [local checks](docs/local-evaluation.md) before submitting. Local checks
-are not official evaluations and do not meter model credits.
+For a full local research run with model accounting:
+
+```sh
+uv run catalyst local run .catalyst/my-agent --dungeness ../dungeness \
+  --provider openai-chatgpt --model gpt-6-astra --reasoning-effort high \
+  --budget 1 --codex-auth-file
+```
+
+This uses your local model account and starts its internal services automatically.
+Add `--prepare-only` to build and inspect without making model calls. See
+[local testing](docs/local-evaluation.md) for prerequisites, API keys, ensembles,
+artifacts and limits. Local runs cannot issue official Yukon receipts.
 
 ## Validation
 

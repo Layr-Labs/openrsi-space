@@ -63,12 +63,32 @@ Service initialization reads Catalyst's packaged statement, not Dungeness's
 historical task text. Each run retains its problem snapshot and generated service
 document, with the document digest in its run metadata.
 
-The public ECDSA baseline pin and existing receipt protocol are unchanged.
-The ECDSA verifier/task adapters still use the pinned Dungeness definitions;
-statement ownership does not replace those executable adapters.
+The public ECDSA source commit, scoring rules and receipt protocol are unchanged.
+The updated execution configuration changes the problem-package version.
+Catalyst also owns the ECDSA execution configuration in `problem-set/initial.json`:
+source commit, candidate paths, interface, reference score, resource limits and
+verifier selection. The worker generates a task and checkpoint in its private
+per-run runtime; it does not look up Dungeness task, problem or checkpoint
+manifests. Dungeness still supplies the selected verifier implementation and
+generic execution components, pinned by the runtime commit.
 
 Deploying this requires updated public and private packages plus a clean, pinned
 Dungeness revision with problem-service support. The private adapter refuses an
 older runtime. Existing service directories are not overwritten automatically;
 an operator must deliberately migrate their problem package before new runs use
 the revised statement. Retain old snapshots and receipts.
+
+Old service packages containing `execution.task` or a checkpoint reference are
+rejected before execution, with instructions to initialize a new service package.
+Existing retained runs and receipts are not rewritten. A deployment must migrate
+the worker package and its published problem set together; historical receipts
+keep their original problem-set identity.
+
+## Local development
+
+`catalyst local run` uses the same public task assembly and harness adapter as the
+remote worker. Docker Compose starts the problem service automatically. Solvers
+need the public Catalyst package and Dungeness, not `catalyst-verifier`.
+`--prepare-only` materializes the inputs without model access.
+The remote worker adds private operator policies after public preparation; local
+results are development evidence. See [local runs](local-evaluation.md).

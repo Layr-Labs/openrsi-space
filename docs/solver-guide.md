@@ -76,7 +76,8 @@ Python 3.11 or newer (uv can install Python), and a current Yukon CLI.
 Docker and Dungeness run on the service; you do not need them just to submit.
 Local Docker smoke tests are optional. For full local research runs, anyone can
 clone the public [Dungeness repository](https://github.com/Layr-Labs/dungeness).
-See [local testing options](local-evaluation.md).
+Use `catalyst local run HARNESS_DIR --dungeness PATH` for automatic preparation;
+see [local testing options](local-evaluation.md) for model access and limits.
 Local scores help development; official results require a remote receipt.
 
 **Current MVP environment:** Yukon dev, benchmark `layr-labs/catalyst`,

@@ -36,8 +36,8 @@ or consume allowance.
 Until authorized, prepare the harness and commands without reading model secrets,
 sending them, or launching remote inference. Use the CLI's hidden prompt, stdin,
 or an explicitly selected credential file outside the source package; never
-ask the solver to paste a secret into chat. `--codex-auth-file` sends temporary
-access from the local login to the remote service; it is not a local-only run.
+ask the solver to paste a secret into chat. With `remote submit`, `--codex-auth-file` sends temporary
+access from the local login to the remote service; that command is not a local-only run.
 Refresh credentials must remain local.
 
 Explain that the service keeps model access temporarily for execution and
@@ -120,8 +120,11 @@ submit as a solver.
 Use [local checks](local-evaluation.md) to test packaging, the entrypoint and
 candidate verification without running a model. For a full local agent run,
 clone the public [Dungeness repository](https://github.com/Layr-Labs/dungeness).
-Follow its command-harness and run-spec documentation to configure the harness,
-pinned ECDSA task, model gateway and limits. It is optional for remote submission.
+Use `catalyst local run HARNESS_DIR --dungeness PATH` with model and budget settings
+and an explicitly authorized credential option. Catalyst builds the harness and
+starts its internal task service automatically; no private repository or manual
+run-spec authoring is needed. `--prepare-only` performs setup without reading
+credentials or starting model calls. Full local testing is optional for submission.
 
 Local Dungeness runs can exercise the research loop, metering and verification.
 They consume the solver's model allowance too, so obtain authorization for local

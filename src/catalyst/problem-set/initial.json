@@ -27,8 +27,48 @@
       "score_path": "score.json",
       "requirements": "Pinned Rust toolchain; full circuit simulation is memory intensive.",
       "dungeness": {
-        "task": "task:users/bx/ecdsa-fail-v2",
-        "checkpoint": "checkpoint:public/github/layr-labs/ecdsafail-challenge/62ae3d00d1e01d7bc640b5163cfea8dabffd8392"
+        "repository": {
+          "url": "https://github.com/Layr-Labs/ecdsafail-challenge.git",
+          "commit": "62ae3d00d1e01d7bc640b5163cfea8dabffd8392"
+        },
+        "interface": "point-add-module-v1",
+        "candidate_paths": [
+          "src/point_add"
+        ],
+        "verifier": "ecdsa-fail/benchmark-sh",
+        "web_cutoff": "2026-05-28T23:59:59.999Z",
+        "history": {
+          "anchor": "c6f6d2c7f50353259241e296458afb0e651e6c37",
+          "distance_from_anchor": 868,
+          "counting_method": "git-rev-list-ancestry-path-count"
+        },
+        "reference": {
+          "avg_toffoli": 3960753,
+          "peak_qubits": 2715,
+          "score": 10753444395
+        },
+        "evaluation": {
+          "mode": "full-benchmark"
+        },
+        "policies": {
+          "network": "policies/network/mediated.yaml",
+          "web": "policies/web/exa.yaml",
+          "budget": "policies/budget/default.yaml"
+        },
+        "resources": {
+          "agent": {
+            "timeout_sec": 3600,
+            "build_timeout_sec": 900,
+            "memory_mb": 4096,
+            "cpus": 4
+          },
+          "verifier": {
+            "timeout_sec": 1200,
+            "build_timeout_sec": 1200,
+            "memory_mb": 8192,
+            "cpus": 4
+          }
+        }
       }
     }
   ]
