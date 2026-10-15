@@ -10,7 +10,7 @@ Yukon backend patch is needed. The public challenge repository owns
 1. The solver submits source and authorized temporary model access directly to
    the remote service through the Catalyst CLI.
 2. The service returns a receipt for independently verified retained evidence.
-3. The solver submits only `verification.json` to Yukon.
+3. The solver submits only `submission/verification.json` to Yukon.
 4. Yukon creates a candidate commit and dispatches the repository's workflow.
 5. The workflow authenticates with GitHub OIDC and retrieves the existing result.
 6. Yukon records the returned score and full metrics; the UI reads those official

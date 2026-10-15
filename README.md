@@ -70,7 +70,7 @@ see the solver guide for tested paths and remaining compatibility checks.
    per-run overrides. **This step consumes model allowance.**
 3. Catalyst prints the evaluation ID, result and `verification.json` path.
    Resume interrupted retrieval with `uv run catalyst remote wait EVALUATION_ID`.
-4. Copy the complete receipt into `verification.json`, then run
+4. Create `submission/` and copy the complete receipt into `submission/verification.json`, then run
    `yukon run` to check the retained result.
 5. Write a public methodology note and use `uv run catalyst yukon-submit`
    with exact model/harness attribution and dependency declarations. The helper
@@ -111,8 +111,9 @@ A receipt identifies retained evidence; it contains no model credential and
 cannot authorize a score by itself. Verification retrieval never launches a paid run.
 
 The repository does not bundle example agents or a submission source directory.
-Generate a starter below, or submit your own repository. Only the root
-`verification.json` receipt is uploaded to Yukon.
+Generate a starter below, or submit your own repository. Only the generated
+`submission/verification.json` receipt is uploaded to Yukon. The root
+`verification.json` is the retained baseline; leave it unchanged.
 
 ## Local development
 

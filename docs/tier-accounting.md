@@ -94,7 +94,7 @@ malicious Rust or a replacement for worker isolation.
 
 ## Yukon projection
 
-Keep `schemaVersion: 1` and `editablePaths: ["verification.json"]`. Yukon's current
+Keep `schemaVersion: 1` and `editablePaths: ["submission/verification.json"]`. Yukon's current
 validator requires a finite score for every declared objective; partial
 `[score20, null, null]` tuples and Infinity/sentinel scores are inappropriate.
 Schema-v2 tracks also require non-overlapping editable paths.

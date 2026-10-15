@@ -78,7 +78,8 @@ uv run catalyst remote submit .catalyst/my-harness \
 ```
 
 The resulting receipt is `.catalyst/my-harness/verification.json`.
-Copy the complete file into the Yukon checkout's `verification.json`;
+Create `submission/` and copy the complete file into the Yukon checkout's
+`submission/verification.json`;
 do not extract an authentication token or invent a score. If waiting was
 interrupted, use `catalyst remote wait EVALUATION_ID` to retrieve the same run.
 See [the complete Yukon submission commands](github-actions-e2e.md#solver-commands).

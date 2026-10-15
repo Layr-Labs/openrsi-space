@@ -78,7 +78,7 @@ the best performance and credits at its earliest achievement, not necessarily
 the total run usage. Credits use frozen reference pricing; do not describe
 subscription credits as an actual cash payment.
 
-Only `verification.json` is editable for Yukon submission.
+Only `submission/verification.json` is editable for Yukon submission.
 Keep the agent's source, prompts, raw papers, tools and configuration in a
 separate directory such as `.catalyst/my-harness/`. Preserve unrelated edits.
 No Yukon backend modification, GitHub credential or SSH access is needed to
@@ -178,7 +178,8 @@ progress, and do not call a live score an accepted or final result.
 After a valid result, use the exact receipt path printed by Catalyst:
 
 ```sh
-cp PRINTED_RECEIPT_PATH verification.json
+mkdir -p submission
+cp PRINTED_RECEIPT_PATH submission/verification.json
 yukon run
 ```
 

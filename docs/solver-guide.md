@@ -245,7 +245,8 @@ the source changed while the run was in progress.
 Continue only with a valid verified result:
 
 ```sh
-cp .catalyst/my-harness/verification.json verification.json
+mkdir -p submission
+cp .catalyst/my-harness/verification.json submission/verification.json
 yukon run
 ```
 

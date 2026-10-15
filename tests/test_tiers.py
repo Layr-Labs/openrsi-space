@@ -220,6 +220,6 @@ class PricingTests(unittest.TestCase):
         self.assertEqual(manifest["paretoPolicies"], {"scoring": SCORING, "validity": VALIDITY})
         self.assertEqual(manifest["schemaVersion"], 1)
         self.assertEqual(manifest["promotionMode"], "automatic")
-        self.assertEqual(manifest["editablePaths"], ["verification.json"])
+        self.assertEqual(manifest["editablePaths"], ["submission/verification.json"])
         self.assertEqual(manifest["runner"]["provider"], "github-actions")
         self.assertEqual([o["name"] for o in manifest["objectives"]], ["ecdsaPerformance", "modelCreditsAtBest"])

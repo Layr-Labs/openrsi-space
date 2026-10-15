@@ -236,11 +236,30 @@ class YukonRunnerTests(unittest.TestCase):
     def test_forged_receipt_cannot_publish_scores(self):
         self.evaluate()
         reference = read_json(self.root / "submission/verification.json")
-        write_json(self.root / "verification.json", {**reference, "image_digest": "sha256:" + "f" * 64})
+        # Even a valid baseline cannot hide a forged submitted receipt.
+        write_json(self.root / "verification.json", reference)
+        write_json(self.root / "submission/verification.json",
+                   {**reference, "image_digest": "sha256:" + "f" * 64})
         with self.assertRaises(CatalystError):
             self.retrieve()
         self.assertFalse(self.target.exists())
         self.assertEqual(len(self.jobs), 1)
+
+    def test_registered_receipt_path_takes_precedence_over_root_baseline(self):
+        original = self.evaluate()
+        write_json(self.root / "verification.json", {"evaluation_id": "wrong-baseline"})
+        published = self.retrieve()
+        self.assertEqual(published["scores"], original["scores"])
+        self.assertEqual(len(self.jobs), 1)
+
+    def test_dangling_uploaded_receipt_cannot_fall_back_to_baseline(self):
+        self.evaluate()
+        receipt = self.root / "submission/verification.json"
+        write_json(self.root / "verification.json", read_json(receipt))
+        receipt.unlink()
+        receipt.symlink_to(self.root / "absent.json")
+        with self.assertRaisesRegex(CatalystError, "symlinks"):
+            self.retrieve()
 
     def test_missing_root_receipt_removes_stale_score_without_starting_a_run(self):
         write_json(self.target, {"scores": [999]})

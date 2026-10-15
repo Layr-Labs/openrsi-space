@@ -9,6 +9,8 @@ dist/
 .env
 .env.*
 problems/
+# Generated receipt for Yukon's existing registered upload path.
+/submission/
 # Internal upstream handoffs and deployment-specific records stay private.
 integrations/yukon/*.patch
 integrations/yukon/*base-revision.txt

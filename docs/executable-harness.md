@@ -3,7 +3,7 @@
 Create your agent in its own directory, using the starter generator or your own
 repository. Catalyst packages that source for the remote verification service.
 After a successful evaluation, copy the returned receipt to the challenge
-checkout's root `verification.json`; `yukon run` checks that retained result.
+checkout's generated `submission/verification.json`; `yukon run` checks that retained result.
 See [the solver guide](solver-guide.md) for authentication and publication.
 
 The problem is **ecdsa.fail**. Exact source commits, candidate paths and verifier

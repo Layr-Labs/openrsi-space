@@ -18,8 +18,8 @@ class YukonSubmitTests(unittest.TestCase):
         self.root = Path(self.temp.name)
         self.job, self.benchmark, self.submission = (str(uuid.uuid4()) for _ in range(3))
         self.reference = {"evaluation_id": str(uuid.uuid4())}
-        write_json(self.root / "benchmark.json", {"editablePaths": ["verification.json"]})
-        write_json(self.root / "verification.json", self.reference)
+        write_json(self.root / "benchmark.json", {"editablePaths": ["submission/verification.json"]})
+        write_json(self.root / "submission/verification.json", self.reference)
         self.note = self.root / "note.md"
         self.note.write_text("Reviewed public note.")
         self.response = {

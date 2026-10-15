@@ -14,7 +14,10 @@ from .problems import initial_problems
 from .remote import HTTPFailure, digest, endpoint, judge_input, solver_fetch
 
 PROTOCOL = "remote-verification-receipt-v1"
-RECEIPT_PATH = Path("verification.json")
+# Yukon pins this upload path for the existing Pareto benchmark. The directory
+# is created by solvers when copying a receipt; no harness is bundled there.
+RECEIPT_PATH = Path("submission/verification.json")
+BASELINE_RECEIPT_PATH = Path("verification.json")
 SCORE_PATH = Path(".catalyst/yukon/score.json")
 
 def retrieve_with_binding_wait(base, token, body):
@@ -59,7 +62,7 @@ def read_receipt(path):
         reference = read_json(path)
     except FileNotFoundError:
         raise CatalystError(
-            "Missing verification.json. Submit your harness with "
+            f"Missing {path.name}. Submit your harness with "
             "catalyst remote submit HARNESS_DIR --wait, then copy its receipt here.") from None
     if not isinstance(reference, dict):
         raise CatalystError("Verification receipt must be a JSON object.")
@@ -71,7 +74,12 @@ def check_receipt(root=None):
     root = (root or Path.cwd()).resolve()
     target = root / SCORE_PATH
     target.unlink(missing_ok=True)
-    reference = read_receipt(root / RECEIPT_PATH)
+    receipt = root / RECEIPT_PATH
+    # A fresh challenge checkout contains only the retained baseline. Never
+    # fall back after an invalid or dangling-symlink solver receipt.
+    if not receipt.exists() and not receipt.is_symlink() and not receipt.parent.is_symlink():
+        receipt = root / BASELINE_RECEIPT_PATH
+    reference = read_receipt(receipt)
     requested = judge_input(os.environ.get("YUKON_EVALUATION"))
     problem = problem_identity()
     token, _ = authentication()
