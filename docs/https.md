@@ -12,10 +12,13 @@ an IP change requires a matching certificate and a client URL update.
 
 ## Deployed configuration
 
-- [Nginx configuration](../deploy/nginx/catalyst-https.conf) is installed at
+Deployment files are maintained in the private
+[catalyst-verifier repository](https://github.com/Layr-Labs/catalyst-verifier).
+
+- [Nginx configuration](https://github.com/Layr-Labs/catalyst-verifier/blob/main/deploy/nginx/catalyst-https.conf.template) is installed at
   `/etc/nginx/sites-available/catalyst-https.conf` and enabled through
   `/etc/nginx/sites-enabled/catalyst-https.conf`.
-- [Renewal hook](../deploy/certbot/reload-catalyst-nginx) is installed executable
+- [Renewal hook](https://github.com/Layr-Labs/catalyst-verifier/blob/main/deploy/certbot/reload-catalyst-nginx) is installed executable
   at `/etc/letsencrypt/renewal-hooks/deploy/reload-catalyst-nginx`.
 - Nginx and the existing `snap.certbot.renew.timer` are enabled. Catalyst's API
   keeps its existing screen lifecycle; this setup does not add API boot startup.
