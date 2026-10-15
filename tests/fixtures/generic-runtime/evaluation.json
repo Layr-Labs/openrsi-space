@@ -1,7 +1,0 @@
-{
-  "schema_version": 3,
-  "llm_access": {"grant_id": "grant_local_fixture"},
-  "model": {"provider": "openai", "name": "gpt-5.6-sol"},
-  "max_model_credits": 20,
-  "limits": {"max_model_tokens": 100000, "max_seconds": 60}
-}

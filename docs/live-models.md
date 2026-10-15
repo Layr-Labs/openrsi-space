@@ -21,8 +21,8 @@ For Kimi Code subscription keys and other supported providers, use the
 The provider/model belongs to the run configuration. There is no required
 provider-specific harness and no model account registration on the server.
 
-The MVP uses Dungeness's native Codex/ChatGPT provider. Submit source with the
-provider, model, reasoning effort and spending cap in `evaluation.json`.
+Submit source with the provider, model, reasoning effort and spending cap in
+`evaluation.json` or the per-run CLI flags.
 `harnesses/ecdsa-research` selects `openai-chatgpt`, `gpt-6-astra`, `high`, and
 one normalized model credit. The server builds the source and runs its entrypoint
 inside Dungeness against the pinned ECDSA problem.
@@ -84,17 +84,18 @@ See [the complete Yukon submission commands](github-actions-e2e.md#solver-comman
 
 Yukon dev login authenticates the solver. `--codex-auth-file` reads the existing
 ChatGPT login from `~/.codex/auth.json` (or an explicit path). Only access token,
-ID token, account ID and native login timestamp cross the authenticated HTTPS connection. The renewable
+ID token, account ID and login timestamp cross the authenticated HTTPS connection. The renewable
 refresh token stays on the client. Credentials are excluded from source packages,
 request JSON, databases, receipts and public results.
 
 The API holds credentials in memory and delivers them once to its worker over a
-private inherited socket. The worker stages native Codex authentication in Linux
-`/dev/shm` tmpfs with private permissions. Dungeness's generated per-run launcher
-also uses tmpfs; the submitted example keeps its Codex home there. Staging is
-removed when execution finishes. Core dumps and swap must remain disabled.
-Native subscription mode exposes temporary access to the harness container;
-it is reduced credential isolation, not a revocable per-run provider token.
+private inherited socket. The worker stages authentication in Linux
+`/dev/shm` tmpfs with private permissions. In current generic execution, only
+the trusted gateway receives real provider access; the harness uses a placeholder
+credential and the gateway endpoint from `CATALYST_TASK`. Staging is removed
+when execution finishes. Core dumps and swap must remain disabled.
+The earlier native Codex route exposed temporary access to the harness container;
+that historical route has weaker credential isolation.
 Refresh credentials are never delivered. Provider expiry requires fresh access.
 A service restart loses queued credentials and fails affected jobs without
 silently restarting inference.
@@ -107,24 +108,6 @@ actual usage and rejects over-cap results under the current scoring contract;
 it never clips usage to manufacture eligibility. Normalized credits use pinned
 prices and do not imply a ChatGPT subscription incurs a cash charge.
 
-## Operator enablement
+## Service operation
 
-Keep existing identities and receipt policies. Add `model_policy` to `auth.json`:
-
-```json
-{
-  "model_policy": {
-    "enabled": true,
-    "providers": ["openai-chatgpt"],
-    "limits": {"max_model_tokens": 1000000, "max_seconds": 900}
-  }
-}
-```
-
-Set `worker.json`'s `model_access` to `"temporary"`. Restart only with no active
-jobs. This route needs Linux tmpfs and the pinned Dungeness ChatGPT support.
-Baseline jobs remain available. No new model-accounting proxy is required.
-The worker exports Dungeness’s existing intermediate evaluator history and
-retains the independently checked final candidate. History export and candidate
-screening are deployed in `20261008-history-screen-1`. Credential renewal and
-user cancellation remain separate work.
+Provider configuration and deployment are maintained in the private `catalyst-verifier` repository. Solvers use the public credential options above.

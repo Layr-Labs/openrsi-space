@@ -6,7 +6,12 @@ from pathlib import Path
 import subprocess
 
 from .common import CatalystError, safe_relative
-from .dungeness import git
+def git(root: Path, *args) -> str:
+    result = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True)
+    if result.returncode:
+        raise CatalystError(result.stderr.strip() or "Git command failed.")
+    return result.stdout.strip()
+
 
 
 def initial_problems() -> list[dict]:

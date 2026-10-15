@@ -39,7 +39,7 @@ login. From the Catalyst repository:
 
 ```sh
 export YUKON_API_URL=https://api-dev.yukon.org
-export CATALYST_EVALUATOR_URL=https://35.92.254.142
+export CATALYST_EVALUATOR_URL=https://3.21.93.126
 .venv/bin/catalyst remote submit harnesses/ecdsa-paper-2606-02235 \
   --codex-auth-file --wait
 ```

@@ -32,7 +32,7 @@ async function load(reset = false) {
   const requestId = ++state.request;
   const budget = byId("budget").value === "best" ? "best" : Number(byId("budget").value);
   if (!state.tiers.includes(budget)) {
-    showError(new Error("Select $20, $200 or Best achieved."));
+    showError(new Error("Select $10, $20, $50, $100 or Best achieved."));
     return;
   }
   byId("error").hidden = true;

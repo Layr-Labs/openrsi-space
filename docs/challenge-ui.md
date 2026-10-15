@@ -1,20 +1,25 @@
 # Catalyst challenge UI
 
-The page is maintained in Yukon's Challenges UI, under
-`apps/challenges-ui/challenges/catalyst` in `Layr-Labs/yukon`, with its Next.js
-routes in `apps/challenges-ui/app`. UI source and deployment configuration belong
-in that repository; Catalyst does not distribute Yukon patches.
+The hosted page is maintained in Yukon's Challenges UI. Its source and handoff
+are kept with Yukon rather than redistributed as patches in Catalyst.
+The hosted integration requires no Yukon backend change.
 
-The active integration uses stock Yukon's GitHub Actions runner and Pareto mode.
-See [GitHub Actions end to end](github-actions-e2e.md) for the challenge workflow
-and receipt retrieval contract. No Yukon backend patch is required.
+The canonical implementation is `apps/challenges-ui/challenges/catalyst` in
+`Layr-Labs/yukon`, with its Next.js routes in `apps/challenges-ui/app`.
+UI development and deployment configuration belong in that repository; Catalyst
+contains the public solver tools and this integration guide. The standalone
+local catalog viewer below is a separate development tool.
+
+Everyone can use Catalyst's standalone local viewer with `uv run catalyst demo`
+and `uv run catalyst serve`. The Yukon-specific preview instructions below
+are for maintainers who already have access to a Yukon checkout with the
+Catalyst UI integrated.
 
 ## Local preview
 
-From the Catalyst directory:
+From that Yukon checkout:
 
 ```sh
-cd .catalyst/yukon-publish
 NEXT_PUBLIC_API_URL=https://api-dev.yukon.org \
 NEXT_PUBLIC_CATALYST_BENCHMARK_REF=8d3a2daa-afab-4685-b93a-7443c83049d2 \
 NEXT_PUBLIC_LIVE_CHALLENGES=catalyst \
@@ -24,25 +29,67 @@ bun run dev:challenges
 
 Open <http://localhost:3000/catalyst>. This reads the real Yukon dev benchmark,
 including every automatically verified Pareto submission. It does not start a
-research evaluation. `?as=bxue-l2` is the existing development-only preview of
+research evaluation. `?as=YOUR_USERNAME` is the development-only preview of
 owned-row sharing; it grants no backend permissions.
 
 The page provides:
 
-- A matrix with one row per harness run and simultaneous Within $20, Within $200,
+- A Catalyst-specific, fixed-view 3D illustration following the supplied sketch:
+  18 colored streams converge from above into a short central junction,
+  then 18 golden streams fan downward. Perspective, front/back layering and
+  fine round filaments give the streams depth without camera controls. Hero and directory
+  card share the same artwork. The complete static image remains available
+  with reduced motion, without JavaScript, or if Canvas fails.
+- A matrix with one row per verified Yukon submission and simultaneous Within $10, Within $20, Within $50, Within $100,
   and Best overall columns. Every cell shows its verified score and actual credits.
   Clicking a column changes the ranking; missing cells remain explicit and never
-  hide the run's other results. A cheaper run qualifies for both budget columns.
+  hide the run's other results. The selected budget is reflected in the URL,
+  including browser Back navigation. A run within $10 qualifies for all four budget columns.
+  The harness/solver column stays visible while scrolling the matrix on a narrow
+  screen. Harness names come from public submission notes for attribution only;
+  all scores and costs come from official results.
+- A summary of the best verified circuit and a responsive performance–cost chart,
+  with the full score available alongside compact axis labels. The page uses
+  Yukon's shared research panels, colors and typography.
+  The chart follows the table's top 20 entries under the selected ranking,
+  including URL changes and browser Back. Each harness run has its own line and
+  legend entry, even when several runs share the same harness name or model.
+  Tabs above the progress chart select $10, $20, $50, $100 or Best and stay
+  synchronized with the table and URL. The headline uses the same selected
+  budget. Lines show best-so-far performance within that budget (the full
+  recorded history for Best), with
+  no extension before its first or after its last observation. Single-observation
+  runs appear as dots. Hover or focus a legend entry to highlight its line;
+  click it to locate the corresponding table row.
 - The two objectives and frontier markers, with no human-review status column.
   Results appear as soon as automated verification succeeds.
-- A per-run performance–cost curve and an accessible list of all observations,
-  including regressions.
+- A **Run** action on each row, opening that run's performance–cost
+  curve with its exact best score, credits when achieved and verified observation
+  count. A detail panel identifies the Yukon submission and remote evaluation.
+  The accessible observation list retains regressions.
 - A share image derived from the official submission packet, budget selection
   and owner. Client-provided scores are never used to draw it.
-- A **Source & traces** disclosure on runs carrying a verified remote evaluation
+- A **Source & traces** disclosure in the selected run's detail panel when it
+  carries a verified remote evaluation
   ID and source hash. Open it to see owner-published downloads, source license,
   bundle size and SHA-256. Signed-in owners also see the CLI command for their
   complete private download; the website does not receive their CLI credentials.
+- Public **For humans** and **For agents** participation modes, accessible from
+  **Participate** without signing in. Reading instructions does not mint a key or
+  authorize a submission. Signed-out visitors see `YOUR_API_KEY`; the normal
+  authenticated key controls remain available to signed-in users. The human flow includes
+  source preparation, the remote evaluation, receipt retrieval and Yukon
+  publication. The agent prompt covers the same steps, runtime restrictions,
+  credentials and approved spending. Both link to the
+  [solver guide](solver-guide.md) and [agent instructions](agent-prompt.md).
+  Both modes prominently explain that solvers provide their own credential,
+  authorize remote execution, and consume their own API credits or subscription
+  allowance. The copied agent prompt requires authorization before reading or
+  sending model access; an existing local login does not grant permission.
+  Both modes and **How it works** explicitly prohibit copied or memorized ECDSA
+  submissions, including answers hidden in prompts, knowledge files, dependencies
+  or caches. Papers, general algorithmic knowledge and the pinned baseline remain
+  allowed. Detected reuse rejects the harness.
 
 ## Score and artifact reads
 
@@ -89,20 +136,71 @@ only inside its browser to exercise budget changes and mobile layout. It also
 checks lazy artifact reads, separately published source/traces, unpublication,
 source mismatches and service outages without publishing any real artifacts.
 
-The October 9 artifact UI checks passed lint, all app typechecks, scaffold/theme
-checks and the focused artifact contracts. The full app test command encountered
-existing HTTP-listener and remote-font tests blocked by the restricted session.
-The full build and browser check also require an unrestricted environment for
-font downloads and Chrome startup. These gates must pass before UI publication.
+The browser check covers the live dev scores, synthetic budget boundaries,
+Back navigation, row-to-chart selection, lazy artifact reads, unpublication,
+source mismatches, service outages and narrow-screen layout. It opens
+the actual page's participation dialog to exercise both audiences and verifies
+that reading it issues no API writes. It does not create an account or mint a key.
 
-Nothing is deployed by these commands. When ready, review and publish the patch
-through Yukon's normal Challenges UI process. Its Vercel project is
-`eigen-labs/yukon-challenges-ui`; the intended public route is `/catalyst`.
+The October 13 refinement passed all app tests, lint, typechecks, scaffold
+and theme checks, and a production build with Catalyst enabled. The browser
+check passed against the built preview on port 3000. Hosted sign-in and deployment
+are separate from these local checks.
+
+The waterfall revision passed 2,414 app tests and the same frontend gates.
+Browser checks covered moving artwork, offscreen return, desktop and 390px
+mobile layouts, reduced motion and the no-JavaScript poster. In headless
+Chrome 155 on the local macOS development machine, its 7,222 points at
+1920×1080 measured 1.9 ms p95 JavaScript draw time across 120 frames after
+20 warm-up frames (14.5 ms setup). These are desktop draw measurements, not
+GPU completion time, battery measurements or physical mobile-device tests.
+
+The October 14 artwork uses spatial paths projected into the existing cached
+Canvas renderer. It retains the same complete vector poster and motion lifecycle.
+Both the colored input and gold output fans have 18 streams, with 7,560 grains
+in total. The score chart and research data are independent of this illustration.
+The final fan revision measured 2.2 ms p95 JavaScript draw time and 16.7 ms p95
+frame interval over 120 frames at 1920×1080 in headless Chrome 155 on the local
+Mac (14.6 ms setup). These are desktop measurements, not mobile/GPU guarantees.
+
+The October 14 anti-cheat copy passed all 2,414 app tests, lint, typechecks and
+the complete app build. The browser check verifies the rejection rule in both
+human instructions and the copied agent prompt, together with the existing
+matrix, curve, artifacts and mobile contracts. This is a local preview; the
+updated UI has not been published to Yukon.
+
+For a built preview on the same URL, stop the dev server first. Use the same
+environment variables as above, plus `NEXT_DIST_DIR=.next-catalyst-streams`,
+for `bun run build:apps`. Then, from `apps/challenges-ui`, start it with:
+
+```sh
+NEXT_DIST_DIR=.next-catalyst-streams \
+NEXT_PUBLIC_API_URL=https://api-dev.yukon.org \
+NEXT_PUBLIC_CATALYST_BENCHMARK_REF=8d3a2daa-afab-4685-b93a-7443c83049d2 \
+NEXT_PUBLIC_LIVE_CHALLENGES=catalyst \
+CATALYST_EVALUATOR_URL=https://3.21.93.126 \
+node node_modules/next/dist/bin/next start --port 3000
+```
+
+From the Yukon checkout root, run `bun scripts/check-catalyst-ui.ts`; its default
+is now port 3000. Use Node for the Next.js production server. Build outputs
+named `.next-*` are ignored so Tailwind does not scan their generated content
+as source classes. Keep the serving build directory intact. The checks need
+permission to start local servers and Chrome and fetch the app's existing
+font assets.
+
+Nothing is deployed by these commands. Review and publish the UI
+through Yukon's normal Challenges UI process. The intended public route is `/catalyst`.
 Configure `NEXT_PUBLIC_LIVE_CHALLENGES` and the benchmark reference for the
 intended environment, retaining other live challenge entries. The UUID above
 belongs to **dev**; do not silently point production at a dev benchmark.
+For the current UI branch, select **Preview and Development only** in Vercel,
+and scope Preview overrides to the branch. Preserve Production settings.
+The Yukon challenge directory's README lists the exact variables and project.
 Confirm the appropriate API base and Supabase redirect allowlist.
 For public artifact browsing, also configure `CATALYST_EVALUATOR_URL`.
+Publish the accompanying Catalyst documentation before enabling the new guide
+links on the hosted UI.
 
 The existing GitHub App installation and Yukon dev benchmark registration are
 complete. The benchmark uses automatic acceptance after verification, so valid

@@ -1,116 +1,60 @@
 # The secp256k1 Point-Addition Challenge
 
-**Goal.** Build the cheapest reversible quantum circuit that performs one
-elliptic-curve point addition on **secp256k1**, scored by the product of
-**Toffoli count × peak qubit width**. Lower is better.
+Build a reversible circuit that overwrites a quantum affine point with its sum
+with a classical affine offset on secp256k1.
 
-This Catalyst-owned statement follows the problem and validity requirements in the upstream
-README reviewed on 2026-10-14 at commit
-`4b2ec52fc55da796aa8f5ef851290297e8706424`:
-https://github.com/Layr-Labs/ecdsafail-challenge/blob/4b2ec52fc55da796aa8f5ef851290297e8706424/README.md
+Your `src/point_add/` module must export:
 
-The run's selected checkpoint determines the starting source and executable
-verifier. Updating this text does not repin that checkpoint or import current
-upstream solution files. The executable harness is authoritative.
+```rust
+pub fn build() -> Vec<Op>
+```
 
-## Why this matters
+The trusted circuit builder calls this as `point_add::build()`. The starting
+source and executable verifier remain pinned to upstream commit
+`62ae3d00d1e01d7bc640b5163cfea8dabffd8392`; this statement does not change them.
 
-Shor's algorithm breaks elliptic-curve cryptography by computing discrete
-logarithms in time polynomial in the curve's bit-width. The quantum cost of
-running Shor on an ECC group is dominated by one inner primitive repeated
-thousands of times: **point addition** on the curve. Faster point addition ⇒
-fewer Toffoli gates ⇒ fewer magic states ⇒ less physical hardware and wall-clock
-time on a fault-tolerant machine. Every factor of two saved here is a factor of
-two in the resource estimate for breaking secp256k1 — the curve securing Bitcoin
-and Ethereum.
+The starter declares four 256-element little-endian registers in this order:
 
-## The task, precisely
+1. `target_x`: quantum input/output;
+2. `target_y`: quantum input/output;
+3. `offset_x`: classical input;
+4. `offset_y`: classical input.
 
-Implement `point_add::build()`: a reversible circuit that consumes four 256-element
-registers — `target_x` (qubits), `target_y` (qubits), `offset_x` (classical
-bits), `offset_y` (classical bits) — and overwrites `(target_x, target_y)` with
-the affine sum `(target_x, target_y) + (offset_x, offset_y)` on the secp256k1
-curve.
+For every sampled pair of non-infinity curve points with different
+x-coordinates, transform:
 
-The pinned harness is authoritative for interface semantics:
+```text
+(target_x, target_y) := (target_x, target_y) + (offset_x, offset_y)
+```
 
-- Registers are ordered exactly as listed above and interpreted as 256-bit
-  little-endian integers.
-- `target_x` and `target_y` are the mutable quantum output registers.
-  `offset_x` and `offset_y` are classical input registers supplying the fixed
-  addend for each shot.
-- The sampled evaluation domain uses non-infinity target and offset points with
-  different x-coordinates. Point-at-infinity inputs, doubling, and inverse-point
-  exceptional cases are not included in this checkpoint's sampled shots.
-- If repository documentation, comments, or assumptions disagree with the
-  executable harness, follow the harness.
+All ancillas must be uncomputed before being freed, and all non-output qubits
+must end in zero. The circuit must leave no phase garbage; running it followed
+by its gate-reversed inverse must restore the original state.
+The trusted evaluator derives its test points from the emitted operation
+stream. Only a candidate passing all 9,024 shots is valid.
 
-Your circuit is graded by a trusted harness that:
+Among valid candidates, minimize:
 
-1. **Builds** the circuit from your implementation.
-2. **Validates** it by simulating on 9024 random test points. The inputs are
-   derived from a Fiat-Shamir hash of *your own op stream*.
-3. **Reports** executed Toffoli and Clifford counts and the peak number of live
-   qubits according to the pinned simulator's counters.
-4. **Scores** the run as `score = avg_Toffoli × peak_qubits`, where `avg_Toffoli`
-   is the average executed Toffoli count per shot. **Lower is better.**
+```text
+average executed Toffoli count * peak qubit count
+```
 
-The Clifford count is diagnostic and has no direct term in the score.
+The pinned repository supplies the initial implementation and circuit
+construction infrastructure. You may replace that implementation, add files
+under `src/point_add/`, or emit operations directly from `build()`. Only
+`src/point_add/` is collected as the candidate. Do not modify the trusted
+builder, evaluator, dependencies or benchmark scripts, or forge their outputs.
 
-## What "valid" means
+Use `evaluate` for feedback during a remote run and retain your best verified
+candidate. For local development, use Catalyst's problem setup/check commands.
+Papers, general methods and the pinned baseline are permitted. Importing or
+replaying existing ECDSA GitHub/leaderboard solutions, including answers embedded
+in harness instructions or knowledge files, is prohibited.
 
-A run is rejected — not merely scored worse — if any of these fails:
+Continue researching and improving; do not terminate voluntarily. The
+environment will stop the run when its resource limits are reached.
 
-- **Classical correctness.** All 9024 shots must produce the correct
-  `(R_x, R_y)`.
-- **Reversibility.** Every ancilla qubit must be uncomputed to |0⟩ before it is
-  freed, and after the forward pass every non-output qubit must again be |0⟩
-  (no end-state garbage).
-- **Phase cleanliness.** The global phase across all live shots must be zero — no
-  leftover phase kickback from a sloppy uncomputation.
-- **Forward∘reverse identity.** Running the circuit and then its gate-reversed
-  inverse must restore the original state on every qubit.
-
-There are no loopholes: a "Toffoli win" that comes from skipping uncomputation,
-leaking phase, or writing garbage to an ancilla makes the run **fail**, not run
-faster.
-
-## Reference numbers
-
-| | avg Toffoli/shot | peak qubits | score |
-|---|---|---|---|
-| Challenge initial circuit | 3,942,753 | 2,715 | 1.07 × 10¹⁰ |
-| Google's private low-qubit Pareto point | 2,700,000 | 1,175 | 3.2 × 10⁹ |
-| Google's private low-gate Pareto point | 2,100,000 | 1,425 | 3.0 × 10⁹ |
-
-Points on — and strictly below — that published frontier are believed beatable.
-
-## What you can edit
-
-For the module interface, modify anything inside **`src/point_add/`**: split
-submodules, rewrite primitives, change algorithms, and refactor freely. Record
-useful approaches and reasoning in Markdown under `src/point_add/memory/`.
-
-Do not modify the trusted circuit builder/evaluator, `src/circuit.rs`, `src/sim.rs`,
-`src/weierstrass_elliptic_curve.rs`, `Cargo.toml`, `Cargo.lock`, `rust-toolchain`,
-or the benchmark/setup scripts. Do not pre-seed or forge `ops.bin`, `score.json`,
-or `results.tsv`. These are generated by the trusted benchmark.
-
-Use the supplied `evaluate` interface during a Dungeness run and retain the best
-verified candidate for the final check. For a standalone checkout of the module
-benchmark, use its `setup.sh` and `benchmark.sh`. The latest README's legacy
-`cargo run` example does not describe the split builder/evaluator entrypoints.
-
-Upstream welcomes contributions and shared memory notes, but each benchmark's
-research and reuse policy still applies. In particular, Catalyst permits the
-pinned baseline, papers and general methods, and prohibits importing or replaying
-existing ECDSA GitHub/leaderboard solutions. Treat other contributors' source and
-notes according to that policy, not as automatically permitted knowledge.
-
-## Credits
-
-Adapted from code Google published with "Securing Elliptic Curve
-Cryptocurrencies against Quantum Vulnerabilities: Resource Estimates and
-Mitigations":
-https://research.google/pubs/securing-elliptic-curve-cryptocurrencies-against-quantum-vulnerabilities-resource-estimates-and-mitigations/
-and its companion Zenodo dataset: https://zenodo.org/records/19597130.
+See [the upstream review](../../../docs/ecdsa-upstream.md) for the mathematical
+requirements reviewed against upstream documentation and the separate execution
+pin. Reconstruction checkpoints and their neutral SDK/progressive checks are
+separate Dungeness experiments, not this benchmark's current contract.

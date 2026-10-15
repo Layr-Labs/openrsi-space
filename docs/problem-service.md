@@ -4,6 +4,13 @@ Catalyst owns the public problem statement. The verification service assigns a
 specific, immutable problem package before executing a submitted harness.
 Dungeness supplies generic Compose wiring and model accounting.
 
+The public sources are
+[`problem_server.py`](../src/catalyst/runtime/problem_server.py) and
+[`ecdsa.fail.md`](../src/catalyst/problem-set/ecdsa.fail.md). Keep `problem-set/`:
+it contains the challenge manifest, statement and reference prices. The private
+verification API starts and manages the per-run service; solvers do not need
+another public endpoint or a separate server command.
+
 ## What runs
 
 The worker builds the harness separately from the problem service. Only trusted

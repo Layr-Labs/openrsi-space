@@ -19,9 +19,9 @@ def seed(catalog: Catalog) -> dict:
                  "metric": {"name": "avg_toffoli × peak_qubits", "direction": "minimize"}, "demo": True}),
     ]
     curves = {
-        "demo-direct": [(5, 1000), (20, 800), (200, 700), (800, 650)],
-        "demo-planner": [(10, 1500), (20, 1200), (200, 600), (3500, 300)],
-        "demo-notes": [(5, 1300), (20, 1000), (200, 500), (900, 400)],
+        "demo-direct": [(5, 1000), (20, 800), (50, 700), (100, 650), (800, 625)],
+        "demo-planner": [(10, 1500), (20, 1200), (50, 900), (100, 450), (3500, 300)],
+        "demo-notes": [(5, 1300), (20, 1000), (50, 600), (100, 500), (900, 400)],
     }
     titles = {"demo-direct": "Direct approach", "demo-planner": "Planning approach", "demo-notes": "Curated notes"}
     harnesses = [
@@ -46,7 +46,7 @@ def seed(catalog: Catalog) -> dict:
                     "problem": {k: problem[k] for k in ("id", "version")},
                     "harness": {k: harness[k] for k in ("id", "version")},
                     "metric": problem["document"]["metric"], "model": "synthetic-demo-model",
-                    "conditions": "demo-ecdsa-best-v2", "condition_label": "Synthetic tier demonstration",
+                    "conditions": "demo-ecdsa-best-v3", "condition_label": "Synthetic tier demonstration",
                     "condition_details": {"synthetic": True}, "evidence": "demo",
                     "status": "completed", "observations": observations, "cost_known": True,
                     "total_cost": observations[-1]["cost"], "cost_unit": "normalized_model_usd",

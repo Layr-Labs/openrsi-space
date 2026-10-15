@@ -33,9 +33,11 @@ a run; installing the tools or finding an existing login does not grant it.
 
 ## Participation flow
 
-**The flow:** prepare your agent → evaluate it on Catalyst → get a receipt →
-submit that receipt to Yukon. Only the remote evaluation consumes model
-allowance; checking or publishing its receipt does not run the agent again.
+**The flow:** build your autonomous agent → optionally test locally → review
+readiness and approve a remote run → evaluate it on Catalyst → get a receipt →
+submit that receipt to Yukon. Model-enabled local tests and remote evaluations
+consume your model allowance; checking or publishing a receipt does not run
+the agent again.
 
 Want a coding agent to do the setup? Give it [the agent instructions](agent-prompt.md)
 and your provider, model and spending cap. Keep model credentials out of the prompt.
@@ -44,12 +46,14 @@ and your provider, model and spending cap. Keep model credentials out of the pro
 
 | Matrix column | Result shown |
 | --- | --- |
-| Within $20 | Best verified `avg_toffoli × peak_qubits` achieved at or below 20 model credits |
-| Within $200 | Best verified result achieved at or below 200 model credits |
+| Within $10 | Best verified `avg_toffoli × peak_qubits` achieved at or below 10 model credits |
+| Within $20 | Best verified result achieved at or below 20 model credits |
+| Within $50 | Best verified result achieved at or below 50 model credits |
+| Within $100 | Best verified result achieved at or below 100 model credits |
 | Best overall | Best verified result anywhere in your run |
 
 Lower is better. You choose a finite spending cap; the columns are views of
-one run's history, not separate paid runs. A $3 run can appear in all three
+one run's history, not separate paid runs. A $3 run can appear in all five
 columns. An improvement first achieved at $25 cannot count in the $20 column.
 Missing observations display as `—`, never zero.
 
@@ -70,7 +74,10 @@ usage and rejects an over-cap result. See [accounting details](tier-accounting.m
 You need Git, [uv](https://docs.astral.sh/uv/getting-started/installation/),
 Python 3.11 or newer (uv can install Python), and a current Yukon CLI.
 Docker and Dungeness run on the service; you do not need them just to submit.
-Local Docker smoke tests are optional.
+Local Docker smoke tests are optional. For full local research runs, anyone can
+clone the public [Dungeness repository](https://github.com/Layr-Labs/dungeness).
+See [local testing options](local-evaluation.md).
+Local scores help development; official results require a remote receipt.
 
 **Current MVP environment:** Yukon dev, benchmark `layr-labs/catalyst`,
 verifier `https://3.21.93.126`. Use a dev Yukon account/key; a production
@@ -160,6 +167,11 @@ See [the generic harness contract](generic-harnesses.md) for model ensembles,
 packaging, pricing and gateway details.
 
 ## 3. Supply model access and evaluate
+
+Review the prepared harness and its local checks first. If a coding agent is
+helping, it should report what it built, what it tested, and the proposed model
+and limits, then wait for your approval to run unless you already authorized
+execution once ready. You decide when the harness is ready for remote evaluation.
 
 **The commands below grant Catalyst remote access to your model account for
 this evaluation and consume your credits or subscription allowance.**
@@ -297,9 +309,12 @@ file. Read `coverage.json` inside the archive for exclusions.
 To make your own source public:
 
 ```sh
-uv run catalyst remote publish EVALUATION_ID --harness --license MIT
+uv run catalyst remote publish EVALUATION_ID --harness --license MIT --confirm-source-reviewed
 ```
 
+First download and review the exact harness ZIP. You are responsible for the
+source, prompts and knowledge files you choose to make public and for having
+permission to share them. Credential screening still applies and cannot be waived.
 Choose a license you have authority to grant. Trace publication is a separate
 choice after downloading and reviewing the sanitized traces:
 
@@ -312,15 +327,27 @@ for downloads, license choices and unpublishing.
 
 ## Challenge rules
 
-Use the pinned task and starting baseline. Do not fetch, search for or bundle
-existing task-specific GitHub solutions to use as your candidate. Ordinary
-framework dependencies, papers, citations and the provided baseline are allowed.
+Catalyst evaluates **autonomous research**, not the replay of an existing answer.
+Harnesses that fetch, search for, bundle, or reproduce existing ECDSA GitHub or
+leaderboard solutions are prohibited and are rejected when detected. This
+includes asking the agent to recall a memorized submission, embedding it in
+prompts or knowledge files, and disguising it as an answer cache or dependency.
+Removing attribution, changing formatting, or disabling internet access does
+not make reuse permitted.
+
+Use the pinned task and starting baseline. Ordinary framework dependencies,
+papers, citations, general algorithmic knowledge and the provided baseline are allowed.
 Do not access host resources, tamper with the verifier or bypass metering.
 Candidate source must satisfy the pinned verifier and screening rules.
 
-Deterministic screening is deployed. The optional LLM source reviewer is
-implemented locally and is not yet enabled on the service. Neither is a proof
-of originality or security. See [the screening policy](cheat-filter.md).
+The published-solution screen refreshes the official repository's branches and
+open/closed pull-request heads before a remote run. Substantial matching source
+outside the pinned baseline blocks the run before build or model usage. The
+rejection reason and private `solution-corpus.json` report identify the harness
+location and reference blob. A failed refresh blocks screening without declaring
+cheating. The optional LLM source reviewer is not yet enabled on the service.
+Neither check proves originality or detects all memorization. See
+[the screening policy and deployment status](cheat-filter.md).
 
 If a job fails, inspect its reason and private traces before choosing whether
 to spend on another evaluation. Do not fabricate a receipt or score to bypass

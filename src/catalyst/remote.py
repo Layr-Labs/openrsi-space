@@ -27,7 +27,7 @@ from .tiers import SCORING, VALIDITY, credit_limit, evaluation_models, model_pri
 
 PROTOCOL = "catalyst-evaluation-v3"
 MAX_SOURCE_BYTES = 8 * 1024 * 1024
-PENDING = {"queued", "building", "running", "verifying"}
+PENDING = {"queued", "awaiting_credentials", "building", "running", "verifying"}
 TERMINAL = {"completed", "failed", "cancelled"}
 
 
@@ -132,7 +132,7 @@ def validate_model(model, *, check_pricing=True, pricing=None):
         raise CatalystError("model requires a provider and exact model name.")
     if "reasoning_effort" in model and model["reasoning_effort"] not in {"low", "medium", "high", "xhigh", "max"}:
         raise CatalystError("Unsupported reasoning effort.")
-    from .live_provider import PROVIDERS
+    from .credentials import PROVIDERS
     if model["provider"] not in PROVIDERS:
         raise CatalystError("Provider requires an authentication/protocol adapter.")
     if check_pricing:
@@ -156,7 +156,7 @@ def fetch(url: str, token: str, *, document=None, limit=4 * 1024 * 1024, timeout
           model_token=None, output=None, expected_sha256=None, expected_size=None) -> bytes:
     private_headers = {}
     if model_token is not None:
-        from .model_access import TOKEN_HEADER, validate_token
+        from .credentials import TOKEN_HEADER, validate_token
         validate_token(model_token)
         parts = urllib.parse.urlsplit(url)
         if (parts.scheme != "https" or parts.username or parts.password
@@ -342,6 +342,15 @@ def judgment(result: dict, request: dict) -> dict:
     }}
     if result.get("model_access") in {"disabled", "mock", "metered"}:
         artifact["metrics"]["modelAccess"] = result["model_access"]
+    if "source_audit" in result:
+        audit = result["source_audit"]
+        if (not isinstance(audit, dict)
+                or set(audit) != {"policy", "digest", "config_digest", "model", "status"}
+                or audit["digest"] != request["source"]["digest"]
+                or audit["status"] != "passed"
+                or any(not isinstance(audit[k], str) or not audit[k] for k in audit)):
+            raise CatalystError("Source audit does not match a passed review of this harness.")
+        artifact["metrics"]["sourceAudit"] = audit
     if fields["scores"]:
         artifact["scores"] = scores if result["valid"] else None
     if fields["validity"]:
@@ -501,7 +510,7 @@ class RemoteClient:
                     validate_evaluation_config(body["evaluation"], pricing=body["pricing"])
                     private_json(quote_path, body["pricing"])
             validate_evaluation_config(body["evaluation"], pricing=body["pricing"])
-        from .model_access import temporary_access, validate_token
+        from .credentials import temporary_access, validate_token
         if temporary_access(body["evaluation"]):
             validate_token(model_token)
         elif model_token is not None:
@@ -571,22 +580,60 @@ class RemoteClient:
             if session.get("pricing_quote"):
                 Path(session["pricing_quote"]).unlink(missing_ok=True)
 
+    def cancel(self, identity):
+        identity = evaluation_id(identity)
+        result = json.loads(solver_fetch(
+            self.base, f"/evaluations/{identity}/cancel", self.bearer, document={}))
+        if result.get("evaluation_id") != identity:
+            raise CatalystError("Cancellation response does not match this evaluation.")
+        if (self.folder(identity) / "session.json").is_file():
+            session = self.session(identity)
+            bound_result(result, session["request"], identity)
+            if result["status"] in TERMINAL:
+                private_json(self.folder(identity) / "result.json", result)
+                self.clear_pending(session)
+        return {key: result[key] for key in (
+            "evaluation_id", "status", "cancellation_requested", "trace_available", "reason"
+        ) if key in result}
+
+    def renew_access(self, identity, token):
+        identity = evaluation_id(identity)
+        result = json.loads(solver_fetch(
+            self.base, f"/evaluations/{identity}/credentials", self.bearer,
+            document={}, model_token=token))
+        if result.get("evaluation_id") != identity:
+            raise CatalystError("Credential response does not match this evaluation.")
+        return {"evaluation_id": identity, "status": result["status"]}
+
     def wait(self, identity):
+        from .progress import progress_line
         folder = self.folder(identity)
         session = self.session(identity)
         previous = None
+        started = time.monotonic()
+        last_report = started
         with request_lock(folder / "wait.json"):
             while True:
                 result = self.status(identity)
-                if result["status"] != previous:
-                    print(f"Remote status: {result['status']}", file=sys.stderr, flush=True)
+                current = time.monotonic()
+                if result["status"] != previous or current - last_report >= 15:
+                    print(progress_line(result, current - started), file=sys.stderr, flush=True)
                     previous = result["status"]
+                    last_report = current
+                if result["status"] == "awaiting_credentials":
+                    raise CatalystError(
+                        f"Temporary access expired or was lost on restart. Renew with "
+                        f"catalyst remote renew-access {identity}, then resume remote wait.")
                 if result["status"] in TERMINAL:
                     if result.get("trace_available") is True and not (folder / "traces.zip").is_file():
                         download_traces(self.base, self.bearer, identity, folder)
                     if result["status"] != "completed":
                         self.clear_pending(session)
-                        raise CatalystError(f"Remote evaluation {result['status']}; retained details: {folder}")
+                        reason = result.get("reason")
+                        reason = reason[:2048] if isinstance(reason, str) and reason else "No reason supplied."
+                        # The remote response is untrusted terminal text.
+                        raise CatalystError(f"Remote evaluation {result['status']}; reason: "
+                                            f"{json.dumps(reason, ensure_ascii=True)}; retained details: {folder}")
                     artifact = judgment(result, session["request"])
                     private_json(folder / "judgment.json", artifact)
                     private_json(folder / "verification.json", verification_reference(result, session["request"]))

@@ -2,7 +2,7 @@
 
 The initial official problem is `ecdsa.fail`, pinned in
 `src/catalyst/problem-set/initial.json`. Compare harness source versions at
-**20 and 200 normalized model USD credits, plus Best achieved**. At each tier, minimize the
+**10, 20, 50 and 100 normalized model USD credits, plus Best achieved**. At each tier, minimize the
 best independently verified `avg_toffoli * peak_qubits` produced within that
 allowance. Do not average scores across tiers or replace best performance with
 the median of attempts. Retain each attempt and its complete curve.
@@ -10,11 +10,11 @@ the median of attempts. Retain each attempt and its complete curve.
 ## Spending caps and display budgets
 
 Each evaluation is one Dungeness run with the solver's positive finite
-`max_model_credits`. The solver may spend less than $20 or more than $200.
+`max_model_credits`. The solver may spend less than $10 or more than $100.
 Token/time limits can also end the run. There is no $2,000 comparison tier.
 
-**Within $20**, **Within $200**, and **Best overall** are views over the saved
-verified curve. A $5 run qualifies for both budget views. No funded-tier flag,
+**Within $10**, **Within $20**, **Within $50**, **Within $100**, and **Best overall** are views over the saved
+verified curve. A $5 run qualifies for all four budget views. No funded-tier flag,
 checkpoint seal, new run, interpolation or extrapolation is needed to select a
 view. Spending authorization and total usage remain separate from credits at
 the best result.
@@ -52,7 +52,7 @@ if it began below $20. Never clamp an overrun to the allowance.
 
 ## Existing evaluator history
 
-The challenge adapter `src/catalyst/ecdsa_history.py` reads Dungeness's existing
+The private service adapter reads Dungeness's existing
 `usage/events.jsonl`: trusted `evaluator / evaluation.completed` records with
 `operation: score`, `status: ok`, candidate/source SHA-256, Toffoli count, peak
 qubits, score and a cumulative usage snapshot. It checks that snapshot against
@@ -102,15 +102,15 @@ Schema-v2 tracks also require non-overlapping editable paths.
 Use two minimizing objectives: `[ecdsaPerformance, modelCreditsAtBest]`, where
 the first is the best verified performance in the entire run and the second is
 cumulative model credits at that candidate's capture. Authorized maximum credits
-and final total usage remain separate. Missing $20/$200 observations stay in
+and final total usage remain separate. Missing $10/$20/$50/$100 observations stay in
 metadata; they do not prevent a valid best-achieved score.
 
 Yukon's generic Pareto frontier describes the best result/cost pair. The Catalyst
-board ranks the selected view by performance: $20, $200, or Best achieved. A
+board ranks the selected view by performance: $10, $20, $50, $100, or Best achieved. A
 later candidate can improve Best achieved without improving an earlier
 budget view. Compare exact problem, pricing, model and execution conditions.
 The challenge UI reads this curve through the standard Yukon API; no Yukon backend patch is required.
 
-The local viewer is a development demonstration. It offers $20, $200 and Best achieved,
+The local viewer is a development demonstration. It offers $10, $20, $50, $100 and Best achieved,
 shows the best reported score and the full curve, and labels all local data as
 synthetic or contributor-reported. Its imported records have contributor-reported provenance and cannot qualify for official rankings.

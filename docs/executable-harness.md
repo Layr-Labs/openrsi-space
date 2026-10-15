@@ -17,7 +17,7 @@ a generic Dungeness adapter, and the remote HTTP client/workflow are implemented
 A persistent local API and Dungeness worker execute the actual pinned ECDSA
 baseline with model access disabled. A smaller circuit fixture tests model
 accounting and Yukon integration; see [the local checks](local-evaluation.md).
-Those local modes use fixture identities. The [private VM service](remote-vm.md)
+Those local modes use fixture identities. The [private VM service](github-actions-e2e.md)
 supports Yukon solver authentication and temporary ChatGPT access, with
 GitHub OIDC for workflow retrieval. The new local
 [generic harness interface](generic-harnesses.md) adds model sets and gateway-owned
@@ -75,13 +75,22 @@ The `execution` field in the ordinary harness manifest is:
 }
 ```
 
-Executable packages cannot select a host agent or Python adapter. Legacy
-instruction/knowledge packages remain supported.
+Executable packages cannot select a host agent or Python adapter. Knowledge,
+memory, indexes and retrieval tools belong inside the harness image, using any
+layout the agent supports. There is no platform knowledge-base service, lookup
+command or injected reading policy. Legacy instruction-only agent references
+cannot attach a `knowledge/` bundle; migrate those files into an executable
+harness instead.
 
 `CATALYST_TASK` points to a JSON file containing problem/harness references,
 instruction, writable workspace, candidate paths, budget, model and gateway
 URL, plus an allowed `models` list. `CATALYST_WORKSPACE`, `CATALYST_MODEL`
 and `CATALYST_MODELS` are convenience variables.
+With the [problem-service runtime](problem-service.md), the launcher first fetches
+the server-assigned statement and checks its SHA-256, problem identity and
+candidate paths. The resolved task includes `problem_document`, and
+`CATALYST_PROBLEM_URL` points to the read-only document. A failed or mismatched
+fetch stops the launcher before your entrypoint runs.
 During Dungeness execution, `OPENAI_BASE_URL` points at the metered gateway
 and `OPENAI_API_KEY` is only the public placeholder `testbed`. Smoke tests
 supply no gateway or model.
@@ -91,40 +100,6 @@ independent verifier judges the candidate; submitted stdout or claimed scores
 never establish official observations. Never put provider credentials in
 source or images.
 
-## Prepare an executable Dungeness attempt
+## Official evaluation
 
-This is a local development path with arbitrary test allowances. Official remote
-evaluations use [trusted accounting](tier-accounting.md); $20, $200 and Best
-achieved are views of Dungeness’s existing evaluation history, not funding tiers.
-
-With the existing Dungeness installation configured:
-
-```sh
-uv run catalyst problem create ecdsa-start \
-  --task task:users/bx/ecdsa-fail-v2 \
-  --checkpoint checkpoint:public/github/layr-labs/ecdsafail-challenge/62ae3d00d1e01d7bc640b5163cfea8dabffd8392
-
-uv run catalyst evaluate problems/ecdsa-start harnesses/my-solver \
-  --build BUILD_ID --model gpt-5.6-sol --budget 1 --prepare-only
-```
-
-Preparation inspects the Docker image but starts no containers or model calls.
-One trusted Dungeness command adapter runs through Harbor in an isolated checkout.
-Dungeness adds the frozen workspace, candidate transfer, verifier and metering.
-The built starter lacks Rust: add the pinned toolchain and offline dependencies
-before attempting a full ecdsa.fail run.
-
-Repeat preparation with the same source/build to create another attempt,
-including with another model or budget. Source and build identities remain
-unchanged. Unbuilt source changes are rejected. Prepared attempts record the
-source digest, image ID and Dungeness pin; imported local results retain the
-build reference.
-
-`image_id` is Docker's immutable local image/config ID, **not** a registry
-manifest digest. BuildKit uses a content-named local tag, checked against that
-ID before execution. A production worker must build the source itself and
-record its pushed registry digest; client build records are not trusted.
-
-The local builder is not a multi-tenant build sandbox. Dedicated worker
-isolation, private model authorization, trusted checkpoint capture and
-trusted result publication remain necessary before launch.
+Submit the harness source using the [solver guide](solver-guide.md). The remote service builds and runs it with metered model access and independent verification. Operator Dungeness tooling lives in `catalyst-verifier`; it is not required locally.

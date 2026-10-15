@@ -17,7 +17,7 @@ to choose another cap.
 An improvement is not guaranteed.
 
 ```sh
-export CATALYST_EVALUATOR_URL=https://35.92.254.142
+export CATALYST_EVALUATOR_URL=https://3.21.93.126
 .venv/bin/catalyst remote submit harnesses/ecdsa-research --codex-auth-file --wait
 ```
 

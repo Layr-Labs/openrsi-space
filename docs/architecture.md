@@ -1,136 +1,69 @@
 # Catalyst architecture
 
-Develop and test locally on the Mac first. The initial remote MVP runs both the
-authenticated API and the harness worker inside the existing VM reached through
-`ssh openclaw`. The VM stays running and is reused across jobs. The worker builds
-and runs harnesses in separate run workspaces/containers and verifies captured
-candidates in a trusted workspace. No per-evaluation VM provisioning or teardown
-is part of this MVP. Agent Compose, new cloud resources and a vault are
-unnecessary. The current deployment uses Nginx for public HTTPS on port 443.
-
-The initial challenge is exclusively **ecdsa.fail**, compared **within $20, within $200, and Best overall**. See [tier accounting](tier-accounting.md). Each evaluation is one run with a solver-selected spending cap.
-The comparison budgets are UI views over existing trusted evaluation history.
-
 ```mermaid
-flowchart TB
-    subgraph LOCAL["Solver's computer"]
-        DEV["Local agent and shared harness source"]
-        CHECK["Pinned ECDSA verifier and reusable workspace"]
-        CLI["Yukon / Catalyst CLI"]
-        AUTH["Local renewable provider credentials"]
-        DEV <--> CHECK
-        DEV --> CLI
-    end
-    subgraph SERVER["Existing persistent VM: openclaw"]
-        API["Authenticated API and job controller"]
-        STORE[("Immutable source, build and evaluation records")]
-        METER["Trusted temporary model access and credit metering"]
-        API <--> STORE
-        API --> METER
-        subgraph WORKER["Worker on the same VM: per-run workspaces / containers"]
-            BUILD["Untrusted source build"]
-            RUN["Trusted Dungeness runner"]
-            HARNESS["Submitted harness"]
-            CAPTURE["Existing evaluator results + final candidate"]
-            VERIFY["Isolated ECDSA verification"]
-            BUILD --> RUN
-            RUN --> HARNESS
-            HARNESS --> CAPTURE
-            CAPTURE --> VERIFY
-        end
-    end
-    PROVIDER["Model provider"]
-    YUKON["Yukon backend: receipt submissions and Pareto scores"]
-    GITHUB["Challenge-owned GitHub workflow"]
-    UI["Tier rankings and full performance-cost curves"]
-    CLI -->|"Source, exact model, spending cap and limits"| API
-    AUTH -->|"Temporary access via private authenticated channel"| METER
-    API --> RUN
-    HARNESS -->|"Scoped requests"| METER
-    METER <--> PROVIDER
-    METER -->|"Settled usage ledger"| CAPTURE
-    VERIFY -->|"Metrics bound to immutable candidate digest"| STORE
-    RUN -->|"Private traces and status"| STORE
-    API -->|"Verification receipt"| CLI
-    CLI -->|"Receipt only; no harness upload"| YUKON
-    YUKON -->|"Store Pareto submission, dispatch pinned workflow"| GITHUB
-    GITHUB -->|"Receipt, expected problem, GitHub OIDC"| API
-    API -->|"Resolve submission owner via existing API"| YUKON
-    API -->|"Stored verified judgment; no new run"| GITHUB
-    GITHUB -->|"Trusted Pareto score artifact"| YUKON
-    YUKON --> UI
+flowchart LR
+    Solver[Solver: source + temporary model access] --> Client[Public Catalyst CLI]
+    Client -->|Authenticated HTTPS| API[Private catalyst-verifier API]
+    API --> Worker[Private worker + Dungeness]
+    Worker --> Verify[Independent ECDSA verifier]
+    Verify --> Evidence[Retained source, usage, candidates and results]
+    Evidence -->|Receipt| Client
+    Client -->|Receipt only| Yukon[Yukon]
+    Yukon --> Actions[Public challenge GitHub workflow]
+    Actions -->|OIDC + receipt + problem| API
+    API -->|Verified result and curve| Actions
+    Actions --> Yukon
+    Yukon --> UI[Challenge UI]
 ```
 
-## Identities and evidence
+## Public repository
 
-Source identity includes executable code, build recipe, dependencies,
-instructions and knowledge. Runtime settings and the verification reference are
-excluded from that source hash. Bind each evaluation separately to source,
-server-built image digest, the ECDSA pin, exact provider/model, spending cap,
-resource limits, pricing digest, policy digest and authenticated owner.
+`catalyst-research` provides the solver CLI, temporary credential encoding,
+canonical source bundles, local build/smoke tools, pinned problem definition,
+pricing and score validation, receipt retrieval and Yukon integration.
+The public library uses the Python standard library. Local Docker smoke tests
+require Docker; problem verification requires the upstream task's toolchain.
 
-Use distinct request, build and evaluation IDs. Retries reuse their original
-operation key; deliberate repeats get a new evaluation ID. The server can reuse
-an immutable build for unchanged source. Changed source or settings require new
-remote evidence. A reference file or local score is not an attestation.
-Yukon receives only the receipt. Its standard GitHub Actions runner dispatches
-the challenge workflow, which resolves it with Catalyst. The submitted
-receipt identifies the previously evaluated harness, even if local files have
-subsequently changed. Catalyst retains that harness and its evaluation settings;
-Yukon does not need another source upload or a local source comparison.
+The public entrypoint is `catalyst`. It does not start the verification service,
+run anti-cheat screening, hold an operator credential or require Dungeness.
+The separate localhost catalog (`catalyst serve`) is only a development viewer.
 
-Official measurements require trusted usage settlement, immutable candidate
-evaluator history and independent verification. Keep the complete
-verified curve, infrastructure usage, and private traces before cleaning up the
-job's processes, containers and temporary workspace. Keep the remote VM running
-for subsequent jobs.
-Public metrics contain allowlisted result fields; provider credentials and raw
-traces stay out of submissions and public artifacts.
+The public ECDSA statement lives in `src/catalyst/problem-set/ecdsa.fail.md`.
+The private service copies it into a versioned problem package during
+initialization. For each run, it builds a read-only problem service from
+Catalyst's `runtime/problem_server.py`, independently of the submitted harness.
+Dungeness wires this service into Compose and exposes the assigned document
+through the gateway's `GET /task`. See [the task contract](problem-service.md).
 
-## Credentials and implementation boundary
+Knowledge files, memory and retrieval software are part of the submitted harness
+image. Catalyst does not extract them into a knowledge-base sidecar or prescribe
+how the agent reads them. Their bytes are covered by the harness source and image
+identities. The trusted problem service is separate from those agent-owned files.
 
-The final service will receive temporary provider access over authenticated HTTPS
-(port 443), held only in memory by a trusted component for the active run.
-User-provided provider credentials must never be persisted, even encrypted.
-The durable queue stores non-secret grant references; builds receive no model
-access, and submitted harnesses use a scoped gateway rather than raw provider
-credentials. Discard temporary access on completion, failure, cancellation or
-expiry. A service restart requires fresh user authorization.
+## Private service
 
-Renewable credentials and refresh operations stay on the user's machine.
-Preserve those original credentials during cancellation and cleanup.
-The Codex/ChatGPT path uses the memory-only credential endpoint and Linux tmpfs
-staging. Provider access is discarded after the run; it is not part of a receipt.
-See [runtime requirements](runtime-platform-requirements.md).
+`catalyst-verifier` provides its own Python package (`catalyst_verifier`) and
+operator entrypoint (`catalyst-verifier`). It depends on an exact public package
+version. Its source includes the API, job store, worker lifecycle, Dungeness
+integration, anti-cheat screening, provider staging, artifact storage and deployment
+configuration. The packages have separate tests and distribution contents.
 
-Implemented: local packaging/build/smoke tools, Dungeness adapter, pinned ECDSA
-workspace, tier viewer, credit/checkpoint validators, remote client and submission
-workflow. The local API now persists jobs, ownership, immutable submission
-bindings and results in SQLite. The server starts and supervises a separate
-worker process, which runs the real Dungeness/Docker path, retains private
-evidence and independently verifies a frozen candidate. The pinned ECDSA
-baseline runs with model access disabled; a smaller circuit fixture uses a mock
-provider to test accounting. Worker failure stops the API; service shutdown stops
-the owned worker and its reported execution processes. Queued work survives,
-and interrupted attempts are marked failed without automatic replay.
-The VM deployment runs under `screen`, validates solver keys against Yukon dev
-and exchanges them for memory-only sessions. No separate Catalyst solver
-password is required. The current integration uses stock Yukon's GitHub Actions runner,
-receipt-only archives and a signed-OIDC result endpoint. Experimental custom
-Yukon patches are preserved but not required. See [the end-to-end guide](github-actions-e2e.md) and
-[the reproducible local check](local-evaluation.md).
+Moving source does not change the deployed service, HTTPS endpoint, retained
+evaluation IDs, database schema or receipt protocol. Deploying the extracted
+service is a separate operator action after testing.
 
-Hosted GitHub OIDC retrieval, Yukon dev registration and a real model submission
-have succeeded. The challenge UI, history export and cheat filter are local
-changes awaiting rollout. The initial service continues to run on the existing
-VM. User cancellation, credential renewal and retention/cleanup policy remain
-later work. No Yukon backend modification is required.
-Local fixture modes remain separate and cannot be relabeled as remote ECDSA evidence.
+## Trust and privacy
 
-## Service extraction
+The solver authorizes use of their model account for a specific run and cap.
+Refresh credentials remain local. Model access is sent separately from source
+and receipts over authenticated HTTPS. See [model access](live-models.md).
 
-The reusable verification service owns upload, queueing, execution, authentication,
-immutable receipts and result retrieval. Catalyst owns ECDSA task pins, verification
-and scoring policy, model-credit rules and the challenge workflow. Keep those
-boundaries explicit while validating this integration; a separate service package
-or repository can follow without changing the solver's receipt workflow.
+The service binds evidence to the authenticated owner, pinned problem,
+source/image/configuration/pricing/policy identities and metered usage. Yukon
+accepts only the result retrieved by its trusted workflow. Locally edited
+score JSON is not authoritative.
+
+Harnesses and traces are private by default. Owners can download retained
+artifacts and explicitly publish selected material; see [artifact sharing](artifact-sharing.md).
+The UI reads Yukon's official metrics and requests artifact metadata only when
+run details are opened. It does not enumerate private evaluations.

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "name": "catalyst",
-  "description": "Submit autonomous harness source for ecdsa.fail. View the best verified avg_toffoli * peak_qubits within $20, within $200, and overall, using the complete performance-cost curve. Solvers choose their spending cap.",
+  "description": "Submit autonomous harness source for ecdsa.fail. View the best verified avg_toffoli * peak_qubits within $10, $20, $50, $100, and overall, using the complete performance-cost curve. Solvers choose their spending cap.",
   "category": "agent-harness",
   "mode": "pareto",
   "promotionMode": "automatic",

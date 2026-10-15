@@ -43,7 +43,9 @@ can still appear in transcripts. Review before publication.
 Publishing harness source and publishing traces are independent choices:
 
 ```sh
-catalyst remote publish EVALUATION_ID --harness --license MIT
+catalyst remote download EVALUATION_ID --kind harness --output harness.zip
+# Inspect every file in harness.zip before confirming:
+catalyst remote publish EVALUATION_ID --harness --license MIT --confirm-source-reviewed
 
 # First download and inspect the sanitized trace bundle, then:
 catalyst remote publish EVALUATION_ID --traces --confirm-traces-reviewed
@@ -57,12 +59,35 @@ Choose only a license you have authority to grant. It applies to your authored
 contribution; existing third-party licenses and attribution notices remain in
 force. A publication's license cannot be changed retroactively.
 
+You are responsible for reviewing the exact downloaded bundle and ensuring that
+you may publicly share its code, prompts, knowledge files and third-party material.
+Remove proprietary or otherwise private material before submitting a new harness.
+The publication command releases the original evaluated bytes; it cannot silently
+remove a file from an already evaluated harness.
+
+Catalyst separately screens source publication for possible credentials. A review
+confirmation does not waive credential checks or authorize releasing a model
+access token. Model access is supplied outside the source package; runtime auth
+files and provider grants are excluded from exports. Detected credentials block
+source publication. Scanners cannot prove that arbitrary code contains no private
+material or encoded secret, so a passed scan does not replace source review.
+
 The response includes a stable public download page and JSON manifest. Anyone
 with these links can read the published material without authentication.
+An **artifact** is a file retained from a run: for example, the evaluated harness
+source ZIP or the separately shared trace ZIP. The public download page lists
+only the files the solver chose to share, with their license, size and checksum.
+
+**Download and use shared files at your own risk.** They are untrusted code and
+content. Inspect source, prompts and dependencies before use, and run code in an
+isolated environment. Verification and credential screening do not guarantee
+safe code. A SHA-256 checksum confirms that a download matches the published
+file; it does not certify safety.
+
 The Catalyst challenge UI's **Source & traces** disclosure reads this public
 manifest on demand and binds it to the evaluation ID and source hash in Yukon's
-official score metrics. The UI code is maintained in the isolated Yukon
-checkout; see [UI setup and hosting](challenge-ui.md). Publishing artifacts
+official score metrics. The UI code is maintained in Yukon's
+`apps/challenges-ui/challenges/catalyst`; see [UI setup and hosting](challenge-ui.md). Publishing artifacts
 does not require resubmitting scores to Yukon.
 The complete private bundle is never published by these switches. However,
 traces can contain source snippets, tool inputs and outputs, so separate switches
@@ -78,60 +103,6 @@ already downloaded copy or retract an open-source license. Previously issued
 S3 download links expire within five minutes. No source or trace publication
 occurs when deploying this feature or migrating an existing run.
 
-## Storage and operator migration
+## Storage
 
-The default local backend places immutable, content-addressed ZIPs beneath
-`SERVICE_STATE/artifact-objects/`. The run's export manifest records their
-digests; sharing choices live in `artifact_publications` in `jobs.sqlite`.
-Existing evidence and the original diagnostic ZIP are retained.
-
-The S3 backend keeps the bucket private, writes encrypted objects, and uses
-conditional content-addressed uploads. It issues five-minute signed GET URLs
-only after an owner-access or explicit-publication check. Solver credentials
-are never forwarded to S3. Public download pages remain stable and point to
-the current download endpoint rather than storing an expiring signed URL.
-Local copies remain as a recovery cache; this version does not automatically
-delete historical evidence.
-
-Provision a dedicated bucket using
-[`infra/artifact-storage.yaml`](../infra/artifact-storage.yaml), install the SDK
-with `uv sync --frozen --extra s3`, and give the service's IAM role the template's
-scoped read/write policy. Use an IAM instance role rather than saving AWS keys in
-worker configuration or submissions.
-
-Create `SERVICE_STATE/artifact-storage.json`:
-
-```json
-{
-  "backend": "s3",
-  "bucket": "YOUR_DEDICATED_BUCKET",
-  "region": "us-west-2",
-  "prefix": "catalyst",
-  "run_roots": ["/var/lib/catalyst/evaluator/worker"]
-}
-```
-
-For the existing VM, `SERVICE_STATE` is `/var/lib/catalyst/evaluator/service`.
-No bucket credentials belong in that JSON. Local-only installations may omit
-the file; custom worker layouts can set `run_roots` with `"backend": "local"`.
-Only the operator controls this file.
-
-Export an existing run or migrate all stopped runs after enabling S3:
-
-```sh
-catalyst --state SERVICE_STATE artifact-sync EVALUATION_ID
-catalyst --state SERVICE_STATE artifact-sync
-```
-
-This does not rerun inference or verification and preserves existing scores and
-receipts. It retries failed storage uploads using the same object hashes.
-New completed and failed jobs attempt export automatically; an export/storage
-failure does not change the evaluation's judgment. It is recorded separately
-and retried by an owner download or operator sync.
-
-Back up the queue/database and export manifests in addition to S3 objects:
-objects alone do not reconstruct account ownership or publication choices.
-S3 versioning is enabled; no automatic retention/deletion policy is installed.
-CloudFront can be added later if public-download traffic warrants it. GitHub
-or the future static score index should store small metadata and stable public
-artifact links, not large trace archives.
+The service retains evidence in operator-managed storage. Changing storage does not change evaluation IDs or owner permissions. Storage backends and migration tools are maintained in the private `catalyst-verifier` repository.

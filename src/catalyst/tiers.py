@@ -11,14 +11,14 @@ from pathlib import Path
 
 from .common import CatalystError, canonical, finite_number, read_json, version_id
 
-TIERS = (20, 200)
+TIERS = (10, 20, 50, 100)
 SCORING = {"version": "ecdsa-best-and-checkpoints-v2"}
 VALIDITY = {"version": "ecdsa-trusted-checkpoints-v2"}
 
 
 def tier(value) -> int:
     if type(value) is not int or value not in TIERS:
-        raise CatalystError("budget_tier must be 20 or 200 model credits.")
+        raise CatalystError("budget_tier must be 10, 20, 50 or 100 model credits.")
     return value
 
 
@@ -154,7 +154,11 @@ def project_observation(observation: dict, model: dict, max_model_credits, limit
     for checkpoint in checkpoints:
         if not isinstance(checkpoint, dict):
             raise CatalystError("Malformed checkpoint seal.")
-        budget = tier(checkpoint.get("budget_tier"))
+        budget = checkpoint.get("budget_tier")
+        # Retain validation of stored $200 seals from earlier runs. Historical
+        # evidence must not become invalid when the display budgets change.
+        if type(budget) is not int or budget not in (*TIERS, 200):
+            raise CatalystError("Unknown checkpoint budget.")
         seq = sequence(checkpoint.get("sequence"))
         if (budget > funded_limit or budget <= last_tier or seq <= last_seq
                 or checkpoint.get("settled") is not True or cost_before(seq) > budget):

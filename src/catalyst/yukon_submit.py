@@ -6,10 +6,10 @@ from pathlib import Path
 import subprocess
 
 from .common import CatalystError, read_json, write_json
-from .evaluator import identity
+from .protocol import identity
 from .receipts import RECEIPT_PATH, check_receipt, read_receipt
 from .remote import endpoint, fetch, request_lock, solver_token
-from .yukon_binding import PROTOCOL
+from .protocol import YUKON_BINDING_PROTOCOL as PROTOCOL
 
 
 def bind_job(root, job_id, benchmark_id, *, reference=None):

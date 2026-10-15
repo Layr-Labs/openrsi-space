@@ -3,6 +3,7 @@ import json
 import hashlib
 import os
 from pathlib import Path
+import re
 import subprocess
 import sys
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
@@ -19,7 +20,9 @@ def hydrate_problem(task):
     if service is None:
         return task  # Old, immutable run packages remain executable.
     if (not isinstance(service, dict) or set(service) != {"url", "sha256"}
-            or service["url"] != "http://gateway:8080/task"):
+            or service["url"] != "http://gateway:8080/task"
+            or not isinstance(service["sha256"], str)
+            or not re.fullmatch(r"[0-9a-f]{64}", service["sha256"])):
         raise ValueError("Invalid assigned problem service.")
     opener = build_opener(ProxyHandler({}), NoRedirect())
     with opener.open(Request(service["url"], headers={"Accept": "application/json"}), timeout=10) as response:
@@ -27,6 +30,8 @@ def hydrate_problem(task):
     if len(raw) > 256 * 1024:
         raise ValueError("Assigned problem response is too large.")
     document = json.loads(raw)
+    if not isinstance(document, dict):
+        raise ValueError("Assigned problem response must be an object.")
     encoded = json.dumps(document, sort_keys=True, separators=(",", ":"),
                          ensure_ascii=False, allow_nan=False).encode()
     if hashlib.sha256(encoded).hexdigest() != service["sha256"]:

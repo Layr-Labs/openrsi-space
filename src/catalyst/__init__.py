@@ -1,3 +1,3 @@
-"""Catalyst's local research and publication prototype."""
+"""Public Catalyst solver tools and challenge protocol."""
 
-__version__ = "0.1.0"
+__version__ = "0.2.0"

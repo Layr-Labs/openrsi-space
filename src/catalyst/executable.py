@@ -12,6 +12,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+import time
 import uuid
 
 from .common import (
@@ -63,14 +64,40 @@ def create_starter(target: Path) -> dict:
 
 
 def docker_output(argv: list[str], *, timeout=120) -> str:
+    from .job_control import check_cancelled
+    from .job_control import signal_group
+    import signal
+    check_cancelled()
     try:
-        completed = subprocess.run(["docker", *argv], capture_output=True, text=True,
-                                   timeout=timeout)
+        process = subprocess.Popen(["docker", *argv], stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE, text=True, start_new_session=True)
+        deadline = time.monotonic() + timeout
+        try:
+            while True:
+                check_cancelled()
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    raise subprocess.TimeoutExpired(process.args, timeout)
+                try:
+                    stdout, stderr = process.communicate(timeout=min(.25, remaining))
+                    break
+                except subprocess.TimeoutExpired:
+                    if time.monotonic() >= deadline:
+                        raise
+            check_cancelled()
+        except BaseException:
+            signal_group(process.pid, signal.SIGINT)
+            try:
+                process.communicate(timeout=20)
+            except subprocess.TimeoutExpired:
+                signal_group(process.pid, signal.SIGKILL)
+                process.communicate()
+            raise
     except (OSError, subprocess.TimeoutExpired) as error:
         raise CatalystError(f"Docker command could not complete: {error}") from error
-    if completed.returncode:
-        raise CatalystError(completed.stderr[-4000:] or completed.stdout[-4000:])
-    return completed.stdout.strip()
+    if process.returncode:
+        raise CatalystError(stderr[-4000:] or stdout[-4000:])
+    return stdout.strip()
 
 
 def build(state: Path, harness_path: Path, *, timeout=1200) -> dict:
@@ -220,54 +247,3 @@ def smoke(state: Path, identity: str, workspace: Path, *, problem=None, timeout=
         subprocess.run(["docker", "rm", "-f", container], capture_output=True, timeout=30)
     write_json(folder / "result.json", result)
     return result
-
-
-def model_profile(source: Path, requested: str, provider="openai", pricing=None) -> dict:
-    """Resolve model identity from Dungeness's trusted accounting policy."""
-    from .dungeness import yaml_file
-    if not requested or not isinstance(requested, str):
-        raise CatalystError("An executable evaluation requires an explicit --model.")
-    prices = yaml_file(source / "services/gateway/pricing.yaml") if pricing is None else pricing
-    matches = [entry for entry in prices.get("entries", [])
-               if entry.get("provider") == provider
-               and requested in entry.get("request_models", [])]
-    if len(matches) != 1:
-        raise CatalystError("Select a provider/model from the pinned Dungeness pricing policy.")
-    return {"provider": provider, "upstream_id": matches[0]["upstream_id"],
-            "request_model": requested, "api": ("anthropic-messages" if provider == "anthropic"
-                else "openai-responses" if provider in {"openai-chatgpt", "moonshot", "kimi-code"}
-                else "openai-completions"),
-            "name_format": "request", **({"context_window": 1050000,
-            "supported_reasoning_efforts": ["low", "medium", "high", "xhigh", "max"]}
-            if provider == "openai-chatgpt" else {})}
-
-
-def install_agent(runtime: Path, build_record: dict, model: dict, task_input: dict) -> tuple[str, list[str]]:
-    """Install one trusted adapter in the disposable Dungeness checkout."""
-    token = "executable-" + build_record["id"]
-    namespace = "projects/catalyst"
-    agent_dir = runtime / "agents" / namespace / token
-    agent_dir.mkdir(parents=True)
-    from .dungeness import write_yaml
-    write_yaml(agent_dir / "agent.yaml", {
-        "schema_version": 1, "type": "agent", "namespace": namespace, "id": token,
-        "execution_mode": "installed",
-        "package": {"name": INTERFACE, "version": build_record["source_digest"]},
-        "execution": {"interface": "dungeness-command-v1",
-                      "entrypoint": ["python3", "/opt/catalyst/launch.py", "/tmp/dungeness-task.json"]},
-        "task_input": {**task_input, "gateway_auth": "placeholder"},
-    })
-    # Source was built once. Dungeness adds only its pinned task workspace and clients.
-    (agent_dir / "Dockerfile").write_text(
-        f"FROM {build_record['artifact_tag']}\nUSER root\n"
-        "COPY workspace/ /workspace/repo/\n"
-        "COPY web_client.py /usr/local/bin/web\n"
-        "COPY evaluate.py /usr/local/bin/evaluate\n"
-        "COPY run_status.py /usr/local/bin/run-status\n"
-        "COPY candidate_state.py /usr/local/bin/candidate-state\n"
-        "COPY knowledge_base.py /usr/local/bin/knowledge-base\n"
-        "RUN chmod 0555 /usr/local/bin/web /usr/local/bin/evaluate "
-        "/usr/local/bin/run-status /usr/local/bin/candidate-state /usr/local/bin/knowledge-base\n"
-        "WORKDIR /workspace/repo\n"
-    )
-    return f"agent:{namespace}/{token}", [str(agent_dir.relative_to(runtime))]

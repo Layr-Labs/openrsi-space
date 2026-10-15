@@ -1,71 +1,102 @@
-# Remote evaluation and receipt retrieval
+# Public remote evaluation contract
 
-The current integration uses **unmodified Yukon**, its `github-actions` runner,
-and the challenge-owned `.github/workflows/benchmark.yml`. See the
-[complete end-to-end guide](github-actions-e2e.md) for deployment, registration,
-network setup and commands. No custom Yukon provider is required.
+The public client and the private `catalyst-verifier` service communicate over
+HTTPS. No private Python package, Dungeness checkout or server credential is
+required by solvers or the challenge's GitHub workflow. Extraction does not
+change the existing wire protocols, evaluation IDs or receipts.
 
-## Standalone client
+## Authentication and model access
 
-`catalyst remote submit HARNESS_DIRECTORY --wait` sends source to Catalyst and
-waits for independent verification. It writes `verification.json` beside the
-harness and retains private traces under `.catalyst/remote/`. An interrupted
-wait resumes with `catalyst remote wait EVALUATION_ID`; submitting again after
-completion requests a new evaluation. `status`, `wait` and `traces` never enqueue.
-Use your existing Yukon login or `YUKON_API_TOKEN` and a trusted
-`CATALYST_EVALUATOR_URL`. No separate Catalyst password is needed.
-Provider credentials are separate. The deployed ChatGPT route accepts temporary
-access through `--codex-auth-file`; see [first-time login and token types](live-models.md).
-Local fixture servers still use `CATALYST_API_TOKEN`.
+`CATALYST_EVALUATOR_URL` selects the trusted HTTPS endpoint. The client refuses
+redirects. Loopback HTTP is reserved for local fixtures.
 
-### Yukon authentication
+Solvers use their Yukon login or `YUKON_API_TOKEN`. `POST /auth/yukon` exchanges
+that key for a temporary solver session using `catalyst-yukon-session-v1`.
+The service establishes ownership through its configured Yukon instance;
+clients cannot assert another owner or choose the authentication issuer.
 
-The client exchanges the Yukon key at `POST /auth/yukon`, with the key in the
-Authorization header and body `{"protocol":"catalyst-yukon-session-v1"}`.
-The server calls `/api/me` at its operator-configured HTTPS Yukon origin,
-refuses redirects, and derives ownership from the returned account UUID.
-Clients cannot choose that origin or claim another account.
+Model access is separate from Yukon authentication. `--codex-auth-file`,
+`--provider-access-file`, `--prompt-model-token` or `--model-token-stdin` explicitly
+authorizes remote use of the solver's model account. The client sends temporary
+access separately from the source archive and evaluation JSON over HTTPS.
+Refresh credentials remain local. Access must not appear in receipts, source,
+public results or retained traces. See [model access](live-models.md).
 
-The response contains `protocol`, `access_token`, `owner_id`, and `expires_in`
-(900 seconds). The session authorizes only solver operations. The client keeps
-it in memory and renews before expiry or after a server restart, preserving
-evaluation request IDs. The server retains neither the Yukon key nor a session
-database; its random signing key exists only in the running process.
-Revoking a Yukon key prevents future exchanges; an already issued session can
-remain valid for up to 15 minutes. Restarting the service invalidates sessions.
+GitHub Actions uses a short-lived OIDC identity for receipt retrieval. That
+identity authenticates the workflow; it is not the evaluation receipt and cannot
+supply model access or create a paid run.
 
-Any valid user of the configured Yukon instance can submit under the service's
-model-disabled policy: the baseline model and runtime limits, at most one active
-evaluation per account, eight active/queued evaluations globally, and ten new
-evaluations per account in a rolling 24 hours by default. These are operator
-settings. Limits are checked atomically; retrying an existing request does not
-consume another slot. The solver chooses the spending cap; the $20/$200
-comparison checkpoints do not impose a maximum run budget. Model access also
-requires the operator's separate `model_policy`; the deployed service enables
-temporary ChatGPT access with per-run credit, token and time limits.
+## Submit once and resume retrieval
 
-Operators enable this with `catalyst yukon-auth-configure --auth-file AUTH_JSON
---worker-config WORKER_JSON --yukon-api HTTPS_YUKON_ORIGIN`, then restart the API.
-The command preserves jobs, consumer and GitHub policies, and disables legacy
-solver passwords. Changing the identity issuer requires account migration.
+`POST /evaluations` accepts the versioned request constructed by
+[`remote.py`](../src/catalyst/remote.py):
 
-Develop harnesses in an ignored directory such as `.catalyst/my-harness` so
-Yukon's trusted judge files stay unchanged. Copy the resulting receipt into
-`submission/verification.json`, the only editable/submittable path. `yukon run`
-now checks that receipt without running a harness. `catalyst yukon-submit` calls
-stock `yukon submit` using Yukon's normal archive transport, then registers its
-Pareto execution mapping. Source and evaluation settings stay in Catalyst.
+```text
+protocol: catalyst-evaluation-v3
+request_id: stable UUID
+source: {digest, archive_base64}
+evaluation: declared models, spending cap, limits and non-secret access grant
+problem_set: pinned challenge definition
+pricing: exact reference schedule
+judge: requested score/validity fields and policy versions
+context: {kind: yukon-solver}
+evidence_mode: remote
+```
 
-## Receipt-only Yukon submission
+The service validates its own trusted problem, pricing and policy definitions
+against the request. It independently verifies the archive digest and authorizes
+the owner and run limits. An acknowledged request returns `evaluation_id` and
+`request_id`. Retrying the same account/request/payload is idempotent; changing
+the payload under the same request ID is rejected. The client preserves uncertain
+requests instead of issuing another paid run.
 
-Yukon builds a candidate commit and dispatches the
-challenge workflow. The workflow authenticates with a GitHub OIDC token addressed
-to `catalyst-evaluator`, then calls `POST /verifications/retrieve`:
+`catalyst remote status ID` reads `GET /evaluations/ID`.
+`catalyst remote wait ID` waits for completion and validates the returned bindings.
+These commands do not enqueue work. States include queued, building, running,
+verifying, awaiting_credentials, completed, failed and cancelled. Renew temporary
+access for an owned job before provider execution with `remote renew-access`.
+`remote cancel` requests cancellation; do not resubmit while cancellation is pending.
+
+Pending status responses include owner-only `progress` from Dungeness's live
+gateway summary: elapsed time, normalized credits, model requests, evaluation
+count and the best recorded score. Requests include admitted attempts that may
+still be in flight or fail; credits include only usage recorded so far. The
+summary's age is provided so a quiet or slow request is not mistaken for fresh
+activity. Before the gateway starts, usage is unavailable rather than reported
+as zero.
+
+`remote wait` and `remote submit --wait` print a progress line to stderr every
+15 seconds and immediately on phase changes. Final JSON stays on stdout.
+Live scores are **provisional**, not a verified receipt or evidence for Yukon.
+Progress exposes no prompts, source, tool output, credentials or server paths.
+Older services still work, with a periodic waiting message instead of metrics.
+
+Source, problem, configuration, pricing and policy digests are bound to the result.
+A completed result contains the independently verified candidates and Dungeness's
+settled usage. The public validator checks the accounting and candidate bindings;
+claims in arbitrary local JSON do not constitute official evidence.
+
+## Receipts and Yukon
+
+The client writes the complete service-issued `verification.json` beside the
+submitted harness. Copy it into `submission/verification.json` in the challenge
+checkout. This is the only Yukon-editable path. It contains immutable evidence
+references, not credentials and not a score chosen by the submitter.
+
+`yukon run` invokes `catalyst yukon-run` and retrieves the retained result.
+`catalyst yukon-submit` submits the receipt through stock Yukon and binds the
+resulting job through `POST /verifications/yukon-bind` with protocol
+`yukon-execution-binding-v1`. The service authenticates the Yukon job and checks
+its benchmark and owner. Bindings are immutable and retryable. `catalyst yukon-bind`
+can finish a previously accepted submission without submitting it again.
+
+Yukon creates a candidate commit and dispatches the challenge-owned workflow.
+The workflow presents its GitHub OIDC identity to `POST /verifications/retrieve`:
 
 ```json
 {
   "protocol": "remote-verification-receipt-v1",
-  "reference": {"evaluation_id": "...", "schema_version": 2},
+  "reference": {"schema_version": 2, "evaluation_id": "..."},
   "problem": {"id": "ecdsa.fail", "version": "<pinned problem-set SHA-256>"},
   "judge": {
     "policies": {"scoring": {"version": "..."}, "validity": {"version": "..."}},
@@ -74,192 +105,34 @@ to `catalyst-evaluator`, then calls `POST /verifications/retrieve`:
 }
 ```
 
-The example abbreviates the receipt: send the entire service-issued object,
-including its source/image/configuration/pricing/policy digests. The protocol
-never accepts a claimed score or caller-supplied owner identity.
+This example abbreviates `reference`; always send the complete issued receipt.
+The service checks the allowed workflow/repository, dispatched commit and actual
+Yukon submission's owner/benchmark, then compares the receipt to retained evidence.
+Unknown, modified, cross-owner or wrong-problem references fail. Retrieval does
+not build a harness, run a model or accept a caller-supplied score.
 
-The service verifies GitHub's signature using the fixed GitHub JWKS endpoint,
-issuer, audience, expiration, repository ID/name, workflow path, dispatch event,
-ref and source SHA. Its private repository policy must explicitly enable the
-challenge and pin the expected problem/version. Pareto refs
-`refs/heads/submissions/<execution-UUID>` use an execution ID distinct from the
-public submission ID. The helper registers the mapping at
-`POST /verifications/yukon-bind`, supplying `{protocol: "yukon-execution-binding-v1",
-job_id, benchmark_id, reference}` with the solver's Yukon API key over HTTPS.
-The service authenticates that job directly through the configured Yukon's
-`GET /api/jobs/<job-id>` endpoint, checks the job owner/benchmark/source and receipt,
-and stores only the mapping and receipt. It never stores the key or the job's
-private archive URL. Bindings are immutable and retries are idempotent.
+Success returns the bound reference, problem, policy request, evaluated source
+artifact digest and authoritative judgment. The workflow validates the response
+before writing the score artifact Yukon collects. See
+[`receipts.py`](../src/catalyst/receipts.py) and
+[the GitHub integration](github-actions-e2e.md).
 
-The workflow resolves the registered execution ID and reads Yukon's
-`GET /api/submissions/<submission-id>` endpoint to establish the real owner and benchmark.
-Unknown, cancelled, cross-owner or cross-benchmark submissions fail closed.
-Initial baseline dispatch instead requires an explicitly provisioned commit,
-owner and already-verified receipt; it never fabricates a solver identity.
+## Scores, curves and artifacts
 
-The verifier compares the receipt and requested problem/policies with its
-retained evaluation. Success returns `protocol`, `reference`, `problem`, `judge`,
-`artifact: {kind: "harness-source", sha256: "..."}`, and `judgment`. The client
-checks those bindings and requested Pareto fields before writing the authoritative
-score artifact. The artifact includes `metrics.remoteVerification` with the
-problem/version and actual evaluated harness digest. Yukon records that artifact
-through its existing GitHub Actions/Pareto path. Retrieval never starts a job.
+Yukon's two minimizing coordinates are
+`[best_verified_performance, model_credits_at_that_capture]`, where performance
+is `avg_toffoli × peak_qubits`. Both coordinates must be finite. An invalid result
+has no score tuple and includes a reason.
 
-Local preview uses the same endpoint with the solver's Yukon-authenticated session;
-it authorizes only that owner's receipt and creates no workflow-publication record.
-GitHub workflows cannot use local fixture evidence as official remote results.
-Replays bind the original submission and GitHub run to the original evidence.
+Metrics retain the complete verified curve, model identities, run cap, total
+usage and provenance. The $10/$20/$50/$100/Best views select from that evidence;
+a later candidate cannot improve an earlier budget view. Missing budget results
+are explicit metadata, never invented Yukon tuple values. See [accounting](tier-accounting.md).
 
-The direct-backend `remote-verification` provider and `/yukon/v1/retrieve`
-prototype remain preserved for reference; they are not used by the current
-manifest. The old `/evaluations/<ID>/submissions` workflow fixture adapter is
-also retained for earlier local tests, not the hosted GitHub path.
+Owners can download source and recorded evidence and explicitly publish selected
+artifacts. See [downloads and sharing](artifact-sharing.md). Private trace
+archives are not attached to Yukon's public result packet.
 
-## Request bindings and authentication
-
-The harness's `evaluation.json` v3 contains exactly:
-
-```json
-{
-  "schema_version": 3,
-  "llm_access": {"grant_id": "grant_example_only"},
-  "model": {"provider": "openai", "name": "gpt-5.6-sol"},
-  "max_model_credits": 20,
-  "limits": {"max_model_tokens": 100000, "max_seconds": 900}
-}
-```
-
-The grant is non-secret and server-authorized. Renewable credentials stay local;
-temporary provider access will travel over a separate authenticated HTTPS
-endpoint when the worker is ready. Only that run's trusted credential component
-may hold it in memory. Never persist provider credentials in the queue, database,
-files or logs, even encrypted; the evaluation request contains only the grant
-reference. Discard access on completion, failure, cancellation or expiry.
-Refresh stays on the user's machine, and server restart requires fresh
-authorization. This credential endpoint is not implemented; no provider token
-is sent by the current bridge. The starter grant is empty so an unconfigured
-run fails before network use.
-
-Hash executable source with Catalyst's canonical per-file SHA-256 manifest,
-including the Dockerfile, code, dependencies, instructions and knowledge.
-Exclude `evaluation.json` and `verification.json` from the source/build context.
-Bind the evaluation independently to that source digest, immutable server image,
-ECDSA commit/problem-set digest, model/credit-cap/limits/config digest, pricing digest,
-policy digest and authenticated owner. Retain pinned base images, toolchains,
-Dungeness and builder identities in server provenance.
-
-Configure `CATALYST_EVALUATOR_URL` as the trusted HTTPS endpoint. Loopback HTTP
-exists for local testing and private tunnels. Refuse redirects. Local requests
-use a Yukon-authenticated solver session. Resolve the owner without trusting client identity fields.
-Workflow requests use GitHub OIDC with audience
-`catalyst-evaluator`. Validate issuer/signature/audience/repository/workflow/ref/
-SHA/run claims, then bind the request to the exact queued Yukon submission and
-its owner. GitHub identity alone cannot authorize another user's result or grant.
-
-## HTTP contract
-
-`POST /evaluations` accepts:
-
-```text
-protocol: "catalyst-evaluation-v3"
-request_id: stable UUID
-source: {digest, archive_base64}
-evaluation: configuration above
-problem_set: trusted initial ECDSA definition
-pricing: complete pinned reference schedule
-judge: {policies: {scoring, validity}, fields: {scores, validity}}
-context: {kind: "yukon-solver"}
-evidence_mode: "remote"
-```
-
-The API checks its own trusted problem, pricing and policy pins; client copies
-cannot redefine the challenge. Validate source independently, authorize access
-and limits, persist the job before acknowledging `{request_id, evaluation_id}`.
-The same account/key/payload returns the same job. A changed payload under the
-same key fails. The worker on the existing VM executes builds in separate
-workspaces/containers, outside the API process. Persist results before cleaning
-up each job; do not provision or destroy a VM for an evaluation.
-
-`GET /evaluations/{id}` returns these bindings:
-
-```text
-protocol, evaluation_id, request_id, source_digest,
-evaluation_config_digest, problem_set_digest, policies_digest, pricing_digest,
-evidence_mode,
-status: queued | building | running | verifying | completed | failed | cancelled
-```
-
-A completed result adds `valid`, `reason`, `trace_available`,
-`build: {id, image_digest}`, and `observations`. Each ECDSA observation contains:
-
-```text
-problem_id: "ecdsa.fail"
-problem_commit: pinned commit
-pricing_digest: canonical pricing SHA-256
-normalized_model_usd: total settled model credits (including usage after best result)
-end_sequence: last trusted controller sequence
-usage: [{sequence, request_id, settled: true,
-         tokens: {input_tokens, output_tokens, cached_read_tokens, cache_write_tokens}}]
-checkpoints: [{budget_tier, sequence, settled: true}]
-curve: [{candidate_digest, verified_candidate_digest, captured_sequence,
-         settled: true, verified: true, normalized_model_usd,
-         avg_toffoli, peak_qubits, performance}]
-```
-
-All sequences share one controller-assigned order. Usage receipts are unique,
-ordered and final. Input counts include cache subsets; output includes reasoning.
-The validator recomputes credits using decimal arithmetic and requires each
-candidate's cost to equal settled cumulative usage before capture. The independent
-verifier must attest the exact captured digest and product metric. Seal order,
-funding and settled usage are checked. Only captures before a tier's seal can
-count. See [tier accounting](tier-accounting.md) for in-flight requests, inclusive
-boundaries, missing tier states and full-curve retention.
-
-The result is trusted because it is fetched from the authorized evaluator and
-bound to its immutable records; `verified` and `settled` flags in client JSON
-would not constitute proof. The local worker constructs its ledger from
-Dungeness gateway receipts, reconciles terminal usage and captures a frozen
-candidate after the harness stops. It seals eligible terminal windows only;
-it does not invent captures for tiers crossed earlier. Runtime checkpoint
-collection for official ECDSA runs is still pending. Continuous runs versus
-independent tier runs remains open.
-
-A valid scored result requires one ECDSA observation with a verified candidate. An invalid result needs an explanation; partial evidence may remain.
-Build/worker failure yields no judgment, while private evidence stays available.
-
-`GET /evaluations/{id}/traces` returns an authenticated private ZIP. The client
-stores it without unpacking or executing it, with a 64 MiB download bound; retain
-complete evidence server-side. Store source snapshots, candidate captures, failed
-verifications, model usage and sanitized traces. Owner authorization and secret
-redaction are required. Raw traces never enter the public GitHub artifact.
-
-The legacy fixture adapter `POST /evaluations/{id}/submissions` receives the current source/configuration,
-problem/pricing/policy pins and GitHub context, with no new evaluation request ID.
-Authorize the queued submission and evaluation owner, compare against the actual
-stored archive and immutable result, then return that existing result. Do not
-start builds, model calls or another paid run. Workflow retries are safe.
-
-The local v2 `verification.json` records evaluation/source/config/problem/policy/
-pricing/image identities. It is a public reference, not an attestation. Changed
-source, model, tier, limits or prices require new evidence. Uncertain initial
-POSTs reuse their operation key; deliberate repeats create distinct jobs.
-
-## Public judgment and remaining work
-
-Public scores are `[best_verified_performance, model_credits_at_that_capture]`, matching the
-two finite minimizing objectives in `benchmark.json`. The second coordinate is cumulative credits at the best verified capture.
-The spending cap and terminal usage remain separate metadata. Missing tier results occur only in metadata,
-never within Yukon score tuples. Invalid results use `scores: null`.
-
-Metrics retain source/build/image/evaluation IDs, exact model, limits, credit cap,
-pricing/config/problem digests, full verified curves and both checkpoint states and Best achieved.
-The allowlist excludes private grants, usage request identifiers and raw traces.
-One schema-v1 benchmark owns the shared `submission/` path; tiers are not tracks.
-The archived Yukon board still needs an adapter to these tier summaries.
-
-The next integration milestone is a live GitHub dispatch and hosted Yukon
-registration using the existing independently verified remote baseline. It uses
-zero model credits and establishes the model-disabled MVP flow. Temporary
-provider access and renewal for research runs, runtime checkpoint capture,
-credit reservations and private artifact retention remain separate work.
-No fabricated baseline or local-score fallback is used.
+The public contract is defined by this guide and the public client validators.
+Service deployment, queue administration, corpus operations and screening
+implementation belong in `catalyst-verifier`.

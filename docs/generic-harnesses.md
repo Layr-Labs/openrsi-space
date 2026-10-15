@@ -13,6 +13,11 @@ research run retained the baseline score; measured results are recorded below.
 
 ## Submit your own agent
 
+For login, credential setup, receipt retrieval and Yukon publication, use the
+[solver guide](solver-guide.md). [Agent instructions](agent-prompt.md) cover the
+same flow for coding agents. The commands below start remote evaluations when
+supplied with valid model access.
+
 Submit an existing repository containing the harness, knowledge base, prompts,
 configuration, helper programs and dependencies, with its existing directory
 layout. The harness can run its own workers, search loop or framework.
@@ -95,37 +100,16 @@ outside the source directory; `.env*`, `.git`, local state and virtual
 environments are excluded. A selected credential file inside the source
 directory is rejected before submission.
 
-## Source and patch
+## Runtime dependency
 
-Changes live in `/Users/bxue/Documents/dungeness-main` on `for-catalyst`, based on
-`506890937d75b659db714d3e02ea3d3cec3a1451`. Both repositories are writable in
-this session. The runtime is deployed from a hashed source snapshot; the local
-changes have not been committed or pushed.
-
-The complete, reviewable upstream patch (including tests) is
-[`src/catalyst/runtime/dungeness-command.patch`](../src/catalyst/runtime/dungeness-command.patch).
-Catalyst applies it to its isolated per-evaluation checkout before recording
-the generated runtime commit. It does not modify the configured source checkout.
-The patch is included in the Python package. Once the interface is present in
-the pinned upstream checkout, Catalyst uses that implementation.
-An incremental `dungeness-provider-contract.patch` upgrades earlier command
-interface checkouts with generic Kimi/Moonshot Chat Completions support and
-priced-request checks. Additional compatibility patches upgrade older command
-runtimes' CLI and Harbor result handling, settle explicit input-validation
-rejections without guessing usage for ambiguous errors, and make root-produced
-verifier results readable by the host worker. All patches are packaged and
-applied only where the corresponding capability is absent.
-
-For another clean checkout at the original pin, apply the patch from an
-unrestricted terminal. Do not reapply it to the already patched branch:
-
-```sh
-git -C /Users/bxue/Documents/dungeness-main apply /Users/bxue/Documents/catalyst/src/catalyst/runtime/dungeness-command.patch
-```
-
-Keep Catalyst configured against a clean committed Dungeness pin until those
-upstream changes are deliberately committed; dirty upstream checkouts remain
-rejected for reproducibility.
+Dungeness is not required on a solver's machine for remote submission. The
+private `catalyst-verifier` service owns its pinned runtime and the adapter that
+installs submitted command harnesses. The public CLI packages source, checks
+the local entrypoint and talks to the service through HTTPS. Anyone can clone
+the public [Dungeness repository](https://github.com/Layr-Labs/dungeness) for
+optional local runs.
+See [local testing options](local-evaluation.md). Local output does not replace
+an official remote receipt. Your harness receives the execution interface below.
 
 ## Execution contract
 
@@ -147,7 +131,10 @@ agent. Each profile identifies the provider, request model, API protocol and
 pinned pricing identity. The compiler gives the harness a `DUNGENESS_TASK`
 JSON file containing the problem instruction, writable workspace, model
 endpoints and execution configuration. Real credentials are not in this file.
-The compiler does not enable research-state prompt interventions implicitly.
+Research strategy and feedback loops belong to the harness. The cleaned
+Dungeness runtime deployed by Catalyst has removed the experimental research-state
+controller and its prompt interventions. Check the runtime revision when comparing
+a public checkout with the deployed service.
 
 One Harbor trial may run many harness subprocesses. They share the run's
 compute envelope, gateway and budget. The launcher forwards termination and
@@ -282,7 +269,7 @@ build workspace. Parallel verifier capacity is not implemented.
 
 The existing history exporter accounts conservatively for calls in flight
 when an evaluator observation arrives. The full cost/performance curve and
-$20/$200/Best views are preserved.
+$10/$20/$50/$100/Best views are preserved.
 
 ## Example and verification
 
@@ -312,56 +299,10 @@ adapter tests, including the actual framework using synthetic responses.
 
 ## Framework integration and runtime check
 
-[`harnesses/ecdsa-evox`](../harnesses/ecdsa-evox) packages actual SkyDiscover/EvoX
-at a fixed upstream commit. Its ECDSA evaluator adapter keeps the best verified
-Rust directory. Main, guide and search-strategy models share the declared
-gateway endpoints, with no runtime internet or default public-provider fallback.
-The default test configuration is Kimi Code `k3` and $3 normalized credits.
-This is a short integration run, not a research-performance comparison.
+The EvoX and ensemble examples show framework-specific entrypoints; they do not
+limit what an executable harness can contain. Package tools and dependencies
+before execution because research-time internet access is disabled.
 
-The following runs actual Docker, Dungeness, a local API and the Yukon CLI
-with synthetic model responses. It incurs no model charges:
-
-```sh
-.venv/bin/python scripts/check-local-e2e.py \
-  --dungeness /path/to/clean-pinned-dungeness \
-  --yukon /path/to/yukon \
-  --harness tests/fixtures/generic-runtime
-```
-
-The fixture checks absent public routing and provider credentials, rejects an
-undeclared model, calls the model gateway, and leaves a
-background child for the command adapter to terminate. The outer test checks
-the verified score, receipt replay, durable result, private artifacts and API
-worker shutdown. The tiny fixture is independently verified after execution;
-the real ECDSA task additionally supplies the in-run evaluator. This requires
-Docker socket access and local TCP listeners.
-
-The Docker integration completed on October 9 with one model request, verified
-scores `[3, 0.25]`, exactly one evaluation, and repeated receipt retrieval.
-Its generated test runner binds the synthetic circuit identity; the production
-command remains pinned to ECDSA.
-
-The live ECDSA attempts are retained for audit:
-
-- `19eaf05f-3251-458f-a109-7d10aaaf4a4f`: two Kimi requests rejected before
-  generation because EvoX sent an empty system message. The old gateway failed
-  closed on missing usage; the Harbor verifier also hit a result-permission error.
-- `24325238-effb-48b2-8f5c-859f1fc4ef38`: verifier permissions and rejection
-  accounting passed. Kimi rejected five requests because EvoX selected an
-  unsupported temperature. All five settled at zero tokens.
-- `0b48d992-00e9-4567-ad47-459767195757`: corrected K3 completion parameters and
-  an early metered configuration probe; submitted with the original $3 cap.
-  Completed independent verification with four trusted observations and ten
-  settled model calls totaling 0.685212 normalized credits (84,105 budget
-  tokens). Harbor stopped the agent at the configured 900-second limit.
-  All observations matched the baseline product, 10,758,874,395; there was
-  no verified performance improvement. The Pareto pair is
-  `[10758874395, 0.000276]`, using cost at the earliest best observation,
-  rather than total run cost. Stock `yukon run` retrieved this exact result
-  without starting another evaluation.
-  Yukon dev accepted submission `22f76880-5436-497d-a403-beab576a4f14`
-  on October 13, 2026. Its hosted GitHub Actions workflow retrieved the same
-  score pair and four-observation curve from the remote service. The evaluated
-  receipt commit is `3d63930bda5499eca6ceef2571a0e97aaafed0e0`, against
-  benchmark source `5c9b3c08ab4bd3c1cdf61bb6e73cb3e2943a022d`.
+Use [local build and smoke checks](local-evaluation.md), then submit a funded run
+through the remote service when authorized. Operator tests that launch Dungeness
+and the mock-provider end-to-end flow live in `catalyst-verifier`.

@@ -1,4 +1,4 @@
-> Background vision. The initial challenge is now ECDSA-only at $20 and $200 checkpoints
+> Background vision. The initial challenge is now ECDSA-only at $10, $20, $50 and $100 budget views
 > plus Best achieved. See [the current contract](tier-accounting.md)
 > and [architecture](architecture.md); broader problem authoring remains future work.
 

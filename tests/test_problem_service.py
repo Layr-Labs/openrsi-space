@@ -97,9 +97,53 @@ class ProblemServiceTests(unittest.TestCase):
                 launch.hydrate_problem(task)
             self.assertEqual(opener.return_value.open.call_count, 1)
 
+    def test_invalid_binding_is_rejected_before_network(self):
+        _, _, _, task = fixture()
+        for service in (
+            {"url": "http://gateway:8080/task", "sha256": None},
+            {"url": "http://gateway:8080/task", "sha256": "not-a-digest"},
+            {"url": "http://gateway:8080/task?problem=other", "sha256": "a" * 64},
+            {"url": "http://gateway:8080/task", "sha256": "a" * 64, "token": "secret"},
+        ):
+            with self.subTest(service=service), patch.object(launch, "build_opener") as opener:
+                with self.assertRaisesRegex(ValueError, "Invalid assigned"):
+                    launch.hydrate_problem({**task, "problem_service": service})
+                opener.assert_not_called()
+
+    def test_valid_digest_cannot_bind_wrong_problem_or_candidate_paths(self):
+        document, _, _, task = fixture()
+        for change in (
+            {"problem": {"id": "different-problem", "version": "a" * 64}},
+            {"problem": {"id": "ecdsa.fail", "version": "b" * 64}},
+            {"candidate_paths": ["trusted-verifier"]},
+            {"schema_version": 2},
+            {"statement": None},
+        ):
+            payload = problem_server.canonical({**document, **change})
+            assigned = {**task, "problem_service": {
+                "url": "http://gateway:8080/task",
+                "sha256": hashlib.sha256(payload).hexdigest(),
+            }}
+            with self.subTest(change=change), patch.object(launch, "build_opener") as opener:
+                opener.return_value.open.return_value = io.BytesIO(payload)
+                with self.assertRaisesRegex(ValueError, "identity or candidate paths"):
+                    launch.hydrate_problem(assigned)
+
+    def test_unavailable_malformed_or_oversized_document_stops_startup(self):
+        _, _, _, task = fixture()
+        for payload in (b"null", b"[]", b"invalid json", b" " * (256 * 1024 + 1)):
+            with self.subTest(payload=payload[:20]), patch.object(launch, "build_opener") as opener:
+                opener.return_value.open.return_value = io.BytesIO(payload)
+                with self.assertRaises(ValueError):
+                    launch.hydrate_problem(task)
+        with patch.object(launch, "build_opener") as opener:
+            opener.return_value.open.side_effect = TimeoutError("service unavailable")
+            with self.assertRaises(TimeoutError):
+                launch.hydrate_problem(task)
+
     def test_legacy_input_and_public_statement_are_available(self):
         old = {"instruction": "Legacy pinned task."}
         self.assertIs(launch.hydrate_problem(old), old)
-        self.assertIn("point_add::build()", problem_statement("ecdsa.fail"))
+        self.assertIn("pub fn build() -> Vec<Op>", problem_statement("ecdsa.fail"))
         self.assertEqual(get_problem("ecdsa.fail")["repository"]["commit"],
                          "62ae3d00d1e01d7bc640b5163cfea8dabffd8392")

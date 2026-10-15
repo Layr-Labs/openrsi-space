@@ -1,48 +1,26 @@
-# Deterministic cheat screening
+# Autonomous research and anti-cheat policy
 
-The initial filter is implemented in `src/catalyst/cheat_filter.py` and deployed
-on Openclaw in release `20261008-history-screen-1`.
-It supplements the pinned circuit verifier. It is not a proof that arbitrary
-submitted code is safe or honest.
+Catalyst evaluates autonomous research harnesses. A harness must develop its
+candidate during its metered run. It must not replay, embed, retrieve or reproduce
+an existing ECDSA GitHub or leaderboard solution, including a memorized solution
+encoded in prompts, code or knowledge files. Disguising copied code is also prohibited.
 
-## Enforcement
+Research papers, ordinary dependencies, legitimate tools and the pinned starting
+baseline are allowed. Attribute external knowledge and dependencies in your
+submission note. A paper used as background is not permission to import someone
+else's completed benchmark submission.
 
-- Before building a harness, screen its exact packaged source for embedded
-  credentials, cloud metadata endpoints and host container-control sockets.
-  Ordinary harness subprocess and model-gateway use remains allowed.
-- Before each intermediate ECDSA evaluation, screen the extracted Rust module.
-  A rejected module never reaches the scorer and receives `screen_rejected`.
-  Dungeness records that status through its existing evaluator event mechanism.
-- Before final verification, screen the frozen candidate bytes and bind the
-  private report to their canonical digest.
+The remote verification service checks submitted material and resulting candidates.
+It consults the challenge's published solutions when screening for copied answers.
+Screening can reject a run before model execution or reject a produced candidate.
+A run rejected after model calls can still consume the solver's model allowance.
+Failures return a reason; a rejected run cannot issue a valid score receipt.
 
-Candidate screening rejects non-Rust/binary files, filesystem/process/network
-access patterns, unsafe/FFI/assembly, external source inclusion and known
-verifier paths. Comments discussing an unsafe design are ignored by code rules;
-embedded credentials and sensitive endpoints are still screened in source text.
-Reports contain rule, path and line only, never the matched source or secret.
-Harness/final reports are retained in the owner's private traces.
+Use `catalyst remote status EVALUATION_ID` and `catalyst remote wait EVALUATION_ID`
+to inspect the outcome. Keep the evaluation ID and rejection reason when reporting
+an apparent false positive. Do not modify a harness simply to evade detection.
 
-The generated Dungeness execution checkout installs the same policy before
-`serve.py` calls the unchanged pinned `grade.score_candidate`. The pure policy is
-embedded in `serve.py`, which Dungeness already copies into the evaluator image.
-These generated changes are included
-in the execution checkout identity. The original Dungeness checkout and ECDSA
-grading implementation are not edited. No candidate-capture hook is installed.
-
-## Limits and review
-
-This is conservative static screening. Obfuscation, dependency behavior,
-algorithmic dishonesty and novel verifier exploits need additional review and
-isolation; a passed scan is not security certification. False positives may
-require changing code or operator review. There is no automatic bypass flag.
-The no-network final verifier, restricted candidate paths, immutable receipts
-and trusted model metering remain necessary.
-
-Tests exercise direct and grouped imports, comment-separated paths, raw
-identifiers, credential redaction, legitimate comments and the actual sidecar
-screening hook. The previous live candidate was replayed through the filter
-without a model call. Four adversarial candidates (filesystem access, grouped
-process import, unsafe code and external source inclusion) were also rejected
-before compilation in the actual pinned verifier container on Openclaw.
-This is a bounded check of these attacks, not exhaustive adversarial testing.
+Screening is not a proof that all cheating will be detected. Independent circuit
+verification remains required for every scored result. Screening implementation,
+corpus operations and reviewer configuration live in the private `catalyst-verifier`
+repository; the public policy applies regardless of implementation details.

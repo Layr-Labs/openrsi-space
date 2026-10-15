@@ -47,26 +47,50 @@ class TierTests(unittest.TestCase):
 
     def test_inclusive_boundaries_and_late_capture_cannot_improve_earlier_tiers(self):
         result = self.project()
-        self.assertEqual([t["best"]["performance"] for t in result["tiers"]], [900, 700])
-        self.assertEqual([t["best"]["normalized_model_usd"] for t in result["tiers"]], [20, 200])
+        self.assertEqual([t["budget_tier"] for t in result["tiers"]], [10, 20, 50, 100])
+        self.assertEqual([t["best"]["performance"] if t["best"] else None for t in result["tiers"]],
+                         [None, 900, 800, 800])
+        self.assertEqual([t["best"]["normalized_model_usd"] if t["best"] else None for t in result["tiers"]],
+                         [None, 20, 20.01, 20.01])
         self.assertEqual(result["best"]["performance"], 600)
         self.assertEqual(len(result["curve"]), 6)  # Includes regressions and same-cost captures.
         self.assertEqual(result["normalized_model_usd"], 201)
 
-    def test_views_need_no_seals_and_a_cheaper_run_qualifies_for_both(self):
+    def test_views_need_no_seals_and_a_cheaper_run_qualifies_for_all(self):
         record = observation()
         record["checkpoints"] = []
         result = self.project(record)
-        self.assertEqual([t["status"] for t in result["tiers"]], ["eligible", "eligible"])
+        self.assertEqual([t["status"] for t in result["tiers"]],
+                         ["no_verified_candidate", "eligible", "eligible", "eligible"])
         record["curve"] = [p for p in record["curve"] if p["normalized_model_usd"] > 20]
         record["checkpoints"] = observation()["checkpoints"]
         self.assertEqual(self.project(record)["tiers"][0]["status"], "no_verified_candidate")
         record = observation()
-        record.update(usage=[usage(1, 20)], normalized_model_usd=20,
-                      checkpoints=[{"budget_tier": 20, "sequence": 3, "settled": True}],
-                      curve=[candidate(2, 20, 1000)], end_sequence=3)
-        self.assertEqual([t["status"] for t in self.project(record, 20)["tiers"]],
-                         ["eligible", "eligible"])
+        record.update(usage=[usage(1, 5)], normalized_model_usd=5,
+                      checkpoints=[], curve=[candidate(2, 5, 1000)], end_sequence=3)
+        self.assertEqual([t["status"] for t in self.project(record, 5)["tiers"]],
+                         ["eligible"] * 4)
+
+    def test_all_four_exact_boundaries_keep_later_improvements_and_regressions_separate(self):
+        captures = [(10, 1000), (10, 999), (10.01, 900), (20, 800), (20.01, 700),
+                    (50, 600), (50.01, 500), (100, 400), (100.01, 300), (500, 100), (500, 120)]
+        ledger, curve, previous = [], [], Decimal(0)
+        for i, (cost, score) in enumerate(captures):
+            ledger.append(usage(i * 2 + 1, Decimal(str(cost)) - previous))
+            curve.append(candidate(i * 2 + 2, cost, score))
+            previous = Decimal(str(cost))
+        record = {"pricing_digest": pricing_digest(), "end_sequence": len(captures) * 2,
+                  "usage": ledger, "curve": curve, "normalized_model_usd": 500, "checkpoints": []}
+        result = self.project(record, 500)
+        self.assertEqual([t["best"]["performance"] for t in result["tiers"]], [999, 800, 600, 400])
+        self.assertEqual([t["best"]["normalized_model_usd"] for t in result["tiers"]], [10, 20, 50, 100])
+        self.assertEqual(result["best"]["performance"], 100)
+        self.assertEqual(len(result["curve"]), len(captures))
+
+    def test_legacy_200_seal_is_preserved_without_becoming_a_display_tier(self):
+        result = self.project()
+        self.assertEqual(result["checkpoints"][-1]["budget_tier"], 200)
+        self.assertNotIn(200, [t["budget_tier"] for t in result["tiers"]])
 
     def test_no_candidate_does_not_get_a_baseline_or_zero(self):
         record = observation()
@@ -91,7 +115,7 @@ class TierTests(unittest.TestCase):
         record["curve"][1].update(avg_toffoli=1, performance=10)
         result = self.project(record)
         self.assertEqual(result["best"]["performance"], 10)
-        self.assertEqual(result["tiers"][0]["best"]["performance"], 10)
+        self.assertEqual(result["tiers"][1]["best"]["performance"], 10)
 
     def test_accounting_and_capture_tampering_fail_closed(self):
         mutations = [
