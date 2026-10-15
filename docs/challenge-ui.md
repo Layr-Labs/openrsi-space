@@ -1,13 +1,13 @@
 # Catalyst challenge UI
 
-The new page is implemented in the isolated stock Yukon checkout
-`.catalyst/yukon-publish`, under `apps/challenges-ui/challenges/catalyst` and
-`apps/challenges-ui/app/(challenge)/catalyst`.
-The original Yukon checkout and backend are not modified by this work.
-The reviewable source patch is `integrations/yukon/challenge-ui.patch`;
-its base commit is recorded beside it. The integrated source branch is
-[`catalyst/verified-harness-ui`](https://github.com/Layr-Labs/yukon/tree/catalyst/verified-harness-ui),
-based on current Yukon master and its shared layout.
+The page is maintained in Yukon's Challenges UI, under
+`apps/challenges-ui/challenges/catalyst` in `Layr-Labs/yukon`, with its Next.js
+routes in `apps/challenges-ui/app`. UI source and deployment configuration belong
+in that repository; Catalyst does not distribute Yukon patches.
+
+The active integration uses stock Yukon's GitHub Actions runner and Pareto mode.
+See [GitHub Actions end to end](github-actions-e2e.md) for the challenge workflow
+and receipt retrieval contract. No Yukon backend patch is required.
 
 ## Local preview
 

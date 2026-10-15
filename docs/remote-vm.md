@@ -196,9 +196,9 @@ evaluations or download private traces. GitHub OIDC remains independent.
 The following describes the earlier local prototype. It is not the hosted
 integration and must not be deployed for the current GitHub Actions workflow.
 
-The implementation is applied to `/Users/bxue/Documents/yukon/yukon`.
-The exportable patch and base revision are under
-`integrations/yukon/`. The prior UI preview is preserved separately.
+The obsolete direct-runner prototype patches are no longer distributed.
+Use [GitHub Actions end to end](github-actions-e2e.md) for the supported
+integration; the description below is historical only.
 
 The manifest uses:
 
