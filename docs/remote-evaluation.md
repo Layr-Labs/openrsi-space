@@ -79,7 +79,7 @@ claims in arbitrary local JSON do not constitute official evidence.
 ## Receipts and Yukon
 
 The client writes the complete service-issued `verification.json` beside the
-submitted harness. Copy it into `submission/verification.json` in the challenge
+submitted harness. Copy it into `verification.json` in the challenge
 checkout. This is the only Yukon-editable path. It contains immutable evidence
 references, not credentials and not a score chosen by the submitter.
 

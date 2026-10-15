@@ -117,15 +117,16 @@ Your package can contain source, prompts, a raw-paper knowledge base, helper
 programs, configuration and a Dockerfile with pinned dependencies. You can
 use your own agent architecture, subprocesses or search framework.
 
-For a runnable example, copy the EvoX harness:
+To generate an editable starter:
 
 ```sh
-mkdir -p .catalyst
-cp -R harnesses/ecdsa-evox .catalyst/my-harness
+uv run catalyst harness create my-agent --output .catalyst/my-harness
 ```
 
-Edit this copy, or replace it with your own agent. The EvoX example uses Kimi
-Code `k3`. The alternative `harnesses/ecdsa-research` uses Codex with ChatGPT.
+The starter checks its assigned workspace and makes no model calls. Replace
+`agent.py` with your autonomous solver and install its dependencies in the
+Dockerfile. You can instead submit your own agent repository directly; there
+are no bundled example harnesses to copy.
 Choose the matching model client and credential method; changing a provider
 flag does not convert an agent to a different API protocol.
 
@@ -203,7 +204,7 @@ The $3 cap is an example, not a required challenge budget or spending target.
 For a Codex/ChatGPT harness instead:
 
 ```sh
-uv run catalyst remote submit harnesses/ecdsa-research \
+uv run catalyst remote submit .catalyst/my-harness \
   --provider openai-chatgpt --model gpt-6-astra \
   --reasoning-effort high --budget 3 \
   --max-tokens 1000000 --max-seconds 900 \
@@ -244,7 +245,7 @@ the source changed while the run was in progress.
 Continue only with a valid verified result:
 
 ```sh
-cp .catalyst/my-harness/verification.json submission/verification.json
+cp .catalyst/my-harness/verification.json verification.json
 yukon run
 ```
 

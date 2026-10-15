@@ -6,6 +6,7 @@ import unittest
 from unittest.mock import patch
 
 from catalyst.executable import build
+from harness_fixture import create_harness
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -30,7 +31,9 @@ class BuildPermissionTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory, patch("catalyst.executable.docker_output", side_effect=docker):
             previous = os.umask(0o077)
             try:
-                result = build(Path(directory), ROOT / "harnesses/ecdsa-baseline")
+                source = Path(directory) / "agent"
+                create_harness(source)
+                result = build(Path(directory), source)
             finally:
                 os.umask(previous)
         self.assertEqual(result["builder_version"], 2)

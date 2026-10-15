@@ -26,8 +26,8 @@ Each evaluation runs under the solver's chosen spending cap. **Within $10**, **W
 a $5 run qualifies for all four budget views. Changing the view never starts a run.
 Catalyst exports the existing Dungeness evaluator history and settled usage.
 
-See [budget accounting](docs/tier-accounting.md) for exact eligibility and
-[the challenge UI](docs/challenge-ui.md) for the local preview and Yukon handoff.
+See [budget accounting](docs/tier-accounting.md) for exact eligibility.
+The challenge UI is maintained in Yukon; see [the UI integration](docs/challenge-ui.md).
 
 The [ECDSA statement](src/catalyst/problem-set/ecdsa.fail.md) is maintained in
 Catalyst. Each new run serves its assigned statement through an internal,
@@ -70,7 +70,7 @@ see the solver guide for tested paths and remaining compatibility checks.
    per-run overrides. **This step consumes model allowance.**
 3. Catalyst prints the evaluation ID, result and `verification.json` path.
    Resume interrupted retrieval with `uv run catalyst remote wait EVALUATION_ID`.
-4. Copy the complete receipt into `submission/verification.json`, then run
+4. Copy the complete receipt into `verification.json`, then run
    `yukon run` to check the retained result.
 5. Write a public methodology note and use `uv run catalyst yukon-submit`
    with exact model/harness attribution and dependency declarations. The helper
@@ -85,18 +85,16 @@ recorded without merging solution code.** No Yukon backend patch is required.
 Harness source and recorded traces stay private by default. Owners can download
 retained evidence or publish source and sanitized traces separately; see
 [artifact downloads and sharing](docs/artifact-sharing.md). Scores and curves
-come from Yukon's official result packet. The challenge UI is implemented in
-an isolated Yukon branch and awaits hosting; see [preview and handoff](docs/challenge-ui.md).
+come from Yukon's official result packet. The challenge UI lives in Yukon; see [the integration guide](docs/challenge-ui.md).
 
 ## Repository boundary
 
 This repository is the public solver and challenge interface. It contains:
 
-- The `catalyst` CLI, harness source packaging, local Docker smoke tests and examples.
+- The `catalyst` CLI, harness source packaging, local Docker smoke tests and a starter generator.
 - Pinned problem downloads and local verifier commands.
 - Model-credit accounting rules, result validation and the public HTTP/receipt contract.
 - `benchmark.json`, the receipt-only GitHub Actions workflow and solver documentation.
-- The optional local catalog and synthetic comparison viewer.
 
 The **private `catalyst-verifier` repository** contains the verification API,
 queue, Dungeness worker adapter, anti-cheat implementation, credential handling
@@ -112,6 +110,10 @@ The service and client communicate over the [public HTTP contract](docs/remote-e
 A receipt identifies retained evidence; it contains no model credential and
 cannot authorize a score by itself. Verification retrieval never launches a paid run.
 
+The repository does not bundle example agents or a submission source directory.
+Generate a starter below, or submit your own repository. Only the root
+`verification.json` receipt is uploaded to Yukon.
+
 ## Local development
 
 ```sh
@@ -124,23 +126,11 @@ uv run catalyst --help
 Use [local checks](docs/local-evaluation.md) before submitting. Local checks
 are not official evaluations and do not meter model credits.
 
-For the synthetic local catalog (no model calls):
-
-```sh
-uv run catalyst demo
-uv run catalyst serve
-```
-
-Open http://127.0.0.1:8765. The catalog displays contributor-reported or synthetic
-records, separately from official remote results.
-
 ## Validation
 
 ```sh
 uv run python -m unittest discover -s tests -v
-node --check src/catalyst/static/app.js
 ```
 
 Service and cross-repository integration tests live in `catalyst-verifier`.
-Before making this repository public, follow the [publication checklist](docs/publication.md):
-old Git history still contains private implementation even after files are moved.
+See [publication notes](docs/publication.md) for the public/private source boundary.

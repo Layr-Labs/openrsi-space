@@ -8,7 +8,6 @@ dist/
 .DS_Store
 .env
 .env.*
-harnesses/*/verification.json
 problems/
 # Internal upstream handoffs and deployment-specific records stay private.
 integrations/yukon/*.patch

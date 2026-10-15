@@ -5,73 +5,17 @@ import json
 import os
 from pathlib import Path
 import sys
-from urllib.error import HTTPError, URLError
-from urllib.parse import quote
-from urllib.request import Request, urlopen
-
-from .catalog import Catalog
 from .common import (
-    CatalystError, canonical, extract_bundle, identifier, make_bundle, now,
-    open_bundle, read_json, snapshot_directory, write_json,
+    CatalystError, extract_bundle, identifier, now,
+    read_json, snapshot_directory, write_json,
 )
-
-
-def request(server, path, body=None, mime=None):
-    target = server.rstrip("/") + path
-    if not target.startswith(("http://", "https://")):
-        raise CatalystError("Server must be an HTTP(S) URL.")
-    try:
-        req = Request(target, data=body, headers={"Content-Type": mime} if mime else {})
-        with urlopen(req, timeout=30) as response:
-            return response.read()
-    except HTTPError as error:
-        try:
-            message = json.loads(error.read())["error"]
-        except (ValueError, KeyError):
-            message = str(error)
-        raise CatalystError(message) from error
-    except URLError as error:
-        raise CatalystError(f"Cannot reach the catalog: {error.reason}") from error
-
-
-def create_problem(args, state):
-    from . import templates
-    identity = identifier(args.id)
-    target = Path(args.output or f"problems/{identity}").resolve()
-    if target.exists():
-        raise CatalystError(f"Directory already exists: {target}")
-    metric = {"name": args.metric, "direction": args.direction}
-    instructions = templates.INSTRUCTIONS
-    execution = {
-        "repository": {"url": args.repository or "", "commit": args.commit or ""},
-        "interface": "catalyst-file-v1", "candidate_paths": ["solution.py"],
-        "verifier_include": ["check.py"], "timeout_sec": 900,
-    }
-    if args.metric != "score" or args.direction != "maximize":
-        instructions = "# Research problem\n\nDescribe the objective and evaluation criteria here.\n"
-    document = {
-        "schema_version": 1, "kind": "problem", "id": identity, "title": args.title or identity,
-        "description": "Edit this description to state the scientific objective.",
-        "metric": metric, "created_at": now(), "execution": execution,
-    }
-    write_json(target / "problem.json", document)
-    (target / "instructions.md").write_text(instructions)
-    (target / "source").mkdir()
-    (target / "source" / "solution.py").write_text(templates.SOLUTION)
-    (target / "source" / "check.py").write_text(templates.CHECKER)
-    (target / "verifier").mkdir()
-    for filename, text in (("Dockerfile", templates.DOCKERFILE),
-                           ("grade.py", templates.GRADE), ("test.sh", templates.TEST_SH)):
-        (target / "verifier" / filename).write_text(text)
-    print(target)
-    print("Edit the package and pin its committed HTTPS source repository before a Dungeness evaluation.")
 
 
 def create_harness(args):
     if args.executable and (args.agent or args.source):
         raise CatalystError("--executable cannot be combined with --agent or --from.")
     identity = identifier(args.id)
-    target = Path(args.output or f"harnesses/{identity}").resolve()
+    target = Path(args.output or identity).resolve()
     if target.exists():
         raise CatalystError(f"Directory already exists: {target}")
     derived = None
@@ -98,7 +42,7 @@ def create_harness(args):
             "Consult the supplied harness knowledge when useful. Record useful findings for the researcher.\n")
         (target / "knowledge").mkdir()
         (target / "knowledge" / "notes.md").write_text("# Reusable insights\n\nAdd findings, references, and methods here.\n")
-    if args.executable:
+    if args.executable or not (args.agent or args.source):
         from .executable import create_starter
         document.pop("agent", None)
         document["description"] = "An executable autonomous research harness."
@@ -107,12 +51,6 @@ def create_harness(args):
         document["derived_from"] = derived
     write_json(target / "harness.json", document)
     print(target)
-
-
-def publish_content(state, server, content):
-    if server:
-        return json.loads(request(server, "/api/publish", content, "application/zip"))
-    return Catalog(state / "catalog").publish(content)
 
 
 def model_access_input(args):
@@ -264,10 +202,6 @@ def build_parser():
     for kind in ("problem", "harness"):
         group = commands.add_parser(kind)
         sub = group.add_subparsers(dest="operation", required=True)
-        create = sub.add_parser("create")
-        create.add_argument("id")
-        create.add_argument("--title")
-        create.add_argument("--output")
         if kind == "problem":
             sub.add_parser("list", help="List the pinned initial solver problems.")
             show = sub.add_parser("show")
@@ -279,11 +213,11 @@ def build_parser():
                 local = sub.add_parser(operation, help="Use the verifier in an ongoing research workspace.")
                 local.add_argument("id")
                 local.add_argument("--workspace", required=True)
-            create.add_argument("--metric", default="score")
-            create.add_argument("--direction", choices=["minimize", "maximize"], default="maximize")
-            create.add_argument("--repository")
-            create.add_argument("--commit")
         else:
+            create = sub.add_parser("create", help="Create an editable harness source directory.")
+            create.add_argument("id")
+            create.add_argument("--title")
+            create.add_argument("--output")
             create.add_argument("--agent")
             create.add_argument("--from", dest="source", help="Derive a new harness from an existing package.")
             create.add_argument("--executable", action="store_true",
@@ -295,26 +229,6 @@ def build_parser():
             smoke.add_argument("--workspace", required=True)
             smoke.add_argument("--problem", help="Initial problem ID for the smoke-test task input.")
             smoke.add_argument("--timeout", type=int, default=120)
-    publish = commands.add_parser("publish", help="Publish an immutable package snapshot to the catalog.")
-    publish.add_argument("package")
-    publish.add_argument("--server")
-    publish.add_argument("--include-trace", action="store_true", help="Include raw records and traces, which may contain research contents.")
-    fetch = commands.add_parser("fetch")
-    fetch.add_argument("kind", choices=["problem", "harness", "run"])
-    fetch.add_argument("id")
-    fetch.add_argument("version")
-    fetch.add_argument("--output", required=True)
-    fetch.add_argument("--server")
-    report = commands.add_parser("report", help="Attach an evidence concern; this does not label a harness as overfit.")
-    report.add_argument("run_id")
-    report.add_argument("run_version")
-    report.add_argument("--body", required=True)
-    report.add_argument("--supporting-run")
-    report.add_argument("--server")
-    serving = commands.add_parser("serve")
-    serving.add_argument("--port", type=int, default=8765)
-    commands.add_parser("demo", help="Add explicitly synthetic data without model calls.")
-    commands.add_parser("list", help="List published snapshots.")
     commands.add_parser("yukon-setup", help="Download the pinned ecdsa.fail workspace for Yukon.")
     commands.add_parser("yukon-run", help="Trusted remote evaluation bridge invoked by Yukon.")
     yukon_submit = commands.add_parser("yukon-submit", help="Submit a receipt through stock Yukon and bind its Pareto execution.")
@@ -331,7 +245,7 @@ def build_parser():
     remote = commands.add_parser("remote", help="Submit to and inspect the verification service directly.")
     remote_sub = remote.add_subparsers(dest="operation", required=True)
     remote_submit = remote_sub.add_parser("submit", help="Upload harness source and queue one evaluation.")
-    remote_submit.add_argument("package", nargs="?", default="submission", help="Harness directory (default: submission).")
+    remote_submit.add_argument("package", help="Path to your harness source directory.")
     remote_submit.add_argument("--wait", action="store_true", help="Wait, validate the result and save its verification reference.")
     remote_submit.add_argument("--entrypoint", help="Launch argv for an existing repository without harness.json; parsed without a shell.")
     remote_submit.add_argument("--dockerfile", help="Relative build recipe for --entrypoint (default: Dockerfile).")
@@ -390,18 +304,15 @@ def dispatch(args):
     state = Path(args.state).expanduser().resolve()
     try:
         if args.command == "problem":
-            if args.operation == "create":
-                create_problem(args, state)
+            from .problems import clone_problem, develop, get_problem, initial_problems
+            if args.operation == "list":
+                print(json.dumps(initial_problems(), indent=2))
+            elif args.operation == "show":
+                print(json.dumps(get_problem(args.id), indent=2))
+            elif args.operation == "clone":
+                print(json.dumps(clone_problem(args.id, Path(args.output).resolve()), indent=2))
             else:
-                from .problems import clone_problem, develop, get_problem, initial_problems
-                if args.operation == "list":
-                    print(json.dumps(initial_problems(), indent=2))
-                elif args.operation == "show":
-                    print(json.dumps(get_problem(args.id), indent=2))
-                elif args.operation == "clone":
-                    print(json.dumps(clone_problem(args.id, Path(args.output).resolve()), indent=2))
-                else:
-                    return develop(args.id, Path(args.workspace), args.operation)
+                return develop(args.id, Path(args.workspace), args.operation)
         elif args.command == "harness":
             if args.operation == "create":
                 create_harness(args)
@@ -416,40 +327,6 @@ def dispatch(args):
                                    timeout=args.timeout)
                     print(json.dumps(result, indent=2))
                     return 0 if result["status"] == "completed" else 1
-        elif args.command == "publish":
-            path = Path(args.package).resolve()
-            record_path = None
-            if args.include_trace and (path / "run.json").is_file():
-                meta_path = state / "evaluations" / path.name / "evaluation.json"
-                imported_path = state / "imports" / path.name / "import.json"
-                if meta_path.is_file() or imported_path.is_file():
-                    record_path = Path(read_json(meta_path if meta_path.is_file() else imported_path)["record_path"])
-            print(json.dumps(publish_content(state, args.server,
-                                            publication_bundle(path, args.include_trace, record_path))))
-        elif args.command == "fetch":
-            catalog = Catalog(state / "catalog") if not args.server else None
-            if catalog:
-                catalog.get(args.kind, args.id, args.version)
-                content = catalog.bundle_path(args.kind, args.id, args.version).read_bytes()
-            else:
-                parts = "/".join(quote(p, safe="") for p in (args.kind, args.id, args.version))
-                content = request(args.server, "/api/bundles/" + parts)
-            print(json.dumps(extract_bundle(content, Path(args.output).resolve())))
-        elif args.command == "report":
-            doc = {"run_id": args.run_id, "run_version": args.run_version,
-                   "body": args.body, "supporting_run": args.supporting_run}
-            result = json.loads(request(args.server, "/api/reports", canonical(doc), "application/json")) if args.server else (
-                Catalog(state / "catalog").report(args.run_id, args.run_version, args.body, args.supporting_run))
-            print(json.dumps(result))
-        elif args.command == "serve":
-            from .server import serve
-            serve(state / "catalog", args.port)
-        elif args.command == "demo":
-            from .demo import seed
-            print(json.dumps(seed(Catalog(state / "catalog"))))
-        elif args.command == "list":
-            for obj in Catalog(state / "catalog").list():
-                print(obj["kind"], obj["id"], obj["version"], obj["document"]["title"])
         elif args.command == "yukon-setup":
             from .yukon import setup_problems
             setup_problems(Path.cwd())
@@ -476,26 +353,6 @@ def dispatch(args):
 def main(argv=None):
     parser, _ = build_parser()
     return dispatch(parser.parse_args(argv))
-
-
-def publication_bundle(path: Path, include_trace=False, record_path: Path | None = None) -> bytes:
-    if path.is_file():
-        content = path.read_bytes()
-        open_bundle(content)
-        return content
-    if (path / "run.json").is_file():
-        files = {"run.json": canonical(read_json(path / "run.json"))}
-        if include_trace:
-            record = record_path or path / "dungeness-record.json"
-            if record.is_file():
-                files["dungeness-record.json"] = record.read_bytes()
-            if record_path:
-                events = record_path.parent / "usage" / "events.jsonl"
-                if events.is_file():
-                    files["trace/events.jsonl"] = events.read_bytes()
-        return make_bundle(files)[1]
-    snapshot, content = snapshot_directory(path)
-    return content
 
 
 if __name__ == "__main__":

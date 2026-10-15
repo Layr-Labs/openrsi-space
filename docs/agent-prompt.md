@@ -78,7 +78,7 @@ the best performance and credits at its earliest achievement, not necessarily
 the total run usage. Credits use frozen reference pricing; do not describe
 subscription credits as an actual cash payment.
 
-Only `submission/verification.json` is editable for Yukon submission.
+Only `verification.json` is editable for Yukon submission.
 Keep the agent's source, prompts, raw papers, tools and configuration in a
 separate directory such as `.catalyst/my-harness/`. Preserve unrelated edits.
 No Yukon backend modification, GitHub credential or SSH access is needed to
@@ -87,14 +87,15 @@ submit as a solver.
 ## Prepare
 
 1. Read `benchmark.json`, `docs/solver-guide.md`,
-   `docs/generic-harnesses.md`, and the chosen example's README.
+   `docs/generic-harnesses.md`, and the chosen framework's documentation.
    If available, read the installed `yukon-cli` skill for current command and
    note requirements. Catalyst's receipt helper is an additional required step.
 2. Use the current evaluator and Yukon environment in the solver guide.
    Reuse the solver's Yukon login. Do not print, log, package or publish keys.
 3. If needed, clone with `yukon clone layr-labs/catalyst` and enter the printed
    benchmark directory. Run `uv sync --frozen` and `yukon setup`.
-4. Adapt the requested framework without forcing it into Codex. Source can
+4. Create a starter with `uv run catalyst harness create my-agent --output .catalyst/my-harness`,
+   or adapt the requested framework without forcing it into Codex. Source can
    use a Dockerfile plus `--entrypoint`, or the existing `harness.json`
    interface. Include knowledge material and pin build dependencies. The
    submitted archive must fit 8 MiB and contain no symlinks or credentials.
@@ -177,7 +178,7 @@ progress, and do not call a live score an accepted or final result.
 After a valid result, use the exact receipt path printed by Catalyst:
 
 ```sh
-cp PRINTED_RECEIPT_PATH submission/verification.json
+cp PRINTED_RECEIPT_PATH verification.json
 yukon run
 ```
 

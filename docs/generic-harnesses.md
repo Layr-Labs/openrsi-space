@@ -43,10 +43,10 @@ do not combine it with `--entrypoint`.
 An optional editable starter is also available:
 
 ```sh
-uv run catalyst harness create my-agent --executable
+uv run catalyst harness create my-agent --output .catalyst/my-agent
 ```
 
-Replace `harnesses/my-agent/agent.py`, put reference material in `knowledge/`,
+Replace `.catalyst/my-agent/agent.py`, put reference material in `knowledge/`,
 and install dependencies in its Dockerfile. The starter copies the whole source
 bundle into `/opt/harness/`, including those reference files. It initially makes
 no model calls; implement the research loop before requesting a model run.
@@ -55,7 +55,7 @@ An existing framework can use its own entrypoint instead.
 Submit the same source with a model choice and spending cap:
 
 ```sh
-uv run catalyst remote submit harnesses/my-agent \
+uv run catalyst remote submit .catalyst/my-agent \
   --provider kimi-code --model k3 --reasoning-effort high --budget 3 \
   --prompt-model-token --wait
 ```
@@ -273,29 +273,10 @@ $10/$20/$50/$100/Best views are preserved.
 
 ## Example and verification
 
-[`harnesses/ecdsa-ensemble`](../harnesses/ecdsa-ensemble) is a small Python
-example using two worker processes and two model configurations, with no
-Codex dependency. Workers propose complete Rust modules, evaluate independent
-snapshots, and promote the best verified candidate. This is an interface
-example, not an implementation of EvoX or OpenEvolve.
-
-After deploying this version and enabling the `openai` provider, a solver can
-submit it using:
-
-```sh
-.venv/bin/catalyst remote submit harnesses/ecdsa-ensemble --prompt-model-token --wait
-```
-
-That command would launch a paid evaluation; it was not run during development.
-
-Offline checks cover generic compiler output, arbitrary source and knowledge
-packaging, per-run CLI settings and resumable receipt bindings, process workers and cleanup,
-concurrent gateway calls against a mock provider, shared credit reservations,
-provider allowlists, mixed-model pricing and delayed-stream checkpoint costs.
-The full Mac suite passed 205 tests with three optional skips. The deployed
-server suite passed 200 tests with eight optional skips. Additional checks
-passed all 66 gateway tests, eight runtime/permission tests, and six EvoX
-adapter tests, including the actual framework using synthetic responses.
+Your harness may launch parallel model workers or combine multiple models.
+Declare every model in the run configuration and send all inference through
+its assigned gateway endpoints. Shared usage counts against the run's cap;
+parallelism does not grant each worker a separate budget.
 
 ## Framework integration and runtime check
 

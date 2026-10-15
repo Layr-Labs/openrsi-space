@@ -8,6 +8,7 @@ import unittest
 from catalyst.common import CatalystError, write_json
 from catalyst.tiers import credits, pricing_digest, project_observation, SCORING, VALIDITY
 from catalyst.remote import evaluation_config
+from harness_fixture import evaluation
 
 MODEL = {"provider": "openai", "name": "gpt-5.6-sol"}
 LIMITS = {"max_model_tokens": 1_000_000_000, "max_seconds": 900}
@@ -199,7 +200,7 @@ class PricingTests(unittest.TestCase):
 
     def test_config_requires_explicit_finite_credit_cap_and_pinned_prices(self):
         source = Path(__file__).resolve().parents[1]
-        config = json.loads((source / "submission/evaluation.json").read_text())
+        config = evaluation()
         config["llm_access"]["grant_id"] = "grant_test_only"
         with tempfile.TemporaryDirectory() as directory:
             path = Path(directory) / "evaluation.json"
@@ -219,6 +220,6 @@ class PricingTests(unittest.TestCase):
         self.assertEqual(manifest["paretoPolicies"], {"scoring": SCORING, "validity": VALIDITY})
         self.assertEqual(manifest["schemaVersion"], 1)
         self.assertEqual(manifest["promotionMode"], "automatic")
-        self.assertEqual(manifest["editablePaths"], ["submission/verification.json"])
+        self.assertEqual(manifest["editablePaths"], ["verification.json"])
         self.assertEqual(manifest["runner"]["provider"], "github-actions")
         self.assertEqual([o["name"] for o in manifest["objectives"]], ["ecdsaPerformance", "modelCreditsAtBest"])

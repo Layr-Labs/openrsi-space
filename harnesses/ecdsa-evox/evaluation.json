@@ -1,7 +1,0 @@
-{
-  "schema_version": 3,
-  "llm_access": {"grant_id": "grant_temporary_provider"},
-  "model": {"provider": "kimi-code", "name": "k3"},
-  "max_model_credits": 3,
-  "limits": {"max_model_tokens": 100000, "max_seconds": 900}
-}

@@ -13,7 +13,7 @@
     "scoring": {"version": "ecdsa-best-and-checkpoints-v2"},
     "validity": {"version": "ecdsa-trusted-checkpoints-v2"}
   },
-  "editablePaths": ["submission/verification.json"],
+  "editablePaths": ["verification.json"],
   "setupCommand": ["uv", "run", "--frozen", "catalyst", "yukon-setup"],
   "benchmarkCommand": ["uv", "run", "--frozen", "catalyst", "yukon-run"],
   "scorePath": ".catalyst/yukon/score.json",

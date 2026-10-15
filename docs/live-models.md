@@ -23,8 +23,8 @@ provider-specific harness and no model account registration on the server.
 
 Submit source with the provider, model, reasoning effort and spending cap in
 `evaluation.json` or the per-run CLI flags.
-`harnesses/ecdsa-research` selects `openai-chatgpt`, `gpt-6-astra`, `high`, and
-one normalized model credit. The server builds the source and runs its entrypoint
+For example, a compatible Codex harness can select `openai-chatgpt`,
+`gpt-6-astra`, high reasoning effort and a one-credit cap. The server builds the source and runs its entrypoint
 inside Dungeness against the pinned ECDSA problem.
 
 ## Which token, and where does it come from?
@@ -72,12 +72,13 @@ For a custom login-file location, pass
 ```sh
 export CATALYST_EVALUATOR_URL=https://3.21.93.126
 unset CATALYST_API_TOKEN CATALYST_LOCAL_TEST CATALYST_LOCAL_ECDSA CATALYST_LOCAL_PROBLEM_SET
-.venv/bin/catalyst remote submit harnesses/ecdsa-research \
+uv run catalyst remote submit .catalyst/my-harness \
+  --provider openai-chatgpt --model gpt-6-astra --reasoning-effort high --budget 1 \
   --codex-auth-file --wait
 ```
 
-The resulting receipt is `harnesses/ecdsa-research/verification.json`.
-Copy the complete file into the Yukon checkout's `submission/verification.json`;
+The resulting receipt is `.catalyst/my-harness/verification.json`.
+Copy the complete file into the Yukon checkout's `verification.json`;
 do not extract an authentication token or invent a score. If waiting was
 interrupted, use `catalyst remote wait EVALUATION_ID` to retrieve the same run.
 See [the complete Yukon submission commands](github-actions-e2e.md#solver-commands).

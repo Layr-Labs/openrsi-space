@@ -26,7 +26,7 @@ require Docker; problem verification requires the upstream task's toolchain.
 
 The public entrypoint is `catalyst`. It does not start the verification service,
 run anti-cheat screening, hold an operator credential or require Dungeness.
-The separate localhost catalog (`catalyst serve`) is only a development viewer.
+The challenge UI lives in Yukon; Catalyst does not include a separate viewer.
 
 The public ECDSA statement lives in `src/catalyst/problem-set/ecdsa.fail.md`.
 The private service copies it into a versioned problem package during

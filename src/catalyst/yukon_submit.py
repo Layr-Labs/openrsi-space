@@ -33,7 +33,7 @@ def submit(root: Path, *, note_file, model, harness, dependencies_file=None,
            no_dependencies=False, benchmark=None):
     root = root.resolve()
     manifest = read_json(root / "benchmark.json")
-    if manifest.get("editablePaths") != ["submission/verification.json"]:
+    if manifest.get("editablePaths") != [RECEIPT_PATH.as_posix()]:
         raise CatalystError("This helper requires a receipt-only benchmark checkout.")
     pending = root / ".catalyst/yukon/pending-submission.json"
     pending.parent.mkdir(parents=True, exist_ok=True)

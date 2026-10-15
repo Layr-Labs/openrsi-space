@@ -1,27 +1,14 @@
 # Executable harness development
 
-For the Yukon solver entrypoint, run `yukon setup` and `yukon run` from the
-Catalyst root, then edit `submission/`. The root `benchmark.json` connects those
-commands to the remote evaluation bridge. An older CLI needs `yukon update`.
-Remote runs require a configured evaluator and authorized model access.
-Submission reuses a matching remote result
-without another paid run. See [the remote contract](remote-evaluation.md).
-The commands below also document the standalone
-Catalyst tooling and individual real-problem development checks.
+Create your agent in its own directory, using the starter generator or your own
+repository. Catalyst packages that source for the remote verification service.
+After a successful evaluation, copy the returned receipt to the challenge
+checkout's root `verification.json`; `yukon run` checks that retained result.
+See [the solver guide](solver-guide.md) for authentication and publication.
 
-The initial problem is **ecdsa.fail**. Exact source commits, candidate paths and verifier commands live in
-`src/catalyst/problem-set/initial.json`. The CLI does not follow a moving frontier.
-
-Executable source packaging, local Docker builds, offline image smoke tests,
-a generic Dungeness adapter, and the remote HTTP client/workflow are implemented.
-A persistent local API and Dungeness worker execute the actual pinned ECDSA
-baseline with model access disabled. A smaller circuit fixture tests model
-accounting and Yukon integration; see [the local checks](local-evaluation.md).
-Those local modes use fixture identities. The [private VM service](github-actions-e2e.md)
-supports Yukon solver authentication and temporary ChatGPT access, with
-GitHub OIDC for workflow retrieval. The new local
-[generic harness interface](generic-harnesses.md) adds model sets and gateway-owned
-credentials; it has not been deployed.
+The problem is **ecdsa.fail**. Exact source commits, candidate paths and verifier
+commands live in `src/catalyst/problem-set/initial.json`. Local checks use that
+pin; they cannot issue an official receipt.
 
 ## Develop against a problem
 
@@ -41,8 +28,8 @@ intensive and is separate from the lightweight local contract tests.
 ## Package and smoke-test a harness
 
 ```sh
-uv run catalyst harness create my-solver --executable
-uv run catalyst harness build harnesses/my-solver
+uv run catalyst harness create my-solver --output .catalyst/my-solver
+uv run catalyst harness build .catalyst/my-solver
 ```
 
 The build prints its `id`. Use it to run the complete entrypoint:

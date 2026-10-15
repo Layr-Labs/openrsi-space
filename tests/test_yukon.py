@@ -15,10 +15,12 @@ from unittest.mock import patch
 import uuid
 
 from catalyst.common import CatalystError, open_bundle, read_json, write_json
-from catalyst.yukon import authentication, run_remote
+from catalyst.yukon import authentication
+from catalyst.receipts import check_receipt, PROTOCOL as RECEIPT_PROTOCOL
+from harness_fixture import create_harness
 from catalyst.remote import (
     PROTOCOL, bound_result, digest, endpoint, evaluation_config,
-    judge_input, judgment, request_lock, SCORING, VALIDITY,
+    judge_input, judgment, request_lock, SCORING, VALIDITY, RemoteClient, verification_reference,
 )
 
 from catalyst.tiers import pricing_digest
@@ -60,10 +62,7 @@ class YukonRunnerTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
-        shutil.copytree(PROJECT / "submission", self.root / "submission")
-        # The checked-in receipt is a real registration baseline, not this
-        # synthetic client's preexisting evaluation.
-        (self.root / "submission/verification.json").unlink(missing_ok=True)
+        create_harness(self.root / "submission")
         self.state = self.root / ".catalyst"
         self.target = self.state / "yukon/score.json"
         self.config = read_json(self.root / "submission/evaluation.json")
@@ -97,12 +96,19 @@ class YukonRunnerTests(unittest.TestCase):
                 if not self.authorized():
                     return
                 request = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
-                if self.path.endswith("/submissions"):
+                if self.path == "/verifications/retrieve":
                     test.publications.append(request)
-                    identity = self.path.split("/")[2]
-                    original, _ = next(job for job in test.jobs.values() if job[1] == identity)
-                    self.respond(200, test.transform(completed(original, identity)))
-                    return
+                    reference = request["reference"]
+                    original, identity = next(job for job in test.jobs.values()
+                                              if job[1] == reference["evaluation_id"])
+                    result = test.transform(completed(original, identity))
+                    if reference != verification_reference(result, original):
+                        return self.respond(403, {"error": "Receipt does not match retained evidence."})
+                    return self.respond(200, {
+                        **request, "protocol": RECEIPT_PROTOCOL,
+                        "artifact": {"kind": "harness-source", "sha256": reference["source_digest"]},
+                        "judgment": judgment(result, original),
+                    })
                 test.requests.append(request)
                 snapshot, files = open_bundle(base64.b64decode(request["source"]["archive_base64"]))
                 test.assertEqual(snapshot["version"], request["source"]["digest"])
@@ -151,9 +157,18 @@ class YukonRunnerTests(unittest.TestCase):
         self.temp.cleanup()
 
     def evaluate(self):
-        with patch("catalyst.yukon.Path.cwd", return_value=self.root), \
-                patch("catalyst.remote.time.sleep"), redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
-            return run_remote(self.state)
+        self.target.unlink(missing_ok=True)
+        with patch("catalyst.remote.time.sleep"), redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+            client = RemoteClient(self.state)
+            identity = client.submit(self.root / "submission")["evaluation_id"]
+            artifact = client.wait(identity)
+            client.export_reference(identity)
+            write_json(self.target, artifact)
+            return artifact
+
+    def retrieve(self):
+        with redirect_stdout(io.StringIO()):
+            return check_receipt(self.root)
 
     def test_remote_ecdsa_tier_judgment_and_private_trace_download(self):
         artifact = self.evaluate()
@@ -179,19 +194,18 @@ class YukonRunnerTests(unittest.TestCase):
         self.assertEqual(len({r["source"]["digest"] for r in self.requests}), 1)
         self.assertNotEqual(digest(self.requests[0]["evaluation"]), digest(self.requests[-1]["evaluation"]))
 
-    def test_workflow_reuses_server_result_without_new_paid_evaluation(self):
+    def test_workflow_reads_root_receipt_without_source_or_another_evaluation(self):
         original = self.evaluate()
-        receipt = read_json(self.root / "submission/verification.json")
-        self.assertEqual(receipt["source_digest"], self.requests[0]["source"]["digest"])
-        context = {"kind": "github-actions", "repository": "org/catalyst",
-                   "commit": "c" * 40, "run_id": "123", "run_attempt": "1"}
-        with patch("catalyst.yukon.authentication", return_value=("test-yukon-token", context)):
-            published = self.evaluate()
-        self.assertEqual(published, original)
+        write_json(self.root / "verification.json", read_json(self.root / "submission/verification.json"))
+        shutil.rmtree(self.root / "submission")
+        published = self.retrieve()
+        self.assertEqual(published["scores"], original["scores"])
+        self.assertTrue(published["valid"])
         self.assertEqual(len(self.jobs), 1)
         self.assertEqual(len(self.requests), 1)
         self.assertEqual(len(self.publications), 1)
         self.assertEqual(len(self.trace_gets), 1)
+        self.assertFalse((self.root / "submission").exists())
 
     def test_cheaper_result_qualifies_for_all_views_without_missing_yukon_values(self):
         self.config["max_model_credits"] = 200
@@ -219,33 +233,21 @@ class YukonRunnerTests(unittest.TestCase):
         self.assertFalse(self.target.exists())
         self.assertEqual(self.trace_gets, [])
 
-    def test_changed_source_or_budget_cannot_reuse_old_remote_result(self):
+    def test_forged_receipt_cannot_publish_scores(self):
         self.evaluate()
-        context = {"kind": "github-actions"}
-        agent = self.root / "submission/agent.py"
-        original = agent.read_text()
-        agent.write_text(original + "\n# changed source\n")
-        with patch("catalyst.yukon.authentication", return_value=("test-yukon-token", context)):
-            with self.assertRaisesRegex(CatalystError, "does not match"):
-                self.evaluate()
-            agent.write_text(original)
-            self.config["max_model_credits"] = 200
-            write_json(self.root / "submission/evaluation.json", self.config)
-            with self.assertRaisesRegex(CatalystError, "does not match"):
-                self.evaluate()
+        reference = read_json(self.root / "submission/verification.json")
+        write_json(self.root / "verification.json", {**reference, "image_digest": "sha256:" + "f" * 64})
+        with self.assertRaises(CatalystError):
+            self.retrieve()
         self.assertFalse(self.target.exists())
-        self.assertEqual(self.publications, [])
         self.assertEqual(len(self.jobs), 1)
 
-    def test_forged_reference_or_policy_change_cannot_publish_scores(self):
-        self.evaluate()
-        receipt_path = self.root / "submission/verification.json"
-        receipt = read_json(receipt_path)
-        write_json(receipt_path, {**receipt, "image_digest": "sha256:" + "f" * 64})
-        with patch("catalyst.yukon.authentication", return_value=("test-yukon-token", {"kind": "github-actions"})):
-            with self.assertRaisesRegex(CatalystError, "disagrees"):
-                self.evaluate()
+    def test_missing_root_receipt_removes_stale_score_without_starting_a_run(self):
+        write_json(self.target, {"scores": [999]})
+        with self.assertRaisesRegex(CatalystError, "Missing verification.json"):
+            self.retrieve()
         self.assertFalse(self.target.exists())
+        self.assertEqual(self.requests, [])
 
     def test_lost_acknowledgement_reuses_operation_without_duplicate_job(self):
         write_json(self.target, {"scores": [999]})

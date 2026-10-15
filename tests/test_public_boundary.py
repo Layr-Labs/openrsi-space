@@ -19,7 +19,7 @@ PRIVATE_MODULES = {
     "artifact_storage", "artifacts", "cheat_filter", "dungeness", "ecdsa_history",
     "evaluator", "github_identity", "hosted", "live_provider", "local_run",
     "model_access", "pricing", "service", "solution_corpus", "source_audit",
-    "worker", "yukon_auth", "yukon_binding",
+    "worker", "yukon_auth", "yukon_binding", "catalog", "server", "demo", "templates",
 }
 
 
@@ -45,7 +45,8 @@ class PublicBoundaryTests(unittest.TestCase):
         _, commands = build_parser()
         self.assertTrue({"remote", "yukon-run", "yukon-submit", "problem", "harness"} <= set(commands.choices))
         self.assertTrue({"worker", "evaluator-serve", "artifact-sync", "maintenance",
-                         "github-configure", "evaluate", "init"}.isdisjoint(commands.choices))
+                         "github-configure", "evaluate", "init", "serve", "demo", "publish",
+                         "fetch", "report", "list"}.isdisjoint(commands.choices))
 
     def test_starter_and_problem_lookup_work_with_public_package(self):
         with tempfile.TemporaryDirectory() as temporary, redirect_stdout(io.StringIO()) as output:

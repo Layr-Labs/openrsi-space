@@ -6,14 +6,10 @@ The hosted integration requires no Yukon backend change.
 
 The canonical implementation is `apps/challenges-ui/challenges/catalyst` in
 `Layr-Labs/yukon`, with its Next.js routes in `apps/challenges-ui/app`.
-UI development and deployment configuration belong in that repository; Catalyst
-contains the public solver tools and this integration guide. The standalone
-local catalog viewer below is a separate development tool.
-
-Everyone can use Catalyst's standalone local viewer with `uv run catalyst demo`
-and `uv run catalyst serve`. The Yukon-specific preview instructions below
-are for maintainers who already have access to a Yukon checkout with the
-Catalyst UI integrated.
+UI development and deployment configuration belong in Yukon. Catalyst contains
+the public solver tools and this integration guide. There is no standalone
+catalog viewer in the Catalyst package. Preview commands below require access
+to the Yukon checkout with the challenge UI integrated.
 
 ## Local preview
 

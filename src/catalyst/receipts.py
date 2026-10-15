@@ -14,7 +14,7 @@ from .problems import initial_problems
 from .remote import HTTPFailure, digest, endpoint, judge_input, solver_fetch
 
 PROTOCOL = "remote-verification-receipt-v1"
-RECEIPT_PATH = Path("submission/verification.json")
+RECEIPT_PATH = Path("verification.json")
 SCORE_PATH = Path(".catalyst/yukon/score.json")
 
 def retrieve_with_binding_wait(base, token, body):
@@ -59,8 +59,8 @@ def read_receipt(path):
         reference = read_json(path)
     except FileNotFoundError:
         raise CatalystError(
-            "Missing submission/verification.json. Submit your harness with "
-            "catalyst remote submit --wait, then copy its receipt here.") from None
+            "Missing verification.json. Submit your harness with "
+            "catalyst remote submit HARNESS_DIR --wait, then copy its receipt here.") from None
     if not isinstance(reference, dict):
         raise CatalystError("Verification receipt must be a JSON object.")
     return reference
