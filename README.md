@@ -488,3 +488,9 @@ ZIP bundles hold the published content; SQLite indexes them. The small
 `src/catalyst/dungeness.py` adapter is the boundary to the execution framework.
 Background mockups and the archived Yukon preview are historical design artifacts;
 the current contracts above define the ECDSA-only challenge.
+
+## Assigned problem service
+
+Catalyst owns the [ECDSA problem statement](src/catalyst/problem-set/ecdsa.fail.md).
+The verification service pins it for each run and serves it through Dungeness’s
+internal gateway. See the [problem-service contract](docs/problem-service.md).

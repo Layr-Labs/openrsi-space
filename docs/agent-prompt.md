@@ -71,6 +71,10 @@ submit as a solver.
    submitted archive must fit 8 MiB and contain no symlinks or credentials.
 5. Use `CATALYST_TASK` for the workspace, instructions, declared model
    endpoints and evaluator. Use the metered gateway for all inference.
+   When a problem service is assigned, the Catalyst launcher fetches and checks
+   the statement before your entrypoint starts. Read it from
+   `CATALYST_TASK.instruction` or `problem_document`; `CATALYST_PROBLEM_URL`
+   exposes the same pinned document through the gateway.
    The research container has no public internet; prepare dependencies and
    knowledge at build time. Do not silently fall back to public provider APIs.
 6. Call `evaluate --json PATH` for intermediate candidate snapshots. Retain

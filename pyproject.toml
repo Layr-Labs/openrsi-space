@@ -24,4 +24,4 @@ s3 = [
 where = ["src"]
 
 [tool.setuptools.package-data]
-catalyst = ["static/*", "runtime/*.py", "runtime/*.patch", "problem-set/*.json", "local_fixture/*"]
+catalyst = ["static/*", "runtime/*.py", "runtime/*.patch", "problem-set/*.json", "problem-set/*.md", "local_fixture/*"]

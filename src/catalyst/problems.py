@@ -20,6 +20,12 @@ def get_problem(identity: str) -> dict:
     raise CatalystError("Unknown initial problem; run catalyst problem list.")
 
 
+def problem_statement(identity: str) -> str:
+    """Statements belong to the public challenge, independently of its runtime."""
+    problem = get_problem(identity)
+    return (Path(__file__).parent / "problem-set" / f"{problem['id']}.md").read_text()
+
+
 def clone_problem(identity: str, destination: Path) -> dict:
     problem = get_problem(identity)
     if destination.exists():

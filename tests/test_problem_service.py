@@ -1,0 +1,105 @@
+import hashlib
+from http.server import ThreadingHTTPServer
+import io
+import json
+from pathlib import Path
+import tempfile
+import threading
+import unittest
+from unittest.mock import patch
+from urllib.error import HTTPError
+from urllib.request import Request, urlopen
+
+from catalyst.problems import get_problem, problem_statement
+from catalyst.runtime import launch, problem_server
+
+
+def fixture():
+    document = {
+        "schema_version": 1, "run_id": "test-run",
+        "problem": {"id": "ecdsa.fail", "version": "a" * 64},
+        "statement": "Solve the trusted problem.",
+        "candidate_paths": ["src/point_add"],
+    }
+    payload = problem_server.canonical(document)
+    digest = hashlib.sha256(payload).hexdigest()
+    task = {
+        "problem": document["problem"], "candidate_paths": document["candidate_paths"],
+        "instruction": "Research method supplied by the harness.",
+        "problem_service": {"url": "http://gateway:8080/task", "sha256": digest},
+    }
+    return document, payload, digest, task
+
+
+class ProblemServiceTests(unittest.TestCase):
+    def test_read_only_server_serves_only_its_startup_snapshot(self):
+        document, payload, digest, _ = fixture()
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "task.json"
+            path.write_bytes(payload)
+            loaded = problem_server.load_document(path, digest)
+            path.write_text('{"statement":"changed later"}')
+            with ThreadingHTTPServer(("127.0.0.1", 0), problem_server.handler_for(loaded, digest)) as server:
+                thread = threading.Thread(target=server.serve_forever, daemon=True)
+                thread.start()
+                base = f"http://127.0.0.1:{server.server_port}"
+                try:
+                    with urlopen(base + "/task") as response:
+                        self.assertEqual(json.load(response), document)
+                        self.assertEqual(response.headers["X-Task-SHA256"], digest)
+                    for method, target, status in (
+                        ("POST", "/task", 405), ("DELETE", "/task", 405),
+                        ("GET", "/task?problem=other", 404), ("GET", "/../../etc/passwd", 404),
+                    ):
+                        with self.assertRaises(HTTPError) as error:
+                            urlopen(Request(base + target, method=method))
+                        self.assertEqual(error.exception.code, status)
+                        error.exception.close()
+                finally:
+                    server.shutdown()
+                    thread.join()
+
+    def test_document_must_match_pin_and_fit_limit(self):
+        _, payload, digest, _ = fixture()
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / "task.json"
+            for data in (payload.replace(b"trusted", b"forged"), b" " * (256 * 1024 + 1)):
+                path.write_bytes(data)
+                with self.assertRaises(ValueError):
+                    problem_server.load_document(path, digest)
+
+    def test_launcher_hydrates_statement_before_starting_harness(self):
+        document, payload, _, task = fixture()
+        task["workspace"] = "/workspace/repo"
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            (root / "input.json").write_text(json.dumps(task))
+            (root / "execution.json").write_text(json.dumps({"entrypoint": ["python3", "agent.py"]}))
+            with patch.object(launch, "build_opener") as opener, patch.object(launch.subprocess, "run") as run:
+                opener.return_value.open.return_value = io.BytesIO(payload)
+                run.return_value.returncode = 0
+                self.assertEqual(launch.launch(root / "input.json", root / "execution.json"), 0)
+                args = run.call_args.kwargs
+                resolved = json.loads(Path(args["env"]["CATALYST_TASK"]).read_text())
+                self.assertEqual(resolved["problem_document"], document)
+                self.assertTrue(resolved["instruction"].startswith(document["statement"]))
+                self.assertIn(task["instruction"], resolved["instruction"])
+                self.assertEqual(args["env"]["CATALYST_PROBLEM_URL"], "http://gateway:8080/task")
+
+    def test_wrong_document_or_endpoint_prevents_harness_launch(self):
+        _, payload, _, task = fixture()
+        with patch.object(launch, "build_opener") as opener:
+            opener.return_value.open.return_value = io.BytesIO(payload.replace(b"trusted", b"forged"))
+            with self.assertRaisesRegex(ValueError, "does not match"):
+                launch.hydrate_problem(task)
+            task["problem_service"]["url"] = "http://attacker.invalid/task"
+            with self.assertRaisesRegex(ValueError, "Invalid assigned"):
+                launch.hydrate_problem(task)
+            self.assertEqual(opener.return_value.open.call_count, 1)
+
+    def test_legacy_input_and_public_statement_are_available(self):
+        old = {"instruction": "Legacy pinned task."}
+        self.assertIs(launch.hydrate_problem(old), old)
+        self.assertIn("point_add::build()", problem_statement("ecdsa.fail"))
+        self.assertEqual(get_problem("ecdsa.fail")["repository"]["commit"],
+                         "62ae3d00d1e01d7bc640b5163cfea8dabffd8392")
