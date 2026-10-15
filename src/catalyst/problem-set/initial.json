@@ -32,6 +32,10 @@
           "commit": "62ae3d00d1e01d7bc640b5163cfea8dabffd8392"
         },
         "interface": "point-add-module-v1",
+        "initialization": {
+          "mode": "scaffold"
+        },
+        "scaffold": "scaffolds/ecdsa-point-add-sdk-v1/scaffold.yaml",
         "candidate_paths": [
           "src/point_add"
         ],
@@ -41,11 +45,6 @@
           "anchor": "c6f6d2c7f50353259241e296458afb0e651e6c37",
           "distance_from_anchor": 868,
           "counting_method": "git-rev-list-ancestry-path-count"
-        },
-        "reference": {
-          "avg_toffoli": 3960753,
-          "peak_qubits": 2715,
-          "score": 10753444395
         },
         "evaluation": {
           "mode": "full-benchmark"

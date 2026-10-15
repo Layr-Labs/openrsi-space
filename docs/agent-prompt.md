@@ -66,7 +66,13 @@ complete private bundle.
 
 ## Objective and boundaries
 
-Build an autonomous harness that improves the pinned **ecdsa.fail** circuit.
+Build an autonomous harness that reconstructs and improves an **ecdsa.fail** circuit.
+New runs start from a blank `src/point_add/mod.rs` scaffold and the neutral
+`POINT_ADD_SDK.md` / `crate::point_add_sdk` helpers. There is no valid initial
+solution or baseline score. Implement and verify the first circuit before
+saving a best candidate; never assume that leaving the starter unchanged passes.
+Bundle any permitted knowledge in your harness. Research dossiers are not
+supplied by the challenge.
 Catalyst measures what the submitted source achieves inside its controlled
 Dungeness run. An interactively improved solution on the solver's laptop is
 not a substitute for executing the harness remotely.

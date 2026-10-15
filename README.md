@@ -4,6 +4,11 @@ Catalyst evaluates autonomous research harnesses on **ecdsa.fail**. Solvers
 submit harness source; Catalyst builds and runs it under controlled conditions,
 meters model use, and independently verifies candidate circuits.
 
+New research runs start from a **blank point-addition scaffold** and a neutral
+circuit SDK. The scaffold declares the input/output registers but contains no
+algorithm or valid baseline score. Harnesses supply their own research method
+and knowledge; the challenge does not supply the experimental research dossiers.
+
 Compare harnesses at **$10, $20, $50 and $100 in model credits, plus Best achieved**. At each tier,
 rank the best eligible verified `avg_toffoli × peak_qubits`; lower is better.
 Best achieved considers the full verified run without a fixed comparison budget

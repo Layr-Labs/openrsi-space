@@ -30,6 +30,7 @@ def problem_document(problem, statement, repository, candidate_paths, run_id):
         "candidate_paths": candidate_paths,
         "metric": problem["document"]["metric"],
         "evaluation": {"command": "evaluate"},
+        "initialization": execution_initialization(problem["document"].get("execution", {})),
     }
     raw = canonical(document)
     if len(raw) > 256 * 1024:
@@ -70,10 +71,38 @@ def write_yaml(path, document):
     path.write_text(yaml.safe_dump(document, sort_keys=False))
 
 
+def execution_initialization(execution):
+    """The trusted problem package, not submitted harness source, selects the start."""
+    initialization = execution.get('initialization', {'mode': 'checkpoint'})
+    if (not isinstance(initialization, dict) or set(initialization) != {'mode'}
+            or initialization['mode'] not in {'checkpoint', 'scaffold'}):
+        raise CatalystError('Problem initialization must select checkpoint or scaffold.')
+    if initialization['mode'] == 'scaffold':
+        scaffold = execution.get('scaffold')
+        if not isinstance(scaffold, str):
+            raise CatalystError('Scaffold initialization requires a trusted scaffold manifest.')
+        safe_relative(scaffold)
+        if not scaffold.startswith('scaffolds/'):
+            raise CatalystError('The trusted scaffold must be inside the pinned runtime scaffolds directory.')
+    elif 'scaffold' in execution:
+        raise CatalystError('A scaffold manifest requires scaffold initialization.')
+    return dict(initialization)
+
+
 def validate_execution(source, problem_path, document):
     """Validate trusted execution inputs before building a per-run runtime."""
     import re
     execution = document.get('execution', {})
+    initialization = execution_initialization(execution)
+    if initialization['mode'] == 'scaffold':
+        manifest = source / execution['scaffold']
+        if (not manifest.is_file()
+                or not manifest.resolve().is_relative_to((source / 'scaffolds').resolve())):
+            raise CatalystError('The pinned Dungeness runtime does not contain the trusted scaffold.')
+        scaffold = yaml_file(manifest)
+        if (scaffold.get('schema_version') != 1 or scaffold.get('type') != 'scaffold'
+                or execution.get('candidate_paths') != [scaffold.get('candidate_path')]):
+            raise CatalystError('The scaffold must match the problem candidate path.')
     if 'task' in execution or isinstance(execution.get('checkpoint'), str):
         raise CatalystError(
             "Legacy runtime task/checkpoint references are no longer supported. "
@@ -134,7 +163,7 @@ def install_task(runtime, problem_path, problem, strategy, run_id):
         'interfaces': {interface: {'candidate': {'allowed_paths': paths}, 'verifier': verifier_ref or token}},
         'resources': execution.get('resources', {'agent': {'timeout_sec': execution.get('timeout_sec', 900)}}),
     }
-    for field in ('policies', 'evaluation'):
+    for field in ('policies', 'evaluation', 'scaffold'):
         if field in execution:
             task[field] = execution[field]
     task['problem_service'] = install_problem_service(task_path.parent, document, digest)
@@ -153,7 +182,8 @@ def install_task(runtime, problem_path, problem, strategy, run_id):
         'history': execution.get('history', {'anchor': commit, 'distance_from_anchor': 0,
                                            'counting_method': 'git-rev-list-ancestry-path-count'}),
     }
-    if 'reference' in execution:
+    initialization = execution_initialization(execution)
+    if 'reference' in execution and initialization['mode'] == 'checkpoint':
         data['reference'] = execution['reference']
     write_yaml(runtime / 'checkpoints' / token / f'{commit}.yaml', {
         'schema_version': 1, 'type': 'checkpoint', 'namespace': checkpoint_ns, 'id': commit, 'data': data,
@@ -173,5 +203,6 @@ def install_task(runtime, problem_path, problem, strategy, run_id):
         })
         added.append('verifiers/' + token)
     return {'task': f'task:{namespace}/{token}', 'checkpoint': checkpoint,
+            'initialization': initialization,
             'candidate_paths': paths, 'problem_service': {'url': SERVICE_URL, 'sha256': digest},
             'added_paths': added}

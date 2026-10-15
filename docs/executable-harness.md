@@ -42,7 +42,9 @@ uv run catalyst harness smoke BUILD_ID \
 Smoke tests use a **copy** of the workspace, without network access or model
 credentials. Records live under `.catalyst/smoke/`. They test entrypoint
 execution, not problem verification or performance. The starter leaves the
-starting candidate unchanged and makes no model calls.
+starting candidate unchanged and makes no model calls. It is only a packaging
+smoke test: the default blank scaffold is not a valid circuit, so this starter
+cannot earn a verified score until you implement the research agent.
 
 Replace `agent.py` with your solver. Install runtime dependencies and problem
 toolchains in its Dockerfile. Python 3 and Bash are required for the platform

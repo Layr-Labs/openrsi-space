@@ -17,6 +17,11 @@ the upstream verifier on your machine; setup can download dependencies. They do
 not run a research agent, isolate all networking or meter model usage, and their
 scores are not official remote evidence.
 
+These verifier-only commands clone the historical upstream implementation.
+They do not assemble the blank research scaffold or its neutral SDK. To test
+the actual default starting workspace, including a candidate using
+`crate::point_add_sdk`, use the full Dungeness path below.
+
 ## Check harness packaging and its entrypoint
 
 ```sh
@@ -56,6 +61,10 @@ a private copy of the chosen Dungeness revision, and starts the agent, model gat
 problem service and evaluator. **You do not need to start a server or expose a port.**
 The problem service is a local container on an internal Docker network. The launcher
 loads its statement into `CATALYST_TASK` before your agent starts.
+
+New ECDSA runs start with only the blank point-addition stub and trusted neutral
+SDK. There is no passing starting candidate. The problem package selects this
+initialization for both local and remote runs; harness source cannot override it.
 
 Add `--prepare-only` to build and inspect the generated configuration without reading
 model credentials or starting the agent. Remove that flag to run; unchanged harness

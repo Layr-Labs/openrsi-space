@@ -155,7 +155,7 @@ def prepare(state, package, source, evaluation, *, problem_id='ecdsa.fail', pric
     spec = {
         'schema_version': 1, 'type': 'run-spec', 'namespace': 'projects/catalyst', 'id': run_id,
         'task': assigned['task'], 'agent': agent, 'checkpoint': assigned['checkpoint'],
-        'budget': task_input['budget'], 'initialization': {'mode': 'checkpoint'},
+        'budget': task_input['budget'], 'initialization': assigned['initialization'],
         'web_search': {'profile': 'web-search-profile:system/dungeness/disabled-v1'},
         'model_access': {'models': resolved, 'max_parallel_requests': 4,
                          'request_reservation_usd': min(evaluation['max_model_credits'] / 4, 1)},
@@ -176,6 +176,7 @@ def prepare(state, package, source, evaluation, *, problem_id='ecdsa.fail', pric
         'spec_path': str(spec_path), 'record_path': str(record), 'artifacts': str(folder),
         'evaluation': evaluation, 'build_id': built['id'],
         'problem': task_input['problem'], 'harness': task_input['harness'],
+        'initialization': assigned['initialization'],
     }
     write_json(folder / 'run.json', metadata)
     return metadata

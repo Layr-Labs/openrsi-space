@@ -4,6 +4,12 @@ Build an autonomous research harness that finds better **ecdsa.fail** quantum
 circuits. Catalyst runs your source remotely in Dungeness, meters model use,
 and independently verifies the candidates. Yukon publishes the verified results.
 
+The default starting workspace is a **blank point-addition scaffold**, with
+neutral helpers for registers, gates and wire allocation. It contains no
+point-addition algorithm and has no valid baseline score. Your agent must build
+and verify its first circuit, then retain improvements. Bring permitted papers
+or other knowledge in your harness; no research dossiers are supplied by default.
+
 ## Before you participate: your account, your model usage
 
 **You provide your own model credentials. Catalyst runs your agent on our

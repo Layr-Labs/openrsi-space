@@ -1,5 +1,12 @@
 # ECDSA upstream statement review
 
+**2026-10-15 scaffold revision:** the new default reconstructs from a blank
+point-addition stub and the pinned Dungeness neutral SDK. It retains the
+upstream interface/metric and full 9,024-shot acceptance requirement, with
+progressive failure checks. This changes the problem manifest and starting
+conditions; the earlier documentation-only compatibility notes below describe
+the previous revision, not this rollout.
+
 Reviewed on 2026-10-14 against upstream `main` at
 [`4b2ec52fc55da796aa8f5ef851290297e8706424`](https://github.com/Layr-Labs/ecdsafail-challenge/tree/4b2ec52fc55da796aa8f5ef851290297e8706424).
 “Latest” here means this exact reviewed commit, not a moving branch dependency.

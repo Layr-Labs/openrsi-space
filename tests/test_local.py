@@ -39,6 +39,8 @@ class LocalRunTests(unittest.TestCase):
             'services/gateway/gateway.py': 'async def assigned_task(): pass\n',
             **{'verifiers/ecdsa-fail/benchmark-sh/' + name: 'fixture\n'
                for name in ('Dockerfile', 'grade.py', 'serve.py', 'test.sh', 'evaluator.lock.yaml')},
+            'scaffolds/ecdsa-point-add-sdk-v1/scaffold.yaml':
+                'schema_version: 1\ntype: scaffold\ncandidate_path: src/point_add\n',
         }.items():
             path = self.source / name
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -86,6 +88,12 @@ class LocalRunTests(unittest.TestCase):
         self.assertEqual(read_json(task_path.parent / 'problem-service/task.json')['statement'],
                          problem_statement('ecdsa.fail'))
         spec = yaml_file(Path(metadata['spec_path']))
+        self.assertEqual(spec['initialization'], {'mode': 'scaffold'})
+        self.assertEqual(task['scaffold'], 'scaffolds/ecdsa-point-add-sdk-v1/scaffold.yaml')
+        assigned = read_json(task_path.parent / 'problem-service/task.json')
+        self.assertEqual(assigned['initialization'], {'mode': 'scaffold'})
+        checkpoint_path, = runtime.glob('checkpoints/catalyst-*/*.yaml')
+        self.assertNotIn('reference', yaml_file(checkpoint_path)['data'])
         self.assertEqual(spec['budget']['max_usd'], 1)
         self.assertEqual(spec['model_access']['models'][0]['request_model'], 'gpt-5.6-sol')
         self.assertEqual(local.git(runtime, 'status', '--porcelain'), '')
@@ -205,10 +213,19 @@ class LocalRunTests(unittest.TestCase):
         module_spec.loader.exec_module(compiler)
         lock = yaml_file(runtime / 'verifiers/ecdsa-fail/benchmark-sh/evaluator.lock.yaml')
         def checkout(url, commit, destination):
-            for name in [*lock['include_paths'], 'src/point_add/mod.rs']:
+            scaffold = yaml_file(runtime / 'scaffolds/ecdsa-point-add-sdk-v1/scaffold.yaml')
+            for name in {*lock['include_paths'], *scaffold['workspace_paths'],
+                         'src/point_add/mod.rs', 'src/point_add/old_solution.rs'}:
                 path = destination / name
                 path.parent.mkdir(parents=True, exist_ok=True)
                 path.write_text('// fixture\n')
+            (destination / 'src/bin/eval_circuit.rs').write_text(
+                r'''fn main() {
+    println!("\n-- correctness tests ({} shots) --", NUM_TESTS);
+    let r = run_tests(&ops, &regs, total_qubits, num_bits, xof, NUM_TESTS);
+    println!("  all {} shots OK", r.n_shots);
+}
+''')
         def reference(value):
             namespace, _, identity = value.split(':', 1)[1].rpartition('/')
             return namespace, identity
@@ -221,7 +238,8 @@ class LocalRunTests(unittest.TestCase):
                     patch.object(compiler, 'commit_timestamp', return_value=datetime(2026, 5, 29, tzinfo=timezone.utc)):
                 rendered = compiler.build_task(ti, metadata['id'], task_namespace=tn, agent_id=ai,
                                                agent_namespace=an, namespace='projects/catalyst',
-                                               checkpoint=spec['checkpoint'], run_spec=metadata['spec_path'])
+                                               checkpoint=spec['checkpoint'], run_spec=metadata['spec_path'],
+                                               scaffold_start=spec['initialization']['mode'] == 'scaffold')
             compose = yaml.safe_load((rendered / 'environment/docker-compose.yaml').read_text())
             self.assertTrue(compose['services']['problem']['read_only'])
             self.assertTrue(compose['networks']['agent_internal']['internal'])
@@ -230,6 +248,15 @@ class LocalRunTests(unittest.TestCase):
             self.assertNotIn('DUNGENESS_CHATGPT_AUTH_FILE', compose['services']['main']['environment'])
             self.assertEqual(read_json(rendered / 'environment/problem-service/task.json')['statement'],
                              problem_statement('ecdsa.fail'))
+            candidate = rendered / 'environment/workspace/src/point_add'
+            self.assertEqual([p.name for p in candidate.iterdir()], ['mod.rs'])
+            self.assertEqual((candidate / 'mod.rs').read_bytes(),
+                             (runtime / 'scaffolds/ecdsa-point-add-sdk-v1/candidate/mod.rs').read_bytes())
+            for evaluator in (rendered / 'environment/workspace', rendered / 'tests/evaluator'):
+                self.assertTrue((evaluator / 'src/point_add_sdk.rs').is_file())
+                self.assertIn('pub mod point_add_sdk;', (evaluator / 'src/lib.rs').read_text())
+                self.assertIn('&[1, 64, 512, NUM_TESTS]',
+                              (evaluator / 'src/bin/eval_circuit.rs').read_text())
         finally:
             if rendered:
                 shutil.rmtree(rendered.parent)

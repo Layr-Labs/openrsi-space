@@ -37,6 +37,7 @@ The problem service has no model credentials and does not execute candidates.
 - the `title` and `statement`;
 - the starting `repository` URL and commit;
 - `candidate_paths` and the scoring `metric`;
+- `initialization.mode`, currently `scaffold` for ECDSA;
 - `evaluation.command`, currently `evaluate`.
 
 The document digest covers the complete response, including the run ID.
@@ -66,11 +67,18 @@ document, with the document digest in its run metadata.
 The public ECDSA source commit, scoring rules and receipt protocol are unchanged.
 The updated execution configuration changes the problem-package version.
 Catalyst also owns the ECDSA execution configuration in `problem-set/initial.json`:
-source commit, candidate paths, interface, reference score, resource limits and
+source commit, candidate paths, interface, initialization, resource limits and
 verifier selection. The worker generates a task and checkpoint in its private
 per-run runtime; it does not look up Dungeness task, problem or checkpoint
 manifests. Dungeness still supplies the selected verifier implementation and
 generic execution components, pinned by the runtime commit.
+
+The ECDSA default selects `scaffolds/ecdsa-point-add-sdk-v1/scaffold.yaml`.
+The runtime removes the upstream candidate and supplies only the ABI stub.
+The same pinned neutral SDK and progressive checks are installed in the agent
+workspace and trusted evaluators. The scaffold has no reference score.
+This changes the starting conditions and therefore the problem version; it
+must not be aliased to historical checkpoint-start runs.
 
 Deploying this requires updated public and private packages plus a clean, pinned
 Dungeness revision with problem-service support. The private adapter refuses an
