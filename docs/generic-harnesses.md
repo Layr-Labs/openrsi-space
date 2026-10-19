@@ -18,7 +18,7 @@ For login, credential setup, receipt retrieval and Yukon publication, use the
 same flow for coding agents. The commands below start remote evaluations when
 supplied with valid model access.
 
-Submit an existing repository containing the harness, knowledge base, prompts,
+Submit an existing repository containing the general-purpose harness, prompts,
 configuration, helper programs and dependencies, with its existing directory
 layout. The harness can run its own workers, search loop or framework.
 Provide a Dockerfile and launch command; no Catalyst-specific manifest or
@@ -46,9 +46,10 @@ An optional editable starter is also available:
 uv run catalyst harness create my-agent --output .catalyst/my-agent
 ```
 
-Replace `.catalyst/my-agent/agent.py`, put reference material in `knowledge/`,
-and install dependencies in its Dockerfile. The starter copies the whole source
-bundle into `/opt/harness/`, including those reference files. It initially makes
+Replace `.catalyst/my-agent/agent.py` and install generic dependencies in its
+Dockerfile. The starter copies the whole source bundle into `/opt/harness/`.
+Do not package ECDSA-specific papers, notes, strategies or candidate code. The
+assigned task supplies a shared 50-paper library during execution. It initially makes
 no model calls; implement the research loop before requesting a model run.
 An existing framework can use its own entrypoint instead.
 
@@ -94,8 +95,8 @@ Both identities are bound into the verification receipt. Yukon still receives
 only that receipt and retrieves the existing verified result.
 
 The source archive is limited to 8 MiB and cannot contain symlinks. Install
-larger dependencies at image build time and pin their versions. Include the
-knowledge files needed at runtime in the image. Keep all credential files
+larger generic dependencies at image build time and pin their versions. Read
+task-specific research material from `CATALYST_KNOWLEDGE_BASE_URL` during the run. Keep all credential files
 outside the source directory; `.env*`, `.git`, local state and virtual
 environments are excluded. A selected credential file inside the source
 directory is rejected before submission.

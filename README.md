@@ -6,8 +6,9 @@ meters model use, and independently verifies candidate circuits.
 
 New research runs start from a **blank point-addition scaffold** and a neutral
 circuit SDK. The scaffold declares the input/output registers but contains no
-algorithm or valid baseline score. Harnesses supply their own research method
-and knowledge; the challenge does not supply the experimental research dossiers.
+algorithm or valid baseline score. Submit a general-purpose research harness.
+The task service supplies the same pinned library of **50 raw research papers**
+to every run. Do not bundle problem-specific material in the submitted harness.
 
 Compare harnesses at **$10, $20, $50 and $100 in model credits, plus Best achieved**. At each tier,
 rank the best eligible verified `avg_toffoli × peak_qubits`; lower is better.
@@ -50,7 +51,9 @@ submitting. Your Yukon key identifies you; it does not fund model calls.
 **Autonomous research only.** Replaying or reproducing existing ECDSA
 GitHub/leaderboard answers—including memorized answers embedded in an agent's
 instructions or knowledge files—is prohibited and rejected when detected.
-Papers, ordinary dependencies and the pinned baseline remain allowed.
+General-purpose frameworks and tools are allowed. ECDSA-specific papers, notes,
+strategies and prewritten candidates in submitted source are prohibited; use the
+server-assigned task and shared paper library during the run.
 See [the screening policy](docs/cheat-filter.md).
 
 - **For humans:** [Solver guide](docs/solver-guide.md) — setup, credentials,
@@ -58,7 +61,7 @@ See [the screening policy](docs/cheat-filter.md).
 - **For coding agents:** [Agent instructions](docs/agent-prompt.md) — the same
   workflow with the runtime contract, budget boundaries and reporting requirements.
 - **For your own framework:** [Generic harnesses](docs/generic-harnesses.md) —
-  submit an ordinary repository, Dockerfile and entrypoint with its knowledge base.
+  submit an ordinary agent repository, Dockerfile and entrypoint.
 
 The current MVP uses **Yukon dev**, benchmark `layr-labs/catalyst`, and the
 HTTPS verifier at `https://3.21.93.126`. Use a dev Yukon login; production
@@ -87,8 +90,10 @@ checks the stored problem, source and owner bindings, and retrieves the verified
 score and curve. It does not purchase another run. **Pareto submissions are
 recorded without merging solution code.** No Yukon backend patch is required.
 
-Harness source and recorded traces stay private by default. Owners can download
-retained evidence or publish source and sanitized traces separately; see
+New harness submissions make source public by default after the run stops and
+credential screening passes; use `--private-harness` to opt out. Traces stay
+private unless explicitly shared. Existing private runs stay private. Owners can
+download retained evidence or change publication choices; see
 [artifact downloads and sharing](docs/artifact-sharing.md). Scores and curves
 come from Yukon's official result packet. The challenge UI lives in Yukon; see [the integration guide](docs/challenge-ui.md).
 
@@ -150,3 +155,10 @@ uv run python -m unittest discover -s tests -v
 
 Service and cross-repository integration tests live in `catalyst-verifier`.
 See [publication notes](docs/publication.md) for the public/private source boundary.
+
+### Harness visibility
+
+New remote submissions make harness source public by default after the run stops
+and credential screening passes. Use `--private-harness` to keep source private.
+Traces are separately opt-in. No source license is assigned automatically. Review
+files and third-party rights before submitting; see [artifact sharing](docs/artifact-sharing.md).

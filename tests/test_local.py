@@ -30,13 +30,15 @@ class LocalRunTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
+        from library_fixture import install_fixture
+        install_fixture(self, self.root)
         self.source = self.root / 'runtime'
         self.source.mkdir()
         subprocess.run(['git', 'init', '-q', str(self.source)], check=True)
         for name, content in {
             'dungeness': '#!/usr/bin/env python3\n',
             'src/dungeness/compiler.py': 'def resolve_problem_service(): pass\n',
-            'services/gateway/gateway.py': 'async def assigned_task(): pass\n',
+            'services/gateway/gateway.py': 'async def assigned_task(): pass\nasync def assigned_file(): pass\n',
             **{'verifiers/ecdsa-fail/benchmark-sh/' + name: 'fixture\n'
                for name in ('Dockerfile', 'grade.py', 'serve.py', 'test.sh', 'evaluator.lock.yaml')},
             'scaffolds/ecdsa-point-add-sdk-v1/scaffold.yaml':

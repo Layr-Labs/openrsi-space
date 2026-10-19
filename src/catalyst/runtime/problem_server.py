@@ -4,6 +4,8 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from pathlib import Path
+import re
+import shutil
 
 MAX_TASK_BYTES = 256 * 1024
 
@@ -27,7 +29,39 @@ def load_document(path, expected_digest):
     return payload
 
 
-def handler_for(payload, digest):
+def load_files(payload, root):
+    """Validate the complete immutable attachment set before accepting requests."""
+    document = json.loads(payload)
+    entries = document.get("attachments", [])
+    if not isinstance(entries, list) or len(entries) > 64:
+        raise ValueError("Invalid task attachments.")
+    files = {}
+    total = 0
+    for entry in entries:
+        name = entry.get("name", "")
+        if (not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", name)
+                or name in files or type(entry.get("bytes")) is not int
+                or not 0 < entry["bytes"] <= 32 * 1024 * 1024
+                or entry.get("media_type") not in {"application/pdf", "application/json"}):
+            raise ValueError("Invalid task attachment.")
+        path = root / name
+        if (root.is_symlink() or path.is_symlink() or not path.is_file()
+                or path.stat().st_size != entry["bytes"]):
+            raise ValueError("Task attachment missing or changed.")
+        with path.open("rb") as source:
+            if hashlib.file_digest(source, "sha256").hexdigest() != entry.get("sha256"):
+                raise ValueError("Task attachment digest mismatch.")
+        files["/task/files/" + name] = (path, entry)
+        total += entry["bytes"]
+    if total > 256 * 1024 * 1024:
+        raise ValueError("Task attachments exceed size limit.")
+    if entries and {p.name for p in root.iterdir()} != {e["name"] for e in entries}:
+        raise ValueError("Unexpected task attachment.")
+    return files
+
+
+def handler_for(payload, digest, files=None):
+    files = files or {}
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *args):
             pass
@@ -46,6 +80,16 @@ def handler_for(payload, digest):
                 self.reply(200, payload)
             elif self.path == "/healthz":
                 self.reply(200, b'{"status":"ok"}')
+            elif self.path in files:
+                path, entry = files[self.path]
+                self.send_response(200)
+                self.send_header("Content-Type", entry["media_type"])
+                self.send_header("Content-Length", str(entry["bytes"]))
+                self.send_header("X-Content-SHA256", entry["sha256"])
+                self.send_header("X-Content-Type-Options", "nosniff")
+                self.end_headers()
+                with path.open("rb") as source:
+                    shutil.copyfileobj(source, self.wfile, length=1024 * 1024)
             else:
                 self.reply(404, b'{"error":"not found"}')
 
@@ -61,8 +105,10 @@ def handler_for(payload, digest):
 
 def main():
     digest = os.environ["TASK_SHA256"]
-    payload = load_document(os.environ.get("TASK_DOCUMENT", "/data/task.json"), digest)
-    with ThreadingHTTPServer(("0.0.0.0", 8091), handler_for(payload, digest)) as server:
+    path = Path(os.environ.get("TASK_DOCUMENT", "/data/task.json"))
+    payload = load_document(path, digest)
+    files = load_files(payload, path.parent / "files")
+    with ThreadingHTTPServer(("0.0.0.0", 8091), handler_for(payload, digest, files)) as server:
         server.serve_forever()
 
 

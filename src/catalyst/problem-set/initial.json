@@ -67,6 +67,10 @@
             "memory_mb": 8192,
             "cpus": 4
           }
+        },
+        "knowledge_base": {
+          "id": "ecdsa-papers-v1",
+          "sha256": "380233e137617f6cd2bbeedcd591023b05da7322ecdd8d943dabab0302df04cf"
         }
       }
     }

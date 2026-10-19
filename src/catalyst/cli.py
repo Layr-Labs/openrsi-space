@@ -135,6 +135,16 @@ def remote_command(args, state):
         print(json.dumps(result, indent=2))
         return
     if args.operation == "submit":
+        from .publication import publication_choices
+        publication = publication_choices({
+            "harness": not args.private_harness, "traces": False, "license": args.source_license})
+        if publication["harness"]:
+            print("Harness source will be PUBLIC after this run stops and publication screening passes. "
+                  "Review your files and third-party rights before submitting. "
+                  "Use --private-harness to keep source private. Traces remain private.",
+                  file=sys.stderr, flush=True)
+        else:
+            print("Harness source and traces will remain private.", file=sys.stderr, flush=True)
         execution = None
         if args.entrypoint is not None:
             import shlex
@@ -158,7 +168,7 @@ def remote_command(args, state):
             accepted = client.submit(Path(args.package), **(
                 {"model_token": model_token} if model_token is not None else {}),
                 **({"evaluation_overrides": overrides} if overrides else {}),
-                **({"execution": execution} if execution else {}))
+                **({"execution": execution} if execution else {}), publication=publication)
         finally:
             model_token = None
         if not args.wait:
@@ -267,6 +277,10 @@ def build_parser():
     remote_submit = remote_sub.add_parser("submit", help="Upload harness source and queue one evaluation.")
     remote_submit.add_argument("package", help="Path to your harness source directory.")
     remote_submit.add_argument("--wait", action="store_true", help="Wait, validate the result and save its verification reference.")
+    remote_submit.add_argument("--private-harness", action="store_true",
+                               help="Keep this harness source private; new submissions otherwise publish source after screening. Traces remain private.")
+    remote_submit.add_argument("--source-license",
+                               help="Optional license you have authority to grant for public source. Omission grants no additional license.")
     remote_submit.add_argument("--entrypoint", help="Launch argv for an existing repository without harness.json; parsed without a shell.")
     remote_submit.add_argument("--dockerfile", help="Relative build recipe for --entrypoint (default: Dockerfile).")
     remote_submit.add_argument("--provider", help="Model provider; use with --model (for example, kimi-code).")

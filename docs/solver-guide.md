@@ -7,8 +7,9 @@ and independently verifies the candidates. Yukon publishes the verified results.
 The default starting workspace is a **blank point-addition scaffold**, with
 neutral helpers for registers, gates and wire allocation. It contains no
 point-addition algorithm and has no valid baseline score. Your agent must build
-and verify its first circuit, then retain improvements. Bring permitted papers
-or other knowledge in your harness; no research dossiers are supplied by default.
+and verify its first circuit, then retain improvements. Submit a general-purpose
+harness. The task service supplies 50 raw research papers to all runs; do not
+include ECDSA-specific papers, strategies, notes or prewritten answers in source.
 
 ## Before you participate: your account, your model usage
 
@@ -120,8 +121,8 @@ are no budget tracks to switch between.
 
 ## 2. Prepare a harness
 
-Your package can contain source, prompts, a raw-paper knowledge base, helper
-programs, configuration and a Dockerfile with pinned dependencies. You can
+Your package can contain general-purpose source, prompts, helper programs,
+configuration and a Dockerfile with pinned dependencies. You can
 use your own agent architecture, subprocesses or search framework.
 
 To generate an editable starter:
@@ -154,8 +155,9 @@ Do not combine `--entrypoint` with an existing `harness.json`.
 
 Runtime requirements:
 
-- Install dependencies and include knowledge files in the image. The research
-  container has no public internet access.
+- Install generic dependencies in the image. The research container has no
+  public internet access. Read `CATALYST_KNOWLEDGE_BASE_URL` for the shared
+  50-paper catalog and internal PDF links. Do not bundle task-specific material.
 - Read `CATALYST_TASK` for the problem instruction, writable workspace,
   candidate paths, declared models and metered gateway endpoints. Route every
   model request through those endpoints. Do not hard-code public provider URLs.
@@ -304,8 +306,12 @@ locally and awaits hosting; until then, inspect results with the CLI.
 
 ## Download or share your work
 
-Your harness and recorded traces are private by default, even after publishing
-the score to Yukon. With the same Yukon account:
+New remote submissions publish the evaluated harness source by default after the
+run stops and publication screening passes. Review files before submitting; use
+`--private-harness` to opt out. Traces stay private until you separately publish them.
+No license is granted automatically: use `--source-license MIT` (or another supported
+license) only when you have authority to grant it. Existing private runs stay private.
+With the same Yukon account:
 
 ```sh
 uv run catalyst remote download EVALUATION_ID --kind complete --output complete.zip
@@ -315,7 +321,7 @@ This includes submitted source and retained, sanitized run evidence. It does
 not include container images, dependency caches or every arbitrary workspace
 file. Read `coverage.json` inside the archive for exclusions.
 
-To make your own source public:
+To publish source from a run you kept private, or add an authorized license:
 
 ```sh
 uv run catalyst remote publish EVALUATION_ID --harness --license MIT --confirm-source-reviewed
@@ -344,17 +350,22 @@ prompts or knowledge files, and disguising it as an answer cache or dependency.
 Removing attribution, changing formatting, or disabling internet access does
 not make reuse permitted.
 
-Use the pinned task and starting baseline. Ordinary framework dependencies,
-papers, citations, general algorithmic knowledge and the provided baseline are allowed.
+Use the assigned task, blank scaffold and shared paper library. Ordinary
+frameworks and general-purpose tools are allowed. Submitted problem-specific
+papers, citations, notes, circuit strategies, cached answers and prewritten
+candidates are prohibited, whether original, copied or public. Incidental
+problem IDs and interface paths are allowed when they contain no solution knowledge.
 Do not access host resources, tamper with the verifier or bypass metering.
 Candidate source must satisfy the pinned verifier and screening rules.
 
 The published-solution screen refreshes the official repository's branches and
 open/closed pull-request heads before a remote run. Substantial matching source
-outside the pinned baseline blocks the run before build or model usage. The
+including historical baseline code blocks the run before build or solver model usage. The
 rejection reason and private `solution-corpus.json` report identify the harness
 location and reference blob. A failed refresh blocks screening without declaring
-cheating. The optional LLM source reviewer is not yet enabled on the service.
+cheating. The semantic source reviewer checks problem-specific material before
+execution. Unavailable or inconclusive screening blocks execution; opaque files
+that cannot be reviewed must be removed or provided as inspectable source.
 Neither check proves originality or detects all memorization. See
 [the screening policy and deployment status](cheat-filter.md).
 

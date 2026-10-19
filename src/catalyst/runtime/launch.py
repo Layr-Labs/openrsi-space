@@ -40,7 +40,12 @@ def hydrate_problem(task):
             or document.get("candidate_paths") != task["candidate_paths"]
             or not isinstance(document.get("statement"), str)):
         raise ValueError("Assigned problem identity or candidate paths differ.")
-    return {**task, "instruction": document["statement"] + "\n\n" + task.get("instruction", ""),
+    library = document.get("knowledge_base")
+    library_note = (f"\n\nShared research library: {library['url']} "
+                    f"({library['count']} raw papers). Read its catalog and download papers "
+                    "from their listed task-server URLs. Internet access is disabled."
+                    if library else "")
+    return {**task, "instruction": document["statement"] + library_note + "\n\n" + task.get("instruction", ""),
             "problem_document": document}
 
 
@@ -63,6 +68,8 @@ def launch(task_file, execution_file="/opt/catalyst/execution.json"):
     )
     if task.get("problem_service"):
         environment["CATALYST_PROBLEM_URL"] = task["problem_service"]["url"]
+    if task.get("problem_document", {}).get("knowledge_base"):
+        environment["CATALYST_KNOWLEDGE_BASE_URL"] = task["problem_document"]["knowledge_base"]["url"]
     # The gateway placeholder is public. Raw upstream credentials never belong here.
     if task.get("gateway"):
         environment["OPENAI_BASE_URL"] = task["gateway"]

@@ -49,7 +49,7 @@ cannot earn a verified score until you implement the research agent.
 Replace `agent.py` with your solver. Install runtime dependencies and problem
 toolchains in its Dockerfile. Python 3 and Bash are required for the platform
 launcher and Dungeness clients; the solver can use any language.
-The starter copies the whole bundle into `/opt/harness/`, so knowledge files,
+The starter copies the whole bundle into `/opt/harness/`, so general-purpose
 prompts and helper modules travel with the agent. Use the
 [general remote submission flow](generic-harnesses.md#submit-your-own-agent)
 to choose provider, model and budget separately from those source files.
@@ -64,12 +64,13 @@ The `execution` field in the ordinary harness manifest is:
 }
 ```
 
-Executable packages cannot select a host agent or Python adapter. Knowledge,
-memory, indexes and retrieval tools belong inside the harness image, using any
-layout the agent supports. There is no platform knowledge-base service, lookup
-command or injected reading policy. Legacy instruction-only agent references
-cannot attach a `knowledge/` bundle; migrate those files into an executable
-harness instead.
+Executable packages cannot select a host agent or Python adapter. Package
+general-purpose tools and retrieval code in any layout your agent supports.
+Problem-specific knowledge belongs to the trusted task: its library endpoint
+provides 50 raw papers, and your agent chooses how to read or index them during
+the run. `CATALYST_KNOWLEDGE_BASE_URL` points to the catalog. Do not submit ECDSA
+papers, strategies, notes, solution code or answer caches. See the
+[screening policy](cheat-filter.md).
 
 `CATALYST_TASK` points to a JSON file containing problem/harness references,
 instruction, writable workspace, candidate paths, budget, model and gateway

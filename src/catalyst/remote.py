@@ -415,7 +415,10 @@ def solver_token() -> str:
 
 
 def request_body(submission: Path, base: str, *, judge=None, context=None,
-                 evaluation_overrides=None, pricing=None, check_pricing=True, execution=None) -> dict:
+                 evaluation_overrides=None, pricing=None, check_pricing=True, execution=None,
+                 publication=None) -> dict:
+    from .publication import publication_choices
+    publication = publication_choices(publication)
     config = evaluation_config(submission / "evaluation.json", evaluation_overrides,
                                pricing=pricing, check_pricing=check_pricing)
     snapshot, archive = source_snapshot(submission, execution)
@@ -442,6 +445,7 @@ def request_body(submission: Path, base: str, *, judge=None, context=None,
     return {"protocol": PROTOCOL,
             "source": {"digest": snapshot["version"], "archive_base64": base64.b64encode(archive).decode()},
             "evaluation": config, "problem_set": problem_set,
+            "publication": publication,
             "pricing": pricing_schedule() if pricing is None else pricing,
             "evidence_mode": mode, "judge": judge if judge is not None else judge_input(None),
             "context": context if context is not None else {"kind": "yukon-solver"}}
@@ -487,12 +491,12 @@ class RemoteClient:
         return legacy if legacy.is_file() else self.state / "remote/pending" / name
 
     def submit(self, submission: Path, *, judge=None, model_token=None, evaluation_overrides=None,
-               execution=None, _quote_retry=False):
+               execution=None, publication=None, _quote_retry=False):
         if os.environ.get("GITHUB_ACTIONS") == "true":
             raise CatalystError("GitHub Actions must retrieve an existing result through catalyst yukon-run.")
         submission = submission.resolve()
         body = request_body(submission, self.base, judge=judge, evaluation_overrides=evaluation_overrides,
-                            check_pricing=False, execution=execution)
+                            check_pricing=False, execution=execution, publication=publication)
         quote_path = None
         try:
             validate_evaluation_config(body["evaluation"])
@@ -550,7 +554,8 @@ class RemoteClient:
                 })
         if identity is None:
             return self.submit(submission, judge=judge, model_token=model_token,
-                               evaluation_overrides=evaluation_overrides, execution=execution, _quote_retry=True)
+                               evaluation_overrides=evaluation_overrides, execution=execution,
+                               publication=publication, _quote_retry=True)
         return {"evaluation_id": identity, "request_id": request["request_id"],
                 "source_digest": body["source"]["digest"], "evidence_mode": body["evidence_mode"]}
 

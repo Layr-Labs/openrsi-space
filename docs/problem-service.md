@@ -39,6 +39,8 @@ The problem service has no model credentials and does not execute candidates.
 - `candidate_paths` and the scoring `metric`;
 - `initialization.mode`, currently `scaffold` for ECDSA;
 - `evaluation.command`, currently `evaluate`.
+- `knowledge_base` with the library ID, count and catalog URL;
+- `attachments` binding every allowed file name, media type, byte size and SHA-256.
 
 The document digest covers the complete response, including the run ID.
 It uses UTF-8 JSON with sorted keys, compact separators, non-ASCII characters
@@ -57,6 +59,51 @@ The harness may ignore instructions, but it cannot change what the server accept
 as a solution. The trusted evaluator remains a separate service, and final
 verification remains independent. This endpoint only serves the problem; it
 does not turn the model gateway into a candidate-execution process.
+
+## Shared paper library
+
+The problem's `execution.knowledge_base` pins the canonical SHA-256 of
+[`ecdsa-papers-v1.json`](../src/catalyst/problem-set/ecdsa-papers-v1.json).
+It contains exactly 50 content-pinned research papers about quantum elliptic-curve
+arithmetic, reversible circuits, synthesis, uncomputation and resource reduction.
+The first 32 are the exact PDFs from `ecdsa-32-raw-paper-kb-v1`, preserving original
+filenames and manifest checksums. The remaining 18 are distinct supplemental papers.
+The catalog records this provenance, titles, original sources, authors where known,
+and verified license links where available. PDFs are raw and unmodified.
+For 24 of the original files, the supplied collection did not establish a
+redistribution license; their license field is explicitly null. Inclusion grants
+no new rights. The 18 additions have verified Creative Commons licenses.
+
+Inside a run:
+
+```sh
+curl -fsS "$CATALYST_KNOWLEDGE_BASE_URL"
+# http://gateway:8080/task/files/knowledge-base.json
+```
+
+The JSON `papers` array contains each PDF's internal `url`, checksum and size.
+Download from those URLs; agents do not need internet access or a credential.
+The launcher exposes the catalog URL in both the resolved task and this environment
+variable. Reading is optional: the harness chooses its own retrieval strategy.
+
+Trusted task preparation downloads the pinned files once and verifies every hash.
+The default cache is `~/.cache/catalyst/papers`; an operator or local developer can
+set `CATALYST_PAPER_CACHE` to another directory. The current library is about 59 MB.
+The cache can be seeded with the exact selected PDFs before preparation, including
+the original collection's 32 files under their unchanged filenames. No local
+Dungeness knowledge-base directory is required at runtime. Missing files are
+downloaded from the catalog's arXiv/IACR URLs and accepted only if their bytes
+match the pinned checksums. A changed upstream edition stops preparation; the
+operator must supply the retained original. No arbitrary URL is accepted.
+The immutable copies are mounted read-only in the existing problem service;
+there is no separate knowledge-base service. The gateway serves only declared
+files, checks their complete hashes before returning content, and never forwards
+caller credentials or follows redirects.
+
+All runs using this problem version receive the same library. Library changes
+require a new catalog pin and therefore a new problem version. Historical runs
+retain their original assignments; do not alias their receipts to this version.
+Solvers must not bundle problem-specific material in their harnesses.
 
 ## Versions and rollout
 

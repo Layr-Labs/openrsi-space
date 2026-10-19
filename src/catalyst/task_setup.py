@@ -13,6 +13,7 @@ def require_problem_service_runtime(source):
     for path, marker in (
         ("src/dungeness/compiler.py", "def resolve_problem_service("),
         ("services/gateway/gateway.py", "async def assigned_task("),
+        ("services/gateway/gateway.py", "async def assigned_file("),
     ):
         filename = source / path
         if not filename.is_file() or marker not in filename.read_text():
@@ -156,6 +157,12 @@ def install_task(runtime, problem_path, problem, strategy, run_id):
     interface = execution.get('interface', 'catalyst-file-v1')
     document, digest = problem_document(problem, (problem_path / 'instructions.md').read_text(),
                                         repository, paths, run_id)
+    library = execution.get('knowledge_base')
+    if library is not None:
+        from catalyst.paper_library import prepare_library
+        metadata, attachments = prepare_library(library, task_path.parent / 'paper-files')
+        document.update(knowledge_base=metadata, attachments=attachments)
+        digest = hashlib.sha256(canonical(document)).hexdigest()
     task = {
         'schema_version': 1, 'type': 'task', 'namespace': namespace, 'id': token,
         'instruction': 'statement.md', 'workspace': {'include': ['.']},
@@ -167,6 +174,10 @@ def install_task(runtime, problem_path, problem, strategy, run_id):
         if field in execution:
             task[field] = execution[field]
     task['problem_service'] = install_problem_service(task_path.parent, document, digest)
+    if library is not None:
+        # Installed after the small, immutable server files. The compiler verifies
+        # all attachments against the task digest before rendering Compose.
+        shutil.move(task_path.parent / 'paper-files', task_path.parent / 'problem-service/files')
     write_yaml(task_path, task)
     (task_path.parent / 'statement.md').write_text(
         f'Read the server-assigned problem from {SERVICE_URL}.\n'

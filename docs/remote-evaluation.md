@@ -36,6 +36,7 @@ protocol: catalyst-evaluation-v3
 request_id: stable UUID
 source: {digest, archive_base64}
 evaluation: declared models, spending cap, limits and non-secret access grant
+publication: {harness: true, traces: false, license: null}
 problem_set: pinned challenge definition
 pricing: exact reference schedule
 judge: requested score/validity fields and policy versions
@@ -49,6 +50,14 @@ the owner and run limits. An acknowledged request returns `evaluation_id` and
 `request_id`. Retrying the same account/request/payload is idempotent; changing
 the payload under the same request ID is rejected. The client preserves uncertain
 requests instead of issuing another paid run.
+
+New requests must explicitly include `publication`. The CLI defaults to public
+harness source, private traces and no source license grant. `--private-harness`
+opts out of public source; `--source-license` selects an authorized license.
+Source is published automatically after the run stops and credential screening
+passes. Trace publication requires a separate reviewed opt-in.
+Older clients that omit this field must upgrade before starting a new evaluation.
+Historical stored requests remain readable and are not retroactively published.
 
 `catalyst remote status ID` reads `GET /evaluations/ID`.
 `catalyst remote wait ID` waits for completion and validates the returned bindings.
@@ -129,8 +138,9 @@ usage and provenance. The $10/$20/$50/$100/Best views select from that evidence;
 a later candidate cannot improve an earlier budget view. Missing budget results
 are explicit metadata, never invented Yukon tuple values. See [accounting](tier-accounting.md).
 
-Owners can download source and recorded evidence and explicitly publish selected
-artifacts. See [downloads and sharing](artifact-sharing.md). Private trace
+Owners can download source and recorded evidence and change artifact visibility.
+New harness source is public by default; traces are separately opt-in.
+See [downloads and sharing](artifact-sharing.md). Private trace
 archives are not attached to Yukon's public result packet.
 
 The public contract is defined by this guide and the public client validators.

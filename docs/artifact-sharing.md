@@ -1,46 +1,22 @@
 # Artifact downloads and publication
 
-Remote runs are private by default. Scores published to Yukon do not grant
-access to harness source or recorded model/tool output.
+New remote submissions publish their evaluated harness source by default after the
+run stops and publication screening passes. Traces remain private and require
+separate opt-in. Historical private runs remain private.
 
-Use your existing Yukon dev login and `CATALYST_EVALUATOR_URL`. These commands
-operate on a completed evaluation; none starts another model run.
+Use `catalyst remote submit HARNESS_DIR --private-harness ...` to keep source
+private. The CLI announces visibility before reading a model credential. Review
+source, prompts, assets and third-party rights before submitting. The solver is
+responsible for permission to publish those files. Possible credentials block
+source publication even when public visibility was requested.
 
-```sh
-catalyst remote artifacts EVALUATION_ID
-catalyst remote download EVALUATION_ID --kind complete --output complete.zip
-catalyst remote download EVALUATION_ID --kind harness --output harness.zip
-catalyst remote download EVALUATION_ID --kind traces --output traces.zip
-```
+Public visibility does not assign a license. Optionally pass `--source-license MIT`
+(or another supported license) when submitting. If omitted, the public page says
+that no additional license is granted; bundled licenses still apply.
 
-Downloads work from another machine with the same solver account; the original
-local submission/session file is not required. Files are streamed, checksummed,
-saved with private permissions, and never automatically unpacked or executed.
-The old `remote traces` command and automatic `--wait` download keep their
-smaller diagnostic ZIP for compatibility. Use `remote download` for full evidence.
+## Change source visibility or opt in to traces
 
-The harness ZIP is the original submitted source archive, including its
-`catalyst-snapshot.json` file hashes. It is not rebuilt from a later checkout.
-The complete bundle adds the source ZIP, model/budget configuration without the
-private grant reference, problem/pricing/policy pins, final candidate, verifier
-reports, usage, Dungeness record and event log, and recorded Codex output.
-
-`artifact-manifest.json` hashes every exported file. `coverage.json` lists
-missing evidence and intentional exclusions. Failed runs can have missing
-runtime evidence. Container images, dependency caches, arbitrary workspace
-files, credential files and unrecorded model internals are not included.
-The export fails visibly rather than silently truncating files above 64 MiB
-or bundles above 512 MiB / 10,000 files. These are current MVP limits.
-
-Text evidence is sanitized for recognized credentials, bearer tokens, JWTs and
-private keys. JSON/JSONL structure is preserved. Export hashes refer to the
-sanitized bytes; source-bundle hashes identify the original evaluated source.
-Sanitization is best effort: arbitrary research data, code and unusual secrets
-can still appear in transcripts. Review before publication.
-
-## Separate opt-in publication
-
-Publishing harness source and publishing traces are independent choices:
+Source visibility and trace publication remain independent choices:
 
 ```sh
 catalyst remote download EVALUATION_ID --kind harness --output harness.zip
@@ -76,7 +52,7 @@ The response includes a stable public download page and JSON manifest. Anyone
 with these links can read the published material without authentication.
 An **artifact** is a file retained from a run: for example, the evaluated harness
 source ZIP or the separately shared trace ZIP. The public download page lists
-only the files the solver chose to share, with their license, size and checksum.
+only publicly available files, with their license information, size and checksum.
 
 **Download and use shared files at your own risk.** They are untrusted code and
 content. Inspect source, prompts and dependencies before use, and run code in an
@@ -100,7 +76,7 @@ catalyst remote unpublish EVALUATION_ID --traces
 
 Unpublishing stops new public access through Catalyst. It cannot revoke an
 already downloaded copy or retract an open-source license. Previously issued
-S3 download links expire within five minutes. No source or trace publication
+S3 download links expire within five minutes. No retrospective source or trace publication
 occurs when deploying this feature or migrating an existing run.
 
 ## Storage

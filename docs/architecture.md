@@ -63,7 +63,9 @@ source/image/configuration/pricing/policy identities and metered usage. Yukon
 accepts only the result retrieved by its trusted workflow. Locally edited
 score JSON is not authoritative.
 
-Harnesses and traces are private by default. Owners can download retained
-artifacts and explicitly publish selected material; see [artifact sharing](artifact-sharing.md).
+New harness source is public by default after the run stops and publication
+screening passes; solvers can opt out with `--private-harness`. Traces require
+separate opt-in, and historical private runs stay private. Owners can download
+retained artifacts or change visibility; see [artifact sharing](artifact-sharing.md).
 The UI reads Yukon's official metrics and requests artifact metadata only when
 run details are opened. It does not enumerate private evaluations.

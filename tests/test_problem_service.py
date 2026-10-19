@@ -32,6 +32,38 @@ def fixture():
 
 
 class ProblemServiceTests(unittest.TestCase):
+    def test_files_serve_only_pinned_names_and_reject_mutated_startup_content(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            raw = b"%PDF-1.4\nfixture\n%%EOF"
+            paper = root / "paper.pdf"
+            paper.write_bytes(raw)
+            entry = {"name": "paper.pdf", "bytes": len(raw),
+                     "sha256": hashlib.sha256(raw).hexdigest(), "media_type": "application/pdf"}
+            payload = problem_server.canonical({"schema_version": 1, "attachments": [entry]})
+            files = problem_server.load_files(payload, root)
+            with ThreadingHTTPServer(("127.0.0.1", 0),
+                                     problem_server.handler_for(payload, "a" * 64, files)) as server:
+                thread = threading.Thread(target=server.serve_forever, daemon=True)
+                thread.start()
+                base = f"http://127.0.0.1:{server.server_port}"
+                try:
+                    with urlopen(base + "/task/files/paper.pdf") as response:
+                        self.assertEqual(response.read(), raw)
+                        self.assertEqual(response.headers["Content-Type"], "application/pdf")
+                    for target in ("/task/files/paper.pdf?url=x", "/task/files/../task.json",
+                                   "/task/files/unknown.pdf"):
+                        with self.assertRaises(HTTPError) as error:
+                            urlopen(base + target)
+                        self.assertEqual(error.exception.code, 404)
+                        error.exception.close()
+                finally:
+                    server.shutdown()
+                    thread.join()
+            paper.write_bytes(b"changed")
+            with self.assertRaises(ValueError):
+                problem_server.load_files(payload, root)
+
     def test_read_only_server_serves_only_its_startup_snapshot(self):
         document, payload, digest, _ = fixture()
         with tempfile.TemporaryDirectory() as temp:
