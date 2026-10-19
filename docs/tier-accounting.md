@@ -46,8 +46,15 @@ authentication adapter has already been implemented.
 
 Dungeness owns admission, metering and the usage ledger. Catalyst recomputes
 credits from its settled receipts using the pinned schedule. Unknown consumption,
-unsettled requests, token-limit overruns and spending above the authorized cap
-prevent a valid score. A request crossing $20 cannot benefit the $20 view even
+unsettled requests and token-limit overruns prevent a valid score. Under validity
+policy `ecdsa-trusted-checkpoints-v3`, final in-flight responses may exceed the
+credit cap only when every charged request has trusted admission evidence showing
+it started before settled spending reached the cap. The gateway blocks new calls
+after exhaustion; already admitted concurrent responses may finish. The worker
+records `admitted_after`, the last settled charged request ID at each gateway
+request event (or null before any settlement), from canonical gateway history.
+Missing admission evidence retains the strict cap. Explicit v2 judgments retain
+their original strict cap and policy digest; historical receipts are not rewritten. A request crossing $20 cannot benefit the $20 view even
 if it began below $20. Never clamp an overrun to the allowance.
 
 ## Existing evaluator history

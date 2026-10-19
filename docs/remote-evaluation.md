@@ -52,10 +52,10 @@ the payload under the same request ID is rejected. The client preserves uncertai
 requests instead of issuing another paid run.
 
 New requests must explicitly include `publication`. The CLI defaults to public
-harness source, private traces and no source license grant. `--private-harness`
+harness source, internally retained traces and no source license grant. `--private-harness`
 opts out of public source; `--source-license` selects an authorized license.
 Source is published automatically after the run stops and credential screening
-passes. Trace publication requires a separate reviewed opt-in.
+passes. Trace publication is disabled.
 Older clients that omit this field must upgrade before starting a new evaluation.
 Historical stored requests remain readable and are not retroactively published.
 
@@ -138,10 +138,14 @@ usage and provenance. The $10/$20/$50/$100/Best views select from that evidence;
 a later candidate cannot improve an earlier budget view. Missing budget results
 are explicit metadata, never invented Yukon tuple values. See [accounting](tier-accounting.md).
 
-Owners can download source and recorded evidence and change artifact visibility.
-New harness source is public by default; traces are separately opt-in.
-See [downloads and sharing](artifact-sharing.md). Private trace
-archives are not attached to Yukon's public result packet.
+Owners can download harness source and change its visibility. New harness source
+is public by default. Traces are retained internally for verification and debugging;
+trace and complete-bundle downloads are unavailable, including to the run owner.
+See [downloads and sharing](artifact-sharing.md).
+
+`trace_available` in retained results attests that the verifier kept internal
+evidence; it does not advertise a download. Upgrade older clients before using
+`remote wait`: older versions attempted to download traces automatically.
 
 The public contract is defined by this guide and the public client validators.
 Service deployment, queue administration, corpus operations and screening

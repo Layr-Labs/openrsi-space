@@ -28,7 +28,7 @@ class PublicationConsentTests(unittest.TestCase):
             self.assertEqual(body["publication"], {
                 "harness": True, "traces": False, "license": None})
 
-    def test_private_source_is_supported_and_trace_review_cannot_be_skipped(self):
+    def test_private_source_is_supported_and_trace_publication_is_disabled(self):
         self.assertEqual(publication_choices({"harness": False, "traces": False, "license": None}),
                          {"harness": False, "traces": False, "license": None})
         for choices in (

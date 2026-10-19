@@ -1,8 +1,8 @@
 # Artifact downloads and publication
 
 New remote submissions publish their evaluated harness source by default after the
-run stops and publication screening passes. Traces remain private and require
-separate opt-in. Historical private runs remain private.
+run stops and publication screening passes. Traces are retained internally for verification and debugging and cannot be
+downloaded or published, including by the run owner. Historical private runs remain private.
 
 Use `catalyst remote submit HARNESS_DIR --private-harness ...` to keep source
 private. The CLI announces visibility before reading a model credential. Review
@@ -14,17 +14,12 @@ Public visibility does not assign a license. Optionally pass `--source-license M
 (or another supported license) when submitting. If omitted, the public page says
 that no additional license is granted; bundled licenses still apply.
 
-## Change source visibility or opt in to traces
-
-Source visibility and trace publication remain independent choices:
+## Download harness source or change its visibility
 
 ```sh
 catalyst remote download EVALUATION_ID --kind harness --output harness.zip
 # Inspect every file in harness.zip before confirming:
 catalyst remote publish EVALUATION_ID --harness --license MIT --confirm-source-reviewed
-
-# First download and inspect the sanitized trace bundle, then:
-catalyst remote publish EVALUATION_ID --traces --confirm-traces-reviewed
 
 catalyst remote sharing EVALUATION_ID
 ```
@@ -51,7 +46,7 @@ material or encoded secret, so a passed scan does not replace source review.
 The response includes a stable public download page and JSON manifest. Anyone
 with these links can read the published material without authentication.
 An **artifact** is a file retained from a run: for example, the evaluated harness
-source ZIP or the separately shared trace ZIP. The public download page lists
+source ZIP. The public download page lists
 only publicly available files, with their license information, size and checksum.
 
 **Download and use shared files at your own risk.** They are untrusted code and
@@ -60,23 +55,22 @@ isolated environment. Verification and credential screening do not guarantee
 safe code. A SHA-256 checksum confirms that a download matches the published
 file; it does not certify safety.
 
-The Catalyst challenge UI's **Source & traces** disclosure reads this public
+The Catalyst challenge UI's **Harness source** disclosure reads this public
 manifest on demand and binds it to the evaluation ID and source hash in Yukon's
 official score metrics. The UI code is maintained in Yukon's
 `apps/challenges-ui/challenges/catalyst`; see [UI setup and hosting](challenge-ui.md). Publishing artifacts
 does not require resubmitting scores to Yukon.
-The complete private bundle is never published by these switches. However,
-traces can contain source snippets, tool inputs and outputs, so separate switches
-do not guarantee that sharing traces reveals no harness code.
+Trace and complete-bundle download endpoints are disabled, including for
+historical runs that previously enabled trace sharing. Internal evidence remains
+available to operators for verification and debugging.
 
 ```sh
 catalyst remote unpublish EVALUATION_ID --harness
-catalyst remote unpublish EVALUATION_ID --traces
 ```
 
 Unpublishing stops new public access through Catalyst. It cannot revoke an
 already downloaded copy or retract an open-source license. Previously issued
-S3 download links expire within five minutes. No retrospective source or trace publication
+S3 download links expire within five minutes. No retrospective source publication
 occurs when deploying this feature or migrating an existing run.
 
 ## Storage

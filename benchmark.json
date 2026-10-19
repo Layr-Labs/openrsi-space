@@ -11,7 +11,7 @@
   ],
   "paretoPolicies": {
     "scoring": {"version": "ecdsa-best-and-checkpoints-v2"},
-    "validity": {"version": "ecdsa-trusted-checkpoints-v2"}
+    "validity": {"version": "ecdsa-trusted-checkpoints-v3"}
   },
   "editablePaths": ["submission/verification.json"],
   "setupCommand": ["uv", "run", "--frozen", "catalyst", "yukon-setup"],

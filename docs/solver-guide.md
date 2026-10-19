@@ -74,7 +74,8 @@ Credits use pinned reference model prices. Subscription usage can consume
 your allowance without a separate cash charge. Infrastructure costs are
 separate. Token and time limits can stop a run before its credit cap.
 An in-flight model response can overshoot the cap; Catalyst retains actual
-usage and rejects an over-cap result. See [accounting details](tier-accounting.md).
+usage and, under validity policy v3, accepts overshoot with trusted evidence
+that every charged request started before budget exhaustion. See [accounting details](tier-accounting.md).
 
 ## 1. Install and connect
 
@@ -308,18 +309,17 @@ locally and awaits hosting; until then, inspect results with the CLI.
 
 New remote submissions publish the evaluated harness source by default after the
 run stops and publication screening passes. Review files before submitting; use
-`--private-harness` to opt out. Traces stay private until you separately publish them.
+`--private-harness` to opt out. Traces are retained internally and cannot be downloaded or published.
 No license is granted automatically: use `--source-license MIT` (or another supported
 license) only when you have authority to grant it. Existing private runs stay private.
 With the same Yukon account:
 
 ```sh
-uv run catalyst remote download EVALUATION_ID --kind complete --output complete.zip
+uv run catalyst remote download EVALUATION_ID --kind harness --output harness.zip
 ```
 
-This includes submitted source and retained, sanitized run evidence. It does
-not include container images, dependency caches or every arbitrary workspace
-file. Read `coverage.json` inside the archive for exclusions.
+This downloads the original evaluated harness source. Runtime traces and
+complete evidence bundles are retained internally and are not downloadable.
 
 To publish source from a run you kept private, or add an authorized license:
 
@@ -330,14 +330,7 @@ uv run catalyst remote publish EVALUATION_ID --harness --license MIT --confirm-s
 First download and review the exact harness ZIP. You are responsible for the
 source, prompts and knowledge files you choose to make public and for having
 permission to share them. Credential screening still applies and cannot be waived.
-Choose a license you have authority to grant. Trace publication is a separate
-choice after downloading and reviewing the sanitized traces:
-
-```sh
-uv run catalyst remote publish EVALUATION_ID --traces --confirm-traces-reviewed
-```
-
-Traces can reveal code and research content. See [artifact sharing](artifact-sharing.md)
+Choose a license you have authority to grant. See [artifact sharing](artifact-sharing.md)
 for downloads, license choices and unpublishing.
 
 ## Challenge rules
@@ -369,6 +362,6 @@ that cannot be reviewed must be removed or provided as inspectable source.
 Neither check proves originality or detects all memorization. See
 [the screening policy and deployment status](cheat-filter.md).
 
-If a job fails, inspect its reason and private traces before choosing whether
+If a job fails, inspect its reported reason before choosing whether
 to spend on another evaluation. Do not fabricate a receipt or score to bypass
 a failure.

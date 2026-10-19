@@ -45,7 +45,15 @@ excludes it from retained jobs/results/artifacts. Normalized credits may differ
 from cash charges, and an in-flight response can exceed the configured cap.
 Receipt verification/publication does not grant new model access or run inference.
 
-## Source is public by default; traces are optional
+## Source is public by default
+
+Before building, discover reusable general-purpose agents with
+`uv run catalyst harness search --max-credits CAP`. Inspect selected source with
+`uv run catalyst harness inspect SOURCE_SHA256`, then download only selected
+harnesses with `uv run catalyst harness download EVALUATION_ID --output harness.zip`.
+No login is required. Compare the same problem, pricing and policy hashes, inspect
+licenses, and declare material dependencies. Never import generated circuits or
+task-specific solution knowledge. See [the catalog guide](harness-catalog.md).
 
 Before the first remote submission, tell the human that the evaluated harness
 source will become public after the run stops and credential screening passes.
@@ -56,10 +64,8 @@ An optional `--source-license MIT` (or another supported license) requires the
 human's authority to grant it. Public visibility alone grants no additional license.
 Never retroactively publish historical private runs without the owner's choice.
 
-After the first completed run, ask whether the human wants to publish sanitized
-traces. Until they explicitly choose that, keep traces private. Before publishing,
-download and review the exact trace bundle, then use `--confirm-traces-reviewed`.
-Never publish access tokens, authentication files or the complete private bundle.
+Traces are retained internally for verification and debugging. Users cannot
+download or publish them. Never publish access tokens or authentication files.
 See [artifact-sharing.md](artifact-sharing.md) for commands and source opt-out.
 
 ## Objective and boundaries
@@ -165,7 +171,8 @@ source tree. Never add a refresh token to a package or request.
 This is the inference-consuming step. Stay within the authorized allowance;
 the cap limits a run and is not a spending target. Account for earlier failed
 attempts if the solver authorized an aggregate allowance. In-flight responses
-can overshoot; over-cap totals cannot produce a valid result.
+can overshoot; validity policy v3 requires trusted gateway evidence that every
+charged request started before budget exhaustion. Actual usage is never clipped.
 
 Record the returned evaluation ID. If the connection or waiting process stops,
 retrieve that same run:
@@ -239,7 +246,7 @@ Wait for Yukon verification before claiming acceptance.
   Corpus/network failures are inconclusive, not cheating verdicts. Do not
   obscure or rename a copied answer to evade rejection.
 - Explain public-by-default source before submission; use `--private-harness`
-  for private source. Traces require separate opt-in and review.
+  for private source. Traces are retained internally.
   Before submitting public source, review the exact packaged files. For later
   manual publication, download the exact harness archive and review every
   file for unintended private code, secrets and third-party restrictions, and
@@ -251,7 +258,6 @@ Wait for Yukon verification before claiming acceptance.
   submission ID and verification outcome. Distinguish measured improvements
   from hypotheses and infrastructure checks.
 
-For retained private evidence, use
-`uv run catalyst remote download EVALUATION_ID --kind complete --output complete.zip`.
-Inspect the archive's coverage manifest before calling it a complete record of
-all runtime files.
+To download the evaluated harness source, use
+`uv run catalyst remote download EVALUATION_ID --kind harness --output harness.zip`.
+Remote traces and complete evidence bundles are not downloadable.

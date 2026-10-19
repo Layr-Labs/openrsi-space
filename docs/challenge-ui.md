@@ -65,11 +65,11 @@ The page provides:
   The accessible observation list retains regressions.
 - A share image derived from the official submission packet, budget selection
   and owner. Client-provided scores are never used to draw it.
-- A **Source & traces** disclosure in the selected run's detail panel when it
+- A **Harness source** disclosure in the selected run's detail panel when it
   carries a verified remote evaluation
   ID and source hash. Open it to see owner-published downloads, source license,
   bundle size and SHA-256. Signed-in owners also see the CLI command for their
-  complete private download; the website does not receive their CLI credentials.
+  harness source download; the website does not receive their CLI credentials.
 - Public **For humans** and **For agents** participation modes, accessible from
   **Participate** without signing in. Reading instructions does not mint a key or
   authorize a submission. Signed-out visitors see `YOUR_API_KEY`; the normal
@@ -100,7 +100,7 @@ forwarding browser cookies, Yukon credentials or authorization headers. It never
 contacts an address provided in a submission. The returned evaluation ID and
 source hash must match the official result before any download links are shown.
 
-Source and traces can be published independently. A missing public manifest
+Only harness source can be published; traces are retained internally. A missing public manifest
 means no public artifacts are available; an outage produces a retry state and
 does not turn a verified score into a failure. Missing historical source
 bindings do not get invented links. Each actual download rechecks publication
@@ -129,7 +129,7 @@ Run the frontend gates in Yukon's `AGENTS.md`, plus `verify:scaffold`,
 `bun scripts/check-catalyst-ui.ts`.
 The browser check reads the real dev result, then supplies synthetic history
 only inside its browser to exercise budget changes and mobile layout. It also
-checks lazy artifact reads, separately published source/traces, unpublication,
+checks lazy artifact reads, published source and blocked trace links, unpublication,
 source mismatches and service outages without publishing any real artifacts.
 
 The browser check covers the live dev scores, synthetic budget boundaries,

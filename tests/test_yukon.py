@@ -170,15 +170,13 @@ class YukonRunnerTests(unittest.TestCase):
         with redirect_stdout(io.StringIO()):
             return check_receipt(self.root)
 
-    def test_remote_ecdsa_tier_judgment_and_private_trace_download(self):
+    def test_remote_ecdsa_tier_judgment_without_trace_download(self):
         artifact = self.evaluate()
         self.assertEqual(artifact["scores"], [100, 0.25])
         self.assertTrue(artifact["valid"])
         self.assertEqual(read_json(self.target), artifact)
-        self.assertEqual(len(self.trace_gets), 1)
-        folder = self.state / "remote/evaluations" / self.trace_gets[0]
-        self.assertEqual((folder / "traces.zip").read_bytes(), b"private fixture traces")
-        self.assertEqual((folder / "traces.zip").stat().st_mode & 0o777, 0o600)
+        self.assertEqual(self.trace_gets, [])
+        self.assertFalse(list((self.state / "remote/evaluations").glob("*/traces.zip")))
         public = json.dumps(artifact)
         for private in ("grant_contract_test", "test-yukon-token", "private_tool_output", "private_debug"):
             self.assertNotIn(private, public)
@@ -204,7 +202,7 @@ class YukonRunnerTests(unittest.TestCase):
         self.assertEqual(len(self.jobs), 1)
         self.assertEqual(len(self.requests), 1)
         self.assertEqual(len(self.publications), 1)
-        self.assertEqual(len(self.trace_gets), 1)
+        self.assertEqual(self.trace_gets, [])
         self.assertFalse((self.root / "submission").exists())
 
     def test_cheaper_result_qualifies_for_all_views_without_missing_yukon_values(self):
@@ -287,20 +285,20 @@ class YukonRunnerTests(unittest.TestCase):
         self.assertFalse(self.target.exists())
         self.assertEqual(self.trace_gets, [])
 
-    def test_invalid_proof_retains_traces_and_explicit_invalidity(self):
+    def test_invalid_proof_returns_explicit_invalidity_without_trace_download(self):
         self.transform = lambda result: {**result, "valid": False, "observations": [],
                                          "reason": "ECDSA circuit verification failed."}
         artifact = self.evaluate()
         self.assertFalse(artifact["valid"])
         self.assertIsNone(artifact["scores"])
-        self.assertEqual(len(self.trace_gets), 1)
+        self.assertEqual(self.trace_gets, [])
 
-    def test_worker_failure_has_no_judgment_but_keeps_traces(self):
+    def test_worker_failure_has_no_judgment_or_trace_download(self):
         self.transform = lambda result: {**result, "status": "failed"}
         with self.assertRaisesRegex(CatalystError, "failed"):
             self.evaluate()
         self.assertFalse(self.target.exists())
-        self.assertEqual(len(self.trace_gets), 1)
+        self.assertEqual(self.trace_gets, [])
 
     def test_configuration_missing_grant_or_secret_field_fails_before_network(self):
         for changes in ({"grant_id": ""}, {"grant_id": "grant_contract_test", "api_key": "secret"}):

@@ -106,7 +106,8 @@ Dungeness provides token accounting and enforces the configured budget between
 responses. Its token limit uses the native cache-weighted budget counter;
 Catalyst checks that counter against the terminal ledger while retaining raw
 provider token counts for credit pricing. A final in-flight response can exceed the cap. Catalyst retains the
-actual usage and rejects over-cap results under the current scoring contract;
+actual usage. Validity policy v3 accepts in-flight overshoot only with trusted
+evidence that every charged request started before budget exhaustion;
 it never clips usage to manufacture eligibility. Normalized credits use pinned
 prices and do not imply a ChatGPT subscription incurs a cash charge.
 

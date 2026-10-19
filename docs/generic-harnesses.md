@@ -257,7 +257,8 @@ then checks the terminal total.
 Reservations limit concurrent admission; they are **not a hard provider billing
 cap**. Actual usage can exceed an allowance, especially with subscription
 protocols that lack enforceable per-call cost limits. The gateway then blocks
-new calls, and Catalyst rejects totals exceeding the run's cap. No cost is
+new calls. Under validity policy v3, Catalyst accepts in-flight overshoot only
+with trusted evidence that every charged request started below the cap. No cost is
 clipped to make a result eligible. Use provider-side spending limits where
 available. Strict pre-call cost guarantees remain future work.
 

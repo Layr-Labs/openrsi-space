@@ -23,7 +23,10 @@ from .common import (
 )
 from .executable import IMAGE_RE, SOURCE_EXCLUDES, validate_execution
 from .problems import initial_problems
-from .tiers import SCORING, VALIDITY, credit_limit, evaluation_models, model_prices, pricing_schedule, project_observation
+from .tiers import (
+    LEGACY_VALIDITY, SCORING, VALIDITY, credit_limit, evaluation_models,
+    model_prices, pricing_schedule, project_observation,
+)
 
 PROTOCOL = "catalyst-evaluation-v3"
 MAX_SOURCE_BYTES = 8 * 1024 * 1024
@@ -40,14 +43,15 @@ def judge_input(value: str | None) -> dict:
     default = {"policies": {"scoring": SCORING, "validity": VALIDITY},
                "fields": {"scores": True, "validity": True}}
     document = json.loads(value) if value else default
-    if not isinstance(document, dict) or document.get("policies") != default["policies"]:
+    supported = [default["policies"], {"scoring": SCORING, "validity": LEGACY_VALIDITY}]
+    if not isinstance(document, dict) or document.get("policies") not in supported:
         raise CatalystError("Unsupported Catalyst evaluation policies.")
     fields = document.get("fields")
     if (not isinstance(fields, dict) or set(fields) != {"scores", "validity"}
             or any(type(item) is not bool for item in fields.values())
             or not any(fields.values())):
         raise CatalystError("Invalid requested evaluation fields.")
-    return {"policies": default["policies"], "fields": fields}
+    return {"policies": document["policies"], "fields": fields}
 
 
 
@@ -286,6 +290,7 @@ def bound_result(result: dict, request: dict, evaluation_id: str, *, original_re
 
 def judgment(result: dict, request: dict) -> dict:
     """Project only trusted, bound observations into Yukon's public artifact."""
+    judge = judge_input(json.dumps(request["judge"]))
     if result.get("status") != "completed":
         raise CatalystError("Remote evaluation did not complete; no score is published.")
     if (result.get("evidence_mode") in {"local-test", "local-ecdsa"}
@@ -293,6 +298,7 @@ def judgment(result: dict, request: dict) -> dict:
         raise CatalystError("Local-test or local ECDSA evidence cannot be used as a hosted evaluation.")
     if type(result.get("valid")) is not bool or not isinstance(result.get("reason"), str):
         raise CatalystError("Remote evaluator omitted its validity judgment.")
+    # This attests internal evidence retention, not a user download capability.
     if result.get("trace_available") is not True:
         raise CatalystError("Remote evaluator did not retain evaluation traces.")
     built = result.get("build")
@@ -314,7 +320,8 @@ def judgment(result: dict, request: dict) -> dict:
         seen.add(identity)
         config = request["evaluation"]
         projected = project_observation(observation, evaluation_models(config), config["max_model_credits"],
-                                        config["limits"], request["pricing"])
+                                        config["limits"], request["pricing"],
+                                        allow_inflight_overshoot=judge["policies"]["validity"] == VALIDITY)
         public.append({"problem_id": identity, "problem_commit": observation["problem_commit"], **projected})
     if result["valid"]:
         if seen != {p["id"] for p in request["problem_set"]}:
@@ -356,18 +363,6 @@ def judgment(result: dict, request: dict) -> dict:
     if fields["validity"]:
         artifact.update(valid=result["valid"], reason=result["reason"][:2000])
     return artifact
-
-
-
-def download_traces(base: str, bearer: str, evaluation_id: str, folder: Path) -> None:
-    content = solver_fetch(base, f"/evaluations/{evaluation_id}/traces", bearer, limit=64 * 1024 * 1024)
-    # Store privately, never unpack or execute archive content.
-    target = folder / "traces.zip"
-    temporary = folder / "traces.zip.tmp"
-    temporary.write_bytes(content)
-    temporary.chmod(0o600)
-    temporary.replace(target)
-    print(f"Private remote traces: {target}", file=sys.stderr, flush=True)
 
 
 
@@ -496,7 +491,8 @@ class RemoteClient:
             raise CatalystError("GitHub Actions must retrieve an existing result through catalyst yukon-run.")
         submission = submission.resolve()
         body = request_body(submission, self.base, judge=judge, evaluation_overrides=evaluation_overrides,
-                            check_pricing=False, execution=execution, publication=publication)
+                            check_pricing=False, execution=execution, publication=publication,
+                            )
         quote_path = None
         try:
             validate_evaluation_config(body["evaluation"])
@@ -630,8 +626,6 @@ class RemoteClient:
                         f"Temporary access expired or was lost on restart. Renew with "
                         f"catalyst remote renew-access {identity}, then resume remote wait.")
                 if result["status"] in TERMINAL:
-                    if result.get("trace_available") is True and not (folder / "traces.zip").is_file():
-                        download_traces(self.base, self.bearer, identity, folder)
                     if result["status"] != "completed":
                         self.clear_pending(session)
                         reason = result.get("reason")
@@ -659,14 +653,6 @@ class RemoteClient:
         write_json(submission / "verification.json", reference)
         return submission / "verification.json"
 
-    def traces(self, identity):
-        result = self.status(identity)
-        if result.get("trace_available") is not True:
-            raise CatalystError("Remote traces are not available yet.")
-        folder = self.folder(identity)
-        download_traces(self.base, self.bearer, identity, folder)
-        return folder / "traces.zip"
-
     def artifacts(self, identity):
         identity = evaluation_id(identity)
         document = json.loads(solver_fetch(
@@ -677,8 +663,8 @@ class RemoteClient:
 
     def download_artifact(self, identity, kind, output):
         identity = evaluation_id(identity)
-        if kind not in {"complete", "harness", "traces"}:
-            raise CatalystError("Unknown artifact kind.")
+        if kind != "harness":
+            raise CatalystError("Only harness source can be downloaded. Traces are retained internally.")
         manifest = self.artifacts(identity)
         expected = manifest["artifacts"][kind]
         descriptor = json.loads(solver_fetch(

@@ -8,7 +8,7 @@ SOURCE_LICENSES = frozenset({
 
 
 def publication_choices(value=None):
-    """Source is public by default; traces require review after the run."""
+    """Source is public by default; traces are retained only for internal use."""
     if value is None:
         value = {"harness": True, "traces": False, "license": None}
     if (not isinstance(value, dict) or set(value) != {"harness", "traces", "license"}
@@ -18,5 +18,5 @@ def publication_choices(value=None):
             or (not value["harness"] and value["license"] is not None)):
         raise CatalystError(
             "Choose public or private harness source and an optional supported source license. "
-            "Traces stay private until separately reviewed and published.")
+            "Traces are retained internally and cannot be downloaded or published.")
     return dict(value)

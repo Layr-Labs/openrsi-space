@@ -112,10 +112,9 @@ def remote_command(args, state):
         elif args.operation == "sharing":
             result = client.sharing(args.id)
         else:
-            if not (args.harness or args.traces):
-                raise CatalystError("Select --harness and/or --traces explicitly.")
-            changes = {kind: args.operation == "publish"
-                       for kind in ("harness", "traces") if getattr(args, kind)}
+            if not args.harness:
+                raise CatalystError("Select --harness explicitly.")
+            changes = {"harness": args.operation == "publish"}
             if args.operation == "publish":
                 if args.harness and not args.license:
                     raise CatalystError("Publishing a harness requires --license.")
@@ -125,12 +124,8 @@ def remote_command(args, state):
                         "rights, then use --confirm-source-reviewed. You are responsible for the material you "
                         "choose to publish. Credential screening cannot be waived."
                     )
-                if args.traces and not args.confirm_traces_reviewed:
-                    raise CatalystError("Download/review sanitized traces, then use --confirm-traces-reviewed.")
                 if args.license:
                     changes["license"] = args.license
-                if args.traces:
-                    changes["traces_reviewed"] = True
             result = client.sharing(args.id, changes)
         print(json.dumps(result, indent=2))
         return
@@ -141,10 +136,10 @@ def remote_command(args, state):
         if publication["harness"]:
             print("Harness source will be PUBLIC after this run stops and publication screening passes. "
                   "Review your files and third-party rights before submitting. "
-                  "Use --private-harness to keep source private. Traces remain private.",
+                  "Use --private-harness to keep source private. Traces are retained internally.",
                   file=sys.stderr, flush=True)
         else:
-            print("Harness source and traces will remain private.", file=sys.stderr, flush=True)
+            print("Harness source will remain private; traces are retained internally.", file=sys.stderr, flush=True)
         execution = None
         if args.entrypoint is not None:
             import shlex
@@ -168,7 +163,8 @@ def remote_command(args, state):
             accepted = client.submit(Path(args.package), **(
                 {"model_token": model_token} if model_token is not None else {}),
                 **({"evaluation_overrides": overrides} if overrides else {}),
-                **({"execution": execution} if execution else {}), publication=publication)
+                **({"execution": execution} if execution else {}),
+                publication=publication)
         finally:
             model_token = None
         if not args.wait:
@@ -183,8 +179,6 @@ def remote_command(args, state):
         print(json.dumps({key: result[key] for key in (
             "evaluation_id", "status", "source_digest", "evidence_mode", "trace_available",
         ) if key in result}, indent=2))
-    elif args.operation == "traces":
-        print(json.dumps({"evaluation_id": identity, "traces": str(client.traces(identity))}, indent=2))
     else:
         print(f"Remote evaluation {identity}", file=sys.stderr, flush=True)
         try:
@@ -224,6 +218,23 @@ def build_parser():
                 local.add_argument("id")
                 local.add_argument("--workspace", required=True)
         else:
+            for operation in ("search", "inspect"):
+                catalog = sub.add_parser(operation, help="Browse ranked public harnesses without a login.")
+                if operation == "inspect":
+                    catalog.add_argument("source", help="Immutable harness source SHA-256.")
+                catalog.add_argument("--problem", default="ecdsa-fail")
+                catalog.add_argument("--release")
+                catalog.add_argument("--problem-version", help="Exact problem manifest SHA-256.")
+                catalog.add_argument("--max-credits", type=float)
+                catalog.add_argument("--model")
+                catalog.add_argument("--q", help="Search public harness titles and descriptions.")
+                catalog.add_argument("--sort", choices=["score", "credits"], default="score")
+                catalog.add_argument("--limit", type=int, default=20)
+                catalog.add_argument("--cursor")
+            download = sub.add_parser("download", help="Download published harness source without login or execution.")
+            download.add_argument("id", help="Evaluation UUID from the catalog.")
+            download.add_argument("--output", required=True)
+            download.add_argument("--source-sha256", help="Require the source hash returned by the ranking.")
             create = sub.add_parser("create", help="Create an editable harness source directory.")
             create.add_argument("id")
             create.add_argument("--title")
@@ -278,7 +289,7 @@ def build_parser():
     remote_submit.add_argument("package", help="Path to your harness source directory.")
     remote_submit.add_argument("--wait", action="store_true", help="Wait, validate the result and save its verification reference.")
     remote_submit.add_argument("--private-harness", action="store_true",
-                               help="Keep this harness source private; new submissions otherwise publish source after screening. Traces remain private.")
+                               help="Keep this harness source private; new submissions otherwise publish source after screening. Traces are retained internally.")
     remote_submit.add_argument("--source-license",
                                help="Optional license you have authority to grant for public source. Omission grants no additional license.")
     remote_submit.add_argument("--entrypoint", help="Launch argv for an existing repository without harness.json; parsed without a shell.")
@@ -308,7 +319,6 @@ def build_parser():
     for operation, help_text in (
         ("status", "Read the current status of a submitted evaluation."),
         ("wait", "Wait for an existing evaluation; never enqueue another run."),
-        ("traces", "Download the owner's private trace archive."),
         ("cancel", "Cancel an owned evaluation; running processes stop before cancellation completes."),
     ):
         remote_action = remote_sub.add_parser(operation, help=help_text)
@@ -316,21 +326,18 @@ def build_parser():
     for operation in ("artifacts", "sharing"):
         action = remote_sub.add_parser(operation, help="Inspect artifact downloads or sharing for an owned run.")
         action.add_argument("id")
-    download = remote_sub.add_parser("download", help="Download a checksummed private evidence bundle.")
+    download = remote_sub.add_parser("download", help="Download the evaluated harness source with checksum verification.")
     download.add_argument("id")
-    download.add_argument("--kind", choices=["complete", "harness", "traces"], default="complete")
+    download.add_argument("--kind", choices=["harness"], default="harness")
     download.add_argument("--output", required=True)
     for operation in ("publish", "unpublish"):
         action = remote_sub.add_parser(operation, help="Explicitly publish or stop serving selected run artifacts.")
         action.add_argument("id")
         action.add_argument("--harness", action="store_true")
-        action.add_argument("--traces", action="store_true")
         if operation == "publish":
             action.add_argument("--license", help="Source license; preserves existing third-party notices.")
             action.add_argument("--confirm-source-reviewed", action="store_true",
                                 help="Confirm review of the exact source bundle and responsibility for its public release; credential screening still applies.")
-            action.add_argument("--confirm-traces-reviewed", action="store_true",
-                                help="Confirm that you reviewed the sanitized trace bundle for public release.")
     return parser, commands
 
 
@@ -348,7 +355,17 @@ def dispatch(args):
             else:
                 return develop(args.id, Path(args.workspace), args.operation)
         elif args.command == "harness":
-            if args.operation == "create":
+            if args.operation in {"search", "inspect", "download"}:
+                from .harness_catalog import PublicCatalog
+                client = PublicCatalog()
+                if args.operation == "download":
+                    result = client.download(args.id, args.output, source_sha256=args.source_sha256)
+                else:
+                    filters = {k: getattr(args, k) for k in (
+                        "problem", "release", "problem_version", "max_credits", "model", "q", "sort", "limit", "cursor")}
+                    result = client.search(source=args.source if args.operation == "inspect" else None, **filters)
+                print(json.dumps(result, indent=2))
+            elif args.operation == "create":
                 create_harness(args)
             else:
                 from .executable import build, smoke

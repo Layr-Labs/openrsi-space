@@ -13,7 +13,8 @@ from .common import CatalystError, canonical, finite_number, read_json, version_
 
 TIERS = (10, 20, 50, 100)
 SCORING = {"version": "ecdsa-best-and-checkpoints-v2"}
-VALIDITY = {"version": "ecdsa-trusted-checkpoints-v2"}
+LEGACY_VALIDITY = {"version": "ecdsa-trusted-checkpoints-v2"}
+VALIDITY = {"version": "ecdsa-trusted-checkpoints-v3"}
 
 
 def tier(value) -> int:
@@ -98,11 +99,14 @@ def credit_limit(value) -> Decimal:
     return limit
 
 
-def project_observation(observation: dict, model: dict, max_model_credits, limits: dict, schedule=None) -> dict:
+def project_observation(observation: dict, model: dict, max_model_credits, limits: dict, schedule=None,
+                        *, allow_inflight_overshoot=True) -> dict:
     """Recompute costs and bind verified observations to settled usage.
 
     Spending authority is separate from display budgets. Legacy checkpoint
     records are validated when present, but never decide view eligibility.
+    V3 permits overshoot only with complete trusted request-admission evidence;
+    callers validating v2 receipts must disable that exception explicitly.
     """
     funded_limit = credit_limit(max_model_credits)
     if observation.get("pricing_digest") != pricing_digest(schedule):
@@ -122,6 +126,8 @@ def project_observation(observation: dict, model: dict, max_model_credits, limit
         raise CatalystError("Observation requires a complete trusted usage ledger.")
     charges, previous, total, tokens = [], 0, Decimal(0), 0
     requests = set()
+    settled_costs = {}
+    complete_admission = True
     for event in ledger:
         if not isinstance(event, dict):
             raise CatalystError("Malformed usage event.")
@@ -132,7 +138,18 @@ def project_observation(observation: dict, model: dict, max_model_credits, limit
             raise CatalystError("Usage must be ordered, uniquely identified and settled.")
         previous = seq
         requests.add(request_id)
+        # The worker derives this boundary from canonical gateway request events,
+        # never from harness logs. IDs survive history projection's renumbering.
+        if not allow_inflight_overshoot or "admitted_after" not in event:
+            complete_admission = False
+        else:
+            boundary = event["admitted_after"]
+            if boundary is not None and (not isinstance(boundary, str) or boundary not in settled_costs):
+                raise CatalystError("Invalid model admission boundary.")
+            if settled_costs.get(boundary, Decimal(0)) >= funded_limit:
+                raise CatalystError("Model request started after the authorized credit limit was exhausted.")
         total += credits(event.get("tokens"), usage_model(event, model), schedule)
+        settled_costs[request_id] = total
         # Native Dungeness budgets use its cache-weighted counter. Preserve raw
         # provider counts for pricing, and legacy records' original semantics.
         tokens += integer(event.get("budget_tokens",
@@ -141,7 +158,8 @@ def project_observation(observation: dict, model: dict, max_model_credits, limit
         charges.append((seq, total))
     if tokens > limits["max_model_tokens"]:
         raise CatalystError("Remote usage exceeded the authorized token limit.")
-    if total != amount(observation.get("normalized_model_usd")) or total > funded_limit:
+    if (total != amount(observation.get("normalized_model_usd"))
+            or (total > funded_limit and not (allow_inflight_overshoot and complete_admission))):
         raise CatalystError("Remote usage disagrees with pricing or exceeds the authorized credit limit.")
 
     def cost_before(seq):

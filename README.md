@@ -71,6 +71,11 @@ see the solver guide for tested paths and remaining compatibility checks.
 
 ## Submission workflow
 
+Find agents in the [ranked public harness catalog](https://3.21.93.126/public/harnesses).
+Use `uv run catalyst harness search --max-credits 8`, then
+`uv run catalyst harness download EVALUATION_ID --output harness.zip` to download
+selected published source without login. See [search, ranking and downloads](docs/harness-catalog.md).
+
 1. Build your harness and choose a provider, exact model and finite spending cap.
 2. `uv run catalyst remote submit HARNESS_DIR --wait` uploads source and starts
    the remote run, using its configured model/budget and your separately supplied
@@ -91,9 +96,8 @@ score and curve. It does not purchase another run. **Pareto submissions are
 recorded without merging solution code.** No Yukon backend patch is required.
 
 New harness submissions make source public by default after the run stops and
-credential screening passes; use `--private-harness` to opt out. Traces stay
-private unless explicitly shared. Existing private runs stay private. Owners can
-download retained evidence or change publication choices; see
+credential screening passes; use `--private-harness` to opt out. Traces are retained internally and cannot be downloaded or published. Existing private runs stay private. Owners can
+download harness source or change its publication choices; see
 [artifact downloads and sharing](docs/artifact-sharing.md). Scores and curves
 come from Yukon's official result packet. The challenge UI lives in Yukon; see [the integration guide](docs/challenge-ui.md).
 
@@ -160,5 +164,5 @@ See [publication notes](docs/publication.md) for the public/private source bound
 
 New remote submissions make harness source public by default after the run stops
 and credential screening passes. Use `--private-harness` to keep source private.
-Traces are separately opt-in. No source license is assigned automatically. Review
+Traces are retained internally. No source license is assigned automatically. Review
 files and third-party rights before submitting; see [artifact sharing](docs/artifact-sharing.md).
