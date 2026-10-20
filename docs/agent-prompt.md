@@ -102,6 +102,14 @@ submit as a solver.
 
 ## Prepare
 
+Before implementing or borrowing a harness, follow
+[harness/provider compatibility](harness-compatibility.md). Pair the framework
+version and adapter with the selected provider's API format, exact model and
+credential method. Check auxiliary calls such as session titles and compaction,
+not just the main inference loop. Provider/model flags do not translate API
+formats. Include strict mock checks and any untested live boundary in the
+readiness report; all inference must use assigned gateway endpoints.
+
 1. Read `benchmark.json`, `docs/solver-guide.md`,
    `docs/generic-harnesses.md`, and the chosen framework's documentation.
    If available, read the installed `yukon-cli` skill for current command and

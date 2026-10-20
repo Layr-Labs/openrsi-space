@@ -34,7 +34,9 @@ Keep the login file outside your harness directory. Do not paste a token into
 source, agent prompts, chat, or a command argument.
 
 Dungeness sends inference through the Grok CLI proxy, with gateway-owned
-credentials and a fixed model override. The submitted agent cannot switch the
+credentials and an allowed model in the request body. The gateway identifies
+itself as `dungeness-gateway/1`; it does not add Grok CLI identity, version,
+authentication-response, or model-override headers. The submitted agent cannot switch the
 upstream, credentials, or model through request headers. There is no automatic
 fallback to an xAI API key. Expired access stops inference; sign in locally again
 and submit a new run, or renew a queued run before model execution starts:
@@ -44,10 +46,12 @@ uv run catalyst remote renew-access EVALUATION_ID --grok-auth-file
 ```
 
 The session path is intended to use eligible Grok Build allowance. Your account's
-entitlements and the upstream service determine access and consumption. The
-integration has gateway tests with mock responses; a live Grok subscription run
-has not yet been verified. It supports the explicit `grok-4.7` mapping, not a
-floating `grok-build` alias.
+entitlements and the upstream service determine access and consumption. A live
+Grok subscription request previously succeeded with CLI-specific headers.
+Those headers have now been removed; live compatibility without them remains
+unverified. The stock harness passes an offline Grok CLI test, which does not
+establish subscription endpoint access. It supports the explicit `grok-4.7`
+mapping, not a floating `grok-build` alias.
 
 ## Use a direct xAI API key
 
@@ -64,6 +68,11 @@ CLI session. OpenRouter is used only as a public reference-price catalog; a
 solver OpenRouter account or credential is not needed for either direct path.
 
 ## Harness and local testing
+
+Use the [stock Grok example](../examples/stock-grok) and
+[harness compatibility checklist](harness-compatibility.md) when creating a
+Grok harness. The CLI's title helper can use a different API format from its
+main agent; both must work through the subscription gateway.
 
 The harness must use the assigned gateway URL and the declared model from its
 task input. Grok subscription supports OpenAI-compatible Chat Completions; direct

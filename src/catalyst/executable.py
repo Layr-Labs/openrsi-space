@@ -43,6 +43,18 @@ def validate_execution(execution: dict) -> None:
 
 def create_starter(target: Path) -> dict:
     """Add editable source; problem toolchains belong in the solver's Dockerfile."""
+    (target / "README.md").write_text(
+        "# Harness setup\n\n"
+        "Replace agent.py with your autonomous solver. This starter makes no model calls.\n\n"
+        "Before selecting a framework, pair its API format and adapter with your\n"
+        "provider, exact model and credential method. Provider/model flags do not\n"
+        "translate API requests. Check helper calls such as titles and compaction,\n"
+        "function tools, tool results, streaming and usage reporting against a strict mock.\n"
+        "Use only the gateway endpoints assigned in CATALYST_TASK; keep credentials\n"
+        "outside the harness. A packaging smoke check does not establish live compatibility.\n\n"
+        "Read https://github.com/Layr-Labs/catalyst/blob/main/docs/harness-compatibility.md\n"
+        "and report checks completed or skipped before an authorized model-consuming run.\n"
+    )
     (target / "Dockerfile").write_text(
         "FROM python:3.12-slim-bookworm\n"
         "COPY . /opt/harness/\n"

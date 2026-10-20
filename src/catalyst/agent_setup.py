@@ -24,11 +24,9 @@ def model_profile(source: Path, requested: str, provider="openai", pricing=None)
         raise CatalystError("Select a provider/model from the pinned Dungeness pricing policy.")
     return {"provider": provider, "upstream_id": matches[0]["upstream_id"],
             "request_model": requested, "api": ("anthropic-messages" if provider == "anthropic"
-                else "openai-responses" if provider in {"openai-chatgpt", "moonshot", "kimi-code"}
+                else "openai-responses" if provider == "openai-chatgpt"
                 else "openai-completions"),
-            "name_format": "request", **({"context_window": 1050000,
-            "supported_reasoning_efforts": ["low", "medium", "high", "xhigh", "max"]}
-            if provider == "openai-chatgpt" else {})}
+            "name_format": "request"}
 
 def install_agent(runtime: Path, build_record: dict, model: dict, task_input: dict) -> tuple[str, list[str]]:
     """Install one trusted adapter in the disposable Dungeness checkout."""

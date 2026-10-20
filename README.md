@@ -68,6 +68,8 @@ See [the screening policy](docs/cheat-filter.md).
   workflow with the runtime contract, budget boundaries and reporting requirements.
 - **For your own framework:** [Generic harnesses](docs/generic-harnesses.md) —
   submit an ordinary agent repository, Dockerfile and entrypoint.
+- **Before choosing an agent/model pair:** [Harness compatibility](docs/harness-compatibility.md) —
+  match API formats, helper calls and credentials, then check the adapter.
 
 The current MVP uses **Yukon dev**, benchmark `layr-labs/catalyst`, and the
 HTTPS verifier at `https://3.21.93.126`. Use a dev Yukon login; production

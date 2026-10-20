@@ -60,3 +60,27 @@ class GrokAccessTests(unittest.TestCase):
                 document['providers']['example'] = {**profile, **changes}
                 path.write_text(json.dumps(document))
                 with self.subTest(changes=changes), self.assertRaises(ValueError): load_profiles(path)
+
+    def test_authentication_header_configuration_is_trusted_and_collision_free(self):
+        document = json.loads(PROFILE_PATH.read_text())
+        profile = {**document['providers']['xai'],
+                   'credential_header': 'x-api-key', 'credential_prefix': '',
+                   'credential_headers': {'account-id': 'XAI_API_KEY_ACCOUNT'}}
+        with tempfile.TemporaryDirectory() as temp:
+            path = Path(temp) / 'providers.json'
+            document['providers']['xai'] = profile
+            path.write_text(json.dumps(document))
+            self.assertEqual(load_profiles(path)['xai'], profile)
+            for changes in (
+                {'credential_header': 'host'},
+                {'credential_prefix': 'Bearer\r\nInjected: '},
+                {'headers': {'x-api-key': 'override'}},
+                {'credential_headers': {'account-id': 'OPENAI_API_KEY'}},
+                {'credential_headers': {'host': 'XAI_API_KEY_ACCOUNT'}},
+                {'credential_headers': {'authorization': 'XAI_API_KEY_ACCOUNT'}},
+                {'credential_headers': {'account-id': 'XAI_API_KEY_EXPIRES_AT'}},
+            ):
+                document['providers']['xai'] = {**profile, **changes}
+                path.write_text(json.dumps(document))
+                with self.subTest(changes=changes), self.assertRaises(ValueError):
+                    load_profiles(path)

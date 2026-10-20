@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "kind": "harness",
+  "id": "stock-grok",
+  "title": "Stock Grok",
+  "description": "Unmodified Grok CLI with a minimal adapter for the assigned task and metered model gateway.",
+  "scope": "general",
+  "execution": {
+    "interface": "catalyst-exec-v1",
+    "dockerfile": "Dockerfile",
+    "entrypoint": ["python3", "/opt/harness/agent.py"]
+  }
+}

@@ -75,6 +75,10 @@ select `--provider openai --model gpt-6-astra` with an OpenAI API key, or
 ChatGPT handoff instead of the hidden prompt.
 The harness's model client must implement the chosen provider's supported
 protocol and use the gateway endpoint supplied in `CATALYST_TASK`.
+The gateway substitutes trusted credentials using configured authentication
+headers; it does not adapt the coding agent to the model. The harness owns
+context-window settings and reasoning preferences. Catalyst does not assign
+one fixed context window or capability list to every ChatGPT model.
 The provider's protocol must be available and enabled by the operator.
 New model names do not need a code change or a model whitelist: the service
 resolves and freezes reference pricing before accepting the run.
@@ -151,6 +155,11 @@ contains `models`, and `CATALYST_MODELS` exposes that list as JSON.
 The old Codex identity and Dockerfile marker workaround are removed.
 
 ## Models and credentials
+
+Read [harness/provider compatibility](harness-compatibility.md) when creating or
+adapting a harness. Selecting a model and credential does not translate a
+framework's API format. Test every model client, including title and compaction
+helpers, against the chosen provider's supported operations and tool schemas.
 
 Existing `evaluation.json` v3 files select one model. Version 4 additionally
 requires `models`, with the default `model` first:
@@ -238,8 +247,9 @@ ChatGPT is a Responses provider, not a universal substitute for every
 framework's model client. The Codex examples support the new gateway mode
 without reading native authentication from the harness container. Live
 compatibility of that change still needs an explicitly authorized paid smoke run.
-Kimi Code and Moonshot support ordinary Chat Completions clients as well as
-the existing Responses adapter. For streamed chat requests, the gateway
+Kimi Code and Moonshot support native Chat Completions clients. The legacy
+Responses adapter has been removed; any protocol conversion belongs in the
+submitted harness. For streamed chat requests, the gateway
 requests the final usage chunk and drains it even if the agent disconnects.
 
 ## Parallel accounting and evaluation
@@ -249,8 +259,11 @@ All admitted requests share one ledger and a bounded number of active slots.
 Credits are reserved until the upstream response has drained and settled;
 client disconnection does not release the reservation prematurely.
 Missing usage blocks further admissions. Explicit HTTP 400 input-validation
-errors with an `invalid_request_error` body settle at zero tokens, with the
-rejection basis retained in the ledger. Successful responses without usage,
+errors with an `invalid_request_error` body settle at zero tokens. Dungeness also
+recognizes the Grok subscription proxy's HTTP 422 plain-text JSON-deserialization
+rejection before generation. This requires a runtime containing that fix; check
+the deployed revision. The rejection basis is retained in the ledger. Other
+422 errors are not automatically free. Successful responses without usage,
 interrupted streams, and ambiguous errors still block further inference.
 Catalyst prices each settled receipt using that receipt's authorized model,
 then checks the terminal total.

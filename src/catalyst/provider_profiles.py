@@ -22,10 +22,12 @@ def load_profiles(path=PROFILE_PATH):
         raise ValueError('Provider registry must contain a mapping.')
     keys = {'protocol', 'base_url', 'credential_env', 'credential_kind', 'billed',
             'routes', 'headers', 'model_header', 'models', 'catalog_author'}
+    optional = {'credential_header', 'credential_prefix', 'credential_headers'}
     for name, item in profiles.items():
         if name in BUILTINS or not re.fullmatch(r'[a-z][a-z0-9-]{0,47}', name):
             raise ValueError('Provider registry name conflicts with a builtin or is invalid.')
-        if not isinstance(item, dict) or set(item) != keys or item['protocol'] != 'openai':
+        if (not isinstance(item, dict) or not keys <= set(item)
+                or set(item) - keys - optional or item['protocol'] != 'openai'):
             raise ValueError('Unsupported provider profile fields or wire protocol.')
         if not isinstance(item['base_url'], str) or any(ord(c) < 33 or ord(c) > 126 for c in item['base_url']):
             raise ValueError('Invalid fixed provider URL.')
@@ -43,6 +45,27 @@ def load_profiles(path=PROFILE_PATH):
             raise ValueError('Provider credential environment collides with a reserved name.')
         if not isinstance(item['headers'], dict):
             raise ValueError('Provider headers must be a mapping.')
+        credential_header = item.get('credential_header', 'authorization')
+        prefix = item.get('credential_prefix', 'Bearer ')
+        extra = item.get('credential_headers', {})
+        forbidden = {'host', 'content-type', 'content-length', 'transfer-encoding',
+                     'connection', 'accept', 'accept-encoding', 'user-agent', 'cookie',
+                     'proxy-authorization'}
+        if (not isinstance(credential_header, str)
+                or not re.fullmatch(r'[a-z][a-z0-9-]*', credential_header)
+                or credential_header in forbidden or not isinstance(prefix, str)
+                or any(ord(c) < 32 or ord(c) > 126 for c in prefix)
+                or not isinstance(extra, dict)):
+            raise ValueError('Invalid configured authentication headers.')
+        for header, env in extra.items():
+            if (not isinstance(header, str) or not re.fullmatch(r'[a-z][a-z0-9-]*', header)
+                    or header in forbidden | {'authorization', 'x-api-key', credential_header}
+                    or not isinstance(env, str) or not re.fullmatch(r'[A-Z][A-Z0-9_]{0,63}', env)
+                    or not env.startswith(item['credential_env'] + '_') or env.endswith('_EXPIRES_AT')):
+                raise ValueError('Invalid additional credential header.')
+        auth_names = {credential_header, *extra}
+        if auth_names & set(item['headers']) or item['model_header'] in auth_names:
+            raise ValueError('Authentication headers must not overlap fixed or model headers.')
         if item['model_header'] in item['headers']:
             raise ValueError('Model routing header must not also be a fixed header.')
         names = list(item['headers']) + ([item['model_header']] if item['model_header'] else [])
@@ -66,7 +89,11 @@ def load_profiles(path=PROFILE_PATH):
                 raise ValueError('Invalid fixed model mapping.')
         if item['credential_kind'] == 'session-token' and not item['models']:
             raise ValueError('Subscription profiles require explicit model/pricing mappings.')
-    environments = [p['credential_env'] for p in profiles.values()]
+    environments = [env for p in profiles.values()
+                    for env in [p['credential_env'],
+                                *p.get('credential_headers', {}).values(),
+                                *([p['credential_env'] + '_EXPIRES_AT']
+                                  if p['credential_kind'] == 'session-token' else [])]]
     if len(set(environments)) != len(environments):
         raise ValueError('Provider credentials must use distinct environment names.')
     return profiles

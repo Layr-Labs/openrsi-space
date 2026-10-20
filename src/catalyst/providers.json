@@ -20,12 +20,8 @@
       "credential_kind": "session-token",
       "billed": false,
       "routes": ["chat/completions"],
-      "headers": {
-        "x-xai-token-auth": "xai-grok-cli",
-        "x-authenticateresponse": "authenticate-response",
-        "x-grok-client-version": "1.0.62"
-      },
-      "model_header": "x-grok-model-override",
+      "headers": {},
+      "model_header": null,
       "models": {"grok-4.7": {"upstream": "grok-4.7", "catalog": "x-ai/grok-4.7"}},
       "catalog_author": "x-ai"
     }
