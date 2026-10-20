@@ -41,6 +41,9 @@ read-only [problem service](docs/problem-service.md). See
 [the upstream comparison](docs/ecdsa-upstream.md) for the documentation revision
 and the separate execution pin.
 
+For Grok, use a [Grok CLI session or direct xAI API key](docs/grok.md);
+an OpenRouter account is optional.
+
 ## Start here
 
 **Bring your own model access.** Catalyst runs your agent on its remote server

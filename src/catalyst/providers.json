@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "providers": {
+    "xai": {
+      "protocol": "openai",
+      "base_url": "https://api.x.ai/v1",
+      "credential_env": "XAI_API_KEY",
+      "credential_kind": "api-key",
+      "billed": true,
+      "routes": ["chat/completions", "responses"],
+      "headers": {},
+      "model_header": null,
+      "models": {},
+      "catalog_author": "x-ai"
+    },
+    "grok-subscription": {
+      "protocol": "openai",
+      "base_url": "https://cli-chat-proxy.grok.com/v1",
+      "credential_env": "GROK_SUBSCRIPTION_TOKEN",
+      "credential_kind": "session-token",
+      "billed": false,
+      "routes": ["chat/completions"],
+      "headers": {
+        "x-xai-token-auth": "xai-grok-cli",
+        "x-authenticateresponse": "authenticate-response",
+        "x-grok-client-version": "1.0.62"
+      },
+      "model_header": "x-grok-model-override",
+      "models": {"grok-4.7": {"upstream": "grok-4.7", "catalog": "x-ai/grok-4.7"}},
+      "catalog_author": "x-ai"
+    }
+  }
+}

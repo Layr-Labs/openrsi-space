@@ -139,6 +139,12 @@ def validate_model(model, *, check_pricing=True, pricing=None):
     from .credentials import PROVIDERS
     if model["provider"] not in PROVIDERS:
         raise CatalystError("Provider requires an authentication/protocol adapter.")
+    from .provider_profiles import PROFILES, upstream_model
+    if model['provider'] in PROFILES:
+        try:
+            upstream_model(model['provider'], model['name'])
+        except ValueError as error:
+            raise CatalystError(str(error)) from None
     if check_pricing:
         model_prices(model, pricing)
 

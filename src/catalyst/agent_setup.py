@@ -5,6 +5,14 @@ from catalyst.executable import INTERFACE
 
 def model_profile(source: Path, requested: str, provider="openai", pricing=None) -> dict:
     """Resolve model identity from Dungeness's trusted accounting policy."""
+    from .provider_profiles import PROFILES, upstream_model
+    if provider in PROFILES:
+        if not (source / "services/gateway/provider_profiles.py").is_file():
+            raise CatalystError("Update the pinned Dungeness runtime for configured provider support.")
+        try:
+            upstream_model(provider, requested)
+        except ValueError as error:
+            raise CatalystError(str(error)) from None
     from .task_setup import yaml_file
     if not requested or not isinstance(requested, str):
         raise CatalystError("An executable evaluation requires an explicit --model.")
@@ -24,6 +32,14 @@ def model_profile(source: Path, requested: str, provider="openai", pricing=None)
 
 def install_agent(runtime: Path, build_record: dict, model: dict, task_input: dict) -> tuple[str, list[str]]:
     """Install one trusted adapter in the disposable Dungeness checkout."""
+    from .provider_profiles import PROFILES, PROFILE_PATH
+    registry = runtime / 'services/gateway/providers.json'
+    if model['provider'] in PROFILES and not (runtime / 'services/gateway/provider_profiles.py').is_file():
+        raise CatalystError('Update the pinned Dungeness runtime for configured provider support.')
+    profile_paths = []
+    if registry.is_file():
+        registry.write_bytes(PROFILE_PATH.read_bytes())
+        profile_paths.append(str(registry.relative_to(runtime)))
     token = "executable-" + build_record["id"]
     namespace = "projects/catalyst"
     agent_dir = runtime / "agents" / namespace / token
@@ -49,5 +65,5 @@ def install_agent(runtime: Path, build_record: dict, model: dict, task_input: di
         "/usr/local/bin/run-status /usr/local/bin/candidate-state\n"
         "WORKDIR /workspace/repo\n"
     )
-    return f"agent:{namespace}/{token}", [str(agent_dir.relative_to(runtime))]
+    return f"agent:{namespace}/{token}", [str(agent_dir.relative_to(runtime)), *profile_paths]
 

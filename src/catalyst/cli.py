@@ -54,6 +54,9 @@ def create_harness(args):
 
 
 def model_access_input(args):
+    if getattr(args, "grok_auth_file", None):
+        from .credentials import encode_grok_access
+        return encode_grok_access(args.grok_auth_file)
     if args.codex_auth_file:
         from .credentials import encode_codex_access
         return encode_codex_access(args.codex_auth_file)
@@ -75,7 +78,7 @@ def model_access_input(args):
 
 def model_access_notice(args, client, evaluation=None):
     if not any(getattr(args, name, None) for name in (
-            "codex_auth_file", "provider_access_file", "prompt_model_token", "model_token_stdin")):
+            "grok_auth_file", "codex_auth_file", "provider_access_file", "prompt_model_token", "model_token_stdin")):
         return
     budget = (f" Spending cap: {evaluation['max_model_credits']:g} normalized model credits."
               if evaluation is not None else " The existing run's limits still apply.")
@@ -153,7 +156,7 @@ def remote_command(args, state):
         # Validate choices before asking the solver for a credential.
         from .remote import evaluation_config
         config = evaluation_config(Path(args.package) / "evaluation.json", overrides, check_pricing=False)
-        for credential_file in (args.codex_auth_file, args.provider_access_file):
+        for credential_file in (args.codex_auth_file, args.provider_access_file, getattr(args, "grok_auth_file", None)):
             if credential_file and Path(credential_file).expanduser().resolve().is_relative_to(
                     Path(args.package).resolve()):
                 raise CatalystError("Keep credential files outside the submitted source directory.")
@@ -265,6 +268,8 @@ def build_parser():
     local_run.add_argument("--pricing", help="Optional trusted local pricing JSON; defaults to Catalyst's pinned schedule.")
     local_run.add_argument("--prepare-only", action="store_true", help="Build and prepare the run without reading credentials or calling models.")
     local_access = local_run.add_mutually_exclusive_group()
+    local_access.add_argument("--grok-auth-file", nargs="?", const=str(Path.home() / ".grok/auth.json"),
+                             help="Use a temporary Grok CLI subscription session; refresh credentials stay local.")
     local_access.add_argument("--codex-auth-file", nargs="?", const=str(Path.home() / ".codex/auth.json"),
                               help="Use temporary access from your local Codex login; refresh credentials stay outside the run.")
     local_access.add_argument("--provider-token-env", metavar="NAME",
@@ -303,6 +308,8 @@ def build_parser():
     token_input = remote_submit.add_mutually_exclusive_group()
     token_input.add_argument("--provider-access-file",
                              help="Authorize remote use of your model accounts via a private credential map; never package it.")
+    token_input.add_argument("--grok-auth-file", nargs="?", const=str(Path.home() / ".grok/auth.json"),
+                             help="Use a temporary Grok CLI subscription session; refresh credentials stay local.")
     token_input.add_argument("--codex-auth-file", nargs="?", const=str(Path.home() / ".codex/auth.json"),
                              help="Authorize remote use of your ChatGPT allowance; send temporary Codex access, keeping refresh credentials local.")
     token_input.add_argument("--prompt-model-token", action="store_true",
@@ -312,6 +319,8 @@ def build_parser():
     renewal = remote_sub.add_parser("renew-access", help="Replace temporary access for an owned queued evaluation.")
     renewal.add_argument("id")
     renewal_input = renewal.add_mutually_exclusive_group(required=True)
+    renewal_input.add_argument("--grok-auth-file", nargs="?", const=str(Path.home() / ".grok/auth.json"),
+                             help="Use a temporary Grok CLI subscription session; refresh credentials stay local.")
     renewal_input.add_argument("--codex-auth-file", nargs="?", const=str(Path.home() / ".codex/auth.json"))
     renewal_input.add_argument("--provider-access-file")
     renewal_input.add_argument("--prompt-model-token", action="store_true")

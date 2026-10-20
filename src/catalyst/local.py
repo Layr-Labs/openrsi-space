@@ -16,11 +16,13 @@ from .agent_setup import install_agent, model_profile
 from .problems import get_problem, problem_statement
 from .task_setup import install_task, require_problem_service_runtime, write_yaml
 from .tiers import evaluation_models
+from .provider_profiles import PROFILES
 
 PROVIDER_ENV = {
     'openai': 'TESTBED_OPENAI_API_KEY', 'anthropic': 'TESTBED_ANTHROPIC_API_KEY',
     'openrouter': 'TESTBED_OPENROUTER_API_KEY', 'moonshot': 'TESTBED_MOONSHOT_API_KEY',
     'kimi-code': 'TESTBED_KIMI_CODE_API_KEY',
+    **{name: 'TESTBED_' + profile['credential_env'] for name, profile in PROFILES.items()},
 }
 
 
@@ -33,8 +35,8 @@ def git(root, *args):
 
 def validate_credential_locations(args):
     package = Path(args.package).resolve()
-    for name in ('codex_auth_file', 'provider_access_file'):
-        path = getattr(args, name)
+    for name in ('codex_auth_file', 'provider_access_file', 'grok_auth_file'):
+        path = getattr(args, name, None)
         if path and Path(path).expanduser().resolve().is_relative_to(package):
             raise CatalystError('Keep model credential files outside the harness source directory.')
 
@@ -42,7 +44,10 @@ def validate_credential_locations(args):
 def credential_input(args, providers):
     from .credentials import decode_codex_access, encode_codex_access, validate_provider_access
     validate_credential_locations(args)
-    if args.codex_auth_file:
+    if getattr(args, 'grok_auth_file', None):
+        from .credentials import grok_access
+        access = {'grok-subscription': grok_access(args.grok_auth_file)}
+    elif args.codex_auth_file:
         access = {'openai-chatgpt': decode_codex_access(encode_codex_access(args.codex_auth_file))}
     elif args.provider_access_file:
         access = read_json(Path(args.provider_access_file).expanduser())
@@ -51,7 +56,7 @@ def credential_input(args, providers):
             raise CatalystError('--provider-token-env requires one API-key provider; use --provider-access-file for ensembles.')
         access = {next(iter(providers)): os.environ.get(args.provider_token_env)}
     else:
-        raise CatalystError('Select --codex-auth-file, --provider-token-env NAME, or --provider-access-file PATH; '
+        raise CatalystError('Select --grok-auth-file, --codex-auth-file, --provider-token-env NAME, or --provider-access-file PATH; '
                             'use --prepare-only to prepare without model access.')
     validate_provider_access(access)
     if set(access) != providers:
@@ -80,6 +85,9 @@ def temporary_environment(access):
                         key: value[key] for key in ('access_token', 'id_token', 'account_id')}}))
                 environment['DUNGENESS_CODEX_AUTH_FILE'] = str(path)
             else:
+                if PROFILES.get(provider, {}).get('credential_kind') == 'session-token':
+                    lines.append(f"{PROVIDER_ENV[provider]}_EXPIRES_AT={value['expires_at']}\n")
+                    value = value['access_token']
                 lines.append(f'{PROVIDER_ENV[provider]}={value}\n')
         env_file = root / 'runtime.env'
         env_file.touch(mode=0o600)

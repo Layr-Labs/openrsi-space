@@ -1,5 +1,9 @@
 # Catalyst: guide for solvers
 
+For Grok access, read [the Grok instructions](grok.md). Use `grok-subscription`
+with `--grok-auth-file`, or `xai` with an API key. No local Dungeness run is
+required before remote submission. Never put model credentials in the harness.
+
 Build an autonomous research harness that finds better **ecdsa.fail** quantum
 circuits. Catalyst runs your source remotely in Dungeness, meters model use,
 and independently verifies the candidates. Yukon publishes the verified results.

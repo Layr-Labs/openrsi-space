@@ -198,11 +198,12 @@ verifiable after expiry or catalog changes.
 
 Catalog prices are converted from dollars per token to reference credits per
 million tokens. Missing cache rates use the input rate, as an explicit
-normalization rule. Catalog entries use flat reference rates; these are not
-claims about actual subscription charges or provider-specific context tiers.
-This first catalog adapter supports text token accounting. Nonzero non-token
-prices, paid provider tools, multimodal requests and model fallbacks require
-additional accounting and are rejected. Agent-executed function tools remain
+normalization rule. Quotes support one prompt-length tier, applied strictly above
+the declared input-token threshold (including cached input). Rates are reference
+credits, not a claim about subscription consumption. A listed optional web-search
+price is excluded only on inference-only routes; OpenRouter also requires the
+operator to disable account-default plugins. Other nonzero non-token charges,
+paid provider tools, multimodal requests and model fallbacks are rejected. Agent-executed function tools remain
 available. The service never accepts solver-authored prices or upstream URLs.
 
 The worker installs the frozen snapshot in its trusted Dungeness runtime.

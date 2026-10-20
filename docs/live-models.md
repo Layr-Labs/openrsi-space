@@ -1,5 +1,9 @@
 # Temporary model access
 
+For Grok access, read [the Grok instructions](grok.md). Use `grok-subscription`
+with `--grok-auth-file`, or `xai` with an API key. No local Dungeness run is
+required before remote submission. Never put model credentials in the harness.
+
 **Bring your own model account.** Catalyst receives the model credential you
 select and runs your agent on its remote server using that access. Calls consume
 your API credits or subscription allowance. Supplying a credential to
@@ -12,7 +16,7 @@ Coding agents should read [the agent instructions](agent-prompt.md).
 
 The deployed [generic harness implementation](generic-harnesses.md) supports API
 provider access, model sets, and credentials owned by the gateway. The existing
-VM currently enables `openai-chatgpt` and `kimi-code`. The historical native
+VM enables `openai-chatgpt`, `kimi-code`, `xai` and `grok-subscription`. The historical native
 Codex mode described below predates this command interface; its credential
 exposure does not apply to generic execution.
 

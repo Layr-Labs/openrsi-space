@@ -1,5 +1,9 @@
 # Catalyst: instructions for a coding agent
 
+For Grok access, read [the Grok instructions](grok.md). Use `grok-subscription`
+with `--grok-auth-file`, or `xai` with an API key. No local Dungeness run is
+required before remote submission. Never put model credentials in the harness.
+
 Build an **autonomous research harness for ecdsa.fail**: an agent that explores,
 edits and evaluates quantum circuit candidates on its own during a run. Optimize
 both verified circuit performance (`avg_toffoli × peak_qubits`, lower is better)
