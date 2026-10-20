@@ -106,6 +106,8 @@ def prepare(state, package, source, evaluation, *, problem_id='ecdsa.fail', pric
         raise CatalystError('Use a clean Dungeness checkout so the local runtime is reproducible.')
     source_commit = git(source, 'rev-parse', 'HEAD')
     require_problem_service_runtime(source)
+    if evaluation['limits'].get('max_model_tokens') is None and '--no-model-token-limit' not in (source / 'dungeness').read_text():
+        raise CatalystError('Update Dungeness to support runs without a token ceiling.')
     pricing = read_json(pricing_path or Path(__file__).parent / 'problem-set/pricing.json')
     models = evaluation_models(evaluation)
     resolved = []
@@ -149,7 +151,7 @@ def prepare(state, package, source, evaluation, *, problem_id='ecdsa.fail', pric
         'candidate_paths': assigned['candidate_paths'], 'problem_service': assigned['problem_service'],
         'model_provider': models[0]['provider'], 'reasoning_effort': models[0].get('reasoning_effort'),
         'budget': {'max_usd': evaluation['max_model_credits'],
-                   'max_model_tokens': evaluation['limits']['max_model_tokens']},
+                   'max_model_tokens': evaluation['limits'].get('max_model_tokens')},
         'evidence': 'local-development',
     }
     agent, agent_paths = install_agent(runtime, built, resolved[0], task_input)
@@ -212,6 +214,8 @@ def run(args, state):
     overrides = {key: getattr(args, key) for key in
                  ('provider', 'model', 'reasoning_effort', 'budget', 'max_tokens', 'max_seconds')
                  if getattr(args, key) is not None}
+    if getattr(args, 'no_token_limit', False):
+        overrides['max_tokens'] = None
     evaluation = evaluation_config(Path(args.package) / 'evaluation.json', overrides, check_pricing=False)
     validate_credential_locations(args)
     access = None

@@ -156,7 +156,8 @@ def project_observation(observation: dict, model: dict, max_model_credits, limit
                           event["tokens"]["input_tokens"] + event["tokens"]["output_tokens"]),
                           "budget_tokens")
         charges.append((seq, total))
-    if tokens > limits["max_model_tokens"]:
+    token_limit = limits.get("max_model_tokens")
+    if token_limit is not None and tokens > token_limit:
         raise CatalystError("Remote usage exceeded the authorized token limit.")
     if (total != amount(observation.get("normalized_model_usd"))
             or (total > funded_limit and not (allow_inflight_overshoot and complete_admission))):

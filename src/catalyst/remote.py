@@ -73,7 +73,7 @@ def evaluation_config(path: Path, overrides: dict | None = None, *, check_pricin
             "llm_access": {"grant_id": "grant_temporary_provider"},
             "model": {},
             "max_model_credits": overrides["budget"],
-            "limits": {"max_model_tokens": 100000, "max_seconds": 900},
+            "limits": {"max_model_tokens": None, "max_seconds": 900},
         }
     if ("provider" in overrides) != ("model" in overrides):
         raise CatalystError("Set --provider and --model together.")
@@ -121,12 +121,34 @@ def validate_evaluation_config(config: dict, *, check_pricing=True, pricing=None
         seen.add(key)
     credit_limit(config["max_model_credits"])
     limits = config["limits"]
-    if not isinstance(limits, dict) or set(limits) != {"max_model_tokens", "max_seconds"}:
-        raise CatalystError("limits requires max_model_tokens and max_seconds.")
-    for key in ("max_model_tokens", "max_seconds"):
-        if type(limits[key]) is not int or limits[key] <= 0:
-            raise CatalystError(f"{key} must be a positive integer.")
+    validate_limits(limits)
     return config
+
+
+def validate_limits(limits):
+    if (not isinstance(limits, dict) or "max_seconds" not in limits
+            or set(limits) - {"max_model_tokens", "max_seconds"}):
+        raise CatalystError("limits requires max_seconds and accepts optional max_model_tokens.")
+    seconds = limits["max_seconds"]
+    if type(seconds) is not int or seconds <= 0:
+        raise CatalystError("max_seconds must be a positive integer.")
+    tokens = limits.get("max_model_tokens")
+    if tokens is not None and (type(tokens) is not int or tokens <= 0):
+        raise CatalystError("max_model_tokens must be null or a positive integer.")
+
+
+def limits_within(requested, allowed):
+    """An absent/null token cap is unlimited, never below a finite allowance."""
+    try:
+        validate_limits(requested)
+        validate_limits(allowed)
+    except CatalystError:
+        return False
+    if requested["max_seconds"] > allowed["max_seconds"]:
+        return False
+    ceiling = allowed.get("max_model_tokens")
+    tokens = requested.get("max_model_tokens")
+    return ceiling is None or (tokens is not None and tokens <= ceiling)
 
 
 def validate_model(model, *, check_pricing=True, pricing=None):

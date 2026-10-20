@@ -157,6 +157,8 @@ def remote_command(args, state):
         overrides = {key: getattr(args, key) for key in (
             "provider", "model", "reasoning_effort", "budget", "max_tokens", "max_seconds"
         ) if getattr(args, key) is not None}
+        if args.no_token_limit:
+            overrides["max_tokens"] = None
         # Validate choices before asking the solver for a credential.
         from .remote import evaluation_config
         config = evaluation_config(Path(args.package) / "evaluation.json", overrides, check_pricing=False)
@@ -267,7 +269,9 @@ def build_parser():
     local_run.add_argument("--model")
     local_run.add_argument("--reasoning-effort", choices=["low", "medium", "high", "xhigh", "max"])
     local_run.add_argument("--budget", type=float, help="Normalized model-credit cap; may overshoot for an in-flight response.")
-    local_run.add_argument("--max-tokens", type=int)
+    local_run_tokens = local_run.add_mutually_exclusive_group()
+    local_run_tokens.add_argument("--max-tokens", type=int)
+    local_run_tokens.add_argument("--no-token-limit", action="store_true", help="Disable a token ceiling; retain the credit and time limits.")
     local_run.add_argument("--max-seconds", type=int)
     local_run.add_argument("--pricing", help="Optional trusted local pricing JSON; defaults to Catalyst's pinned schedule.")
     local_run.add_argument("--prepare-only", action="store_true", help="Build and prepare the run without reading credentials or calling models.")
@@ -307,7 +311,9 @@ def build_parser():
     remote_submit.add_argument("--model", help="Exact declared model name; prices are resolved before execution (for example, k3).")
     remote_submit.add_argument("--reasoning-effort", choices=["low", "medium", "high", "xhigh", "max"])
     remote_submit.add_argument("--budget", type=float, help="Run spending cap in normalized model credits.")
-    remote_submit.add_argument("--max-tokens", type=int, help="Override the run's model-token cap.")
+    remote_submit_tokens = remote_submit.add_mutually_exclusive_group()
+    remote_submit_tokens.add_argument("--max-tokens", type=int, help="Override the run's model-token cap.")
+    remote_submit_tokens.add_argument("--no-token-limit", action="store_true", help="Disable a token ceiling; retain the credit and time limits.")
     remote_submit.add_argument("--max-seconds", type=int, help="Override the run's wall-time cap.")
     token_input = remote_submit.add_mutually_exclusive_group()
     token_input.add_argument("--provider-access-file",

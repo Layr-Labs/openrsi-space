@@ -92,8 +92,9 @@ resolves and freezes reference pricing before accepting the run.
 All inference uses the metered gateway.
 
 An `evaluation.json` is optional when all three model/budget flags are provided.
-Without a file, the defaults are temporary model access, 100,000 model tokens
-and 900 seconds. Override those limits with `--max-tokens` and `--max-seconds`.
+Without a file, the defaults are temporary model access, no token ceiling,
+and 900 seconds. Set an optional ceiling with `--max-tokens`; use
+`--no-token-limit` to remove one from a manifest and `--max-seconds` to set the timeout.
 With an existing file, flags override its run settings without editing it.
 Set provider and model together; switching them clears any inherited reasoning
 effort unless `--reasoning-effort` is also given. For ensembles, keep the full
@@ -310,3 +311,13 @@ before execution because research-time internet access is disabled.
 Use [local build and smoke checks](local-evaluation.md), then submit a funded run
 through the remote service when authorized. Operator tests that launch Dungeness
 and the mock-provider end-to-end flow live in `catalyst-verifier`.
+
+## Optional token ceiling
+
+New runs default to credit and time limits without a token ceiling. In
+`evaluation.json`, omit `limits.max_model_tokens` or set it to `null`.
+Use `--no-token-limit` with `catalyst remote submit` or `catalyst local run`
+to remove a ceiling from an existing manifest. A positive `--max-tokens N`
+still enables an explicit ceiling. Token usage is recorded in all cases.
+An operator who explicitly requires a finite token ceiling can reject uncapped
+requests; the hosted Catalyst service does not impose one by default.
