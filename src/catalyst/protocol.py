@@ -5,9 +5,10 @@ from .common import CatalystError
 YUKON_BINDING_PROTOCOL = "yukon-execution-binding-v1"
 
 class APIError(CatalystError):
-    def __init__(self, status, message):
+    def __init__(self, status, message, **details):
         super().__init__(message)
         self.status = status
+        self.details = details
 
 def identity(value):
     try:

@@ -44,6 +44,9 @@ and the separate execution pin.
 For Grok, use a [Grok CLI session or direct xAI API key](docs/grok.md);
 an OpenRouter account is optional.
 
+Submission controls have no daily count cap by default. Concurrency and short-window
+limits still apply; see [limits and retry instructions](docs/solver-guide.md#submission-limits-and-retries).
+
 ## Start here
 
 **Bring your own model access.** Catalyst runs your agent on its remote server

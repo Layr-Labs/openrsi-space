@@ -157,9 +157,29 @@ class NoRedirect(urllib.request.HTTPRedirectHandler):
 
 
 class HTTPFailure(CatalystError):
-    def __init__(self, status):
+    def __init__(self, status, details=None):
         self.status = status
-        super().__init__(f"Evaluator returned HTTP {status}; request remains resumable.")
+        messages = {
+            'account_concurrency': 'Your account has reached its active-run limit; wait for a run to finish or cancel it.',
+            'global_capacity': 'All evaluation slots are occupied; retry after a run finishes.',
+            'submission_rate_limit': 'Too many new submissions in the short submission window.',
+            'daily_quota': 'The operator-configured daily evaluation quota is reached.',
+        }
+        self.details = {}
+        if (status == 429 and isinstance(details, dict) and isinstance(details.get('code'), str)
+                and details['code'] in messages):
+            self.details['code'] = details['code']
+            if isinstance(details.get('scope'), str) and details['scope'] in {'account', 'global'}:
+                self.details['scope'] = details['scope']
+            for name in ('limit', 'current', 'retry_after_seconds'):
+                value = details.get(name)
+                if type(value) is int and 0 <= value <= 2**53:
+                    self.details[name] = value
+        message = f"Evaluator returned HTTP {status}"
+        if self.details:
+            message += ': ' + messages[self.details['code']]
+            message += ' (' + ', '.join(f'{k}={v}' for k, v in self.details.items()) + ')'
+        super().__init__(message + '; request remains resumable. Retry the same saved request ID.')
 
 
 def fetch(url: str, token: str, *, document=None, limit=4 * 1024 * 1024, timeout=30,
@@ -207,10 +227,19 @@ def fetch(url: str, token: str, *, document=None, limit=4 * 1024 * 1024, timeout
                     if temporary is not None:
                         temporary.unlink(missing_ok=True)
     except urllib.error.HTTPError as error:
-        # Bodies may contain provider details; never echo them or authorization.
-        status = error.code
-        error.close()
-        raise HTTPFailure(status) from None
+        # Only display bounded, typed admission fields and local message text.
+        # Never echo arbitrary error text, provider diagnostics or credentials.
+        status, details = error.code, None
+        try:
+            if status == 429:
+                body = error.read(8193)
+                if len(body) <= 8192:
+                    details = json.loads(body)
+        except (ValueError, OSError, http.client.HTTPException):
+            pass
+        finally:
+            error.close()
+        raise HTTPFailure(status, details) from None
     except (urllib.error.URLError, http.client.HTTPException, OSError):
         raise CatalystError("Evaluator is unreachable; request remains resumable.") from None
     if len(content) > limit:

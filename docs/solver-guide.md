@@ -369,3 +369,19 @@ Neither check proves originality or detects all memorization. See
 If a job fails, inspect its reported reason before choosing whether
 to spend on another evaluation. Do not fabricate a receipt or score to bypass
 a failure.
+
+### Submission limits and retries
+
+Catalyst has no daily evaluation-count cap by default. It retains one active run
+per account, eight globally, and short submission windows (five new evaluations
+per account per minute; thirty globally). Operators can explicitly configure a
+daily quota. Account identity comes from Yukon, so changing API keys does not
+change these limits.
+
+A 429 now identifies account concurrency, global capacity, submission rate, or an
+explicit daily quota, with `limit`, `current`, and `retry_after_seconds`. Wait for
+the indicated interval and rerun the same submission command using the same
+`--state` directory, source and options. Catalyst reuses its saved request ID;
+do not delete pending state or generate a new ID to retry. No local Dungeness
+run is required. Successful source reviews are reused when source, policy,
+reviewer configuration and problem identity match.
