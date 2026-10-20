@@ -12,6 +12,9 @@ from .common import (
 
 
 def create_harness(args):
+    if args.agent:
+        raise CatalystError("Bundled agents are retired. Create an executable harness "
+                            "with a Dockerfile and entrypoint; install your coding agent inside it.")
     if args.executable and (args.agent or args.source):
         raise CatalystError("--executable cannot be combined with --agent or --from.")
     identity = identifier(args.id)
@@ -23,18 +26,19 @@ def create_harness(args):
         snapshot, content = snapshot_directory(Path(args.source))
         if snapshot["kind"] != "harness":
             raise CatalystError("--from requires a harness package.")
+        if "execution" not in snapshot["document"]:
+            raise CatalystError("This legacy harness selects a bundled agent. Migrate it "
+                                "to catalyst-exec-v1 with a Dockerfile and entrypoint.")
         extract_bundle(content, target)
         document = read_json(target / "harness.json")
         derived = {k: snapshot[k] for k in ("id", "version")}
         document.update({"id": identity, "title": args.title or identity, "created_at": now()})
-        if args.agent:
-            document["agent"] = args.agent
     else:
         document = {
             "schema_version": 1, "kind": "harness", "id": identity, "title": args.title or identity,
             "description": "A reusable method and knowledge bundle.",
             "scope": "Describe the intended problems and any task-specific tuning.",
-            "agent": args.agent or "agent:projects/dungeness/codex-openai", "created_at": now(),
+            "created_at": now(),
         }
         target.mkdir(parents=True)
         (target / "instructions.md").write_text(
@@ -42,7 +46,7 @@ def create_harness(args):
             "Consult the supplied harness knowledge when useful. Record useful findings for the researcher.\n")
         (target / "knowledge").mkdir()
         (target / "knowledge" / "notes.md").write_text("# Reusable insights\n\nAdd findings, references, and methods here.\n")
-    if args.executable or not (args.agent or args.source):
+    if not args.source:
         from .executable import create_starter
         document.pop("agent", None)
         document["description"] = "An executable autonomous research harness."
@@ -242,7 +246,7 @@ def build_parser():
             create.add_argument("id")
             create.add_argument("--title")
             create.add_argument("--output")
-            create.add_argument("--agent")
+            create.add_argument("--agent", help=argparse.SUPPRESS)
             create.add_argument("--from", dest="source", help="Derive a new harness from an existing package.")
             create.add_argument("--executable", action="store_true",
                                 help="Create editable agent source with a Docker build and entrypoint.")

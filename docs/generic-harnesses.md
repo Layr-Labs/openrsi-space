@@ -53,6 +53,13 @@ assigned task supplies a shared 50-paper library during execution. It initially 
 no model calls; implement the research loop before requesting a model run.
 An existing framework can use its own entrypoint instead.
 
+Executable submissions are the supported workflow. Dungeness no longer bundles
+Codex, Claude Code, Pi or Prime Agent launchers. Install your preferred agent and
+configure its CLI inside the submitted image. Catalyst's `catalyst-exec-v1`
+contract is unchanged: it installs the generic Dungeness command adapter.
+Legacy `harness create --agent` and non-executable harness preparation are
+rejected with migration instructions. Historical artifacts remain readable.
+
 Submit the same source with a model choice and spending cap:
 
 ```sh
