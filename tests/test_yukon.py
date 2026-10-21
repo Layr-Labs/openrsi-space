@@ -231,6 +231,35 @@ class YukonRunnerTests(unittest.TestCase):
         self.assertFalse(self.target.exists())
         self.assertEqual(self.trace_gets, [])
 
+    def test_v3_workflow_revalidates_v2_receipt_without_relabeling(self):
+        from catalyst.tiers import LEGACY_VALIDITY
+        self.evaluate()
+        original, identity = next(iter(self.jobs.values()))
+        original["judge"]["policies"] = {"scoring": SCORING, "validity": LEGACY_VALIDITY}
+        original["problem_set"][0]["title"] = "Historical problem title"
+        reference = verification_reference(completed(original, identity), original)
+        write_json(self.root / "submission/verification.json", reference)
+        result = self.retrieve()
+        self.assertTrue(result["valid"])
+        self.assertEqual(result["scores"], [100, .25])
+        self.assertEqual(self.publications[-1]["problem"]["version"], reference["problem_set_digest"])
+        self.assertEqual(self.publications[-1]["judge"]["policies"]["validity"], LEGACY_VALIDITY)
+        self.assertEqual(result["metrics"]["receiptPolicies"]["validity"], LEGACY_VALIDITY)
+        self.assertEqual(result["metrics"]["benchmarkPolicies"]["validity"], VALIDITY)
+        self.assertEqual(len(self.jobs), 1)
+
+    def test_receipt_contract_rejects_policy_downgrade_and_unknown_versions(self):
+        from catalyst.receipts import receipt_contract
+        from catalyst.tiers import LEGACY_VALIDITY
+        self.evaluate()
+        reference = read_json(self.root / "submission/verification.json")
+        with self.assertRaisesRegex(CatalystError, "incompatible"):
+            receipt_contract(reference, {**self.input, "policies": {"scoring": SCORING, "validity": LEGACY_VALIDITY}})
+        with self.assertRaisesRegex(CatalystError, "incompatible"):
+            receipt_contract({**reference, "policies_digest": "f" * 64}, self.input)
+        with self.assertRaisesRegex(CatalystError, "invalid problem"):
+            receipt_contract({**reference, "problem_set_digest": "unknown"}, self.input)
+
     def test_forged_receipt_cannot_publish_scores(self):
         self.evaluate()
         reference = read_json(self.root / "submission/verification.json")

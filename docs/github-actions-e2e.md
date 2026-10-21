@@ -39,6 +39,19 @@ Service authorization and baseline provisioning are operator work in the private
 or its anti-cheat implementation. Receipt retrieval must fail if the service is
 unreachable or rejects the binding; there is no local-score fallback.
 
+Receipt publication uses the receipt's original problem hash, not the installed
+client's default problem release. The verifier must authorize that problem or
+the exact historical receipt. A v3 workflow can validate a retained v2 receipt
+under v2's stricter final-spend rule; it records both original and benchmark
+policies in the metrics. Unknown policy changes and v3-to-v2 downgrades fail.
+This does not change the evaluation's problem, budget, pricing, or stored result.
+
+Updating the repository alone does not move Yukon's pinned benchmark source.
+Operators must coordinate the benchmark reorg with verifier authorization and
+the exact baseline revision. Revalidation retrieves retained receipts and does
+not start another paid research evaluation. New solver publications still use
+the normal `catalyst yukon-submit` / `catalyst yukon-bind` flow.
+
 ## Validation
 
 The public test suite checks receipt validation, finite Pareto scores and the

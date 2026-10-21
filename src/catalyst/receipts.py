@@ -12,6 +12,7 @@ import time
 from .common import CatalystError, read_json, write_json
 from .problems import initial_problems
 from .remote import HTTPFailure, digest, endpoint, judge_input, solver_fetch
+from .tiers import LEGACY_VALIDITY, SCORING, VALIDITY
 
 PROTOCOL = "remote-verification-receipt-v1"
 # Yukon pins this upload path for the existing Pareto benchmark. The directory
@@ -50,6 +51,26 @@ def problem_identity():
     return {"id": "ecdsa.fail", "version": digest(initial_problems())}
 
 
+def receipt_contract(reference, requested):
+    """Retrieve original evidence without relabeling historical problem releases.
+
+    V2's strict final-spend check implies V3's admission-aware spend check.
+    Revalidate V2 evidence under that stricter original policy; never downgrade
+    V3 evidence, accept unknown policies, or change a stored receipt.
+    """
+    version = reference.get("problem_set_digest")
+    if not isinstance(version, str) or not re.fullmatch(r"[a-f0-9]{64}", version):
+        raise CatalystError("Receipt has an invalid problem version.")
+    original = requested
+    if reference.get("policies_digest") != digest(requested["policies"]):
+        legacy = {"scoring": SCORING, "validity": LEGACY_VALIDITY}
+        if (requested["policies"] != {"scoring": SCORING, "validity": VALIDITY}
+                or reference.get("policies_digest") != digest(legacy)):
+            raise CatalystError("Receipt policies are incompatible with this benchmark.")
+        original = {**requested, "policies": legacy}
+    return {"id": "ecdsa.fail", "version": version}, original
+
+
 def read_receipt(path):
     try:
         # The path and its parents must not redirect the trusted workflow.
@@ -80,8 +101,8 @@ def check_receipt(root=None):
     if not receipt.exists() and not receipt.is_symlink() and not receipt.parent.is_symlink():
         receipt = root / BASELINE_RECEIPT_PATH
     reference = read_receipt(receipt)
-    requested = judge_input(os.environ.get("YUKON_EVALUATION"))
-    problem = problem_identity()
+    benchmark_judge = judge_input(os.environ.get("YUKON_EVALUATION"))
+    problem, requested = receipt_contract(reference, benchmark_judge)
     token, _ = authentication()
     body = {"protocol": PROTOCOL, "reference": reference, "problem": problem, "judge": requested}
     result = json.loads(retrieve_with_binding_wait(endpoint(), token, body))
@@ -120,6 +141,8 @@ def check_receipt(root=None):
                 raise CatalystError("Verification response has an invalid validity reason.")
             public["reason"] = reason
     public["metrics"]["remoteVerification"] = {"problem": problem, "artifact": artifact}
+    public["metrics"]["receiptPolicies"] = requested["policies"]
+    public["metrics"]["benchmarkPolicies"] = benchmark_judge["policies"]
     write_json(target, public)
     print(f"Verified receipt {reference.get('evaluation_id')}; no evaluation was started.", flush=True)
     return public
