@@ -317,7 +317,7 @@ def build_parser():
     remote_submit.add_argument("--entrypoint", help="Launch argv for an existing repository without harness.json; parsed without a shell.")
     remote_submit.add_argument("--dockerfile", help="Relative build recipe for --entrypoint (default: Dockerfile).")
     remote_submit.add_argument("--provider", help="Model provider; use with --model (for example, openai).")
-    remote_submit.add_argument("--model", help="Exact declared model name; prices are resolved before execution (for example, k3).")
+    remote_submit.add_argument("--model", help="Exact declared model name; prices are resolved before execution.")
     remote_submit.add_argument("--reasoning-effort", choices=["low", "medium", "high", "xhigh", "max"])
     remote_submit.add_argument("--budget", type=float, help="Run spending cap in normalized model credits.")
     remote_submit_tokens = remote_submit.add_mutually_exclusive_group()

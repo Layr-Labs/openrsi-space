@@ -118,6 +118,27 @@ class ProblemServiceTests(unittest.TestCase):
                 self.assertIn(task["instruction"], resolved["instruction"])
                 self.assertEqual(args["env"]["CATALYST_PROBLEM_URL"], "http://gateway:8080/task")
 
+    def test_launcher_always_uses_placeholder_for_assigned_gateway(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            execution = root / "execution.json"
+            execution.write_text(json.dumps({"entrypoint": ["python3", "agent.py"]}))
+            for legacy_marker in (None, "placeholder"):
+                task = {"workspace": temp, "model_provider": "openai-chatgpt",
+                        "gateway": "http://gateway:8080/model/chatgpt/v1"}
+                if legacy_marker:
+                    task["gateway_auth"] = legacy_marker
+                task_file = root / "task.json"
+                task_file.write_text(json.dumps(task))
+                with self.subTest(marker=legacy_marker), patch.dict(launch.os.environ, {
+                    "OPENAI_API_KEY": "must-not-reach-harness",
+                }), patch.object(launch.subprocess, "run") as run:
+                    run.return_value.returncode = 0
+                    self.assertEqual(launch.launch(task_file, execution), 0)
+                    environment = run.call_args.kwargs["env"]
+                    self.assertEqual(environment["OPENAI_API_KEY"], "testbed")
+                    self.assertEqual(environment["OPENAI_BASE_URL"], task["gateway"])
+
     def test_wrong_document_or_endpoint_prevents_harness_launch(self):
         _, payload, _, task = fixture()
         with patch.object(launch, "build_opener") as opener:
