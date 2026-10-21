@@ -1,0 +1,16 @@
+{
+  "schema_version": 3,
+  "llm_access": {
+    "grant_id": "grant_temporary_provider"
+  },
+  "model": {
+    "provider": "openai-chatgpt",
+    "name": "gpt-6-astra",
+    "reasoning_effort": "high"
+  },
+  "max_model_credits": 20,
+  "limits": {
+    "max_model_tokens": null,
+    "max_seconds": 2700
+  }
+}

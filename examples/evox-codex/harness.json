@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "kind": "harness",
+  "id": "evox-codex",
+  "title": "EvoX-inspired Codex research",
+  "description": "Codex research with evaluated candidate populations, adaptive search strategies, and best-candidate retention.",
+  "scope": "general",
+  "execution": {
+    "interface": "catalyst-exec-v1",
+    "dockerfile": "Dockerfile",
+    "entrypoint": ["python3", "/opt/harness/agent.py"]
+  }
+}

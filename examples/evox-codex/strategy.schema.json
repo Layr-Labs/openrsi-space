@@ -1,0 +1,13 @@
+{
+  "type": "object",
+  "properties": {
+    "parent_rule": {"type": "string", "enum": ["best", "diverse", "least_used"]},
+    "operator": {"type": "string", "enum": ["refine", "restructure", "free"]},
+    "inspirations": {"type": "integer", "minimum": 0, "maximum": 3},
+    "direction": {"type": "string", "enum": ["minimize", "maximize"]},
+    "rationale": {"type": "string"},
+    "instructions": {"type": "string"}
+  },
+  "required": ["parent_rule", "operator", "inspirations", "direction", "rationale", "instructions"],
+  "additionalProperties": false
+}
