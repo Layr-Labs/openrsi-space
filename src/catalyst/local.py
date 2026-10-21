@@ -98,7 +98,8 @@ def temporary_environment(access):
             access.clear()
 
 
-def prepare(state, package, source, evaluation, *, problem_id='ecdsa.fail', pricing_path=None):
+def prepare(state, package, source, evaluation, *, problem_id='ecdsa.fail', problem_release=None, pricing_path=None):
+    selected = get_problem(problem_id, release=problem_release)
     source = source.expanduser().resolve()
     if not (source / 'dungeness').is_file():
         raise CatalystError('Point --dungeness at a Dungeness checkout (https://github.com/Layr-Labs/dungeness).')
@@ -129,10 +130,10 @@ def prepare(state, package, source, evaluation, *, problem_id='ecdsa.fail', pric
     folder.mkdir(parents=True)
     (folder / 'harness.zip').write_bytes(harness_bytes)
     extract_bundle(harness_bytes, folder / 'inputs/harness')
-    selected = get_problem(problem_id)
     problem_path = folder / 'inputs/problem'
     write_json(problem_path / 'problem.json', {
         'schema_version': 1, 'kind': 'problem', 'id': selected['id'], 'title': selected['title'],
+        'slug': selected['slug'], 'release': selected['release'],
         'metric': selected['metric'], 'execution': selected['dungeness'],
     })
     (problem_path / 'instructions.md').write_text(problem_statement(problem_id))
@@ -229,7 +230,8 @@ def run(args, state):
               'No credentials are sent to Catalyst or Yukon.', file=sys.stderr, flush=True)
     try:
         metadata = prepare(state, Path(args.package), Path(args.dungeness), evaluation,
-                           problem_id=args.problem, pricing_path=Path(args.pricing) if args.pricing else None)
+                           problem_id=args.problem, problem_release=args.problem_release,
+                           pricing_path=Path(args.pricing) if args.pricing else None)
         if args.prepare_only:
             print(json.dumps(metadata, indent=2))
             return 0

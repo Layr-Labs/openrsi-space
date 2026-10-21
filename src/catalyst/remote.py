@@ -468,7 +468,7 @@ def solver_token() -> str:
 
 def request_body(submission: Path, base: str, *, judge=None, context=None,
                  evaluation_overrides=None, pricing=None, check_pricing=True, execution=None,
-                 publication=None) -> dict:
+                 publication=None, problem_release=None) -> dict:
     from .publication import publication_choices
     publication = publication_choices(publication)
     config = evaluation_config(submission / "evaluation.json", evaluation_overrides,
@@ -480,7 +480,7 @@ def request_body(submission: Path, base: str, *, judge=None, context=None,
     validate_execution(execution)
     if execution["dockerfile"] not in snapshot["files"] or len(archive) > MAX_SOURCE_BYTES:
         raise CatalystError("Missing build recipe or source exceeds the 8 MiB submission limit.")
-    problem_set, mode = initial_problems(), "remote"
+    problem_set, mode = initial_problems(release=problem_release), "remote"
     if os.environ.get("CATALYST_LOCAL_ECDSA") == "1":
         if os.environ.get("CATALYST_LOCAL_TEST") == "1":
             raise CatalystError("Choose CATALYST_LOCAL_ECDSA or CATALYST_LOCAL_TEST, not both.")
@@ -543,13 +543,13 @@ class RemoteClient:
         return legacy if legacy.is_file() else self.state / "remote/pending" / name
 
     def submit(self, submission: Path, *, judge=None, model_token=None, evaluation_overrides=None,
-               execution=None, publication=None, _quote_retry=False):
+               execution=None, publication=None, problem_release=None, _quote_retry=False):
         if os.environ.get("GITHUB_ACTIONS") == "true":
             raise CatalystError("GitHub Actions must retrieve an existing result through catalyst yukon-run.")
         submission = submission.resolve()
         body = request_body(submission, self.base, judge=judge, evaluation_overrides=evaluation_overrides,
                             check_pricing=False, execution=execution, publication=publication,
-                            )
+                            problem_release=problem_release)
         quote_path = None
         try:
             validate_evaluation_config(body["evaluation"])
@@ -608,7 +608,7 @@ class RemoteClient:
         if identity is None:
             return self.submit(submission, judge=judge, model_token=model_token,
                                evaluation_overrides=evaluation_overrides, execution=execution,
-                               publication=publication, _quote_retry=True)
+                               publication=publication, problem_release=problem_release, _quote_retry=True)
         return {"evaluation_id": identity, "request_id": request["request_id"],
                 "source_digest": body["source"]["digest"], "evidence_mode": body["evidence_mode"]}
 

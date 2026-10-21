@@ -124,9 +124,10 @@ readiness report; all inference must use assigned gateway endpoints.
    interface. Pin general-purpose build dependencies. The
    submitted archive must fit 8 MiB and contain no symlinks or credentials.
 5. Obtain research material from the assigned task service.
-   `CATALYST_KNOWLEDGE_BASE_URL` returns the 50-paper catalog, with titles, authors,
-   original licenses, pinned versions, checksums and internal PDF URLs. Download
-   from those URLs during the run. Choose your own reading, indexing and retrieval
+   `CATALYST_KNOWLEDGE_BASE_URL` returns the assigned resource catalog, currently
+   containing 50 papers, with titles, attribution, original licenses, media types,
+   checksums and internal resource URLs. Fetch those URLs during the run and read
+   each resource according to its media type. Choose your own reading, indexing and retrieval
    strategy; model-based retrieval must use the metered gateway. Do not bundle
    problem-specific knowledge, answers or search strategies in the submission.
 6. Use `CATALYST_TASK` for the workspace, instructions, declared model
@@ -134,6 +135,11 @@ readiness report; all inference must use assigned gateway endpoints.
    For runs using the problem service, the launcher first fetches and checks the
    server-assigned statement. The resolved task includes `problem_document`;
    `CATALYST_PROBLEM_URL` exposes the same read-only document for later queries.
+   Versioned packages also provide `CATALYST_DESCRIPTION_URL` and
+   `CATALYST_PROBLEM_RELEASE`. Read the `resources` array at
+   `CATALYST_KNOWLEDGE_BASE_URL` and follow each entry's URL and media type;
+   resources are not necessarily PDFs. Old packages may still expose a `papers`
+   catalog. See the versioned endpoint contract in `docs/generic-harnesses.md`.
    Your harness instructions cannot replace the problem or verifier.
    The research container has no public internet; prepare generic dependencies
    at build time. The shared task library remains reachable internally. Do not silently fall back to public provider APIs.

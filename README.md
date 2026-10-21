@@ -1,5 +1,11 @@
 # Catalyst
 
+**Versioned-release rollout:** this branch includes new `v0`/`v1` problem
+manifests. The hosted evaluator at `https://3.21.93.126` remains pinned to the
+earlier manifest until the coordinated service and Yukon registration update.
+For submissions to that deployment, use commit `41e5767` in a separate checkout.
+The new manifests are not interchangeable with historical problem hashes.
+
 Catalyst evaluates autonomous research harnesses on **ecdsa.fail**. Solvers
 submit harness source; Catalyst builds and runs it under controlled conditions,
 meters model use, and independently verifies candidate circuits.

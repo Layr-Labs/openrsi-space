@@ -173,6 +173,7 @@ def remote_command(args, state):
                 {"model_token": model_token} if model_token is not None else {}),
                 **({"evaluation_overrides": overrides} if overrides else {}),
                 **({"execution": execution} if execution else {}),
+                **({"problem_release": args.problem_release} if args.problem_release else {}),
                 publication=publication)
         finally:
             model_token = None
@@ -219,6 +220,7 @@ def build_parser():
             sub.add_parser("list", help="List the pinned initial solver problems.")
             show = sub.add_parser("show")
             show.add_argument("id")
+            show.add_argument("--problem-release", choices=["v0", "v1"])
             clone = sub.add_parser("clone", help="Download a pinned problem and its local verifier.")
             clone.add_argument("id")
             clone.add_argument("output")
@@ -265,6 +267,8 @@ def build_parser():
     local_run.add_argument("package", help="Harness source directory.")
     local_run.add_argument("--dungeness", required=True, help="Clean checkout of the public Dungeness runtime.")
     local_run.add_argument("--problem", default="ecdsa.fail")
+    local_run.add_argument("--problem-release", choices=["v0", "v1"],
+                           help="Pinned problem release: v0 has one paper; v1 (default) has 50.")
     local_run.add_argument("--provider")
     local_run.add_argument("--model")
     local_run.add_argument("--reasoning-effort", choices=["low", "medium", "high", "xhigh", "max"])
@@ -300,6 +304,8 @@ def build_parser():
     remote_sub = remote.add_subparsers(dest="operation", required=True)
     remote_submit = remote_sub.add_parser("submit", help="Upload harness source and queue one evaluation.")
     remote_submit.add_argument("package", help="Path to your harness source directory.")
+    remote_submit.add_argument("--problem-release", choices=["v0", "v1"],
+                               help="Must match the evaluator's assigned release; default: v1.")
     remote_submit.add_argument("--wait", action="store_true", help="Wait, validate the result and save its verification reference.")
     remote_submit.add_argument("--private-harness", action="store_true",
                                help="Keep this harness source private; new submissions otherwise publish source after screening. Traces are retained internally.")
@@ -368,7 +374,7 @@ def dispatch(args):
             if args.operation == "list":
                 print(json.dumps(initial_problems(), indent=2))
             elif args.operation == "show":
-                print(json.dumps(get_problem(args.id), indent=2))
+                print(json.dumps(get_problem(args.id, release=args.problem_release), indent=2))
             elif args.operation == "clone":
                 print(json.dumps(clone_problem(args.id, Path(args.output).resolve()), indent=2))
             else:

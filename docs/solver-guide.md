@@ -126,6 +126,12 @@ are no budget tracks to switch between.
 
 ## 2. Prepare a harness
 
+The assigned problem now includes a human-readable release (`v1`) alongside its
+content hash. During execution, use `CATALYST_DESCRIPTION_URL` for the versioned
+description and `CATALYST_KNOWLEDGE_BASE_URL` for the resource catalog. Follow
+catalog URLs and media types; the knowledge base can contain material beyond
+PDF papers. See [the endpoint contract](generic-harnesses.md#versioned-problem-and-knowledge-base-endpoints).
+
 Your package can contain general-purpose source, prompts, helper programs,
 configuration and a Dockerfile with pinned dependencies. You can
 use your own agent architecture, subprocesses or search framework.

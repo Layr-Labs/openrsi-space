@@ -14,12 +14,22 @@ def git(root: Path, *args) -> str:
 
 
 
-def initial_problems() -> list[dict]:
-    return json.loads((Path(__file__).parent / "problem-set" / "initial.json").read_text())["problems"]
+PROBLEM_RELEASES = {"v0": "initial-v0.json", "v1": "initial.json"}
 
 
-def get_problem(identity: str) -> dict:
-    for problem in initial_problems():
+def initial_problems(*, release=None) -> list[dict]:
+    filename = PROBLEM_RELEASES.get(release if release is not None else "v1")
+    if filename is None:
+        raise CatalystError("Unknown problem release; choose v0 or v1.")
+    return json.loads((Path(__file__).parent / "problem-set" / filename).read_text())["problems"]
+
+
+def is_official_problem_set(problem_set) -> bool:
+    return any(problem_set == initial_problems(release=release) for release in PROBLEM_RELEASES)
+
+
+def get_problem(identity: str, *, release=None) -> dict:
+    for problem in initial_problems(release=release):
         if problem["id"] == identity:
             return problem
     raise CatalystError("Unknown initial problem; run catalyst problem list.")

@@ -12,6 +12,8 @@ from urllib.parse import urlsplit
 from catalyst.common import CatalystError, canonical
 
 CATALOG = Path(__file__).parent / "problem-set" / "ecdsa-papers-v1.json"
+CATALOGS = {"ecdsa-papers-v0": CATALOG.with_name("ecdsa-papers-v0.json"),
+            "ecdsa-papers-v1": CATALOG}
 LIBRARY_URL = "http://gateway:8080/task/files/knowledge-base.json"
 MAX_PAPER_BYTES = 32 * 1024 * 1024
 PAPER_HOSTS = {"arxiv.org", "export.arxiv.org", "eprint.iacr.org"}
@@ -32,10 +34,15 @@ class PaperRedirect(HTTPRedirectHandler):
 
 
 def load_catalog(binding):
-    raw = CATALOG.read_bytes()
+    path = CATALOGS.get(binding.get("id")) if isinstance(binding, dict) else None
+    if path is None:
+        raise CatalystError("The problem's paper library does not match an installed catalog.")
+    raw = path.read_bytes()
     document = json.loads(raw)
     if (binding != {"id": document["id"], "sha256": hashlib.sha256(canonical(document)).hexdigest()}
-            or document.get("count") != 50 or len(document.get("papers", [])) != 50):
+            or type(document.get("count")) is not int
+            or not 0 < document["count"] <= 50
+            or len(document.get("papers", [])) != document["count"]):
         raise CatalystError("The problem's paper library does not match the installed catalog.")
     names = set()
     for paper in document["papers"]:
@@ -87,7 +94,7 @@ def cached_paper(paper, cache):
     return path
 
 
-def prepare_library(binding, destination):
+def prepare_library(binding, destination, *, slug=None, release=None):
     """Only operator-selected, pinned catalog entries may become task files."""
     catalog = load_catalog(binding)
     cache = Path(os.environ.get("CATALYST_PAPER_CACHE",
@@ -106,7 +113,14 @@ def prepare_library(binding, destination):
     (destination / "knowledge-base.json").write_bytes(raw)
     attachments.append({"name": "knowledge-base.json", "sha256": hashlib.sha256(raw).hexdigest(),
                         "bytes": len(raw), "media_type": "application/json"})
+    metadata = {"id": catalog["id"], "count": len(papers), "url": LIBRARY_URL}
+    if slug is not None:
+        from .knowledge_base import write_resource_catalog
+        resources = [{**{k: v for k, v in paper.items() if k not in {"file", "url"}},
+                      "filename": paper["file"], "kind": "paper"} for paper in papers]
+        metadata, generic_attachments = write_resource_catalog(destination, catalog, resources, slug, release)
+        attachments = [attachments[-1], *generic_attachments]
     for path in destination.iterdir():
         path.chmod(0o644)
     destination.chmod(0o755)
-    return {"id": catalog["id"], "count": 50, "url": LIBRARY_URL}, attachments
+    return metadata, attachments

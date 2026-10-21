@@ -8,6 +8,9 @@ import re
 import shutil
 
 MAX_TASK_BYTES = 256 * 1024
+MEDIA_TYPE = r"[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]*/[A-Za-z0-9][A-Za-z0-9!#$&^_.+-]*"
+PART = r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}"
+RESOURCE_PATH = rf"/{PART}(?:/{PART})?/(?:description|knowledge-base|resources/{PART})"
 
 
 def canonical(document):
@@ -40,9 +43,10 @@ def load_files(payload, root):
     for entry in entries:
         name = entry.get("name", "")
         if (not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", name)
-                or name in files or type(entry.get("bytes")) is not int
+                or "/task/files/" + name in files or type(entry.get("bytes")) is not int
                 or not 0 < entry["bytes"] <= 32 * 1024 * 1024
-                or entry.get("media_type") not in {"application/pdf", "application/json"}):
+                or not isinstance(entry.get("media_type"), str)
+                or not re.fullmatch(MEDIA_TYPE, entry["media_type"])):
             raise ValueError("Invalid task attachment.")
         path = root / name
         if (root.is_symlink() or path.is_symlink() or not path.is_file()
@@ -52,6 +56,13 @@ def load_files(payload, root):
             if hashlib.file_digest(source, "sha256").hexdigest() != entry.get("sha256"):
                 raise ValueError("Task attachment digest mismatch.")
         files["/task/files/" + name] = (path, entry)
+        paths = entry.get("paths", [])
+        if not isinstance(paths, list):
+            raise ValueError("Invalid task resource routes.")
+        for route in paths:
+            if not isinstance(route, str) or not re.fullmatch(RESOURCE_PATH, route) or route in files:
+                raise ValueError("Invalid or duplicate task resource route.")
+            files[route] = (path, entry)
         total += entry["bytes"]
     if total > 256 * 1024 * 1024:
         raise ValueError("Task attachments exceed size limit.")
@@ -87,6 +98,7 @@ def handler_for(payload, digest, files=None):
                 self.send_header("Content-Length", str(entry["bytes"]))
                 self.send_header("X-Content-SHA256", entry["sha256"])
                 self.send_header("X-Content-Type-Options", "nosniff")
+                self.send_header("Content-Disposition", f'attachment; filename="{entry["name"]}"')
                 self.end_headers()
                 with path.open("rb") as source:
                     shutil.copyfileobj(source, self.wfile, length=1024 * 1024)

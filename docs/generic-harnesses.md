@@ -125,6 +125,65 @@ an official remote receipt. Your harness receives the execution interface below.
 
 ## Execution contract
 
+### Versioned problem and knowledge-base endpoints
+
+New ECDSA problem packages carry the human-readable release `v1` and slug
+`ecdsa-fail`. Inside a run, the read-only gateway serves:
+
+| URL path on `http://gateway:8080` | Response |
+| --- | --- |
+| `/ecdsa-fail/v1/description` | JSON statement, release, content hash, evaluation contract and library link |
+| `/ecdsa-fail/v1/knowledge-base` | JSON catalog with a `resources` array |
+| `/ecdsa-fail/v1/resources/<resource-id>` | Original resource bytes with their declared `Content-Type` |
+
+Release `v0` uses the same challenge and evaluation contract, with only André
+Schrottenloher's *Optimized Point Addition Circuits for Elliptic Curve Discrete
+Logarithms* ([arXiv:2606.02235v1](https://arxiv.org/abs/2606.02235v1)) in its
+knowledge base. Its catalog is `ecdsa-papers-v0`; the sole resource ID is
+`ecdsa-core-02`. Its URLs replace `/v1/` above with `/v0/`. The arXiv PDF is
+pinned by size and SHA-256 independently of the IACR copy in `v1`.
+
+Select it with `catalyst local run <harness> --dungeness <checkout>
+--problem-release v0` plus your usual model-access options, or inspect it with
+`catalyst problem show ecdsa.fail --problem-release v0`. Remote submissions also
+accept `--problem-release v0`, but the evaluator must already be configured for
+that exact release. The default remains `v1` with 50 papers. A `v0` run cannot
+fetch the other 49 papers through aliases or legacy file URLs.
+
+The corresponding unversioned paths (`/ecdsa-fail/description`,
+`/ecdsa-fail/knowledge-base`, and `/ecdsa-fail/resources/<resource-id>`) resolve
+only to this run's assigned release. They do not follow a mutable global
+"latest" release. Other releases and unknown resource IDs return 404.
+These are internal per-run endpoints, not public website URLs.
+
+Use `CATALYST_DESCRIPTION_URL`, `CATALYST_PROBLEM_RELEASE`, and
+`CATALYST_KNOWLEDGE_BASE_URL` instead of hard-coding paths. The description has
+`problem_id`, `release`, and `content_sha256`; the latter is the immutable
+problem-package hash, covering the statement, execution configuration and pinned
+library binding. It is separate from `X-Task-SHA256`, which covers the full
+run-specific `/task` response. The description itself excludes the run ID and
+has its own `X-Content-SHA256` response header.
+
+Each resource has a stable `id`, `title`, `kind`, `media_type`, `filename`,
+`bytes`, `sha256`, and versioned `url`. IDs do not require filename extensions.
+Resources may be papers, notes, datasets, code or other material; consumers must
+use the catalog's media type rather than assume PDF. Original paper attribution
+and license metadata remain in the entries. Resources are verified against
+their pinned size and hash before delivery, and downloads include
+`X-Content-SHA256`, `Content-Disposition` and `X-Content-Type-Options: nosniff`.
+
+Existing `/task`, `/task/files/knowledge-base.json` (the original `papers`
+catalog), and `/task/files/<filename>` URLs remain available. The task envelope
+keeps its existing `problem.id` and `problem.version` fields and adds `slug`,
+`release` and `description_url`. Existing immutable packages without a release
+retain their original endpoints.
+
+Never change the contents associated with a published release tag. Changes to
+the problem instructions, supplied resources or execution contract require a
+new tag and content hashes. This release is independent of the scoring-policy
+version and the JSON `schema_version`. Keep historical packages and receipts;
+an existing run is never relabeled as a new release.
+
 A Dungeness command agent uses an ordinary Dockerfile and:
 
 ```yaml

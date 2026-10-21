@@ -78,6 +78,11 @@ def validate_document(document: dict) -> None:
     if not isinstance(document.get("title"), str) or not document["title"].strip():
         raise CatalystError("A title is required.")
     if kind == "problem":
+        if "release" in document or "slug" in document:
+            for key in ("release", "slug"):
+                value = document.get(key)
+                if not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", value):
+                    raise CatalystError("A versioned problem requires a safe slug and release tag.")
         metric = document.get("metric", {})
         if not isinstance(metric, dict) or not isinstance(metric.get("name"), str) or not metric["name"]:
             raise CatalystError("A problem requires a named metric.")

@@ -14,6 +14,7 @@ def require_problem_service_runtime(source):
         ("src/dungeness/compiler.py", "def resolve_problem_service("),
         ("services/gateway/gateway.py", "async def assigned_task("),
         ("services/gateway/gateway.py", "async def assigned_file("),
+        ("services/gateway/gateway.py", "async def assigned_resource("),
     ):
         filename = source / path
         if not filename.is_file() or marker not in filename.read_text():
@@ -33,6 +34,8 @@ def problem_document(problem, statement, repository, candidate_paths, run_id):
         "evaluation": {"command": "evaluate"},
         "initialization": execution_initialization(problem["document"].get("execution", {})),
     }
+    if "release" in problem["document"]:
+        document.update(release=problem["document"]["release"], slug=problem["document"]["slug"])
     raw = canonical(document)
     if len(raw) > 256 * 1024:
         raise CatalystError("The assigned problem exceeds the task service limit.")
@@ -160,9 +163,29 @@ def install_task(runtime, problem_path, problem, strategy, run_id):
     library = execution.get('knowledge_base')
     if library is not None:
         from catalyst.paper_library import prepare_library
-        metadata, attachments = prepare_library(library, task_path.parent / 'paper-files')
+        metadata, attachments = prepare_library(library, task_path.parent / 'paper-files',
+                                               slug=document.get('slug'), release=document.get('release'))
         document.update(knowledge_base=metadata, attachments=attachments)
-        digest = hashlib.sha256(canonical(document)).hexdigest()
+    if 'release' in document:
+        # A stable description excludes run identity and the attachment envelope.
+        # Its package hash pins instructions, execution settings and library binding.
+        description = {key: value for key, value in document.items()
+                       if key not in {'run_id', 'attachments', 'problem'}}
+        description.update(problem_id=problem['id'], content_sha256=problem['version'])
+        raw = canonical(description)
+        files = task_path.parent / 'paper-files'
+        files.mkdir(parents=True, exist_ok=True)
+        (files / 'description.json').write_bytes(raw)
+        (files / 'description.json').chmod(0o644)
+        files.chmod(0o755)
+        prefix = f"/{document['slug']}/{document['release']}"
+        document.setdefault('attachments', []).append({
+            'name': 'description.json', 'bytes': len(raw), 'sha256': hashlib.sha256(raw).hexdigest(),
+            'media_type': 'application/json',
+            'paths': [prefix + '/description', f"/{document['slug']}/description"],
+        })
+        document['description_url'] = 'http://gateway:8080' + prefix + '/description'
+    digest = hashlib.sha256(canonical(document)).hexdigest()
     task = {
         'schema_version': 1, 'type': 'task', 'namespace': namespace, 'id': token,
         'instruction': 'statement.md', 'workspace': {'include': ['.']},
@@ -174,7 +197,7 @@ def install_task(runtime, problem_path, problem, strategy, run_id):
         if field in execution:
             task[field] = execution[field]
     task['problem_service'] = install_problem_service(task_path.parent, document, digest)
-    if library is not None:
+    if document.get('attachments'):
         # Installed after the small, immutable server files. The compiler verifies
         # all attachments against the task digest before rendering Compose.
         shutil.move(task_path.parent / 'paper-files', task_path.parent / 'problem-service/files')

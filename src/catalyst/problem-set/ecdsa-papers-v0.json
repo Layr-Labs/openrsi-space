@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "id": "ecdsa-papers-v0",
+  "title": "Schrottenloher point-addition paper",
+  "curated_at": "2026-10-19",
+  "count": 1,
+  "provenance": {
+    "source": "https://arxiv.org/abs/2606.02235v1",
+    "selection": "Single-paper knowledge base for problem release v0."
+  },
+  "rights_notice": "Original unmodified paper by André Schrottenloher, licensed CC BY 4.0. Attribution and license link accompany the resource.",
+  "papers": [
+    {
+      "id": "ecdsa-core-02",
+      "file": "schrottenloher-2606.02235v1.pdf",
+      "title": "Optimized Point Addition Circuits for Elliptic Curve Discrete Logarithms",
+      "source_id": "arXiv:2606.02235v1",
+      "arxiv_id": "2606.02235v1",
+      "source_url": "https://arxiv.org/abs/2606.02235v1",
+      "pdf_url": "https://arxiv.org/pdf/2606.02235v1",
+      "authors": [
+        "André Schrottenloher"
+      ],
+      "sha256": "8744ef6db6c60b62d952a1dd24e5bd433242af970f4755c8b49b020a731584af",
+      "bytes": 409414,
+      "media_type": "application/pdf",
+      "modifications": "none",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "license_status": "verified-for-exact-pdf"
+    }
+  ]
+}

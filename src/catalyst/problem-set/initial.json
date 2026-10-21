@@ -3,6 +3,8 @@
   "problems": [
     {
       "id": "ecdsa.fail",
+      "slug": "ecdsa-fail",
+      "release": "v1",
       "title": "ecdsa.fail",
       "repository": {
         "url": "https://github.com/Layr-Labs/ecdsafail-challenge.git",

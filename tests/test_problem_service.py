@@ -129,6 +129,34 @@ class ProblemServiceTests(unittest.TestCase):
                 launch.hydrate_problem(task)
             self.assertEqual(opener.return_value.open.call_count, 1)
 
+    def test_launcher_exposes_versioned_discovery_without_changing_task_binding(self):
+        document, _, _, task = fixture()
+        document.update(release="v1", slug="ecdsa-fail",
+                        description_url="http://gateway:8080/ecdsa-fail/v1/description",
+                        knowledge_base={"url": "http://gateway:8080/ecdsa-fail/v1/knowledge-base", "count": 2})
+        payload = problem_server.canonical(document)
+        task['problem_service']['sha256'] = hashlib.sha256(payload).hexdigest()
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            task['workspace'] = str(root)
+            (root / 'task.json').write_text(json.dumps(task))
+            (root / 'execution.json').write_text(json.dumps({'entrypoint': ['true']}))
+            with patch.object(launch, 'build_opener') as opener, patch.object(launch.subprocess, 'run') as run:
+                opener.return_value.open.return_value = io.BytesIO(payload)
+                run.return_value.returncode = 0
+                launch.launch(root / 'task.json', root / 'execution.json')
+                env = run.call_args.kwargs['env']
+                self.assertEqual(env['CATALYST_PROBLEM_RELEASE'], 'v1')
+                self.assertEqual(env['CATALYST_DESCRIPTION_URL'], document['description_url'])
+                self.assertEqual(env['CATALYST_KNOWLEDGE_BASE_URL'], document['knowledge_base']['url'])
+                hydrated = json.loads(Path(env['CATALYST_TASK']).read_text())
+                self.assertIn('2 resources', hydrated['instruction'])
+                self.assertIn('Assigned problem release: v1', hydrated['instruction'])
+                self.assertIn(document['description_url'], hydrated['instruction'])
+                self.assertIn(document['knowledge_base']['url'], hydrated['instruction'])
+                self.assertIn("catalog's resources array", hydrated['instruction'])
+                self.assertIn('media_type', hydrated['instruction'])
+
     def test_invalid_binding_is_rejected_before_network(self):
         _, _, _, task = fixture()
         for service in (

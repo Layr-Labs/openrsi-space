@@ -41,11 +41,20 @@ def hydrate_problem(task):
             or not isinstance(document.get("statement"), str)):
         raise ValueError("Assigned problem identity or candidate paths differ.")
     library = document.get("knowledge_base")
+    description_note = (
+        f"\n\nAssigned problem release: {document['release']}. "
+        f"Query its read-only description at {document['description_url']} "
+        "for the statement, content hash, evaluation contract and knowledge-base link. "
+        "Use this run's assigned release."
+        if document.get("description_url") else "")
+    catalog_entries = "resources" if document.get("description_url") else "papers"
     library_note = (f"\n\nShared research library: {library['url']} "
-                    f"({library['count']} raw papers). Read its catalog and download papers "
-                    "from their listed task-server URLs. Internet access is disabled."
+                    f"({library['count']} resources). Read the catalog's {catalog_entries} array. "
+                    "Fetch relevant entries from their listed task-server URLs and use each entry's "
+                    "media_type to select how to read it; resources are not necessarily PDFs. "
+                    "Internet access is disabled."
                     if library else "")
-    return {**task, "instruction": document["statement"] + library_note + "\n\n" + task.get("instruction", ""),
+    return {**task, "instruction": document["statement"] + description_note + library_note + "\n\n" + task.get("instruction", ""),
             "problem_document": document}
 
 
@@ -70,6 +79,9 @@ def launch(task_file, execution_file="/opt/catalyst/execution.json"):
         environment["CATALYST_PROBLEM_URL"] = task["problem_service"]["url"]
     if task.get("problem_document", {}).get("knowledge_base"):
         environment["CATALYST_KNOWLEDGE_BASE_URL"] = task["problem_document"]["knowledge_base"]["url"]
+    if task.get("problem_document", {}).get("description_url"):
+        environment["CATALYST_DESCRIPTION_URL"] = task["problem_document"]["description_url"]
+        environment["CATALYST_PROBLEM_RELEASE"] = task["problem_document"]["release"]
     # The gateway placeholder is public. Raw upstream credentials never belong here.
     if task.get("gateway"):
         environment["OPENAI_BASE_URL"] = task["gateway"]
