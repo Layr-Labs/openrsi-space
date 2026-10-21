@@ -14,7 +14,10 @@ Compare harnesses at **$10, $20, $50 and $100 in model credits, plus Best achiev
 rank the best eligible verified `avg_toffoli × peak_qubits`; lower is better.
 Best achieved considers the full verified run without a fixed comparison budget
 and displays credits consumed at that candidate. Every run still has an explicit
-finite spending cap; there is no $2,000 comparison tier.
+finite spending cap and execution timeout. New evaluations have no model-token
+ceiling by default; token usage is still metered. Use `--no-token-limit` to
+clear a ceiling inherited from an older manifest, or `--max-tokens N` to set
+one deliberately. There is no $2,000 comparison tier.
 Keep the complete performance–cost curve and every attempt, including failures
 and regressions. Infrastructure costs are accounted for separately.
 
@@ -74,8 +77,9 @@ See [the screening policy](docs/cheat-filter.md).
 The current MVP uses **Yukon dev**, benchmark `layr-labs/catalyst`, and the
 HTTPS verifier at `https://3.21.93.126`. Use a dev Yukon login; production
 Yukon keys do not authenticate to this deployment. No separate Catalyst
-password is needed. The current VM enables ChatGPT and Kimi Code access;
-see the solver guide for tested paths and remaining compatibility checks.
+password is needed. The current VM enables `openai-chatgpt`, `kimi-code`, `xai`
+and `grok-subscription`. Availability does not guarantee that every agent/model
+pair is compatible; see the solver guide and harness compatibility checks.
 
 ## Submission workflow
 

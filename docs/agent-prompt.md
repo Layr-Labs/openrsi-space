@@ -162,7 +162,7 @@ is development evidence and cannot mint an official Catalyst receipt.
 
 Before the remote run, give the human a short readiness report: what the agent
 will do autonomously, which source package will run, checks completed or skipped,
-provider/model, and proposed spending, token and time limits. Wait for approval
+provider/model, proposed spending and time limits, and any optional token ceiling. Wait for approval
 to run unless the human has already explicitly authorized execution once ready.
 Approval to build or explore the harness alone is not approval to launch it.
 
@@ -171,11 +171,17 @@ With the user's chosen provider/model/budget and compatible model client:
 ```sh
 uv run catalyst remote submit HARNESS_DIR \
   --provider PROVIDER --model EXACT_MODEL --budget APPROVED_CAP \
-  --max-tokens TOKEN_CAP --max-seconds TIME_CAP \
+  --no-token-limit --max-seconds TIME_CAP \
   --prompt-model-token --wait
 ```
 
 The uppercase values are placeholders; resolve them before running.
+New evaluations have no model-token ceiling by default. `--no-token-limit`
+explicitly clears one from an older manifest. Do not add an arbitrary token
+ceiling: use `--max-tokens N` only when the solver requests one. Tokens remain
+metered for credit accounting; spending limits and execution timeouts still apply.
+The CLI defaults to 900 seconds; the current service permits up to 2,700 seconds.
+Choose an explicit timeout appropriate to the authorized work.
 Use `--codex-auth-file` instead of the hidden prompt for a ChatGPT login.
 For multiple providers, use `--provider-access-file` pointing outside the
 source tree. Never add a refresh token to a package or request.

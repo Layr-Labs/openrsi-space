@@ -149,8 +149,8 @@ For an existing repository without `harness.json`, provide a Dockerfile and
 ```sh
 uv run catalyst remote submit /path/to/your-agent \
   --entrypoint "python3 /app/main.py" \
-  --provider kimi-code --model k3 --budget 3 \
-  --max-tokens 1000000 --max-seconds 900 \
+  --provider PROVIDER --model EXACT_MODEL --budget 3 \
+  --no-token-limit --max-seconds 2700 \
   --prompt-model-token --wait
 ```
 
@@ -173,10 +173,12 @@ Runtime requirements:
   limited to 8 MiB and cannot contain symlinks. `.env*`, Git metadata, local
   state and virtual environments are excluded; these exclusions do not replace
   checking your own source for secrets.
-- Declare models and choose token/time caps deliberately. The service must
+- Declare models and choose spending caps and timeouts deliberately. Token
+  ceilings are optional and disabled by default; tokens remain metered. The service must
   support the provider protocol and resolve reference pricing before inference.
-  The current VM enables `kimi-code` and `openai-chatgpt`; arbitrary model names
-  do not imply arbitrary provider protocols are available.
+  The current VM enables `openai-chatgpt`, `kimi-code`, `xai` and
+  `grok-subscription`; arbitrary model names do not imply arbitrary provider
+  protocols are available.
 
 See [the generic harness contract](generic-harnesses.md) for model ensembles,
 packaging, pricing and gateway details.
@@ -201,19 +203,27 @@ These are separate credentials and outputs:
 | `verification.json` receipt | Refers to the completed evaluation, source and problem; it is not a login key |
 | GitHub OIDC | Authenticates Yukon's verification workflow automatically; you do not supply it |
 
-For the copied EvoX example, obtain a **Kimi Code membership key** from the
-[Kimi Code console](https://www.kimi.com/code/console). Then run:
+For your prepared harness, choose a compatible provider and exact model, then
+submit using the hidden credential prompt:
 
 ```sh
 uv run catalyst remote submit .catalyst/my-harness \
-  --provider kimi-code --model k3 --budget 3 \
-  --max-tokens 1000000 --max-seconds 900 \
+  --provider PROVIDER --model EXACT_MODEL --budget 3 \
+  --no-token-limit --max-seconds 2700 \
   --prompt-model-token --wait
 ```
 
-Enter the model key at the hidden prompt. A Moonshot platform key belongs
-to a different provider and is not a Kimi Code membership key.
+Replace `PROVIDER` and `EXACT_MODEL` with values supported by both your harness
+and the service. Enter the matching model credential at the hidden prompt.
 The $3 cap is an example, not a required challenge budget or spending target.
+
+New evaluations have no model-token ceiling by default. `--no-token-limit`
+clears any ceiling saved in an older `evaluation.json`; use `--max-tokens N`
+only if you want an additional token allowance. Tokens are still metered for
+credit accounting. Spending caps and execution timeouts remain enforced.
+The CLI defaults to 900 seconds; these examples explicitly request the current
+service maximum of 2,700 seconds (45 minutes). Choose a timeout appropriate to
+your run, within the service policy.
 
 For a Codex/ChatGPT harness instead:
 
@@ -221,7 +231,7 @@ For a Codex/ChatGPT harness instead:
 uv run catalyst remote submit .catalyst/my-harness \
   --provider openai-chatgpt --model gpt-6-astra \
   --reasoning-effort high --budget 3 \
-  --max-tokens 1000000 --max-seconds 900 \
+  --no-token-limit --max-seconds 2700 \
   --codex-auth-file --wait
 ```
 
@@ -229,9 +239,10 @@ uv run catalyst remote submit .catalyst/my-harness \
 temporary access material to the remote service; it is not local-only.
 No manual token extraction is needed. You can supply an explicit path. See
 [model login setup](live-models.md#first-time-login) if the file is absent.
-The current generic gateway's live compatibility with this updated Codex
-example still needs revalidation; the deployed EvoX/Kimi path has completed
-the hosted end-to-end flow.
+A submitted Codex harness has completed remote execution and independent
+verification with no model-token ceiling. Your own harness still needs to
+match the selected provider's API and tool definitions; see
+[harness compatibility](harness-compatibility.md).
 
 Credentials travel over authenticated HTTPS, remain temporary in service
 memory/tmpfs, and are excluded from persisted jobs, receipts and artifacts.
@@ -281,11 +292,11 @@ limitations. Record cost at the best result separately from total usage.
 Exclude secrets, personal data and private local paths. Do not pad with
 invented experiments to meet the length requirement.
 
-For the EvoX/Kimi example:
+Publish with the exact model and harness attribution for your run:
 
 ```sh
 uv run catalyst yukon-submit --note-file submission-note.md \
-  --model "Kimi K3" --harness "SkyDiscover/EvoX" --no-dependencies
+  --model "EXACT MODEL" --harness "HARNESS NAME" --no-dependencies
 yukon submissions --all --json
 ```
 

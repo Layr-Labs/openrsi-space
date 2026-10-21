@@ -3,13 +3,12 @@
 This implementation separates harness execution from model access in
 Dungeness. Harbor still provides the container/job lifecycle. No Yukon change
 is required: the remote service continues issuing verification receipts.
-The general runtime is deployed on the existing VM in release
-`20261013-generic-runtime-1`. The real Docker integration passed with a synthetic
-provider, including internet isolation, declared-model enforcement, token
-accounting, independent verification and receipt retrieval through stock Yukon.
-A live EvoX/Kimi run also completed independent verification, followed by
-acceptance through Yukon's hosted GitHub Actions workflow. Its bounded
-research run retained the baseline score; measured results are recorded below.
+The deployed runtime executes submitted command harnesses and meters model
+usage. Docker integration checks cover internet isolation, declared-model
+enforcement, token accounting, independent verification and receipt retrieval
+through stock Yukon. A live submitted Codex harness also completed independent
+verification with no model-token ceiling. These checks do not replace testing
+your own agent/model integration.
 
 ## Submit your own agent
 
@@ -182,7 +181,7 @@ requires `models`, with the default `model` first:
     {"provider": "openai", "name": "gpt-6-astra"}
   ],
   "max_model_credits": 3,
-  "limits": {"max_model_tokens": 100000, "max_seconds": 900}
+  "limits": {"max_model_tokens": null, "max_seconds": 900}
 }
 ```
 
@@ -252,9 +251,9 @@ the public `testbed` placeholder. Credentials are removed after the run and
 excluded from receipts and published evidence.
 
 ChatGPT is a Responses provider, not a universal substitute for every
-framework's model client. The Codex examples support the new gateway mode
-without reading native authentication from the harness container. Live
-compatibility of that change still needs an explicitly authorized paid smoke run.
+framework's model client. Configure your submitted client to use the assigned
+gateway and its placeholder credential; it must not read native authentication
+inside the harness container. Test its request format and tool definitions.
 Kimi Code and Moonshot support native Chat Completions clients. The legacy
 Responses adapter has been removed; any protocol conversion belongs in the
 submitted harness. For streamed chat requests, the gateway
@@ -304,9 +303,10 @@ parallelism does not grant each worker a separate budget.
 
 ## Framework integration and runtime check
 
-The EvoX and ensemble examples show framework-specific entrypoints; they do not
-limit what an executable harness can contain. Package tools and dependencies
-before execution because research-time internet access is disabled.
+Your Dockerfile and entrypoint own the framework setup. Dungeness runs the
+submitted command; it does not install or select a bundled coding agent.
+Package tools and dependencies before execution because research-time internet
+access is disabled.
 
 Use [local build and smoke checks](local-evaluation.md), then submit a funded run
 through the remote service when authorized. Operator tests that launch Dungeness
