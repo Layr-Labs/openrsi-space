@@ -20,8 +20,7 @@ from .provider_profiles import PROFILES
 
 PROVIDER_ENV = {
     'openai': 'TESTBED_OPENAI_API_KEY', 'anthropic': 'TESTBED_ANTHROPIC_API_KEY',
-    'openrouter': 'TESTBED_OPENROUTER_API_KEY', 'moonshot': 'TESTBED_MOONSHOT_API_KEY',
-    'kimi-code': 'TESTBED_KIMI_CODE_API_KEY',
+    'openrouter': 'TESTBED_OPENROUTER_API_KEY',
     **{name: 'TESTBED_' + profile['credential_env'] for name, profile in PROFILES.items()},
 }
 
@@ -99,6 +98,8 @@ def temporary_environment(access):
 
 
 def prepare(state, package, source, evaluation, *, problem_id='ecdsa.fail', problem_release=None, pricing_path=None):
+    from .credentials import require_active_models
+    require_active_models(evaluation_models(evaluation))
     selected = get_problem(problem_id, release=problem_release)
     source = source.expanduser().resolve()
     if not (source / 'dungeness').is_file():
@@ -218,6 +219,8 @@ def run(args, state):
     if getattr(args, 'no_token_limit', False):
         overrides['max_tokens'] = None
     evaluation = evaluation_config(Path(args.package) / 'evaluation.json', overrides, check_pricing=False)
+    from .credentials import require_active_models
+    require_active_models(evaluation_models(evaluation))
     validate_credential_locations(args)
     access = None
     if not args.prepare_only:

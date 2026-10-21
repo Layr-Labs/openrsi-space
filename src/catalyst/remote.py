@@ -158,8 +158,8 @@ def validate_model(model, *, check_pricing=True, pricing=None):
         raise CatalystError("model requires a provider and exact model name.")
     if "reasoning_effort" in model and model["reasoning_effort"] not in {"low", "medium", "high", "xhigh", "max"}:
         raise CatalystError("Unsupported reasoning effort.")
-    from .credentials import PROVIDERS
-    if model["provider"] not in PROVIDERS:
+    from .credentials import PROVIDERS, RETIRED_PROVIDERS
+    if model["provider"] not in PROVIDERS | RETIRED_PROVIDERS:
         raise CatalystError("Provider requires an authentication/protocol adapter.")
     from .provider_profiles import PROFILES, upstream_model
     if model['provider'] in PROFILES:
@@ -473,6 +473,8 @@ def request_body(submission: Path, base: str, *, judge=None, context=None,
     publication = publication_choices(publication)
     config = evaluation_config(submission / "evaluation.json", evaluation_overrides,
                                pricing=pricing, check_pricing=check_pricing)
+    from .credentials import require_active_models
+    require_active_models(evaluation_models(config))
     snapshot, archive = source_snapshot(submission, execution)
     if snapshot["kind"] != "harness":
         raise CatalystError("Submission must contain an executable harness.")

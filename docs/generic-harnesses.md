@@ -21,12 +21,13 @@ Submit an existing repository containing the general-purpose harness, prompts,
 configuration, helper programs and dependencies, with its existing directory
 layout. The harness can run its own workers, search loop or framework.
 Provide a Dockerfile and launch command; no Catalyst-specific manifest or
-`instructions.md` is required. For example, with `kimi-code` enabled:
+`instructions.md` is required. Replace `PROVIDER` and `MODEL_ID` below with an enabled provider and its exact
+model ID, matching the client implemented by your harness:
 
 ```sh
 uv run catalyst remote submit /path/to/your-agent \
   --entrypoint "python3 /app/main.py" \
-  --provider kimi-code --model k3 --budget 3 \
+  --provider PROVIDER --model MODEL_ID --budget 3 \
   --prompt-model-token --wait
 ```
 
@@ -63,15 +64,12 @@ Submit the same source with a model choice and spending cap:
 
 ```sh
 uv run catalyst remote submit .catalyst/my-agent \
-  --provider kimi-code --model k3 --reasoning-effort high --budget 3 \
+  --provider PROVIDER --model MODEL_ID --budget 3 \
   --prompt-model-token --wait
 ```
 
-The hidden prompt takes a **Kimi Code membership API key**, available from the
-[Kimi Code console](https://www.kimi.com/code/console).
-Kimi documents subscription-backed API access for third-party coding tools and
-the `k3` model in its [official guide](https://www.kimi.com/code/docs/en/).
-A Moonshot platform key belongs to the separate `moonshot` provider.
+The hidden prompt takes the credential for your selected provider. Kimi Code
+and direct Moonshot access are no longer supported.
 No persistent server-side model account is created; the credential is handed
 off for this evaluation and removed afterwards.
 
@@ -258,8 +256,7 @@ For a model absent from those entries, the client first calls the authenticated
 credentials. The service fetches the fixed
 [OpenRouter models catalog](https://openrouter.ai/docs/api/api-reference/models/get-models).
 New OpenRouter model IDs resolve directly; direct OpenAI, ChatGPT and Anthropic
-names resolve under their corresponding catalog author, and Moonshot names
-under `moonshotai`. Ambiguous or unmatched identities fail before inference.
+names resolve under their corresponding catalog author. Ambiguous or unmatched identities fail before inference.
 Subscriptions with opaque aliases need a verifiable identity mapping; callers
 cannot assign an arbitrary cheaper reference model.
 
@@ -295,9 +292,7 @@ is used only at that fixed catalog URL, never taken from solver model access,
 and is excluded from snapshots and worker environments. Redirects are refused.
 
 For a single API provider, use the existing hidden token prompt or stdin
-handoff. This includes subscription-backed Kimi Code API keys, using the
-`kimi-code` provider and `k3` model; normalized credits do not claim an actual
-cash charge. Multiple providers can use `--provider-access-file` pointing to a
+handoff. Multiple providers can use `--provider-access-file` pointing to a
 private JSON map of provider names to access tokens. For `openai-chatgpt`,
 the map value is the temporary access object produced from the local Codex
 login; it must not contain a refresh token. For ChatGPT alone, keep using
@@ -313,8 +308,7 @@ ChatGPT is a Responses provider, not a universal substitute for every
 framework's model client. Configure your submitted client to use the assigned
 gateway and its placeholder credential; it must not read native authentication
 inside the harness container. Test its request format and tool definitions.
-Kimi Code and Moonshot support native Chat Completions clients. The legacy
-Responses adapter has been removed; any protocol conversion belongs in the
+The legacy Responses adapter has been removed; any protocol conversion belongs in the
 submitted harness. For streamed chat requests, the gateway
 requests the final usage chunk and drains it even if the agent disconnects.
 

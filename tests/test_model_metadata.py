@@ -3,6 +3,7 @@ from pathlib import Path
 import unittest
 
 from catalyst.agent_setup import model_profile
+from catalyst.common import CatalystError
 
 
 class ModelMetadataTests(unittest.TestCase):
@@ -15,12 +16,21 @@ class ModelMetadataTests(unittest.TestCase):
         self.assertNotIn("context_window", profile)
         self.assertNotIn("supported_reasoning_efforts", profile)
 
-    def test_native_kimi_models_no_longer_advertise_removed_responses_adapter(self):
+    def test_retired_providers_cannot_create_execution_profiles(self):
         for provider in ("moonshot", "kimi-code"):
             with self.subTest(provider=provider):
                 pricing = {"entries": [{
                     "provider": provider, "upstream_id": provider + "/example",
                     "request_models": ["example"],
                 }]}
-                profile = model_profile(Path("/unused"), "example", provider, pricing)
-                self.assertEqual(profile["api"], "openai-completions")
+                with self.assertRaisesRegex(CatalystError, "retired"):
+                    model_profile(Path("/unused"), "example", provider, pricing)
+
+    def test_retired_provider_history_is_readable_but_credentials_are_rejected(self):
+        from catalyst.credentials import validate_provider_access
+        from catalyst.remote import validate_model
+        for provider, name in (("moonshot", "kimi-k3"), ("kimi-code", "k3")):
+            with self.subTest(provider=provider):
+                validate_model({"provider": provider, "name": name})
+                with self.assertRaisesRegex(CatalystError, "supported providers"):
+                    validate_provider_access({provider: "offline-test-credential"})

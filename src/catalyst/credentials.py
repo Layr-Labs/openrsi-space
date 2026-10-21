@@ -10,6 +10,14 @@ TEMPORARY_GRANT = "grant_temporary_provider"
 TOKEN_HEADER = "X-Catalyst-Model-Token"
 MAX_TOKEN_BYTES = 8192
 PROVIDERS = BUILTINS | PROFILES.keys()
+# Read historical configurations without re-enabling their credentials or execution.
+RETIRED_PROVIDERS = frozenset({"kimi-code", "moonshot"})
+
+def require_active_models(models):
+    for model in models:
+        if model["provider"] in RETIRED_PROVIDERS:
+            raise CatalystError("Kimi Code and direct Moonshot access are retired; choose a supported provider.")
+
 PREFIX = "chatgpt_"
 ACCESS_PREFIX = "providers_"
 

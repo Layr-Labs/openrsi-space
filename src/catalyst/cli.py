@@ -162,6 +162,9 @@ def remote_command(args, state):
         # Validate choices before asking the solver for a credential.
         from .remote import evaluation_config
         config = evaluation_config(Path(args.package) / "evaluation.json", overrides, check_pricing=False)
+        from .credentials import require_active_models
+        from .tiers import evaluation_models
+        require_active_models(evaluation_models(config))
         for credential_file in (args.codex_auth_file, args.provider_access_file, getattr(args, "grok_auth_file", None)):
             if credential_file and Path(credential_file).expanduser().resolve().is_relative_to(
                     Path(args.package).resolve()):
@@ -313,7 +316,7 @@ def build_parser():
                                help="Optional license you have authority to grant for public source. Omission grants no additional license.")
     remote_submit.add_argument("--entrypoint", help="Launch argv for an existing repository without harness.json; parsed without a shell.")
     remote_submit.add_argument("--dockerfile", help="Relative build recipe for --entrypoint (default: Dockerfile).")
-    remote_submit.add_argument("--provider", help="Model provider; use with --model (for example, kimi-code).")
+    remote_submit.add_argument("--provider", help="Model provider; use with --model (for example, openai).")
     remote_submit.add_argument("--model", help="Exact declared model name; prices are resolved before execution (for example, k3).")
     remote_submit.add_argument("--reasoning-effort", choices=["low", "medium", "high", "xhigh", "max"])
     remote_submit.add_argument("--budget", type=float, help="Run spending cap in normalized model credits.")

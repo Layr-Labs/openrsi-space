@@ -5,6 +5,8 @@ from catalyst.executable import INTERFACE
 
 def model_profile(source: Path, requested: str, provider="openai", pricing=None) -> dict:
     """Resolve model identity from Dungeness's trusted accounting policy."""
+    from .credentials import require_active_models
+    require_active_models([{"provider": provider}])
     from .provider_profiles import PROFILES, upstream_model
     if provider in PROFILES:
         if not (source / "services/gateway/provider_profiles.py").is_file():

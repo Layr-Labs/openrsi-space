@@ -83,7 +83,7 @@ See [the screening policy](docs/cheat-filter.md).
 The current MVP uses **Yukon dev**, benchmark `layr-labs/catalyst`, and the
 HTTPS verifier at `https://3.21.93.126`. Use a dev Yukon login; production
 Yukon keys do not authenticate to this deployment. No separate Catalyst
-password is needed. The current VM enables `openai-chatgpt`, `kimi-code`, `xai`
+password is needed. The current VM enables `openai-chatgpt`, `xai`
 and `grok-subscription`. Availability does not guarantee that every agent/model
 pair is compatible; see the solver guide and harness compatibility checks.
 

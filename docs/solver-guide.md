@@ -182,7 +182,7 @@ Runtime requirements:
 - Declare models and choose spending caps and timeouts deliberately. Token
   ceilings are optional and disabled by default; tokens remain metered. The service must
   support the provider protocol and resolve reference pricing before inference.
-  The current VM enables `openai-chatgpt`, `kimi-code`, `xai` and
+  The current VM enables `openai-chatgpt`, `xai` and
   `grok-subscription`; arbitrary model names do not imply arbitrary provider
   protocols are available.
 

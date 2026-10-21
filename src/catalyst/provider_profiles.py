@@ -8,7 +8,7 @@ from pathlib import Path
 import re
 from urllib.parse import urlsplit
 
-BUILTINS = frozenset({'openai', 'openai-chatgpt', 'anthropic', 'openrouter', 'moonshot', 'kimi-code'})
+BUILTINS = frozenset({'openai', 'openai-chatgpt', 'anthropic', 'openrouter'})
 PROFILE_PATH = Path(__file__).with_name('providers.json')
 
 
@@ -41,7 +41,7 @@ def load_profiles(path=PROFILE_PATH):
             raise ValueError('Invalid provider credential configuration.')
         if not isinstance(item['routes'], list) or not item['routes'] or not set(item['routes']) <= {'responses', 'chat/completions'}:
             raise ValueError('Configured providers support only metered text inference routes.')
-        if item['credential_env'] in {'OPENAI_API_KEY', 'OPENROUTER_API_KEY', 'ANTHROPIC_API_KEY', 'MOONSHOT_API_KEY', 'KIMI_CODE_API_KEY', 'PATH', 'HOME'} or item['credential_env'].endswith('_EXPIRES_AT'):
+        if item['credential_env'] in {'OPENAI_API_KEY', 'OPENROUTER_API_KEY', 'ANTHROPIC_API_KEY', 'PATH', 'HOME'} or item['credential_env'].endswith('_EXPIRES_AT'):
             raise ValueError('Provider credential environment collides with a reserved name.')
         if not isinstance(item['headers'], dict):
             raise ValueError('Provider headers must be a mapping.')

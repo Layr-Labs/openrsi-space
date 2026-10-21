@@ -238,20 +238,20 @@ class LocalRunTests(unittest.TestCase):
 
     def test_ensemble_uses_all_declared_models_and_exact_provider_credentials(self):
         models = [{'provider': 'openai', 'name': 'gpt-5.6-sol'},
-                  {'provider': 'kimi-code', 'name': 'k3'}]
+                  {'provider': 'anthropic', 'name': 'claude-opus-5'}]
         write_json(self.harness / 'evaluation.json', {
             'schema_version': 4, 'llm_access': {'grant_id': 'grant_temporary_provider'},
             'model': models[0], 'models': models, 'max_model_credits': 1,
             'limits': {'max_model_tokens': 1000, 'max_seconds': 60},
         })
         credentials = self.root / 'providers.json'
-        write_json(credentials, {'openai': 'synthetic-openai-key', 'kimi-code': 'synthetic-kimi-key'})
+        write_json(credentials, {'openai': 'synthetic-openai-key', 'anthropic': 'synthetic-anthropic-key'})
         def execute(command, runtime, environment):
             spec = yaml_file(Path(self.metadata()['spec_path']))
-            self.assertEqual([m['provider'] for m in spec['model_access']['models']], ['openai', 'kimi-code'])
+            self.assertEqual([m['provider'] for m in spec['model_access']['models']], ['openai', 'anthropic'])
             contents = Path(command[command.index('--env-file') + 1]).read_text()
             self.assertIn('TESTBED_OPENAI_API_KEY=synthetic-openai-key\n', contents)
-            self.assertIn('TESTBED_KIMI_CODE_API_KEY=synthetic-kimi-key\n', contents)
+            self.assertIn('TESTBED_ANTHROPIC_API_KEY=synthetic-anthropic-key\n', contents)
             return 0
         with patch('catalyst.local.execute_process', side_effect=execute), \
                 redirect_stdout(self.out), redirect_stderr(self.err):

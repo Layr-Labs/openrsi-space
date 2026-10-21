@@ -16,11 +16,11 @@ Coding agents should read [the agent instructions](agent-prompt.md).
 
 The deployed [generic harness implementation](generic-harnesses.md) supports API
 provider access, model sets, and credentials owned by the gateway. The existing
-VM enables `openai-chatgpt`, `kimi-code`, `xai` and `grok-subscription`. The historical native
+VM enables `openai-chatgpt`, `xai` and `grok-subscription`. The historical native
 Codex mode described below predates this command interface; its credential
 exposure does not apply to generic execution.
 
-For Kimi Code subscription keys and other supported providers, use the
+For supported providers, use the
 [general source submission flow](generic-harnesses.md#submit-your-own-agent).
 The provider/model belongs to the run configuration. There is no required
 provider-specific harness and no model account registration on the server.
