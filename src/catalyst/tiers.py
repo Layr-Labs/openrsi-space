@@ -24,7 +24,7 @@ def tier(value) -> int:
 
 
 def pricing_schedule() -> dict:
-    return read_json(Path(__file__).parent / "problem-set/pricing.json")
+    return read_json(Path(__file__).parent / "pricing/pricing.json")
 
 
 def pricing_digest(schedule=None) -> str:
