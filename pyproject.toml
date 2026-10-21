@@ -16,4 +16,4 @@ catalyst = "catalyst.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
-catalyst = ["runtime/*.py", "problem-set/*.json", "problem-set/*.md", "providers.json"]
+catalyst = ["runtime/*.py", "problem-set/*.json", "problem-set/*.md", "pricing/*.json", "providers.json"]

@@ -21,7 +21,7 @@ the best result.
 
 ## Trusted accounting
 
-`src/catalyst/problem-set/pricing.json` is the pinned reference schedule, copied
+`src/catalyst/pricing/pricing.json` is the pinned reference schedule, copied
 from Dungeness commit `506890937d75b659db714d3e02ea3d3cec3a1451`. Its canonical
 JSON SHA-256 is included in requests, result bindings, receipts and public
 metrics. Editing prices creates a different comparison policy identity; never

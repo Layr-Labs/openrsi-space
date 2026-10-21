@@ -28,7 +28,7 @@ Keep the complete performance–cost curve and every attempt, including failures
 and regressions. Infrastructure costs are accounted for separately.
 
 Model credits retain existing immutable reference rates in
-[`pricing.json`](src/catalyst/problem-set/pricing.json).
+[`pricing.json`](src/catalyst/pricing/pricing.json).
 The service resolves additional declared models through a
 [service-issued OpenRouter pricing snapshot](docs/generic-harnesses.md#reference-prices-for-declared-models).
 The exact schedule's content hash is bound into every evaluation and

@@ -15,7 +15,7 @@ from . import executable
 from .agent_setup import install_agent, model_profile
 from .problems import get_problem, problem_statement
 from .task_setup import install_task, require_problem_service_runtime, write_yaml
-from .tiers import evaluation_models
+from .tiers import evaluation_models, pricing_schedule
 from .provider_profiles import PROFILES
 
 PROVIDER_ENV = {
@@ -110,7 +110,7 @@ def prepare(state, package, source, evaluation, *, problem_id='ecdsa.fail', prob
     require_problem_service_runtime(source)
     if evaluation['limits'].get('max_model_tokens') is None and '--no-model-token-limit' not in (source / 'dungeness').read_text():
         raise CatalystError('Update Dungeness to support runs without a token ceiling.')
-    pricing = read_json(pricing_path or Path(__file__).parent / 'problem-set/pricing.json')
+    pricing = read_json(pricing_path) if pricing_path else pricing_schedule()
     models = evaluation_models(evaluation)
     resolved = []
     for model in models:

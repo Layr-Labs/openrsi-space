@@ -274,8 +274,12 @@ normalization rule. Quotes support one prompt-length tier, applied strictly abov
 the declared input-token threshold (including cached input). Rates are reference
 credits, not a claim about subscription consumption. A listed optional web-search
 price is excluded only on inference-only routes; OpenRouter also requires the
-operator to disable account-default plugins. Other nonzero non-token charges,
-paid provider tools, multimodal requests and model fallbacks are rejected. Agent-executed function tools remain
+operator to disable account-default plugins. Listed image, audio and input-audio-cache
+prices are excluded because these quotes enforce text-only requests. Nonzero
+`internal_reasoning` prices must equal the completion rate at every pricing tier:
+reasoning tokens are already included in output usage and are charged once.
+Different reasoning rates and other unknown nonzero charges are rejected, as are
+paid provider tools, multimodal requests and model fallbacks. Agent-executed function tools remain
 available. The service never accepts solver-authored prices or upstream URLs.
 
 The worker installs the frozen snapshot in its trusted Dungeness runtime.
