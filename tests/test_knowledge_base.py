@@ -10,8 +10,8 @@ from urllib.error import HTTPError
 from urllib.request import urlopen
 
 from catalyst.common import CatalystError, canonical
-from catalyst.knowledge_base import write_resource_catalog
-from catalyst.paper_library import prepare_library
+from catalyst.challenge.resources import write_resource_catalog
+from catalyst.challenge.papers import prepare_library
 from catalyst.runtime.problem_server import handler_for, load_files
 from library_fixture import install_fixture
 

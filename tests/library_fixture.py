@@ -13,8 +13,8 @@ def install_fixture(test, root):
          "bytes": len(raw), "title": f"Fixture {i}", "media_type": "application/pdf"}
         for i in range(50)]}
     for mock in (
-        patch("catalyst.paper_library.load_catalog", return_value=catalog),
-        patch("catalyst.paper_library.cached_paper", return_value=source),
+        patch("catalyst.challenge.papers.load_catalog", return_value=catalog),
+        patch("catalyst.challenge.papers.cached_paper", return_value=source),
     ):
         mock.start()
         test.addCleanup(mock.stop)

@@ -10,7 +10,7 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from catalyst.problems import get_problem, problem_statement
+from catalyst.challenge.catalog import get_problem, problem_statement
 from catalyst.runtime import launch, problem_server
 
 

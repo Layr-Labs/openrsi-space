@@ -7,7 +7,7 @@ from unittest.mock import patch
 
 from catalyst.common import CatalystError
 from catalyst.runtime_contract import require_capabilities
-from catalyst.task_setup import require_problem_service_runtime
+from catalyst.challenge.preparation import require_problem_service_runtime
 
 
 class RuntimeContractTests(unittest.TestCase):

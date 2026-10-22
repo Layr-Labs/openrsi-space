@@ -15,9 +15,9 @@ from catalyst import local
 from catalyst.cli import main
 from catalyst.common import snapshot_directory, read_json, write_json
 from catalyst.executable import SOURCE_EXCLUDES
-from catalyst.problems import get_problem, problem_statement
-from catalyst.paper_library import load_catalog as installed_catalog
-from catalyst.task_setup import yaml_file
+from catalyst.challenge.catalog import get_problem, problem_statement
+from catalyst.challenge.papers import load_catalog as installed_catalog
+from catalyst.challenge.preparation import yaml_file
 
 
 def commit(root):
@@ -144,7 +144,7 @@ class LocalRunTests(unittest.TestCase):
         catalog = installed_catalog(binding)
         fixture = (self.root / 'fixture.pdf').read_bytes()
         catalog['papers'][0].update(bytes=len(fixture), sha256=hashlib.sha256(fixture).hexdigest())
-        with patch('catalyst.paper_library.load_catalog', return_value=catalog) as load:
+        with patch('catalyst.challenge.papers.load_catalog', return_value=catalog) as load:
             self.assertEqual(self.cli('--prepare-only', '--problem-release', 'v0'), 0, self.err.getvalue())
         load.assert_called_once_with(binding)
         runtime = Path(self.metadata()['runtime'])

@@ -6,8 +6,8 @@ import tempfile
 import unittest
 
 from catalyst.common import CatalystError, canonical
-from catalyst.paper_library import load_catalog
-from catalyst.problems import get_problem, initial_problems, is_official_problem_set
+from catalyst.challenge.papers import load_catalog
+from catalyst.challenge.catalog import get_problem, initial_problems, is_official_problem_set
 from catalyst.remote import request_body
 from harness_fixture import create_harness
 

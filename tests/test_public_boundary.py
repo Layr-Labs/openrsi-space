@@ -36,7 +36,10 @@ class PublicBoundaryTests(unittest.TestCase):
                 if isinstance(node, ast.ImportFrom):
                     self.assertFalse((node.module or "").startswith("catalyst_verifier"), path)
                     if node.level:
-                        self.assertNotIn((node.module or "").split(".")[0], PRIVATE_MODULES, path)
+                        package = ".".join(("catalyst", *path.relative_to(root).parts[:-1]))
+                        resolved = importlib.util.resolve_name("." * node.level + (node.module or ""), package)
+                        if resolved.startswith("catalyst."):
+                            self.assertNotIn(resolved.split(".")[1], PRIVATE_MODULES, path)
                 elif isinstance(node, ast.Import):
                     self.assertFalse(any(alias.name.startswith("catalyst_verifier") for alias in node.names), path)
 

@@ -9,7 +9,7 @@ import unittest
 from pathlib import Path
 
 
-from catalyst.problem_assets import ROOT
+from catalyst.challenge.assets import ROOT
 
 REPOSITORY_ROOT = ROOT / "ecdsa-fail"
 SERVERS = (
@@ -52,6 +52,8 @@ class EvaluatorUsageEventTests(unittest.TestCase):
                         "operation": "score",
                         "status": "ok",
                         "score": 42.0,
+                        "avg_toffoli": 21,
+                        "peak_qubits": 2,
                     }
                     module._record(event)
                     module._record(event)
@@ -66,6 +68,9 @@ class EvaluatorUsageEventTests(unittest.TestCase):
                     self.assertEqual(record["event_id"], "evaluation:3")
                     self.assertEqual(record["data"]["submissions_used"], 3)
                     self.assertEqual(record["data"]["best_score"], 42.0)
+                    self.assertEqual(record["data"]["metrics"], {"avg_toffoli": 21, "peak_qubits": 2})
+                    self.assertEqual(record["data"]["avg_toffoli"], 21)
+                    self.assertEqual(record["data"]["peak_qubits"], 2)
                     self.assertEqual(record["usage"]["normalized_usd"], 1.25)
                     self.assertFalse((usage / "eval-events.jsonl").exists())
                     self.assertFalse((usage / "eval-summary.json").exists())

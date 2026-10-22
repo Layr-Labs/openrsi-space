@@ -6,8 +6,8 @@ import unittest
 from unittest.mock import patch
 
 from catalyst.common import CatalystError, canonical
-from catalyst.paper_library import cached_paper, load_catalog, prepare_library, validate_download_url
-from catalyst.problems import get_problem
+from catalyst.challenge.papers import cached_paper, load_catalog, prepare_library, validate_download_url
+from catalyst.challenge.catalog import get_problem
 from catalyst.runtime.problem_server import load_files
 from library_fixture import install_fixture
 
@@ -64,7 +64,7 @@ class PaperLibraryTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             cache = Path(directory)
             (cache / "test.pdf").write_bytes(data)
-            with patch("catalyst.paper_library.build_opener") as opener:
+            with patch("catalyst.challenge.papers.build_opener") as opener:
                 self.assertEqual(cached_paper(entry, cache).read_bytes(), data)
                 opener.assert_not_called()
                 (cache / "test.pdf").write_bytes(b"tampered")

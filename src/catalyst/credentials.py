@@ -2,9 +2,9 @@
 import base64
 import json
 from pathlib import Path
-from .common import CatalystError, canonical
-from .protocol import APIError
-from .provider_profiles import PROFILES, BUILTINS
+from catalyst.common import CatalystError, canonical
+from catalyst.protocol import APIError
+from catalyst.provider_profiles import PROFILES, BUILTINS
 
 TEMPORARY_GRANT = "grant_temporary_provider"
 TOKEN_HEADER = "X-Catalyst-Model-Token"

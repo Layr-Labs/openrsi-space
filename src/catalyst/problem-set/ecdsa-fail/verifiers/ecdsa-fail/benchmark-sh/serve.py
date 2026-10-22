@@ -154,6 +154,11 @@ def _candidate_digest(path: Path) -> str:
 
 def _record(event: dict) -> None:
     payload = dict(event)
+    # Display names belong to this challenge; retain flat fields for old readers.
+    payload["metrics"] = {
+        name: event[name] for name in ("avg_toffoli", "peak_qubits")
+        if event.get(name) is not None
+    }
     event_id = str(payload.pop("event_id", f"evaluation:{time.time_ns()}"))
     payload.update(
         {

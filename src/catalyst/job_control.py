@@ -2,7 +2,7 @@
 from contextlib import contextmanager
 from contextvars import ContextVar
 
-from .common import CatalystError
+from catalyst.common import CatalystError
 
 
 class JobCancelled(CatalystError):

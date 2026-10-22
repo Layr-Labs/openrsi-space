@@ -6,9 +6,9 @@ import unittest
 from unittest.mock import patch
 
 from catalyst.common import CatalystError
-from catalyst.problem_assets import asset_path, install_assets, registered_assets
-from catalyst.problems import get_problem
-from catalyst.task_setup import validate_execution, yaml_file
+from catalyst.challenge.assets import asset_path, install_assets, registered_assets
+from catalyst.challenge.catalog import get_problem
+from catalyst.challenge.preparation import validate_execution, yaml_file
 
 
 class ProblemAssetsTests(unittest.TestCase):
@@ -49,7 +49,7 @@ class ProblemAssetsTests(unittest.TestCase):
             (source / 'grade.py').write_text('# trusted verifier')
             (source / '__pycache__/grade.cpython-312.pyc').write_bytes(b'local cache')
             (source / 'grade.pyc').write_bytes(b'legacy cache')
-            with patch('catalyst.problem_assets.registered_assets',
+            with patch('catalyst.challenge.assets.registered_assets',
                        return_value={'verifiers/example': source}):
                 install_assets(runtime, {'verifier': 'example'})
             self.assertEqual([p.name for p in (runtime / 'verifiers/example').iterdir()], ['grade.py'])

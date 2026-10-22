@@ -5,8 +5,8 @@ import tempfile
 import unittest
 
 from catalyst.common import CatalystError
-from catalyst.problems import get_problem
-from catalyst.task_setup import execution_initialization, validate_execution, write_yaml
+from catalyst.challenge.catalog import get_problem
+from catalyst.challenge.preparation import execution_initialization, validate_execution, write_yaml
 
 
 class TaskInitializationTests(unittest.TestCase):

@@ -1,5 +1,5 @@
 """Publication choices carried with each new evaluation request."""
-from .common import CatalystError
+from catalyst.common import CatalystError
 
 SOURCE_LICENSES = frozenset({
     "MIT", "Apache-2.0", "BSD-2-Clause", "BSD-3-Clause", "GPL-3.0-only",

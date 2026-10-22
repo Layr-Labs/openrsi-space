@@ -90,7 +90,7 @@ def validate_document(document: dict) -> None:
             raise CatalystError("Metric direction must be minimize or maximize.")
     if kind == "harness":
         if "execution" in document:
-            from .executable import validate_execution
+            from catalyst.contracts.harness import validate_execution
             validate_execution(document["execution"])
             if "agent" in document or "agent_options" in document:
                 raise CatalystError("An executable harness cannot select a host agent or adapter.")

@@ -1,6 +1,6 @@
 """Public HTTP contract primitives shared by client and verifier."""
 import uuid
-from .common import CatalystError
+from catalyst.common import CatalystError
 
 YUKON_BINDING_PROTOCOL = "yukon-execution-binding-v1"
 
