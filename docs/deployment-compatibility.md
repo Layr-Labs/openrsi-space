@@ -5,8 +5,9 @@ at `https://3.21.93.126` uses the earlier unversioned manifest. A new manifest i
 not interchangeable with a historical problem hash.
 
 For that deployment, use a separate checkout of
-`release/catalyst-prod-20261022-runtime-cleanup`. Its public package revision is
-`c1dc171`; check the service's advertised problem identity before submitting.
+`release/catalyst-prod-20261022-runtime-cleanup`. This branch retains the hosted
+problem identity while receiving compatible cleanup backports. Check the service's
+advertised problem identity before submitting.
 The structural cleanup on `main` does not switch the deployed problem release.
 
 Release the public package, private verifier and Yukon registration together when
