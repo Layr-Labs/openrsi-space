@@ -12,7 +12,6 @@ MARKERS = {
     "priced-model-requests-v1": (("services/gateway/gateway_models.py", "def validate_declared_request("),),
     "command-exit-status-v1": (("adapters/harbor/command_agent.py", "result.return_code"),),
     "rejected-request-accounting-v1": (("services/gateway/gateway_runtime.py", "def rejected_before_generation("),),
-    "ecdsa-readable-verifier-results-v1": (("verifiers/ecdsa-fail/benchmark-sh/grade.py", "os.fchmod(tmp.fileno(), 0o644)"),),
     "assigned-problem-service-v1": (
         ("src/dungeness/compiler.py", "def resolve_problem_service("),
         ("services/gateway/gateway.py", "async def assigned_task("),

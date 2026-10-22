@@ -118,9 +118,7 @@ def validate_execution(source, problem_path, document):
     verifier = execution.get('verifier')
     if verifier is not None:
         safe_relative(verifier)
-        folder = source / 'verifiers' / verifier
-        if not folder.resolve().is_relative_to((source / 'verifiers').resolve()):
-            raise CatalystError('Verifier bundle must remain inside the pinned runtime.')
+        folder = asset_path(source, 'verifiers/' + verifier)
     else:
         folder = problem_path / 'verifier'
     required = ['Dockerfile', 'grade.py', 'test.sh']

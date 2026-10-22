@@ -1,0 +1,37 @@
+schema_version: 1
+type: task
+namespace: projects/dungeness
+id: ecdsa-starter
+instruction: statement.txt
+
+relations:
+  problem: problem:public/ecdsafail-challenge/ecdsa-fail
+
+workspace:
+  include:
+    - .
+
+interfaces:
+  point-add-module-v1:
+    candidate:
+      allowed_paths:
+        - src/point_add
+    verifier: ecdsa-fail/benchmark-sh
+
+policies:
+  network: policies/network/mediated.yaml
+  web: policies/web/exa.yaml
+  budget: policies/budget/no-web.yaml
+
+evaluation:
+  mode: full-benchmark
+
+resources:
+  agent:
+    memory_mb: 4096
+    cpus: 4
+  verifier:
+    memory_mb: 8192
+    cpus: 4
+    timeout_sec: 1200
+    build_timeout_sec: 1200

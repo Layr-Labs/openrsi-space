@@ -1,0 +1,27 @@
+# Evaluator = the trusted scoring harness (what the ecdsa.fail repo calls "the
+# harness"; in Dungeness terms it is the evaluator, NOT the research agent).
+# Fetched into the clean verifier. Only these files are copied -- never
+# src/point_add.rs, which is the candidate transferred separately.
+#
+# commit: same as the baseline (c6f6d2c) so the harness and the baseline circuit
+#   compile/run together. This harness enforces, per run: Fiat-Shamir-derived
+#   test points (un-gameable), correctness, reversibility (ancilla back to |0>),
+#   forward-reverse identity, phase cleanliness, and end-state garbage checks.
+#   The Toffoli/qubit counts are produced by the trusted simulator applying the
+#   candidate's emitted op stream (not self-reported by the candidate).
+schema_version: 1
+
+repository:
+  url: https://github.com/Layr-Labs/ecdsafail-challenge.git
+  commit: c6f6d2c7f50353259241e296458afb0e651e6c37
+
+include_paths:
+  - NOTICE
+  - Cargo.lock
+  - Cargo.toml
+  - rust-toolchain
+  - src/main.rs
+  - src/circuit.rs
+  - src/sim.rs
+  - src/builder.rs
+  - src/weierstrass_elliptic_curve.rs

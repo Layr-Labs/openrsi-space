@@ -58,6 +58,6 @@ def install_assets(runtime, execution):
         if target.exists():
             shutil.rmtree(target)
         target.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copytree(source, target)
+        shutil.copytree(source, target, ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.pyo"))
         added.append(destination)
     return added
