@@ -7,7 +7,7 @@ checkout's generated `submission/verification.json`; `yukon run` checks that ret
 See [the solver guide](solver-guide.md) for authentication and publication.
 
 The problem is **ecdsa.fail**. Exact source commits, candidate paths and verifier
-commands live in `src/catalyst/problem-set/ecdsa-fail/releases/v2.json`. Local checks use that
+commands live in `src/catalyst/problem-set/ecdsa-fail/releases/v1.json`. Local checks use that
 pin; they cannot issue an official receipt.
 
 ## Develop against a problem
@@ -67,7 +67,7 @@ The `execution` field in the ordinary harness manifest is:
 Executable packages cannot select a host agent or Python adapter. Package
 general-purpose tools and retrieval code in any layout your agent supports.
 Problem-specific knowledge belongs to the trusted task: its library endpoint
-provides 50 raw papers, and your agent chooses how to read or index them during
+provides 40 bundled papers, and your agent chooses how to read or index them during
 the run. `CATALYST_KNOWLEDGE_BASE_URL` points to the catalog. Do not submit ECDSA
 papers, strategies, notes, solution code or answer caches. See the
 [screening policy](cheat-filter.md).

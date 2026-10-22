@@ -1,6 +1,6 @@
 {
   "checked_on": "2026-10-22",
-  "catalog": "ecdsa-papers-v2",
+  "catalog": "ecdsa-papers-v1",
   "method": "Publisher license metadata checked against version-specific arXiv pages where available; existing PDFs hash-checked and inspected for copyright notices. IACR PDFs could not be freshly downloaded (HTTP 403); retained copies match the previously pinned catalog. This records evidence, not a guarantee of copyright ownership.",
   "papers": [
     {
@@ -284,7 +284,7 @@
       "note": "Gate-count optimization for Clifford+T circuit synthesis."
     }
   ],
-  "excluded_from_v1": [
+  "excluded_from_prelaunch_collection": [
     {
       "id": "ecdsa-core-03",
       "title": "Quantum Algorithm for Elliptic Curve Discrete Logarithms with Space-Efficient Point Addition",

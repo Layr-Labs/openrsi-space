@@ -49,17 +49,17 @@ with tempfile.TemporaryDirectory() as temporary:
     # Exercise the installed package with an absent cache and forbidden downloads.
     # This catches wheels that contain the catalog but omit any of its PDFs.
     root = Path(temporary)
-    binding = catalog.get_problem("ecdsa.fail", release="v2")["dungeness"]["knowledge_base"]
+    binding = catalog.get_problem("ecdsa.fail", release="v1")["dungeness"]["knowledge_base"]
     with patch.dict(os.environ, {"CATALYST_PAPER_CACHE": str(root / "absent-cache")}), \
             patch.object(papers, "build_opener", side_effect=AssertionError("Unexpected paper download")) as opener:
         metadata, attachments = papers.prepare_library(
-            binding, root / "papers", slug="ecdsa-fail", release="v2")
+            binding, root / "papers", slug="ecdsa-fail", release="v1")
         opener.assert_not_called()
     assert metadata["count"] == 40 and len(attachments) == 42
     assert not (root / "absent-cache").exists()
     files = load_files(canonical({"attachments": attachments}), root / "papers")
-    assert "/ecdsa-fail/v2/knowledge-base" in files
-    assert "/ecdsa-fail/v2/resources/ecdsa-core-02" in files
+    assert "/ecdsa-fail/v1/knowledge-base" in files
+    assert "/ecdsa-fail/v1/resources/ecdsa-core-02" in files
     runtime = Path(temporary) / "runtime"
     runtime.mkdir()
     installed = assets.install_assets(runtime, catalog.get_problem("ecdsa.fail")["dungeness"])

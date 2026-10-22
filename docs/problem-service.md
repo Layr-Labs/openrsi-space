@@ -64,14 +64,13 @@ does not turn the model gateway into a candidate-execution process.
 ## Shared paper library
 
 The problem's `execution.knowledge_base` pins the canonical SHA-256 of
-[the paper catalog](../src/catalyst/problem-set/ecdsa-fail/knowledge-base/v2.json).
-Release v2 contains 40 content-pinned research papers about quantum elliptic-curve
+[the paper catalog](../src/catalyst/problem-set/ecdsa-fail/knowledge-base/v1.json).
+Release v1 contains 40 content-pinned research papers about quantum elliptic-curve
 arithmetic, reversible circuits, synthesis, uncomputation and resource reduction.
 All 40 unmodified PDFs ship inside the Catalyst package, with author attribution,
 original source links, recorded Creative Commons licenses and SHA-256 checksums.
 The required paper is André Schrottenloher's arXiv:2606.02235v1. Preparation verifies
-all bundled bytes and needs no external paper downloads. Historical v1 resources
-and receipt identities are unchanged.
+all bundled bytes and needs no external paper downloads. Existing requests and receipts keep their exact original identities.
 
 Inside a run:
 
@@ -112,7 +111,7 @@ document, with the document digest in its run metadata.
 
 The public ECDSA source commit, scoring rules and receipt protocol are unchanged.
 The updated execution configuration changes the problem-package version.
-Catalyst also owns the ECDSA execution configuration in `problem-set/ecdsa-fail/releases/v2.json`:
+Catalyst also owns the ECDSA execution configuration in `problem-set/ecdsa-fail/releases/v1.json`:
 source commit, candidate paths, interface, initialization, resource limits and
 verifier selection. The worker generates a task and checkpoint in its private
 per-run runtime; it does not look up Dungeness task, problem or checkpoint

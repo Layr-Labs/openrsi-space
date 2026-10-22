@@ -13,7 +13,7 @@ from catalyst.challenge.papers import BUNDLED_PAPERS, cached_paper, load_catalog
 
 class LicensedLibraryTests(unittest.TestCase):
     def catalog(self):
-        return load_catalog(get_problem("ecdsa.fail", release="v2")["dungeness"]["knowledge_base"])
+        return load_catalog(get_problem("ecdsa.fail", release="v1")["dungeness"]["knowledge_base"])
 
     def test_licensed_selection_preserves_required_work_and_grading(self):
         catalog = self.catalog()
@@ -33,16 +33,16 @@ class LicensedLibraryTests(unittest.TestCase):
         self.assertEqual(len(required), 1)
         self.assertEqual(required[0]["license_url"], "https://creativecommons.org/licenses/by/4.0/")
         self.assertTrue(matches(BUNDLED_PAPERS / required[0]["file"], required[0]))
-        before = copy.deepcopy(get_problem("ecdsa.fail", release="v1"))
-        after = copy.deepcopy(get_problem("ecdsa.fail", release="v2"))
-        for problem in (before, after):
-            problem.pop("release")
-            problem["dungeness"].pop("knowledge_base")
-        self.assertEqual(before, after)
-        evidence = json.loads((BUNDLED_PAPERS.parent / "licenses-v2.json").read_text())
+        grading = copy.deepcopy(get_problem("ecdsa.fail", release="v1"))
+        grading.pop("release")
+        grading["dungeness"].pop("knowledge_base")
+        from catalyst.common import canonical
+        self.assertEqual(hashlib.sha256(canonical(grading)).hexdigest(),
+                         "762f1e2cb6054e88de4d4bb04bdbc496b186c9690721f8b8d767faf43b7cf250")
+        evidence = json.loads((BUNDLED_PAPERS.parent / "licenses-v1.json").read_text())
         self.assertEqual({p["id"] for p in evidence["papers"]}, {p["id"] for p in catalog["papers"]})
-        self.assertEqual(len(evidence["excluded_from_v1"]), 15)
-        self.assertFalse({p["id"] for p in evidence["excluded_from_v1"]} & {p["id"] for p in catalog["papers"]})
+        self.assertEqual(len(evidence["excluded_from_prelaunch_collection"]), 15)
+        self.assertFalse({p["id"] for p in evidence["excluded_from_prelaunch_collection"]} & {p["id"] for p in catalog["papers"]})
 
     def test_complete_library_is_bundled_without_network_or_cache(self):
         catalog = self.catalog()
@@ -85,9 +85,9 @@ class CurrentProblemTests(unittest.TestCase):
         from catalyst.challenge.catalog import initial_problems
         from catalyst.contracts.results import digest
         client = PublicCatalog('https://verifier.example.test')
-        version = digest(initial_problems(release='v2'))
+        version = digest(initial_problems(release='v1'))
         advertised = {'problem_version': version, 'problem_versions': [
-            {'id': 'ecdsa.fail', 'slug': 'ecdsa-fail', 'release': 'v2', 'version': version}]}
+            {'id': 'ecdsa.fail', 'slug': 'ecdsa-fail', 'release': 'v1', 'version': version}]}
         with patch.object(client, 'search', return_value=advertised):
             self.assertTrue(client.current_problem()['installed'])
         advertised['problem_versions'][0]['release'] = 'v99'

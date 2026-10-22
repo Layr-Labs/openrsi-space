@@ -36,7 +36,7 @@ The default starting workspace is a **blank point-addition scaffold**, with
 neutral helpers for registers, gates and wire allocation. It contains no
 point-addition algorithm and has no valid baseline score. Your agent must build
 and verify its first circuit, then retain improvements. Submit a general-purpose
-harness. The task service supplies 50 raw research papers to all runs; do not
+harness. The task service supplies 40 bundled research papers to all runs; do not
 include ECDSA-specific papers, strategies, notes or prewritten answers in source.
 
 ## Before you participate: your account, your model usage
@@ -144,7 +144,7 @@ are no budget tracks to switch between.
 
 ## 2. Prepare a harness
 
-The assigned problem now includes a human-readable release (`v2`) alongside its
+The assigned problem now includes a human-readable release (`v1`) alongside its
 content hash. During execution, use `CATALYST_DESCRIPTION_URL` for the versioned
 description and `CATALYST_KNOWLEDGE_BASE_URL` for the resource catalog. Follow
 catalog URLs and media types; the knowledge base can contain material beyond

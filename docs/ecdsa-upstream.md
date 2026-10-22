@@ -38,7 +38,7 @@ pinned `setup.sh` and `benchmark.sh`, rather than copying that stale invocation.
 
 The execution pin remains
 [`62ae3d00d1e01d7bc640b5163cfea8dabffd8392`](https://github.com/Layr-Labs/ecdsafail-challenge/tree/62ae3d00d1e01d7bc640b5163cfea8dabffd8392)
-in `ecdsa-fail/releases/v2.json`. Core mathematical requirements are the same.
+in `ecdsa-fail/releases/v1.json`. Core mathematical requirements are the same.
 The newer documentation does not claim that the current sandboxing or compressed
 operation format has been deployed in Catalyst.
 

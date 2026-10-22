@@ -19,7 +19,7 @@ terms.
 New research runs start from a **blank point-addition scaffold** and a neutral
 circuit SDK. The scaffold declares the input/output registers but contains no
 algorithm or valid baseline score. Submit a general-purpose research harness.
-The task service supplies the same pinned library of **50 raw research papers**
+The task service supplies the same pinned library of **40 bundled research papers**
 to every run. Do not bundle problem-specific material in the submitted harness.
 
 Compare harnesses at **$10, $20, $50 and $100 in model credits, plus Best achieved**. At each tier,

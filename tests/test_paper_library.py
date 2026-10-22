@@ -13,27 +13,13 @@ from library_fixture import install_fixture
 
 
 class PaperLibraryTests(unittest.TestCase):
-    def test_catalog_preserves_the_32_paper_collection_and_adds_18_distinct_papers(self):
-        catalog = load_catalog(get_problem("ecdsa.fail", release="v1")["dungeness"]["knowledge_base"])
-        self.assertEqual(len({p["sha256"] for p in catalog["papers"]}), 50)
-        self.assertEqual(len({p["id"] for p in catalog["papers"]}), 50)
-        core = [p for p in catalog["papers"] if p["origin"]["collection"] == "ecdsa-32-raw-paper-kb-v1"]
-        extra = [p for p in catalog["papers"] if p["origin"]["collection"] == "curated-extension"]
-        self.assertEqual((len(core), len(extra)), (32, 18))
-        for paper in core:
-            self.assertEqual(paper["file"], paper["origin"]["file"])
-            self.assertEqual(paper["sha256"], paper["origin"]["sha256"])
-        for paper in extra:
-            self.assertRegex(paper["arxiv_id"], r"^\d{4}\.\d{4,5}v\d+$")
-            self.assertIn("creativecommons.org/", paper["license_url"])
-        for paper in catalog["papers"]:
-            self.assertRegex(paper["sha256"], r"^[0-9a-f]{64}$")
-            self.assertEqual(paper["modifications"], "none")
-            self.assertTrue(paper["source_url"].startswith("https://"))
-            if paper["license_url"] is None:
-                self.assertEqual(paper["license_status"], "not-recorded-in-source-collection")
-        with self.assertRaises(CatalystError):
-            load_catalog({"id": catalog["id"], "sha256": "0" * 64})
+    def test_catalog_rejects_changed_or_retired_bindings(self):
+        binding = get_problem("ecdsa.fail")["dungeness"]["knowledge_base"]
+        for invalid in ({**binding, "sha256": "0" * 64},
+                        {**binding, "id": "ecdsa-papers-v2"},
+                        {**binding, "sha256": "380233e137617f6cd2bbeedcd591023b05da7322ecdd8d943dabab0302df04cf"}):
+            with self.assertRaises(CatalystError):
+                load_catalog(invalid)
 
     def test_download_hosts_are_bounded_and_never_accept_credentials_or_queries(self):
         for url in ("https://arxiv.org/pdf/1706.06752", "https://eprint.iacr.org/2026/1128.pdf"):

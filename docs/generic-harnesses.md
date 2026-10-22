@@ -125,16 +125,16 @@ an official remote receipt. Your harness receives the execution interface below.
 
 ### Versioned problem and knowledge-base endpoints
 
-New ECDSA problem packages carry the human-readable release `v2` and slug
+New ECDSA problem packages carry the human-readable release `v1` and slug
 `ecdsa-fail`. Inside a run, the read-only gateway serves:
 
 | URL path on `http://gateway:8080` | Response |
 | --- | --- |
-| `/ecdsa-fail/v2/description` | JSON statement, release, content hash, evaluation contract and library link |
-| `/ecdsa-fail/v2/knowledge-base` | JSON catalog with a `resources` array |
-| `/ecdsa-fail/v2/resources/<resource-id>` | Original resource bytes with their declared `Content-Type` |
+| `/ecdsa-fail/v1/description` | JSON statement, release, content hash, evaluation contract and library link |
+| `/ecdsa-fail/v1/knowledge-base` | JSON catalog with a `resources` array |
+| `/ecdsa-fail/v1/resources/<resource-id>` | Original resource bytes with their declared `Content-Type` |
 
-Release `v2` contains the pinned 40-paper library. The experimental single-paper
+Release `v1` contains the pinned 40-paper library. The experimental single-paper
 `v0` release is retired and cannot be selected for new runs. Retained results
 keep their original problem identities.
 

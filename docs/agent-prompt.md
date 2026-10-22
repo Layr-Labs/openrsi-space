@@ -111,7 +111,7 @@ solution or baseline score. Implement and verify the first circuit before
 saving a best candidate; never assume that leaving the starter unchanged passes.
 Submit only a general-purpose harness, without ECDSA-specific papers, notes,
 strategies or prewritten candidates. The assigned task provides a pinned library
-of 50 raw papers through `CATALYST_KNOWLEDGE_BASE_URL`. The agent chooses what to
+of 40 bundled papers through `CATALYST_KNOWLEDGE_BASE_URL`. The agent chooses what to
 read and develops its candidate during the metered run.
 Catalyst measures what the submitted source achieves inside its controlled
 Dungeness run. An interactively improved solution on the solver's laptop is
