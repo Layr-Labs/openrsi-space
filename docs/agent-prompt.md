@@ -226,8 +226,8 @@ New evaluations have no model-token ceiling by default. `--no-token-limit`
 explicitly clears one from an older manifest. Do not add an arbitrary token
 ceiling: use `--max-tokens N` only when the solver requests one. Tokens remain
 metered for credit accounting; spending limits and execution timeouts still apply.
-New evaluations default to 10,800 seconds (3 hours), which the current service
-accepts. Existing manifests retain their saved time limit; use `--max-seconds 10800`
+New evaluations default to 10,800 seconds (3 hours). The current service permits
+up to 21,600 seconds (6 hours) with `--max-seconds 21600`. Existing manifests retain their saved time limit; use `--max-seconds 10800`
 to override an older short limit, or request a shorter run explicitly.
 Use `--codex-auth-file` instead of the hidden prompt for a ChatGPT login.
 For multiple providers, use `--provider-access-file` pointing outside the

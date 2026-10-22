@@ -240,7 +240,8 @@ New evaluations have no model-token ceiling by default. `--no-token-limit`
 clears any ceiling saved in an older `evaluation.json`; use `--max-tokens N`
 only if you want an additional token allowance. Tokens are still metered for
 credit accounting. Spending caps and execution timeouts remain enforced.
-New evaluations default to 10,800 seconds (3 hours), the current service maximum.
+New evaluations default to 10,800 seconds (3 hours). The current service accepts
+up to 21,600 seconds (6 hours) with `--max-seconds 21600`.
 These examples also override any shorter time limit saved in an existing
 `evaluation.json`. Use `--max-seconds` to request a shorter run if desired.
 
