@@ -134,19 +134,9 @@ New ECDSA problem packages carry the human-readable release `v1` and slug
 | `/ecdsa-fail/v1/knowledge-base` | JSON catalog with a `resources` array |
 | `/ecdsa-fail/v1/resources/<resource-id>` | Original resource bytes with their declared `Content-Type` |
 
-Release `v0` uses the same challenge and evaluation contract, with only André
-Schrottenloher's *Optimized Point Addition Circuits for Elliptic Curve Discrete
-Logarithms* ([arXiv:2606.02235v1](https://arxiv.org/abs/2606.02235v1)) in its
-knowledge base. Its catalog is `ecdsa-papers-v0`; the sole resource ID is
-`ecdsa-core-02`. Its URLs replace `/v1/` above with `/v0/`. The arXiv PDF is
-pinned by size and SHA-256 independently of the IACR copy in `v1`.
-
-Select it with `catalyst local run <harness> --dungeness <checkout>
---problem-release v0` plus your usual model-access options, or inspect it with
-`catalyst problem show ecdsa.fail --problem-release v0`. Remote submissions also
-accept `--problem-release v0`, but the evaluator must already be configured for
-that exact release. The default remains `v1` with 50 papers. A `v0` run cannot
-fetch the other 49 papers through aliases or legacy file URLs.
+Release `v1` contains the pinned 50-paper library. The experimental single-paper
+`v0` release is retired and cannot be selected for new runs. Retained results
+keep their original problem identities.
 
 The corresponding unversioned paths (`/ecdsa-fail/description`,
 `/ecdsa-fail/knowledge-base`, and `/ecdsa-fail/resources/<resource-id>`) resolve

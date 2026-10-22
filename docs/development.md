@@ -66,3 +66,13 @@ require the corresponding toolchains and do not belong in public credential-free
 For a real harness, follow [local evaluation](local-evaluation.md). Model-consuming
 runs require explicit model, spending-cap and credential authorization. A local
 check does not issue an official receipt or establish a leaderboard improvement.
+
+## Public wording
+
+The UI's “How it works” and “Participate” sections are the primary explanation for
+solvers. Keep their benchmark description aligned with the opening of
+[the challenge overview](overview.md): solvers submit their own harness, use their
+own model account, start and control each run, and compare independently verified
+results. Explain run-scoped access, supported login handoffs keeping refresh
+credentials local, cleanup of supplied access, and provider-terms responsibility.
+Keep provider-specific credential fields in the technical model-access guide.

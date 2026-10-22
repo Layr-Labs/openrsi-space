@@ -11,11 +11,10 @@ from urllib.parse import urlsplit
 
 from catalyst.common import CatalystError, canonical
 
-from .paths import PROBLEM_SET
+from .paths import PROBLEM_DIRECTORIES
 
-CATALOG = PROBLEM_SET / "ecdsa-papers-v1.json"
-CATALOGS = {"ecdsa-papers-v0": CATALOG.with_name("ecdsa-papers-v0.json"),
-            "ecdsa-papers-v1": CATALOG}
+CATALOG = PROBLEM_DIRECTORIES["ecdsa.fail"] / "knowledge-base/v1.json"
+CATALOGS = {"ecdsa-papers-v1": CATALOG}
 LIBRARY_URL = "http://gateway:8080/task/files/knowledge-base.json"
 MAX_PAPER_BYTES = 32 * 1024 * 1024
 PAPER_HOSTS = {"arxiv.org", "export.arxiv.org", "eprint.iacr.org"}

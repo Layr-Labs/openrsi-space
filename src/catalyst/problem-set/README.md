@@ -1,12 +1,10 @@
 # Problem set
 
-Versioned challenge content consumed by [`../challenge/`](../challenge/): problem
-manifests, descriptions, paper catalogs, scaffolds and verifier bundles.
+Each challenge owns one directory containing its description, release manifests,
+knowledge-base catalogs, scaffolds, verifiers and runtime asset mapping.
+Shared loading and preparation code lives in [`../challenge/`](../challenge/).
 
-`initial.json` and `initial-v0.json` select the published releases.
-`runtime-assets.json` maps trusted runtime paths to the packaged assets under
-`ecdsa-fail/`. Only assets selected by the assigned problem are installed.
-
-These files define challenge content and execution behavior. Changes to pinned
-content require the corresponding version and compatibility review. Shared
-loading, validation and preparation logic belongs in `challenge/`.
+[`ecdsa-fail/`](ecdsa-fail/) contains the ECDSA challenge. Its active release is
+`v1`; the experimental `v0` release has been removed. Retained results keep their
+original identities. Moving packaged files does not change the manifest contents
+or the runtime paths assigned by the asset mapping.

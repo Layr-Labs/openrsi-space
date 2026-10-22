@@ -6,7 +6,7 @@ from pathlib import Path
 import subprocess
 
 from catalyst.common import CatalystError, safe_relative
-from .paths import PROBLEM_SET
+from .paths import PROBLEM_SET, PROBLEM_DIRECTORIES
 
 def git(root: Path, *args) -> str:
     result = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True)
@@ -16,13 +16,13 @@ def git(root: Path, *args) -> str:
 
 
 
-PROBLEM_RELEASES = {"v0": "initial-v0.json", "v1": "initial.json"}
+PROBLEM_RELEASES = {"v1": "ecdsa-fail/releases/v1.json"}
 
 
 def initial_problems(*, release=None) -> list[dict]:
     filename = PROBLEM_RELEASES.get(release if release is not None else "v1")
     if filename is None:
-        raise CatalystError("Unknown problem release; choose v0 or v1.")
+        raise CatalystError("Unknown or retired problem release; choose v1.")
     return json.loads((PROBLEM_SET / filename).read_text())["problems"]
 
 
@@ -40,7 +40,7 @@ def get_problem(identity: str, *, release=None) -> dict:
 def problem_statement(identity: str) -> str:
     """Statements belong to the public challenge, independently of its runtime."""
     problem = get_problem(identity)
-    return (PROBLEM_SET / f"{problem['id']}.md").read_text()
+    return (PROBLEM_DIRECTORIES[problem["id"]] / "description.md").read_text()
 
 
 def clone_problem(identity: str, destination: Path) -> dict:

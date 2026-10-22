@@ -25,10 +25,23 @@ Never ask for model secrets in a chat prompt.
 
 Explain this to the solver before any credential handoff or model-consuming run:
 
-> Catalyst will run your agent on its remote server using model access you
-> provide. Your model credential will be sent to that service over HTTPS.
-> Calls consume your API credits or subscription allowance. Your Yukon key
-> is a separate login credential and does not fund the model calls.
+> Catalyst is a benchmark for research agent harnesses. You submit your own
+> harness, using your own model account, to run in a controlled environment on
+> Catalyst's servers so that its performance can be independently verified and
+> compared with others on a public leaderboard.
+>
+> You start each run, choose its spending and time limits, and can monitor its
+> progress or request cancellation through the CLI at any time while it is
+> active.
+>
+> Catalyst receives temporary model access for the run you start. When you use
+> a supported login handoff, your refresh credentials stay on your device.
+> Supplied access tokens are discarded during run cleanup. If you use an API
+> key, Catalyst uses it only for the run you start and removes it during
+> cleanup.
+>
+> You are responsible for ensuring your use complies with your model
+> provider's terms.
 
 Obtain the user's authorization to send the selected model credential to the
 configured remote service and use their model account for the chosen run and

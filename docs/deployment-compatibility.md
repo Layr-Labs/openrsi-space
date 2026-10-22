@@ -1,6 +1,6 @@
 # Deployment compatibility
 
-`main` contains versioned `v0`/`v1` problem manifests. The existing hosted evaluator
+`main` contains the versioned `v1` problem manifest. The existing hosted evaluator
 at `https://3.21.93.126` uses the earlier unversioned manifest. A new manifest is
 not interchangeable with a historical problem hash.
 

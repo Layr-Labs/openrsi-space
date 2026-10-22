@@ -16,7 +16,6 @@ from catalyst.cli import main
 from catalyst.common import snapshot_directory, read_json, write_json
 from catalyst.executable import SOURCE_EXCLUDES
 from catalyst.challenge.catalog import get_problem, problem_statement
-from catalyst.challenge.papers import load_catalog as installed_catalog
 from catalyst.challenge.preparation import yaml_file
 
 
@@ -112,6 +111,7 @@ class LocalRunTests(unittest.TestCase):
         routes = load_files(canonical(assigned), task_path.parent / 'problem-service/files')
         self.assertEqual(routes['/ecdsa-fail/description'], routes['/ecdsa-fail/v1/description'])
         self.assertEqual(routes['/ecdsa-fail/knowledge-base'], routes['/ecdsa-fail/v1/knowledge-base'])
+        self.assertFalse(any(path.startswith('/ecdsa-fail/v0/') for path in routes))
         checkpoint_path, = runtime.glob('checkpoints/catalyst-*/*.yaml')
         self.assertNotIn('reference', yaml_file(checkpoint_path)['data'])
         self.assertEqual(spec['budget']['max_usd'], 1)
@@ -136,34 +136,11 @@ class LocalRunTests(unittest.TestCase):
         self.assertEqual(descriptions[0], descriptions[1])
         self.assertEqual(catalogs[0], catalogs[1])
 
-    def test_v0_preparation_excludes_other_papers_and_release_routes(self):
-        import hashlib
-        from catalyst.common import canonical
-        from catalyst.runtime.problem_server import load_files
-        binding = get_problem('ecdsa.fail', release='v0')['dungeness']['knowledge_base']
-        catalog = installed_catalog(binding)
-        fixture = (self.root / 'fixture.pdf').read_bytes()
-        catalog['papers'][0].update(bytes=len(fixture), sha256=hashlib.sha256(fixture).hexdigest())
-        with patch('catalyst.challenge.papers.load_catalog', return_value=catalog) as load:
-            self.assertEqual(self.cli('--prepare-only', '--problem-release', 'v0'), 0, self.err.getvalue())
-        load.assert_called_once_with(binding)
-        runtime = Path(self.metadata()['runtime'])
-        task, = runtime.glob('tasks/**/problem-service/task.json')
-        document = read_json(task)
-        self.assertEqual(document['release'], 'v0')
-        self.assertEqual(document['knowledge_base']['count'], 1)
-        self.assertEqual(document['description_url'], 'http://gateway:8080/ecdsa-fail/v0/description')
-        self.assertEqual(len(document['attachments']), 4)
-        files = load_files(canonical(document), task.parent / 'files')
-        for path in ('/ecdsa-fail/v0/resources/ecdsa-core-02', '/ecdsa-fail/resources/ecdsa-core-02',
-                     '/ecdsa-fail/v0/description', '/ecdsa-fail/v0/knowledge-base'):
-            self.assertIn(path, files)
-        for path in ('/ecdsa-fail/v1/description', '/ecdsa-fail/v1/knowledge-base',
-                     '/ecdsa-fail/v0/resources/ecdsa-core-01', '/ecdsa-fail/resources/ecdsa-core-01',
-                     '/task/files/01-babbush-securing-ecc-cryptocurrencies.pdf'):
-            self.assertNotIn(path, files)
-        legacy = read_json(task.parent / 'files/knowledge-base.json')
-        self.assertEqual([p['id'] for p in legacy['papers']], ['ecdsa-core-02'])
+    def test_retired_release_is_rejected_before_local_preparation(self):
+        with patch('catalyst.local.prepare') as prepare:
+            with self.assertRaises(SystemExit):
+                self.cli('--prepare-only', '--problem-release', 'v0')
+            prepare.assert_not_called()
 
     def test_local_run_uses_gateway_only_secret_then_removes_it_and_retains_usage(self):
         observed = {}

@@ -28,7 +28,7 @@ The public entrypoint is `catalyst`. It does not start the verification service,
 run anti-cheat screening, hold an operator credential or require Dungeness.
 The challenge UI lives in Yukon; Catalyst does not include a separate viewer.
 
-The public ECDSA statement lives in `src/catalyst/problem-set/ecdsa.fail.md`.
+The public ECDSA statement lives in `src/catalyst/problem-set/ecdsa-fail/description.md`.
 The private service copies it into a versioned problem package during
 initialization. For each run, it builds a read-only problem service from
 Catalyst's `runtime/problem_server.py`, independently of the submitted harness.

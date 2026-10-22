@@ -30,4 +30,4 @@ class ChallengeCompatibilityTests(unittest.TestCase):
                 self.assertEqual(catalog.initial_problems(release=release),
                                  json.loads((PROBLEM_SET / name).read_text())["problems"])
         self.assertEqual(catalog.problem_statement("ecdsa.fail"),
-                         (PROBLEM_SET / "ecdsa.fail.md").read_text())
+                         (PROBLEM_SET / "ecdsa-fail/description.md").read_text())

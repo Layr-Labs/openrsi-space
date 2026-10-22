@@ -9,27 +9,30 @@ import shutil
 
 from catalyst.common import CatalystError, safe_relative
 
-from .paths import PROBLEM_SET
+from .paths import PROBLEM_SET, PROBLEM_DIRECTORIES
 
 ROOT = PROBLEM_SET
 
 
 def registered_assets():
-    registry = json.loads((ROOT / 'runtime-assets.json').read_text())
-    if registry.get('schema_version') != 1 or not isinstance(registry.get('assets'), dict):
-        raise CatalystError('Invalid installed problem asset registry.')
     result = {}
-    for destination, source in registry['assets'].items():
-        safe_relative(destination)
-        safe_relative(source)
-        if len(Path(destination).parts) < 2 or Path(destination).parts[0] not in {'scaffolds', 'verifiers'}:
-            raise CatalystError('Problem assets may only install scaffold or verifier directories.')
-        folder = ROOT / source
-        if (folder.is_symlink() or not folder.is_dir()
-                or not folder.resolve().is_relative_to(ROOT.resolve())
-                or any(path.is_symlink() for path in folder.rglob('*'))):
-            raise CatalystError(f'Invalid installed problem asset directory: {source}')
-        result[destination] = folder
+    for root in PROBLEM_DIRECTORIES.values():
+        registry = json.loads((root / 'runtime-assets.json').read_text())
+        if registry.get('schema_version') != 1 or not isinstance(registry.get('assets'), dict):
+            raise CatalystError('Invalid installed problem asset registry.')
+        for destination, source in registry['assets'].items():
+            safe_relative(destination)
+            safe_relative(source)
+            if len(Path(destination).parts) < 2 or Path(destination).parts[0] not in {'scaffolds', 'verifiers'}:
+                raise CatalystError('Problem assets may only install scaffold or verifier directories.')
+            folder = root / source
+            if (folder.is_symlink() or not folder.is_dir()
+                    or not folder.resolve().is_relative_to(root.resolve())
+                    or any(path.is_symlink() for path in folder.rglob('*'))):
+                raise CatalystError(f'Invalid installed problem asset directory: {source}')
+            if destination in result:
+                raise CatalystError(f'Duplicate installed problem asset destination: {destination}')
+            result[destination] = folder
     return result
 
 

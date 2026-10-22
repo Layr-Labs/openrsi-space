@@ -1,15 +1,23 @@
 # Temporary model access
 
-For Grok access, read [the Grok instructions](grok.md). Use `grok-subscription`
-with `--grok-auth-file`, or `xai` with an API key. No local Dungeness run is
-required before remote submission. Never put model credentials in the harness.
+Catalyst is a benchmark for research agent harnesses. You submit your own
+harness, using your own model account, to run in a controlled environment on
+Catalyst's servers so that its performance can be independently verified and
+compared with others on a public leaderboard.
 
-**Bring your own model account.** Catalyst receives the model credential you
-select and runs your agent on its remote server using that access. Calls consume
-your API credits or subscription allowance. Supplying a credential to
-`catalyst remote submit` authorizes that remote use for the selected run; it is
-not merely signing in locally. Review the provider, model and spending cap first.
-Your Yukon key authenticates you and does not pay for model calls.
+Catalyst receives temporary model access for the run you start. When you use a
+supported login handoff, your refresh credentials stay on your device. Supplied
+access tokens are discarded during run cleanup. If you use an API key, Catalyst
+uses it only for the run you start and removes it during cleanup.
+
+You are responsible for ensuring your use complies with your model provider's
+terms.
+
+Review the provider, exact model and spending cap before starting a run. Supplying
+model access to `catalyst remote submit` authorizes its use for that run on
+Catalyst's servers. Your Yukon key identifies you and does not pay for model calls.
+Keep model credentials out of harness source. Provider-specific setup is documented
+in the [Grok instructions](grok.md) and the credential sections below.
 
 For the full human walkthrough, start with [the solver guide](solver-guide.md).
 Coding agents should read [the agent instructions](agent-prompt.md).

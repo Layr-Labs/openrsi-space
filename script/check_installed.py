@@ -36,10 +36,12 @@ for old, new in {
     assert importlib.import_module("catalyst." + old) is importlib.import_module("catalyst." + new)
 assert importlib.import_module("catalyst.remote").RemoteClient is evaluations.RemoteClient
 assert pricing_schedule()
-for release in ("v0", "v1"):
+for release in catalog.PROBLEM_RELEASES:
     problem = catalog.get_problem("ecdsa.fail", release=release)
     papers.load_catalog(problem["dungeness"]["knowledge_base"])
-assert (PROBLEM_SET / "README.md").is_file()
+assert {p.name for p in PROBLEM_SET.iterdir()} == {"README.md", "ecdsa-fail"}
+assert not list(PROBLEM_SET.rglob("*v0*"))
+assert (PROBLEM_SET / "ecdsa-fail/description.md").is_file()
 with tempfile.TemporaryDirectory() as temporary:
     runtime = Path(temporary) / "runtime"
     runtime.mkdir()

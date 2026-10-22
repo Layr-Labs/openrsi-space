@@ -1,16 +1,14 @@
-# ECDSA challenge assets
+# ECDSA challenge
 
-Catalyst owns the blank candidate, neutral Rust SDK, progressive correctness
-stages, and verifier bundles. `runtime-assets.json` selects the scaffold and
-verifier installed into each disposable Dungeness checkout; the task assembly
-commits those trusted inputs before compilation. The private evaluation service
-then adds its isolation and screening protections.
+- `description.md`: the problem statement served to each run.
+- `releases/v1.json`: the active pinned problem and execution contract.
+- `knowledge-base/v1.json`: the 50-paper catalog, identified as `ecdsa-papers-v1`.
+- `scaffolds/`: the blank candidate and trusted neutral Rust SDK.
+- `verifiers/`: version-compatible grading bundles.
+- `runtime-assets.json`: maps stable Dungeness destination paths to these assets.
+- `historical/`: reference records from the original Dungeness starter workflow.
 
-The generic scaffold manifest declares files and exact-match text edits.
-Dungeness contains no ECDSA verifier, Rust transformations, or shot counts.
-Harness source cannot select preparation code. Changes to grading behavior
-require a separate challenge-version review.
-
-`tasks/`, `problems/`, `checkpoints/`, and `run-specs/` retain the historical
-starter records for reference. They are not installed for submitted runs:
-Catalyst generates assigned records from the selected problem manifest.
+Only the assigned scaffold and verifier are installed into each disposable runtime.
+Catalyst generates current task and run records from the selected release; it does
+not install the historical records. The private service adds isolation and source
+screening. Changes to grading behavior require a separate challenge-version review.

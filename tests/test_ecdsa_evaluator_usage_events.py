@@ -13,8 +13,8 @@ from catalyst.challenge.assets import ROOT
 
 REPOSITORY_ROOT = ROOT / "ecdsa-fail"
 SERVERS = (
-    REPOSITORY_ROOT / "verifiers/ecdsa-fail/benchmark-sh/serve.py",
-    REPOSITORY_ROOT / "verifiers/ecdsa-fail/experiment-bin/serve.py",
+    REPOSITORY_ROOT / "verifiers/benchmark-sh/serve.py",
+    REPOSITORY_ROOT / "verifiers/experiment-bin/serve.py",
 )
 
 
