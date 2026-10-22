@@ -23,7 +23,7 @@ class ProblemReleaseTests(unittest.TestCase):
         for relative, digest in expected.items():
             self.assertEqual(hashlib.sha256((PROBLEM_SET / "ecdsa-fail" / relative).read_bytes()).hexdigest(), digest)
         problem = get_problem("ecdsa.fail", release="v1")
-        self.assertEqual(get_problem("ecdsa.fail"), problem)
+        self.assertEqual(get_problem("ecdsa.fail"), get_problem("ecdsa.fail", release="v2"))
         catalog = load_catalog(problem["dungeness"]["knowledge_base"])
         self.assertEqual((catalog["count"], len(catalog["papers"])), (50, 50))
         self.assertEqual(problem["dungeness"]["knowledge_base"]["sha256"], hashlib.sha256(canonical(catalog)).hexdigest())
@@ -35,7 +35,8 @@ class ProblemReleaseTests(unittest.TestCase):
         self.assertTrue(is_official_problem_set(manifest))
         manifest[0]["release"] = "v0"
         self.assertFalse(is_official_problem_set(manifest))
-        for release in ("v0", "v2", "../initial", ""):
+        self.assertTrue(is_official_problem_set(initial_problems(release="v2")))
+        for release in ("v0", "v3", "../initial", ""):
             with self.subTest(release=release), self.assertRaises(CatalystError):
                 initial_problems(release=release)
         for binding in ({"id": "../ecdsa-papers-v1"}, {"id": "ecdsa-papers-v0", "sha256": "0" * 64}):
@@ -46,9 +47,11 @@ class ProblemReleaseTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             harness = Path(folder) / "harness"
             create_harness(harness)
-            for release in (None, "v1"):
+            for release in (None, "v1", "v2"):
                 body = request_body(harness, "https://verifier.example.test", problem_release=release)
-                self.assertEqual(body["problem_set"], initial_problems(release="v1"))
+                self.assertEqual(body["problem_set"], initial_problems(release=release or "v2"))
+            body = request_body(harness, "https://verifier.example.test", problem_release="v2")
+            self.assertEqual(body["problem_set"], initial_problems(release="v2"))
             with self.assertRaisesRegex(CatalystError, "retired"):
                 request_body(harness, "https://verifier.example.test", problem_release="v0")
 
@@ -58,5 +61,6 @@ class ProblemReleaseTests(unittest.TestCase):
                         ["local", "run", "harness", "--dungeness", "runtime"],
                         ["remote", "submit", "harness"]):
             self.assertEqual(parser.parse_args([*command, "--problem-release", "v1"]).problem_release, "v1")
+            self.assertEqual(parser.parse_args([*command, "--problem-release", "v2"]).problem_release, "v2")
             with self.assertRaises(SystemExit):
                 parser.parse_args([*command, "--problem-release", "v0"])

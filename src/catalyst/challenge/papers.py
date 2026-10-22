@@ -14,7 +14,9 @@ from catalyst.common import CatalystError, canonical
 from .paths import PROBLEM_DIRECTORIES
 
 CATALOG = PROBLEM_DIRECTORIES["ecdsa.fail"] / "knowledge-base/v1.json"
-CATALOGS = {"ecdsa-papers-v1": CATALOG}
+CATALOGS = {"ecdsa-papers-v1": CATALOG,
+            "ecdsa-papers-v2": CATALOG.with_name("v2.json")}
+BUNDLED_PAPERS = CATALOG.parent / "bundled"
 LIBRARY_URL = "http://gateway:8080/task/files/knowledge-base.json"
 MAX_PAPER_BYTES = 32 * 1024 * 1024
 PAPER_HOSTS = {"arxiv.org", "export.arxiv.org", "eprint.iacr.org"}
@@ -68,6 +70,13 @@ def cached_paper(paper, cache):
     path = cache / paper["file"]
     if matches(path, paper):
         return path
+    # Pinned, licensed copies keep upstream download restrictions from blocking
+    # preparation. They carry the same attribution as downloaded copies.
+    bundled = BUNDLED_PAPERS / paper["file"]
+    if bundled.exists() or bundled.is_symlink():
+        if not matches(bundled, paper):
+            raise CatalystError(f"Bundled task paper {paper['id']} does not match its pinned SHA-256.")
+        return bundled
     cache.mkdir(parents=True, exist_ok=True)
     validate_download_url(paper["pdf_url"])
     opener = build_opener(ProxyHandler({}), PaperRedirect())

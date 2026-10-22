@@ -14,7 +14,7 @@ from library_fixture import install_fixture
 
 class PaperLibraryTests(unittest.TestCase):
     def test_catalog_preserves_the_32_paper_collection_and_adds_18_distinct_papers(self):
-        catalog = load_catalog(get_problem("ecdsa.fail")["dungeness"]["knowledge_base"])
+        catalog = load_catalog(get_problem("ecdsa.fail", release="v1")["dungeness"]["knowledge_base"])
         self.assertEqual(len({p["sha256"] for p in catalog["papers"]}), 50)
         self.assertEqual(len({p["id"] for p in catalog["papers"]}), 50)
         core = [p for p in catalog["papers"] if p["origin"]["collection"] == "ecdsa-32-raw-paper-kb-v1"]

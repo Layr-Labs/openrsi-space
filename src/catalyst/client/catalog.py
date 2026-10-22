@@ -35,6 +35,22 @@ class PublicCatalog:
             raise CatalystError("Invalid harness catalog response.")
         return data
 
+    def current_problem(self):
+        from catalyst.challenge.catalog import PROBLEM_RELEASES, initial_problems
+        from catalyst.contracts.results import digest
+        data = self.search(limit=1)
+        version = data.get("problem_version")
+        versions = data.get("problem_versions")
+        if not isinstance(version, str) or not SHA.fullmatch(version) or not isinstance(versions, list):
+            raise CatalystError("Evaluator did not advertise its active problem version.")
+        matches = [p for p in versions if isinstance(p, dict) and p.get("version") == version]
+        if len(matches) != 1 or matches[0].get("id") != "ecdsa.fail":
+            raise CatalystError("Evaluator returned an invalid active problem binding.")
+        release = matches[0].get("release")
+        installed = release in PROBLEM_RELEASES and digest(initial_problems(release=release)) == version
+        return {"evaluator": self.base, "problem": matches[0], "installed": installed,
+                "instruction": "Use this exact release for new local and remote runs. Recheck before submission; never relabel a saved request or receipt."}
+
     def download(self, identity, output, *, source_sha256=None):
         identity = evaluation_id(identity)
         route = f"/public/evaluations/{identity}/artifacts"

@@ -1,5 +1,21 @@
 # Catalyst: guide for solvers
 
+## Select the current problem release
+
+Before preparing a new evaluation, run `uv run catalyst problem current`. This
+queries the official evaluator without credentials and reports its active release
+and exact problem digest. If the installed package does not match, update your
+Catalyst checkout/package and rerun the command. Do not assume a remembered tag or
+a repository default is the deployed version. Use the returned tag explicitly as
+`--problem-release TAG` for both `local run` and `remote submit`, and recheck it
+before submission. Include the tag and digest in the readiness report.
+
+Inside the run, read the server-assigned description and knowledge-base URLs from
+`CATALYST_TASK`; never hardcode a versioned resource URL in a general-purpose
+harness. Every new evaluation starts fresh with that release's scaffold and
+resources. Preserve the original version and request ID when resuming an existing
+run; a new release requires a new evaluation, not editing saved requests or receipts.
+
 Catalyst is a benchmark for research agent harnesses. You submit your own
 harness, using your own model account, to run in a controlled environment on
 Catalyst's servers so that its performance can be independently verified and
@@ -128,7 +144,7 @@ are no budget tracks to switch between.
 
 ## 2. Prepare a harness
 
-The assigned problem now includes a human-readable release (`v1`) alongside its
+The assigned problem now includes a human-readable release (`v2`) alongside its
 content hash. During execution, use `CATALYST_DESCRIPTION_URL` for the versioned
 description and `CATALYST_KNOWLEDGE_BASE_URL` for the resource catalog. Follow
 catalog URLs and media types; the knowledge base can contain material beyond
@@ -181,7 +197,7 @@ Runtime requirements:
 
 - Install generic dependencies in the image. The research container has no
   public internet access. Read `CATALYST_KNOWLEDGE_BASE_URL` for the shared
-  50-paper catalog and internal PDF links. Do not bundle task-specific material.
+  40-paper catalog and internal PDF links. Do not bundle task-specific material.
 - Read `CATALYST_TASK` for the problem instruction, writable workspace,
   candidate paths, declared models and metered gateway endpoints. Route every
   model request through those endpoints. Do not hard-code public provider URLs.

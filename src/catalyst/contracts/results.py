@@ -100,6 +100,7 @@ def judgment(result: dict, request: dict) -> dict:
         "model": request["evaluation"]["model"], "observations": public,
         "models": evaluation_models(request["evaluation"]),
         "problemSetDigest": digest(request["problem_set"]),
+        "problemRelease": request["problem_set"][0].get("release"),
         "evaluationConfigDigest": digest(request["evaluation"]),
         "pricingDigest": digest(request["pricing"]),
         "maxModelCredits": request["evaluation"]["max_model_credits"],

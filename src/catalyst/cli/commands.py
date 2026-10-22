@@ -212,7 +212,13 @@ def dispatch(args):
     try:
         if args.command == "problem":
             from catalyst.challenge.catalog import clone_problem, develop, get_problem, initial_problems
-            if args.operation == "list":
+            if args.operation == "current":
+                from catalyst.client.catalog import PublicCatalog
+                current = PublicCatalog().current_problem()
+                print(json.dumps(current, indent=2))
+                if not current["installed"]:
+                    raise CatalystError("Update the Catalyst checkout/package to match the active evaluator release before preparing or submitting a new run.")
+            elif args.operation == "list":
                 print(json.dumps(initial_problems(), indent=2))
             elif args.operation == "show":
                 print(json.dumps(get_problem(args.id, release=args.problem_release), indent=2))

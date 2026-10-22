@@ -1,7 +1,7 @@
 # ECDSA model-credit tiers
 
 The initial official problem is `ecdsa.fail`, pinned in
-`src/catalyst/problem-set/ecdsa-fail/releases/v1.json`. Compare harness source versions at
+`src/catalyst/problem-set/ecdsa-fail/releases/v2.json`. Compare harness source versions at
 **10, 20, 50 and 100 normalized model USD credits, plus Best achieved**. At each tier, minimize the
 best independently verified `avg_toffoli * peak_qubits` produced within that
 allowance. Do not average scores across tiers or replace best performance with

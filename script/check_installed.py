@@ -9,6 +9,7 @@ import subprocess
 from pathlib import Path
 import sys
 import tempfile
+from unittest.mock import patch
 
 import catalyst
 from catalyst.challenge import assets, catalog, papers
@@ -17,6 +18,8 @@ from catalyst.cli import main
 from catalyst.contracts.accounting import pricing_schedule
 from catalyst.contracts.harness import validate_execution
 from catalyst.client import evaluations
+from catalyst.common import canonical
+from catalyst.runtime.problem_server import load_files
 
 package = Path(catalyst.__file__).parent
 assert "site-packages" in str(package), package
@@ -43,6 +46,20 @@ assert {p.name for p in PROBLEM_SET.iterdir()} == {"README.md", "ecdsa-fail"}
 assert not list(PROBLEM_SET.rglob("*v0*"))
 assert (PROBLEM_SET / "ecdsa-fail/description.md").is_file()
 with tempfile.TemporaryDirectory() as temporary:
+    # Exercise the installed package with an absent cache and forbidden downloads.
+    # This catches wheels that contain the catalog but omit any of its PDFs.
+    root = Path(temporary)
+    binding = catalog.get_problem("ecdsa.fail", release="v2")["dungeness"]["knowledge_base"]
+    with patch.dict(os.environ, {"CATALYST_PAPER_CACHE": str(root / "absent-cache")}), \
+            patch.object(papers, "build_opener", side_effect=AssertionError("Unexpected paper download")) as opener:
+        metadata, attachments = papers.prepare_library(
+            binding, root / "papers", slug="ecdsa-fail", release="v2")
+        opener.assert_not_called()
+    assert metadata["count"] == 40 and len(attachments) == 42
+    assert not (root / "absent-cache").exists()
+    files = load_files(canonical({"attachments": attachments}), root / "papers")
+    assert "/ecdsa-fail/v2/knowledge-base" in files
+    assert "/ecdsa-fail/v2/resources/ecdsa-core-02" in files
     runtime = Path(temporary) / "runtime"
     runtime.mkdir()
     installed = assets.install_assets(runtime, catalog.get_problem("ecdsa.fail")["dungeness"])
@@ -56,4 +73,4 @@ with tempfile.TemporaryDirectory() as temporary:
     validate_execution(json.loads((harness / "harness.json").read_text())["execution"])
     snapshot, archive = evaluations.source_snapshot(harness)
     assert snapshot["kind"] == "harness" and archive
-print("Installed wheel: file hashes, compatibility, releases, assets, pricing, CLI and packaging passed.")
+print("Installed wheel: file hashes, compatibility, releases, offline paper library, assets, pricing, CLI and packaging passed.")

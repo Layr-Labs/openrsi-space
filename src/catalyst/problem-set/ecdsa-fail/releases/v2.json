@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "problems": [
+    {
+      "id": "ecdsa.fail",
+      "slug": "ecdsa-fail",
+      "release": "v2",
+      "title": "ecdsa.fail",
+      "repository": {
+        "url": "https://github.com/Layr-Labs/ecdsafail-challenge.git",
+        "commit": "62ae3d00d1e01d7bc640b5163cfea8dabffd8392"
+      },
+      "metric": {
+        "name": "ecdsafail_score",
+        "direction": "minimize",
+        "formula": "avg_toffoli * peak_qubits"
+      },
+      "candidate_paths": [
+        "src/point_add"
+      ],
+      "setup_command": [
+        "bash",
+        "./setup.sh"
+      ],
+      "check_command": [
+        "bash",
+        "./benchmark.sh"
+      ],
+      "score_path": "score.json",
+      "requirements": "Pinned Rust toolchain; full circuit simulation is memory intensive.",
+      "dungeness": {
+        "repository": {
+          "url": "https://github.com/Layr-Labs/ecdsafail-challenge.git",
+          "commit": "62ae3d00d1e01d7bc640b5163cfea8dabffd8392"
+        },
+        "interface": "point-add-module-v1",
+        "initialization": {
+          "mode": "scaffold"
+        },
+        "scaffold": "scaffolds/ecdsa-point-add-sdk-v1/scaffold.yaml",
+        "candidate_paths": [
+          "src/point_add"
+        ],
+        "verifier": "ecdsa-fail/benchmark-sh",
+        "web_cutoff": "2026-05-28T23:59:59.999Z",
+        "history": {
+          "anchor": "c6f6d2c7f50353259241e296458afb0e651e6c37",
+          "distance_from_anchor": 868,
+          "counting_method": "git-rev-list-ancestry-path-count"
+        },
+        "evaluation": {
+          "mode": "full-benchmark"
+        },
+        "policies": {
+          "network": "policies/network/mediated.yaml",
+          "web": "policies/web/exa.yaml",
+          "budget": "policies/budget/default.yaml"
+        },
+        "resources": {
+          "agent": {
+            "timeout_sec": 3600,
+            "build_timeout_sec": 900,
+            "memory_mb": 4096,
+            "cpus": 4
+          },
+          "verifier": {
+            "timeout_sec": 1200,
+            "build_timeout_sec": 1200,
+            "memory_mb": 8192,
+            "cpus": 4
+          }
+        },
+        "knowledge_base": {
+          "id": "ecdsa-papers-v2",
+          "sha256": "491ea6595963c2f35e1fcabfd26d663576557fb594cac2796e3f0a6ab9627eb0"
+        }
+      }
+    }
+  ]
+}

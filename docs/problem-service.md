@@ -64,16 +64,14 @@ does not turn the model gateway into a candidate-execution process.
 ## Shared paper library
 
 The problem's `execution.knowledge_base` pins the canonical SHA-256 of
-[the paper catalog](../src/catalyst/problem-set/ecdsa-fail/knowledge-base/v1.json).
-It contains exactly 50 content-pinned research papers about quantum elliptic-curve
+[the paper catalog](../src/catalyst/problem-set/ecdsa-fail/knowledge-base/v2.json).
+Release v2 contains 40 content-pinned research papers about quantum elliptic-curve
 arithmetic, reversible circuits, synthesis, uncomputation and resource reduction.
-The first 32 are the exact PDFs from `ecdsa-32-raw-paper-kb-v1`, preserving original
-filenames and manifest checksums. The remaining 18 are distinct supplemental papers.
-The catalog records this provenance, titles, original sources, authors where known,
-and verified license links where available. PDFs are raw and unmodified.
-For 24 of the original files, the supplied collection did not establish a
-redistribution license; their license field is explicitly null. Inclusion grants
-no new rights. The 18 additions have verified Creative Commons licenses.
+All 40 unmodified PDFs ship inside the Catalyst package, with author attribution,
+original source links, recorded Creative Commons licenses and SHA-256 checksums.
+The required paper is André Schrottenloher's arXiv:2606.02235v1. Preparation verifies
+all bundled bytes and needs no external paper downloads. Historical v1 resources
+and receipt identities are unchanged.
 
 Inside a run:
 
@@ -114,7 +112,7 @@ document, with the document digest in its run metadata.
 
 The public ECDSA source commit, scoring rules and receipt protocol are unchanged.
 The updated execution configuration changes the problem-package version.
-Catalyst also owns the ECDSA execution configuration in `problem-set/ecdsa-fail/releases/v1.json`:
+Catalyst also owns the ECDSA execution configuration in `problem-set/ecdsa-fail/releases/v2.json`:
 source commit, candidate paths, interface, initialization, resource limits and
 verifier selection. The worker generates a task and checkpoint in its private
 per-run runtime; it does not look up Dungeness task, problem or checkpoint

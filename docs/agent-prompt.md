@@ -1,5 +1,21 @@
 # Catalyst: instructions for a coding agent
 
+## Select the current problem release
+
+Before preparing a new evaluation, run `uv run catalyst problem current`. This
+queries the official evaluator without credentials and reports its active release
+and exact problem digest. If the installed package does not match, update your
+Catalyst checkout/package and rerun the command. Do not assume a remembered tag or
+a repository default is the deployed version. Use the returned tag explicitly as
+`--problem-release TAG` for both `local run` and `remote submit`, and recheck it
+before submission. Include the tag and digest in the readiness report.
+
+Inside the run, read the server-assigned description and knowledge-base URLs from
+`CATALYST_TASK`; never hardcode a versioned resource URL in a general-purpose
+harness. Every new evaluation starts fresh with that release's scaffold and
+resources. Preserve the original version and request ID when resuming an existing
+run; a new release requires a new evaluation, not editing saved requests or receipts.
+
 For Grok access, read [the Grok instructions](grok.md). Use `grok-subscription`
 with `--grok-auth-file`, or `xai` with an API key. No local Dungeness run is
 required before remote submission. Never put model credentials in the harness.
@@ -165,7 +181,7 @@ readiness report; all inference must use assigned gateway endpoints.
    submitted archive must fit 8 MiB and contain no symlinks or credentials.
 5. Obtain research material from the assigned task service.
    `CATALYST_KNOWLEDGE_BASE_URL` returns the assigned resource catalog, currently
-   containing 50 papers, with titles, attribution, original licenses, media types,
+   containing 40 papers, with titles, attribution, original licenses, media types,
    checksums and internal resource URLs. Fetch those URLs during the run and read
    each resource according to its media type. Choose your own reading, indexing and retrieval
    strategy; model-based retrieval must use the metered gateway. Do not bundle

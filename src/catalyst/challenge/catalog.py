@@ -16,13 +16,13 @@ def git(root: Path, *args) -> str:
 
 
 
-PROBLEM_RELEASES = {"v1": "ecdsa-fail/releases/v1.json"}
+PROBLEM_RELEASES = {"v1": "ecdsa-fail/releases/v1.json", "v2": "ecdsa-fail/releases/v2.json"}
 
 
 def initial_problems(*, release=None) -> list[dict]:
-    filename = PROBLEM_RELEASES.get(release if release is not None else "v1")
+    filename = PROBLEM_RELEASES.get(release if release is not None else "v2")
     if filename is None:
-        raise CatalystError("Unknown or retired problem release; choose v1.")
+        raise CatalystError("Unknown or retired problem release; choose " + ", ".join(PROBLEM_RELEASES) + ".")
     return json.loads((PROBLEM_SET / filename).read_text())["problems"]
 
 

@@ -14,6 +14,7 @@ def build_parser():
         sub = group.add_subparsers(dest="operation", required=True)
         if kind == "problem":
             sub.add_parser("list", help="List the pinned initial solver problems.")
+            sub.add_parser("current", help="Discover the active evaluator problem and check the installed release; no login required.")
             show = sub.add_parser("show")
             show.add_argument("id")
             show.add_argument("--problem-release", choices=list(PROBLEM_RELEASES))
@@ -64,7 +65,7 @@ def build_parser():
     local_run.add_argument("--dungeness", required=True, help="Clean checkout of the public Dungeness runtime.")
     local_run.add_argument("--problem", default="ecdsa.fail")
     local_run.add_argument("--problem-release", choices=list(PROBLEM_RELEASES),
-                           help="Pinned problem release: v1 contains 50 papers.")
+                           help="Pinned problem release: v1 has 50 papers; v2 has 40 explicitly licensed papers.")
     local_run.add_argument("--provider")
     local_run.add_argument("--model")
     local_run.add_argument("--reasoning-effort", choices=["low", "medium", "high", "xhigh", "max"])
@@ -101,7 +102,7 @@ def build_parser():
     remote_submit = remote_sub.add_parser("submit", help="Upload harness source and queue one evaluation.")
     remote_submit.add_argument("package", help="Path to your harness source directory.")
     remote_submit.add_argument("--problem-release", choices=list(PROBLEM_RELEASES),
-                               help="Must match the evaluator's assigned release; default: v1.")
+                               help="Must match the evaluator's assigned release; default: v2.")
     remote_submit.add_argument("--wait", action="store_true", help="Wait, validate the result and save its verification reference.")
     remote_submit.add_argument("--source-license",
                                help="Optional license you have authority to grant for public source. Omission grants no additional license.")
