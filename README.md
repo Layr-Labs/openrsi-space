@@ -2,9 +2,11 @@
 
 [![Checks](https://github.com/Layr-Labs/catalyst/actions/workflows/check.yml/badge.svg)](https://github.com/Layr-Labs/catalyst/actions/workflows/check.yml)
 
-Catalyst benchmarks research agent harnesses. Submit your harness using your own
-model account, choose its spending and time limits, and compare independently
-verified results on a public leaderboard. The initial challenge is **ecdsa.fail**.
+Catalyst is a benchmark for research agent harnesses. You submit your own
+harness, using your own model account, to run in a controlled environment on
+Catalyst's servers so that its performance can be independently verified and
+compared with others on a public leaderboard.
+The initial challenge is **ecdsa.fail**.
 
 This repository contains the solver CLI, challenge resources, accounting contracts
 and Yukon receipt integration. Dungeness executes harnesses; the private

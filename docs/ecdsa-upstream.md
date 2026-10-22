@@ -12,7 +12,7 @@ Reviewed on 2026-10-14 against upstream `main` at
 “Latest” here means this exact reviewed commit, not a moving branch dependency.
 
 The authoritative statement is now maintained in Catalyst at
-[`src/catalyst/problem-set/ecdsa.fail.md`](../src/catalyst/problem-set/ecdsa.fail.md).
+[`src/catalyst/problem-set/ecdsa-fail/description.md`](../src/catalyst/problem-set/ecdsa-fail/description.md).
 Service initialization copies that statement into its versioned problem package.
 Dungeness's older task statements remain available for historical standalone
 runs, but do not define newly initialized Catalyst problem packages.
@@ -38,7 +38,7 @@ pinned `setup.sh` and `benchmark.sh`, rather than copying that stale invocation.
 
 The execution pin remains
 [`62ae3d00d1e01d7bc640b5163cfea8dabffd8392`](https://github.com/Layr-Labs/ecdsafail-challenge/tree/62ae3d00d1e01d7bc640b5163cfea8dabffd8392)
-in `initial.json`. Core mathematical requirements are the same.
+in `ecdsa-fail/releases/unversioned.json`. Core mathematical requirements are the same.
 The newer documentation does not claim that the current sandboxing or compressed
 operation format has been deployed in Catalyst.
 

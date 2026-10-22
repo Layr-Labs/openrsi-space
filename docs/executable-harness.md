@@ -7,7 +7,7 @@ checkout's generated `submission/verification.json`; `yukon run` checks that ret
 See [the solver guide](solver-guide.md) for authentication and publication.
 
 The problem is **ecdsa.fail**. Exact source commits, candidate paths and verifier
-commands live in `src/catalyst/problem-set/initial.json`. Local checks use that
+commands live in `src/catalyst/problem-set/ecdsa-fail/releases/unversioned.json`. Local checks use that
 pin; they cannot issue an official receipt.
 
 ## Develop against a problem

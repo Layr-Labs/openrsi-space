@@ -6,7 +6,7 @@ Dungeness supplies generic Compose wiring and model accounting.
 
 The public sources are
 [`problem_server.py`](../src/catalyst/runtime/problem_server.py) and
-[`ecdsa.fail.md`](../src/catalyst/problem-set/ecdsa.fail.md). Keep `problem-set/`:
+[`description.md`](../src/catalyst/problem-set/ecdsa-fail/description.md). Keep `problem-set/`:
 it contains the challenge manifest, statement and reference prices. The private
 verification API starts and manages the per-run service; solvers do not need
 another public endpoint or a separate server command.
@@ -63,7 +63,7 @@ does not turn the model gateway into a candidate-execution process.
 ## Shared paper library
 
 The problem's `execution.knowledge_base` pins the canonical SHA-256 of
-[`ecdsa-papers-v1.json`](../src/catalyst/problem-set/ecdsa-papers-v1.json).
+[the paper catalog](../src/catalyst/problem-set/ecdsa-fail/knowledge-base/v1.json).
 It contains exactly 50 content-pinned research papers about quantum elliptic-curve
 arithmetic, reversible circuits, synthesis, uncomputation and resource reduction.
 The first 32 are the exact PDFs from `ecdsa-32-raw-paper-kb-v1`, preserving original
@@ -113,7 +113,7 @@ document, with the document digest in its run metadata.
 
 The public ECDSA source commit, scoring rules and receipt protocol are unchanged.
 The updated execution configuration changes the problem-package version.
-Catalyst also owns the ECDSA execution configuration in `problem-set/initial.json`:
+Catalyst also owns the ECDSA execution configuration in `problem-set/ecdsa-fail/releases/unversioned.json`:
 source commit, candidate paths, interface, initialization, resource limits and
 verifier selection. The worker generates a task and checkpoint in its private
 per-run runtime; it does not look up Dungeness task, problem or checkpoint

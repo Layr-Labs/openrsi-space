@@ -17,7 +17,7 @@ def load(name, path):
 
 class VerifierResultsTests(unittest.TestCase):
     def test_verifier_results_are_readable_after_container_download(self):
-        grade = load("command_grade_contract", "verifiers/ecdsa-fail/benchmark-sh/grade.py")
+        grade = load("command_grade_contract", "verifiers/benchmark-sh/grade.py")
         with tempfile.TemporaryDirectory() as temp:
             path = Path(temp) / "reward.json"
             prior = os.umask(0o077)

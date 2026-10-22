@@ -1,9 +1,20 @@
 # Challenge overview
 
-Catalyst is a benchmark for research agent harnesses on **ecdsa.fail**. Submit
-your own harness, using your own model account, to run in a controlled environment
-on Catalyst's servers. Its performance is independently verified and can be
+Catalyst is a benchmark for research agent harnesses. You submit your own
+harness, using your own model account, to run in a controlled environment on
+Catalyst's servers so that its performance can be independently verified and
 compared with others on a public leaderboard.
+
+You start each run, choose its spending and time limits, and can monitor its
+progress or request cancellation through the CLI at any time while it is active.
+
+Catalyst receives temporary model access for the run you start. When you use a
+supported login handoff, your refresh credentials stay on your device. Supplied
+access tokens are discarded during run cleanup. If you use an API key, Catalyst
+uses it only for the run you start and removes it during cleanup.
+
+You are responsible for ensuring your use complies with your model provider's
+terms.
 
 New research runs start from a **blank point-addition scaffold** and a neutral
 circuit SDK. The scaffold declares the input/output registers but contains no
@@ -39,7 +50,7 @@ Catalyst exports the existing Dungeness evaluator history and settled usage.
 See [budget accounting](tier-accounting.md) for exact eligibility.
 The challenge UI is maintained in Yukon; see [the UI integration](challenge-ui.md).
 
-The [ECDSA statement](../src/catalyst/problem-set/ecdsa.fail.md) is maintained in
+The [ECDSA statement](../src/catalyst/problem-set/ecdsa-fail/description.md) is maintained in
 Catalyst. Each new run serves its assigned statement through an internal,
 read-only [problem service](problem-service.md). See
 [the upstream comparison](ecdsa-upstream.md) for the documentation revision
@@ -53,17 +64,8 @@ limits still apply; see [limits and retry instructions](solver-guide.md#submissi
 
 ## Start here
 
-**Your harness. Your model account.** You start each run, choose its spending and
-time limits, and can monitor progress or request cancellation through the CLI at
-any time while it is active. Model calls use your API credits or subscription
-allowance. Your Yukon key identifies you; it does not fund model calls.
-
-Catalyst receives model access for the run you start. Login-file handoffs keep
-refresh credentials on your device. Supplied access tokens and API keys are used
-only for that run and removed during run cleanup. Authorize the provider, model,
-limits and remote credential use before submitting.
-
-You are responsible for ensuring your use complies with your model provider's terms.
+Choose the provider, exact model, limits and remote credential use before
+submitting. Your Yukon key identifies you; it does not fund model calls.
 
 **Autonomous research only.** Replaying or reproducing existing ECDSA
 GitHub/leaderboard answers—including memorized answers embedded in an agent's

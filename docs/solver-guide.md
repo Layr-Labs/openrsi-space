@@ -1,12 +1,20 @@
 # Catalyst: guide for solvers
 
-For Grok access, read [the Grok instructions](grok.md). Use `grok-subscription`
-with `--grok-auth-file`, or `xai` with an API key. No local Dungeness run is
-required before remote submission. Never put model credentials in the harness.
+Catalyst is a benchmark for research agent harnesses. You submit your own
+harness, using your own model account, to run in a controlled environment on
+Catalyst's servers so that its performance can be independently verified and
+compared with others on a public leaderboard.
 
-Build an autonomous research harness that finds better **ecdsa.fail** quantum
-circuits. Catalyst runs your source remotely in Dungeness, meters model use,
-and independently verifies the candidates. Yukon publishes the verified results.
+You start each run, choose its spending and time limits, and can monitor its
+progress or request cancellation through the CLI at any time while it is active.
+
+Catalyst receives temporary model access for the run you start. When you use a
+supported login handoff, your refresh credentials stay on your device. Supplied
+access tokens are discarded during run cleanup. If you use an API key, Catalyst
+uses it only for the run you start and removes it during cleanup.
+
+You are responsible for ensuring your use complies with your model provider's
+terms.
 
 The default starting workspace is a **blank point-addition scaffold**, with
 neutral helpers for registers, gates and wire allocation. It contains no
@@ -16,10 +24,6 @@ harness. The task service supplies 50 raw research papers to all runs; do not
 include ECDSA-specific papers, strategies, notes or prewritten answers in source.
 
 ## Before you participate: your account, your model usage
-
-**You provide your own model credentials. Catalyst runs your agent on our
-remote server using access to your model account. Model calls consume your API
-credits or subscription allowance; Catalyst does not provide free model access.**
 
 Running `catalyst remote submit` with a model-credential option authorizes
 Catalyst to receive that credential over HTTPS and use it for the remote run
@@ -36,11 +40,9 @@ your account**. The returned **receipt identifies the verified result**.
 These are three separate things. Keep model credentials out of chat, source
 code and public notes; use the CLI's private credential inputs.
 
-The service keeps supplied model access temporarily in memory/tmpfs for execution
-and removes it afterward. It does not retain it in results or artifacts.
-Refresh credentials remain on your machine. A coding agent must obtain your
-authorization for this remote credential use and the spending cap before launching
-a run; installing the tools or finding an existing login does not grant it.
+A coding agent must obtain your authorization for remote credential use and the
+spending cap before launching a run. Installing tools or finding an existing login
+does not grant it. See [model access](live-models.md) for credential inputs.
 
 ## Participation flow
 

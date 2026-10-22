@@ -38,7 +38,9 @@ assert importlib.import_module("catalyst.remote").RemoteClient is evaluations.Re
 assert pricing_schedule()
 problem = catalog.get_problem("ecdsa.fail")
 papers.load_catalog(problem["dungeness"]["knowledge_base"])
-assert (PROBLEM_SET / "README.md").is_file()
+assert {p.name for p in PROBLEM_SET.iterdir()} == {"README.md", "ecdsa-fail"}
+assert not list(PROBLEM_SET.rglob("*v0*"))
+assert (PROBLEM_SET / "ecdsa-fail/description.md").is_file()
 with tempfile.TemporaryDirectory() as temporary:
     runtime = Path(temporary) / "runtime"
     runtime.mkdir()

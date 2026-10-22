@@ -6,7 +6,7 @@ from pathlib import Path
 import subprocess
 
 from catalyst.common import CatalystError, safe_relative
-from .paths import PROBLEM_SET
+from .paths import PROBLEM_SET, PROBLEM_DIRECTORIES
 
 def git(root: Path, *args) -> str:
     result = subprocess.run(["git", "-C", str(root), *args], capture_output=True, text=True)
@@ -17,7 +17,7 @@ def git(root: Path, *args) -> str:
 
 
 def initial_problems() -> list[dict]:
-    return json.loads((PROBLEM_SET / "initial.json").read_text())["problems"]
+    return json.loads((PROBLEM_SET / "ecdsa-fail/releases/unversioned.json").read_text())["problems"]
 
 
 def get_problem(identity: str) -> dict:
@@ -30,7 +30,7 @@ def get_problem(identity: str) -> dict:
 def problem_statement(identity: str) -> str:
     """Statements belong to the public challenge, independently of its runtime."""
     problem = get_problem(identity)
-    return (PROBLEM_SET / f"{problem['id']}.md").read_text()
+    return (PROBLEM_DIRECTORIES[problem["id"]] / "description.md").read_text()
 
 
 def clone_problem(identity: str, destination: Path) -> dict:
