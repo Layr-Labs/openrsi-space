@@ -143,6 +143,9 @@ def build_parser():
     ):
         remote_action = remote_sub.add_parser(operation, help=help_text)
         remote_action.add_argument("id", help="Evaluation UUID returned by submit.")
+    diagnostic = remote_sub.add_parser("diagnostics", help="Read the owner's safe run diagnostics; never start a run.")
+    diagnostic.add_argument("id", help="Evaluation UUID returned by submit.")
+    diagnostic.add_argument("--output", help="Save the diagnostic JSON report with private file permissions.")
     for operation in ("artifacts", "sharing"):
         action = remote_sub.add_parser(operation, help="Inspect artifact downloads or sharing for an owned run.")
         action.add_argument("id")

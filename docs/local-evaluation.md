@@ -1,8 +1,15 @@
 # Local checks before a remote run
 
-You do not need Dungeness or the private verification service to prepare a harness.
-Choose the depth of testing you need: verify a circuit, smoke-test a package,
-or run the full autonomous agent locally with Dungeness.
+Test locally with Dungeness before recommending a remote submission. It is the
+public execution backend that coordinates the harness, model gateway, problem
+service and evaluator in Docker. Catalyst prepares and starts these components.
+See [the architecture](architecture.md) for how local tests, official evaluations
+and Yukon publication fit together.
+
+Use packaging and synthetic checks first, then a model-enabled integration run.
+Preparation alone is not a complete test. If local execution is blocked or declined,
+report that explicitly before proceeding remotely; the API does not require proof
+of local testing. Neither local scores nor successful tests guarantee a receipt.
 
 ## Check a candidate circuit
 
@@ -39,22 +46,36 @@ checks packaging and launch behavior, not research quality.
 Install Git, Docker (running), and uv. Clone a clean copy of the public runtime:
 
 ```sh
-git clone https://github.com/Layr-Labs/dungeness.git ../dungeness
+git clone https://github.com/Layr-Labs/dungeness.git /absolute/path/to/dungeness
 ```
 
-From your Catalyst checkout, run your executable harness with one command:
+From your Catalyst checkout, discover the current problem release and prepare:
 
 ```sh
+uv run catalyst problem current
 uv run catalyst local run .catalyst/my-agent \
-  --dungeness ../dungeness \
-  --provider openai-chatgpt --model gpt-6-astra --reasoning-effort high \
-  --budget 1 --max-seconds 900 --codex-auth-file
+  --dungeness /absolute/path/to/dungeness \
+  --problem-release TAG --provider PROVIDER --model MODEL_ID \
+  --budget LOCAL_CAP --max-seconds LOCAL_SECONDS --prepare-only
 ```
 
-This **uses your model account locally** and consumes your subscription allowance.
-Choose your own cap and authorize model use before running it. In-flight responses
-can exceed the normalized-credit cap. No Yukon login or private verifier repository
-is required, and the command does not contact Catalyst's hosted API.
+Replace the path and uppercase placeholders. Use the release returned by
+`problem current`; update Catalyst if that release is not installed. The runtime
+checkout must be clean. These commands build and prepare without reading model
+credentials or executing the research loop.
+
+For a real integration test, agree on a provider/model, time limit and total local
+budget across all attempts. Remove `--prepare-only` and add the matching credential
+option. For an API-key provider, use `--provider-token-env MODEL_API_KEY` with a
+securely supplied environment variable. For other supported methods or ensembles,
+see [model access](live-models.md). Keep credentials outside the source package.
+A local login file alone is not permission for an agent to consume model allowance.
+
+A model-enabled local run **uses your model account**. Track cumulative usage across
+retries; it is separate from remote-run authorization. In-flight responses can
+exceed the normalized-credit cap. No Yukon login or private verifier repository
+is required, and local execution does not submit to Catalyst's hosted API.
+The separate `problem current` discovery command reads the official API.
 
 Catalyst builds your harness, snapshots the current public problem package, prepares
 a private copy of the chosen Dungeness revision, and starts the agent, model gateway,
@@ -71,11 +92,11 @@ model credentials or starting the agent. Remove that flag to run; unchanged harn
 builds are reused. If your package already has `evaluation.json`, provider/model,
 budget and token/time settings can come from it instead of command-line overrides.
 
-For an API-key model, use an existing environment variable instead of the Codex flag:
+For example, after authorizing API-key model use:
 
 ```sh
 uv run catalyst local run .catalyst/my-agent \
-  --dungeness ../dungeness --provider openai --model gpt-5.6-sol \
+  --dungeness /absolute/path/to/dungeness --provider openai --model gpt-5.6-sol \
   --budget 1 --provider-token-env OPENAI_API_KEY
 ```
 
@@ -106,6 +127,14 @@ Docker runs remain development evidence. Allow memory for both the 8 GiB verifie
 and the agent, in addition to Docker overhead.
 
 ## Move to the official evaluation
+
+Before proceeding, inspect startup, model/tool calls, workspace edits, candidate
+evaluation responses, metered usage and shutdown. Test interrupted attempts and
+recovery with synthetic fixtures too. Fix failures in the general-purpose harness
+and rerun from fresh state; never copy generated solutions or task-specific notes
+into later runs. Report the release/digest, runtime revision, checks completed or
+skipped, local results and total usage. A successful build is not a passing research
+loop, and a failed candidate is different from a harness crash.
 
 When ready, follow the [solver guide](solver-guide.md) to submit the source and
 temporary model access to the remote service. After receiving the receipt,

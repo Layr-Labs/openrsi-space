@@ -18,7 +18,7 @@ from catalyst.contracts.results import (
 from catalyst.contracts.accounting import evaluation_models, pricing_schedule
 from catalyst.challenge.catalog import initial_problems
 from .configuration import evaluation_config
-from .state import request_lock, private_json
+from .state import request_lock, private_json, export_private_json
 from . import transport
 
 MAX_SOURCE_BYTES = 8 * 1024 * 1024
@@ -182,6 +182,17 @@ class RemoteClient:
             if session.get("pricing_quote"):
                 Path(session["pricing_quote"]).unlink(missing_ok=True)
 
+    def diagnostics(self, identity, output=None):
+        identity = evaluation_id(identity)
+        result = json.loads(transport.solver_fetch(
+            self.base, f"/evaluations/{identity}/diagnostics", self.bearer))
+        if (not isinstance(result, dict) or result.get("protocol") != "catalyst-diagnostics-v1"
+                or result.get("evaluation_id") != identity or result.get("scoring_evidence") is not False):
+            raise CatalystError("Diagnostic report does not match this evaluation.")
+        if output is not None:
+            export_private_json(Path(output).expanduser().absolute(), result)
+        return result
+
     def cancel(self, identity):
         identity = evaluation_id(identity)
         result = json.loads(transport.solver_fetch(
@@ -208,7 +219,7 @@ class RemoteClient:
         return {"evaluation_id": identity, "status": result["status"]}
 
     def wait(self, identity):
-        from catalyst.progress import progress_line
+        from catalyst.progress import progress_line, diagnostic_lines
         folder = self.folder(identity)
         session = self.session(identity)
         previous = None
@@ -227,6 +238,8 @@ class RemoteClient:
                         f"Temporary access expired or was lost on restart. Renew with "
                         f"catalyst remote renew-access {identity}, then resume remote wait.")
                 if result["status"] in TERMINAL:
+                    for line in diagnostic_lines(result):
+                        print(line, file=sys.stderr, flush=True)
                     if result["status"] != "completed":
                         self.clear_pending(session)
                         reason = result.get("reason")

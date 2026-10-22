@@ -94,6 +94,63 @@ Live scores are **provisional**, not a verified receipt or evidence for Yukon.
 Progress exposes no prompts, source, tool output, credentials or server paths.
 Older services still work, with a periodic waiting message instead of metrics.
 
+### Troubleshooting an owned run
+
+```bash
+catalyst remote diagnostics EVALUATION_ID --output diagnostics.json
+```
+
+This reads `GET /evaluations/EVALUATION_ID/diagnostics` using your Yukon login;
+it does not start a run or require model credentials. The saved file has private
+permissions. Owner status responses also include this `catalyst-diagnostics-v1`
+report, and `remote wait` prints failure categories and the latest available
+candidate evaluation event to stderr.
+
+The report distinguishes runtime observations, harness-reported errors, and
+independent verification results. For example, `HARNESS_EXIT_NONZERO` with a
+harness-reported `FileExistsError` identifies a harness crash, while
+`CANDIDATE_REJECTED` identifies a candidate that failed verification. Both may
+occur in the same run. A completed run does not necessarily contain a valid
+candidate. The report includes at most 50 recent evaluator events; these are
+observed evaluations, not a complete history of the harness's attempted work.
+
+Reports are troubleshooting information, **never score or receipt evidence**.
+They exclude raw logs, model responses, credentials, private server paths and
+hidden test inputs or expected outputs. Trace downloads remain disabled.
+Missing information is unavailable, not evidence that a step succeeded or never
+ran. Older runs can only show information retained at execution time. An older
+service without this endpoint needs an operator update.
+
+An interrupted model stream is different from a harness or candidate failure.
+`MODEL_USAGE_UNAVAILABLE` means the gateway could not obtain trusted usage for a
+particular request. Its report includes the request ID, duration and observed
+failure category when retained. A category identifies where the error was observed,
+not necessarily who caused it; historical failures may remain `undetermined`.
+
+The gateway continues draining the same upstream stream after a harness disconnect
+so it can capture late usage. A separate later request reports its own usage; it
+does not settle the missing request. Under the current policy, incomplete accounting
+blocks a verified receipt even when an earlier candidate passed. Reported credits
+then exclude unknown usage and must not be interpreted as a complete total or a
+zero charge for the interrupted request. Passing local tests cannot guarantee that
+a remote provider connection will complete. The operator should investigate the
+gateway event, while the solver can review harness error handling independently.
+
+Harnesses can optionally emit one compact JSON line to stdout when an error
+occurs, before cleanup that might itself fail:
+
+```json
+{"event":"catalyst.diagnostic","schema_version":1,"stop_reason":"runtime_error","exception_type":"FileExistsError","location":{"file":"agent.py","line":81}}
+```
+
+Only recognized exception types and stop reasons are exposed. A location is
+optional and must identify a relative source file in the submitted bundle.
+Arbitrary messages and tracebacks are discarded. This is a best-effort projection
+of retained runtime output, not a guaranteed live harness logging channel. Keep
+detailed local logs for synthetic mechanics tests, including interrupted attempts
+and restart recovery. Each remote evaluation must still begin with fresh memory
+and its officially assigned resources.
+
 Source, problem, configuration, pricing and policy digests are bound to the result.
 A completed result contains the independently verified candidates and Dungeness's
 settled usage. The public validator checks the accounting and candidate bindings;

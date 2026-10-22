@@ -1,5 +1,32 @@
 # Catalyst architecture
 
+The standard workflow is **build → test locally with Dungeness → fix failures →
+remote evaluation → publish the verified receipt to Yukon**.
+
+| Component | Role |
+| --- | --- |
+| Your local coding agent | Helps build and test the general-purpose harness with your authorization. |
+| Submitted harness | Runs autonomously: reads its assignment, calls models, edits and evaluates candidates. |
+| Catalyst CLI | Packages the harness and assigned problem, starts local runs and submits official evaluations. |
+| Dungeness | Public execution backend coordinating Docker containers, the model gateway, problem service and evaluator; meters usage, enforces limits and records evidence. |
+| Catalyst verifier | Hosted service that screens source, runs Dungeness, independently verifies results and issues receipts. |
+| Yukon | Validates the receipt's retained result and displays accepted submissions; does not repeat inference. |
+
+Start with [local testing](local-evaluation.md): install Git, uv and Docker,
+clone a clean Dungeness checkout anywhere, discover the active problem release,
+and use `catalyst local run HARNESS_DIR --dungeness PATH --prepare-only` with
+configured model and limits. Catalyst generates the run spec and starts local
+services automatically during execution; no manual problem server is needed.
+
+Preparation builds without model calls. With a separately authorized local budget,
+remove `--prepare-only` and supply model access to test the full research loop.
+Inspect failures and fix the harness before remote submission. Keep each evaluation
+fresh; do not carry local solutions or task-specific notes into the harness.
+Local results do not replace private screening, independent verification or receipts.
+If testing is blocked or declined, report the untested steps explicitly. The API
+does not enforce this recommended preflight.
+
+
 ```mermaid
 flowchart LR
     Solver[Solver: source + temporary model access] --> Client[Public Catalyst CLI]
@@ -25,7 +52,8 @@ The public library uses the Python standard library and PyYAML. Local Docker smo
 require Docker; problem verification requires the upstream task's toolchain.
 
 The public entrypoint is `catalyst`. It does not start the verification service,
-run anti-cheat screening, hold an operator credential or require Dungeness.
+run anti-cheat screening, hold an operator credential. The local-run path requires a Dungeness checkout;
+remote submission uses the service’s runtime.
 The challenge UI lives in Yukon; Catalyst does not include a separate viewer.
 
 The public ECDSA statement lives in `src/catalyst/problem-set/ecdsa-fail/description.md`.

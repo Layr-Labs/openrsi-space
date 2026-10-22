@@ -62,7 +62,7 @@ does not grant it. See [model access](live-models.md) for credential inputs.
 
 ## Participation flow
 
-**The flow:** build your autonomous agent → optionally test locally → review
+**The flow:** build your autonomous agent → test locally with Dungeness → review
 readiness and approve a remote run → evaluate it on Catalyst → get a receipt →
 submit that receipt to Yukon. Model-enabled local tests and remote evaluations
 consume your model allowance; checking or publishing a receipt does not run
@@ -103,11 +103,12 @@ that every charged request started before budget exhaustion. See [accounting det
 
 You need Git, [uv](https://docs.astral.sh/uv/getting-started/installation/),
 Python 3.11 or newer (uv can install Python), and a current Yukon CLI.
-Docker and Dungeness run on the service; you do not need them just to submit.
-Local Docker smoke tests are optional. For full local research runs, anyone can
-clone the public [Dungeness repository](https://github.com/Layr-Labs/dungeness).
-Use `catalyst local run HARNESS_DIR --dungeness PATH` for automatic preparation;
-see [local testing options](local-evaluation.md) for model access and limits.
+For the recommended preflight, install and start Docker and clone the public
+[Dungeness repository](https://github.com/Layr-Labs/dungeness) to any location.
+Dungeness coordinates the harness, model gateway, problem service and evaluator
+in containers. Catalyst prepares and starts them with `catalyst local run`;
+no manual server setup or private repository is needed. Read the
+[architecture](architecture.md) and [local testing procedure](local-evaluation.md).
 Local scores help development; official results require a remote receipt.
 
 **Current MVP environment:** Yukon dev, benchmark `layr-labs/catalyst`,
@@ -218,7 +219,23 @@ Runtime requirements:
 See [the generic harness contract](generic-harnesses.md) for model ensembles,
 packaging, pricing and gateway details.
 
-## 3. Supply model access and evaluate
+## 3. Test locally before submitting
+
+Use [the local Dungeness workflow](local-evaluation.md) with your chosen harness,
+current problem release and a clean runtime checkout. Start with `--prepare-only`
+to build without model calls, then authorize a separate local budget and execute
+the full harness. Preparation and smoke checks alone do not test model/tool
+calls, candidate evaluation or recovery after failures.
+
+Inspect startup, tool calls, workspace edits, evaluation responses, model usage
+and clean shutdown. Fix failures and repeat with fresh memory and the assigned
+scaffold; do not copy local candidates or task-specific notes into your harness.
+Record the runtime revision, release, checks and total usage across retries.
+Local testing does not reproduce private screening or guarantee remote acceptance.
+If it is blocked or you decline it, explicitly identify untested steps before
+proceeding. This is the standard workflow, not an API-enforced submission gate.
+
+## 4. Supply model access and evaluate
 
 Review the prepared harness and its local checks first. If a coding agent is
 helping, it should report what it built, what it tested, and the proposed model
@@ -296,7 +313,7 @@ These commands resume retrieval of the same evaluation. Do not resubmit just
 because a wait or connection was interrupted: a fresh submit after completion
 starts another run. A service restart cannot resume active research automatically.
 
-## 4. Retrieve and inspect the receipt
+## 5. Retrieve and inspect the receipt
 
 After a successful `--wait`, Catalyst prints the validity, score pair,
 evaluation ID, private artifact paths and receipt path. Normally the receipt
@@ -319,7 +336,7 @@ does not change what this receipt refers to.
 `yukon run` retrieves the existing result; it does not build or execute the
 harness again. A local claimed score cannot substitute for a verified receipt.
 
-## 5. Publish to Yukon
+## 6. Publish to Yukon
 
 Write `submission-note.md` before submitting. Yukon requires a public note
 of 5–100 KiB. Explain the harness, knowledge/dependencies, exact model and effort,
@@ -429,6 +446,6 @@ A 429 now identifies account concurrency, global capacity, submission rate, or a
 explicit daily quota, with `limit`, `current`, and `retry_after_seconds`. Wait for
 the indicated interval and rerun the same submission command using the same
 `--state` directory, source and options. Catalyst reuses its saved request ID;
-do not delete pending state or generate a new ID to retry. No local Dungeness
-run is required. Successful source reviews are reused when source, policy,
+do not delete pending state or generate a new ID to retry. You do not need to
+repeat local testing to resume the same unchanged request. Successful source reviews are reused when source, policy,
 reviewer configuration and problem identity match.

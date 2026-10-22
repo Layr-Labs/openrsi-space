@@ -81,7 +81,8 @@ base-URL option or a harness adapter. Selecting a provider does not rewrite a
 third-party CLI's network behavior. Agent-executed function tools are supported;
 provider-hosted web search, remote tools and model fallback are disabled.
 
-A local Dungeness run is optional. Use `catalyst local run ... --grok-auth-file`
+Test the harness locally with Dungeness before recommending remote submission;
+report explicitly if this check is blocked or declined. Use `catalyst local run ... --grok-auth-file`
 with a current clean Dungeness checkout and a trusted `--pricing` snapshot
 containing this model. `catalyst harness smoke` tests the container offline;
 `remote submit` does not first launch a local Dungeness evaluation.

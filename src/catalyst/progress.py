@@ -2,6 +2,72 @@
 from __future__ import annotations
 
 import math
+import re
+
+DIAGNOSTIC_MESSAGES = {
+    "MODEL_USAGE_UNAVAILABLE": "A model request has no trusted usage; total credits are incomplete. Operator investigation is needed before a verified receipt can be issued.",
+    "WORKER_FAILED": "The worker failed; the available evidence does not establish the cause.",
+    "upstream_read_timeout": "The gateway timed out waiting for upstream response data.",
+    "upstream_connect_timeout": "The gateway timed out connecting upstream.",
+    "upstream_transport_timeout": "An upstream transport operation timed out.",
+    "upstream_protocol_error": "The gateway observed an upstream HTTP protocol failure.",
+    "upstream_connection_error": "The gateway observed an upstream connection failure.",
+    "gateway_cancelled": "The gateway's upstream request task was cancelled.",
+    "transport_failure_unknown": "The transport failure was not classified; its origin is undetermined.",
+    "HARNESS_EXIT_NONZERO": "Harness exited unsuccessfully; inspect its reported error and local recovery tests.",
+    "HARNESS_TIMEOUT": "Harness execution reached the runtime timeout.",
+    "RUNTIME_ERROR": "Runtime failed; contact the operator if local harness checks pass.",
+    "CANDIDATE_REJECTED": "Candidate failed independent verification; use the assigned evaluator during development.",
+    "EVALUATION_TIMEOUT": "Candidate evaluation timed out.",
+    "EVALUATOR_ERROR": "Evaluator reported an error.",
+    "EVALUATOR_RESULT_UNREADABLE": "Evaluator result could not be interpreted.",
+    "EVALUATION_LIMIT_REACHED": "Candidate evaluation allowance was exhausted.",
+    "EVALUATION_INTERRUPTED": "Candidate evaluation was interrupted.",
+    "EVALUATION_STARTED": "Candidate evaluation started.",
+    "EVALUATION_PASSED": "Candidate evaluation passed.",
+}
+
+
+def diagnostic_lines(result):
+    report = result.get("diagnostics")
+    if not isinstance(report, dict) or report.get("protocol") != "catalyst-diagnostics-v1":
+        return []
+    lines = []
+    for section in ("worker", "runtime", "verification"):
+        entry = report.get(section)
+        if not isinstance(entry, dict):
+            continue
+        code = entry.get("code")
+        if isinstance(code, str) and code in DIAGNOSTIC_MESSAGES:
+            lines.append(f"{code}: {DIAGNOSTIC_MESSAGES[code]}")
+        if section == "runtime":
+            reported = entry.get("reported")
+            if isinstance(reported, dict):
+                exception = reported.get("exception_type")
+                if isinstance(exception, str) and exception in {
+                    "FileExistsError", "FileNotFoundError", "PermissionError", "TimeoutError",
+                    "ValueError", "TypeError", "KeyError", "RuntimeError", "OSError", "MemoryError",
+                    "JSONDecodeError", "ContractError", "CalledProcessError", "TimeoutExpired",
+                }:
+                    lines.append(f"Harness-reported exception: {exception}.")
+    failures = report.get("model_failures")
+    events = failures.get("events") if isinstance(failures, dict) else None
+    if isinstance(events, list) and events and isinstance(events[-1], dict):
+        event = events[-1]
+        if event.get("code") == "MODEL_USAGE_UNAVAILABLE":
+            message = f"MODEL_USAGE_UNAVAILABLE: {DIAGNOSTIC_MESSAGES['MODEL_USAGE_UNAVAILABLE']}"
+            if message not in lines:
+                lines.append(message)
+            category = event.get("category")
+            if isinstance(category, str) and category in DIAGNOSTIC_MESSAGES:
+                lines.append(DIAGNOSTIC_MESSAGES[category])
+            if event.get("request_status") == "stream_interrupted":
+                lines.append("The model stream was interrupted. Later requests do not settle its missing usage.")
+    if lines:
+        identity = report.get("evaluation_id")
+        if isinstance(identity, str) and re.fullmatch(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}", identity):
+            lines.append(f"Read the owner report with catalyst remote diagnostics {identity}.")
+    return lines
 
 
 def number(value):
@@ -55,4 +121,12 @@ def progress_line(result, waited_seconds=0):
     age = number(progress.get("snapshot_age_seconds"))
     if age is not None and age >= 30:
         parts.append(f"last metrics {duration(age)} ago")
+    report = result.get("diagnostics")
+    evaluations = (report.get("evaluations") if isinstance(report, dict)
+                   and report.get("protocol") == "catalyst-diagnostics-v1" else None)
+    events = evaluations.get("events") if isinstance(evaluations, dict) else None
+    if isinstance(events, list) and events and isinstance(events[-1], dict):
+        code = events[-1].get("code")
+        if isinstance(code, str) and code in DIAGNOSTIC_MESSAGES:
+            parts.append(f"latest evaluation: {code}")
     return " | ".join(parts)

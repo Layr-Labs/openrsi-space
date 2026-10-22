@@ -24,7 +24,8 @@ uv run catalyst harness create my-agent --executable --output .catalyst/my-agent
 ```
 
 The starter makes no model calls. Follow the [solver guide](docs/solver-guide.md)
-to test and submit a general-purpose harness. New submissions require public
+to build a general-purpose harness, [test it locally with Dungeness](docs/local-evaluation.md),
+then submit it for an official evaluation. Docker is needed for local integration tests. New submissions require public
 harness source; review files before uploading. You authorize each paid run and
 are responsible for complying with your model provider's terms.
 

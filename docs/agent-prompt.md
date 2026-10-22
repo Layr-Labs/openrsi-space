@@ -17,15 +17,15 @@ resources. Preserve the original version and request ID when resuming an existin
 run; a new release requires a new evaluation, not editing saved requests or receipts.
 
 For Grok access, read [the Grok instructions](grok.md). Use `grok-subscription`
-with `--grok-auth-file`, or `xai` with an API key. No local Dungeness run is
-required before remote submission. Never put model credentials in the harness.
+with `--grok-auth-file`, or `xai` with an API key. Test the harness locally with Dungeness before recommending remote submission;
+report blockers or explicitly declined tests in the readiness report. Never put model credentials in the harness.
 
 Build an **autonomous research harness for ecdsa.fail**: an agent that explores,
 edits and evaluates quantum circuit candidates on its own during a run. Optimize
 both verified circuit performance (`avg_toffoli × peak_qubits`, lower is better)
 and the normalized model credits used to achieve it.
 
-**Workflow:** build the harness → optionally test locally → let the human review
+**Workflow:** build the harness → test locally with Dungeness and fix failures → let the human review
 readiness and authorize model use → submit source to Catalyst's remote Dungeness
 service → inspect the verified result and receipt → publish the receipt to Yukon.
 Yukon retrieves the service's recorded scores; it does not launch a second agent run.
@@ -203,22 +203,44 @@ readiness report; all inference must use assigned gateway endpoints.
    the best verified candidate in the designated workspace for the final
    independent check. Do not manufacture a score by printing it.
 
-## Optional local testing
+## Local Dungeness preflight
 
-Use [local checks](local-evaluation.md) to test packaging, the entrypoint and
-candidate verification without running a model. For a full local agent run,
-clone the public [Dungeness repository](https://github.com/Layr-Labs/dungeness).
-Use `catalyst local run HARNESS_DIR --dungeness PATH` with model and budget settings
-and an explicitly authorized credential option. Catalyst builds the harness and
-starts its internal task service automatically; no private repository or manual
-run-spec authoring is needed. `--prepare-only` performs setup without reading
-credentials or starting model calls. Full local testing is optional for submission.
+Treat a full local Dungeness run as the standard preflight before remote submission.
+Read [the architecture](architecture.md) and [local workflow](local-evaluation.md).
+Dungeness is the public execution backend: it coordinates the harness, model
+gateway, problem service and evaluator in Docker, meters usage and records results.
+Catalyst prepares and starts these services; do not ask the solver to write a
+run spec or manually start the problem server. No private repository is needed.
 
-Local Dungeness runs can exercise the research loop, metering and verification.
-They consume the solver's model allowance too, so obtain authorization for local
-model use and its limits. Report differences from the service's pinned runtime
-or task; do not claim equivalent results from an unmatched setup. Local output
-is development evidence and cannot mint an official Catalyst receipt.
+1. Install Git, uv and Docker; start Docker. Clone the public Dungeness repository
+   to any location and keep it clean. Use an absolute `--dungeness PATH`.
+2. Discover the active problem with `catalyst problem current`, update Catalyst
+   if needed, and pass the reported `--problem-release TAG` to local and remote runs.
+3. Test packaging, tool behavior and recovery with synthetic fixtures, including
+   interrupted attempts and failures before an attempt record is saved.
+4. Use `catalyst local run HARNESS_DIR --dungeness PATH` with the selected model,
+   budget and time settings and `--prepare-only`. This builds and prepares the
+   runtime without reading credentials or executing the agent; it is not a full test.
+5. Obtain authorization for local model use, exact provider/model, time limits
+   and a total local-testing allowance across all attempts. Local model calls
+   consume the user's account too. Track cumulative usage, including failures;
+   do not treat each retry as a new allowance. In-flight calls can overshoot.
+6. Remove `--prepare-only`, supply the authorized credential option, and run the
+   harness against the assigned fresh scaffold and resources. Inspect startup,
+   model/tool calls, workspace edits, candidate evaluation, usage and shutdown.
+   Fix the general-purpose harness and repeat from fresh state as needed. Never
+   carry generated candidates, task-specific strategies or notes into later runs.
+7. Report the problem release/digest, runtime revision, checks passed or failed,
+   observed scores if any, total usage and remaining limitations. A successful
+   model response alone does not establish that the complete harness works.
+
+If the environment cannot run Docker or lacks authorized model access, or the
+human declines local testing, report the blocker and untested steps before
+requesting remote execution. Do not silently skip preflight. This is workflow
+guidance, not a new API admission requirement. Local results cannot mint receipts,
+reproduce private source screening or guarantee remote acceptance. Match the
+service's pinned task/runtime for comparisons; report any differences. Remote
+execution requires its own authorization, independent of local testing.
 
 ## Evaluate once, then retrieve
 

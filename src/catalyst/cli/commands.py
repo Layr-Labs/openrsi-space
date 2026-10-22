@@ -102,6 +102,9 @@ def model_access_notice(args, client, evaluation=None):
 def remote_command(args, state):
     from catalyst.client.evaluations import RemoteClient
     client = RemoteClient(state)
+    if args.operation == "diagnostics":
+        print(json.dumps(client.diagnostics(args.id, args.output), indent=2))
+        return
     if args.operation == "cancel":
         print(json.dumps(client.cancel(args.id), indent=2))
         return
@@ -187,6 +190,7 @@ def remote_command(args, state):
         # Raw service responses may include private diagnostics.
         print(json.dumps({key: result[key] for key in (
             "evaluation_id", "status", "source_digest", "evidence_mode", "trace_available",
+            "reason", "error", "progress", "diagnostics",
         ) if key in result}, indent=2))
     else:
         print(f"Remote evaluation {identity}", file=sys.stderr, flush=True)
