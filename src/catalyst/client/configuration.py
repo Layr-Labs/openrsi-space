@@ -22,7 +22,7 @@ def evaluation_config(path: Path, overrides: dict | None = None, *, check_pricin
             "llm_access": {"grant_id": "grant_temporary_provider"},
             "model": {},
             "max_model_credits": overrides["budget"],
-            "limits": {"max_model_tokens": None, "max_seconds": 900},
+            "limits": {"max_model_tokens": None, "max_seconds": 10800},
         }
     if ("provider" in overrides) != ("model" in overrides):
         raise CatalystError("Set --provider and --model together.")

@@ -21,6 +21,17 @@ class OptionalTokenTests(unittest.TestCase):
   with tempfile.TemporaryDirectory() as tmp:
    config=evaluation_config(Path(tmp)/'absent.json',{'provider':'openai','model':'gpt-5.6-sol','budget':20})
    self.assertIsNone(config['limits'].get('max_model_tokens'))
+   self.assertEqual(config['limits']['max_seconds'],10800)
+ def test_explicit_time_limit_and_saved_manifest_are_preserved(self):
+  import json
+  with tempfile.TemporaryDirectory() as tmp:
+   path=Path(tmp)/'evaluation.json'
+   options={'provider':'openai','model':'gpt-5.6-sol','budget':20}
+   self.assertEqual(evaluation_config(path,{**options,'max_seconds':60})['limits']['max_seconds'],60)
+   saved=evaluation();path.write_text(json.dumps(saved))
+   self.assertEqual(evaluation_config(path)['limits']['max_seconds'],900)
+   self.assertEqual(evaluation_config(path,{'max_seconds':10800})['limits']['max_seconds'],10800)
+   self.assertEqual(json.loads(path.read_text()),saved)
  def test_grants_distinguish_unlimited_from_finite(self):
   unlimited={'max_seconds':900}; finite={**unlimited,'max_model_tokens':100}
   self.assertTrue(limits_within(unlimited,unlimited))
