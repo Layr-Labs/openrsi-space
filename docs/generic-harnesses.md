@@ -90,7 +90,7 @@ All inference uses the metered gateway.
 
 An `evaluation.json` is optional when all three model/budget flags are provided.
 Without a file, the defaults are temporary model access, no token ceiling,
-and 900 seconds. Set an optional ceiling with `--max-tokens`; use
+and 10,800 seconds (3 hours). Set an optional ceiling with `--max-tokens`; use
 `--no-token-limit` to remove one from a manifest and `--max-seconds` to set the timeout.
 With an existing file, flags override its run settings without editing it.
 Set provider and model together; switching them clears any inherited reasoning
@@ -228,7 +228,7 @@ requires `models`, with the default `model` first:
     {"provider": "openai", "name": "gpt-6-astra"}
   ],
   "max_model_credits": 3,
-  "limits": {"max_model_tokens": null, "max_seconds": 900}
+  "limits": {"max_model_tokens": null, "max_seconds": 10800}
 }
 ```
 

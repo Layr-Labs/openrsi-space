@@ -72,7 +72,7 @@ def build_parser():
     local_run_tokens = local_run.add_mutually_exclusive_group()
     local_run_tokens.add_argument("--max-tokens", type=int)
     local_run_tokens.add_argument("--no-token-limit", action="store_true", help="Disable a token ceiling; retain the credit and time limits.")
-    local_run.add_argument("--max-seconds", type=int)
+    local_run.add_argument("--max-seconds", type=int, help="Override wall time; new evaluations default to 10800 seconds (3 hours).")
     local_run.add_argument("--pricing", help="Optional trusted local pricing JSON; defaults to Catalyst's pinned schedule.")
     local_run.add_argument("--prepare-only", action="store_true", help="Build and prepare the run without reading credentials or calling models.")
     local_access = local_run.add_mutually_exclusive_group()
@@ -114,7 +114,7 @@ def build_parser():
     remote_submit_tokens = remote_submit.add_mutually_exclusive_group()
     remote_submit_tokens.add_argument("--max-tokens", type=int, help="Override the run's model-token cap.")
     remote_submit_tokens.add_argument("--no-token-limit", action="store_true", help="Disable a token ceiling; retain the credit and time limits.")
-    remote_submit.add_argument("--max-seconds", type=int, help="Override the run's wall-time cap.")
+    remote_submit.add_argument("--max-seconds", type=int, help="Override wall time; new evaluations default to 10800 seconds (3 hours).")
     token_input = remote_submit.add_mutually_exclusive_group()
     token_input.add_argument("--provider-access-file",
                              help="Authorize remote use of your model accounts via a private credential map; never package it.")

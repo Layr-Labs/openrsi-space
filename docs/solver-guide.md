@@ -169,7 +169,7 @@ For an existing repository without `harness.json`, provide a Dockerfile and
 uv run catalyst remote submit /path/to/your-agent \
   --entrypoint "python3 /app/main.py" \
   --provider PROVIDER --model EXACT_MODEL --budget 3 \
-  --no-token-limit --max-seconds 2700 \
+  --no-token-limit --max-seconds 10800 \
   --prompt-model-token --wait
 ```
 
@@ -228,7 +228,7 @@ submit using the hidden credential prompt:
 ```sh
 uv run catalyst remote submit .catalyst/my-harness \
   --provider PROVIDER --model EXACT_MODEL --budget 3 \
-  --no-token-limit --max-seconds 2700 \
+  --no-token-limit --max-seconds 10800 \
   --prompt-model-token --wait
 ```
 
@@ -240,9 +240,9 @@ New evaluations have no model-token ceiling by default. `--no-token-limit`
 clears any ceiling saved in an older `evaluation.json`; use `--max-tokens N`
 only if you want an additional token allowance. Tokens are still metered for
 credit accounting. Spending caps and execution timeouts remain enforced.
-The CLI defaults to 900 seconds; these examples explicitly request the current
-service maximum of 2,700 seconds (45 minutes). Choose a timeout appropriate to
-your run, within the service policy.
+New evaluations default to 10,800 seconds (3 hours), the current service maximum.
+These examples also override any shorter time limit saved in an existing
+`evaluation.json`. Use `--max-seconds` to request a shorter run if desired.
 
 For a Codex/ChatGPT harness instead:
 
@@ -250,7 +250,7 @@ For a Codex/ChatGPT harness instead:
 uv run catalyst remote submit .catalyst/my-harness \
   --provider openai-chatgpt --model gpt-6-astra \
   --reasoning-effort high --budget 3 \
-  --no-token-limit --max-seconds 2700 \
+  --no-token-limit --max-seconds 10800 \
   --codex-auth-file --wait
 ```
 
