@@ -4,20 +4,14 @@ from pathlib import Path
 
 from catalyst.common import CatalystError, canonical, write_json, safe_relative
 from catalyst.executable import RUNTIME
+from catalyst.runtime_contract import require_capabilities
 
 SERVICE_URL = "http://gateway:8080/task"
 PYTHON_IMAGE = "python:3.12.11-slim-bookworm@sha256:519591d6871b7bc437060736b9f7456b8731f1499a57e22e6c285135ae657bf7"
 
 
 def require_problem_service_runtime(source):
-    for path, marker in (
-        ("src/dungeness/compiler.py", "def resolve_problem_service("),
-        ("services/gateway/gateway.py", "async def assigned_task("),
-        ("services/gateway/gateway.py", "async def assigned_file("),
-    ):
-        filename = source / path
-        if not filename.is_file() or marker not in filename.read_text():
-            raise CatalystError("Install and pin a Dungeness runtime with the problem-service contract.")
+    require_capabilities(source, "assigned-problem-service-v1")
 
 
 def problem_document(problem, statement, repository, candidate_paths, run_id):

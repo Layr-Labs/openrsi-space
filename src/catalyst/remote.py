@@ -470,7 +470,7 @@ def request_body(submission: Path, base: str, *, judge=None, context=None,
                  evaluation_overrides=None, pricing=None, check_pricing=True, execution=None,
                  publication=None) -> dict:
     from .publication import publication_choices
-    publication = publication_choices(publication)
+    publication = publication_choices(publication, require_public=True)
     config = evaluation_config(submission / "evaluation.json", evaluation_overrides,
                                pricing=pricing, check_pricing=check_pricing)
     snapshot, archive = source_snapshot(submission, execution)

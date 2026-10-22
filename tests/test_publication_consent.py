@@ -17,7 +17,7 @@ class PublicationConsentTests(unittest.TestCase):
         self.assertEqual(publication_choices(), {"harness": True, "traces": False, "license": None})
         parser, _ = build_parser()
         args = parser.parse_args(["remote", "submit", "harness"])
-        self.assertFalse(args.private_harness)
+        self.assertFalse(hasattr(args, "private_harness"))
         self.assertIsNone(args.source_license)
 
     def test_submission_request_carries_public_default_without_a_publish_command(self):
@@ -28,7 +28,7 @@ class PublicationConsentTests(unittest.TestCase):
             self.assertEqual(body["publication"], {
                 "harness": True, "traces": False, "license": None})
 
-    def test_private_source_is_supported_and_trace_publication_is_disabled(self):
+    def test_historical_private_source_remains_readable_and_trace_publication_is_disabled(self):
         self.assertEqual(publication_choices({"harness": False, "traces": False, "license": None}),
                          {"harness": False, "traces": False, "license": None})
         for choices in (
@@ -39,6 +39,20 @@ class PublicationConsentTests(unittest.TestCase):
         ):
             with self.subTest(choices=choices), self.assertRaises(CatalystError):
                 publication_choices(choices)
+
+    def test_private_submission_is_rejected_before_reading_source_or_credentials(self):
+        with self.assertRaisesRegex(CatalystError, "must be public"):
+            request_body(Path("missing-harness"), "https://verifier.example.test",
+                         publication={"harness": False, "traces": False, "license": None})
+
+    def test_cli_has_no_private_submission_or_unpublish_option(self):
+        parser, _ = build_parser()
+        for arguments in (["remote", "submit", "harness", "--private-harness"],
+                          ["remote", "unpublish", "example", "--harness"]):
+            with self.subTest(arguments=arguments), contextlib.redirect_stderr(io.StringIO()):
+                with self.assertRaises(SystemExit) as raised:
+                    parser.parse_args(arguments)
+                self.assertEqual(raised.exception.code, 2)
 
     def test_source_review_required_before_publication_request(self):
         parser, _ = build_parser()
@@ -57,3 +71,11 @@ class PublicationConsentTests(unittest.TestCase):
             factory.return_value.sharing.return_value = {}
             remote_command(args, Path("."))
             factory.return_value.sharing.assert_called_once_with("example", {"harness": True, "license": "MIT"})
+
+    def test_reviewed_source_can_be_public_without_granting_a_license(self):
+        parser, _ = build_parser()
+        args = parser.parse_args(["remote", "publish", "example", "--harness", "--confirm-source-reviewed"])
+        with patch("catalyst.remote.RemoteClient") as factory, contextlib.redirect_stdout(io.StringIO()):
+            factory.return_value.sharing.return_value = {}
+            remote_command(args, Path("."))
+            factory.return_value.sharing.assert_called_once_with("example", {"harness": True})

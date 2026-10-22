@@ -106,8 +106,9 @@ def prepare(state, package, source, evaluation, *, problem_id='ecdsa.fail', pric
         raise CatalystError('Use a clean Dungeness checkout so the local runtime is reproducible.')
     source_commit = git(source, 'rev-parse', 'HEAD')
     require_problem_service_runtime(source)
-    if evaluation['limits'].get('max_model_tokens') is None and '--no-model-token-limit' not in (source / 'dungeness').read_text():
-        raise CatalystError('Update Dungeness to support runs without a token ceiling.')
+    if evaluation['limits'].get('max_model_tokens') is None:
+        from .runtime_contract import require_capabilities
+        require_capabilities(source, 'optional-model-token-limit-v1')
     pricing = read_json(pricing_path) if pricing_path else pricing_schedule()
     models = evaluation_models(evaluation)
     resolved = []
