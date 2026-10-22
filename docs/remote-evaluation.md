@@ -10,6 +10,20 @@ change the existing wire protocols, evaluation IDs or receipts.
 `CATALYST_EVALUATOR_URL` selects the trusted HTTPS endpoint. The client refuses
 redirects. Loopback HTTP is reserved for local fixtures.
 
+The official client checks the TLS certificate chain, expiration and hostname
+using Python/OpenSSL's default trust store before sending authorization headers,
+model credentials or a request body. Keep your operating system and client CA
+store current. A custom CA override changes which issuers the client trusts.
+An expired, untrusted or wrong-host certificate stops the request; correct the
+endpoint, certificate or trust store and retry the same saved request ID. Do not
+disable certificate verification (`curl -k`, `verify=False`, or equivalent).
+
+Custom clients must use HTTPS for the first credential-bearing request and refuse
+redirects. An HTTP-to-HTTPS redirect cannot protect credentials already sent over
+HTTP. Real model credentials are refused even on loopback HTTP. HTTPS model-token
+handoff is restricted to `POST /evaluations` and the exact
+`POST /evaluations/<evaluation-id>/credentials` renewal route.
+
 Solvers use their Yukon login or `YUKON_API_TOKEN`. `POST /auth/yukon` exchanges
 that key for a temporary solver session using `catalyst-yukon-session-v1`.
 The service establishes ownership through its configured Yukon instance;

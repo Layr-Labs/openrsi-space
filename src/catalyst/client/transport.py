@@ -5,6 +5,7 @@ import json
 import os
 from pathlib import Path
 import re
+import ssl
 import time
 import urllib.error
 import urllib.parse
@@ -17,6 +18,22 @@ _solver_sessions = {}
 class NoRedirect(urllib.request.HTTPRedirectHandler):
     def redirect_request(self, req, fp, code, msg, headers, newurl):
         raise CatalystError("Evaluator redirects are refused to protect authorization.")
+
+
+def credential_url(url, *, model_access=False):
+    """Validate before opening a connection or exchanging a solver login."""
+    parts = urllib.parse.urlsplit(url)
+    loopback = parts.scheme == "http" and parts.hostname in {"127.0.0.1", "localhost", "::1"}
+    if (not parts.hostname or parts.username or parts.password or parts.fragment
+            or (parts.scheme != "https" and not (loopback and not model_access))):
+        raise CatalystError("Credentials require a trusted HTTPS evaluator endpoint; HTTP is only for local fixtures.")
+    if model_access:
+        route = parts.path.split("/")
+        renewal = len(route) == 4 and route[:2] == ["", "evaluations"] and route[3] == "credentials"
+        if renewal:
+            evaluation_id(route[2])
+        if parts.query or not (parts.path == "/evaluations" or renewal):
+            raise CatalystError("Provider tokens require an HTTPS evaluation submission or credential-renewal endpoint.")
 
 
 class HTTPFailure(CatalystError):
@@ -47,14 +64,12 @@ class HTTPFailure(CatalystError):
 
 def fetch(url: str, token: str, *, document=None, limit=4 * 1024 * 1024, timeout=30,
           model_token=None, output=None, expected_sha256=None, expected_size=None) -> bytes:
+    if token or model_token is not None:
+        credential_url(url, model_access=model_token is not None)
     private_headers = {}
     if model_token is not None:
         from catalyst.credentials import TOKEN_HEADER, validate_token
         validate_token(model_token)
-        parts = urllib.parse.urlsplit(url)
-        if (parts.scheme != "https" or parts.username or parts.password
-                or parts.path != "/evaluations" or parts.query or parts.fragment):
-            raise CatalystError("Provider tokens require the HTTPS evaluation endpoint.")
         private_headers[TOKEN_HEADER] = model_token
     request = urllib.request.Request(
         url, data=canonical(document) if document is not None else None,
@@ -103,7 +118,13 @@ def fetch(url: str, token: str, *, document=None, limit=4 * 1024 * 1024, timeout
         finally:
             error.close()
         raise HTTPFailure(status, details) from None
-    except (urllib.error.URLError, http.client.HTTPException, OSError):
+    except (urllib.error.URLError, http.client.HTTPException, OSError) as error:
+        if isinstance(getattr(error, "reason", error), ssl.SSLCertVerificationError):
+            raise CatalystError(
+                "Evaluator TLS certificate verification failed; credentials were not sent. "
+                "Check the evaluator URL, certificate and client trust store; do not disable TLS verification. "
+                "The request remains resumable."
+            ) from None
         raise CatalystError("Evaluator is unreachable; request remains resumable.") from None
     if len(content) > limit:
         raise CatalystError("Evaluator response exceeds the allowed size.")
@@ -112,6 +133,8 @@ def fetch(url: str, token: str, *, document=None, limit=4 * 1024 * 1024, timeout
 
 def solver_fetch(base, route, bearer, *, document=None, limit=4 * 1024 * 1024, model_token=None,
                  output=None, expected_sha256=None, expected_size=None):
+    if bearer or model_token is not None:
+        credential_url(base + route, model_access=model_token is not None)
     private = {"model_token": model_token} if model_token is not None else {}
     if output is not None:
         private.update(output=output, expected_sha256=expected_sha256, expected_size=expected_size)
