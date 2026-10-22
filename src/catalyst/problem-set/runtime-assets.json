@@ -1,6 +1,8 @@
 {
   "schema_version": 1,
   "assets": {
-    "scaffolds/ecdsa-point-add-sdk-v1": "ecdsa-fail/scaffolds/ecdsa-point-add-sdk-v1"
+    "scaffolds/ecdsa-point-add-sdk-v1": "ecdsa-fail/scaffolds/ecdsa-point-add-sdk-v1",
+    "verifiers/ecdsa-fail/benchmark-sh": "ecdsa-fail/verifiers/ecdsa-fail/benchmark-sh",
+    "verifiers/ecdsa-fail/experiment-bin": "ecdsa-fail/verifiers/ecdsa-fail/experiment-bin"
   }
 }

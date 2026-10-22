@@ -1,0 +1,25 @@
+schema_version: 1
+type: checkpoint
+id: afcc72ef9dce8cec98f2310fd3ca27d0dd021f2e
+namespace: public/github/layr-labs/ecdsafail-challenge
+created_at: null
+published_at: null
+
+labels:
+  role: competition-frontier
+  source: ecdsa-fail-api
+
+data:
+  repository:
+    url: https://github.com/Layr-Labs/ecdsafail-challenge.git
+    commit: afcc72ef9dce8cec98f2310fd3ca27d0dd021f2e
+  history:
+    anchor: c6f6d2c7f50353259241e296458afb0e651e6c37
+    distance_from_anchor: 1326
+    counting_method: git-rev-list-ancestry-path-count
+  web_cutoff: "2026-08-17T23:59:59.999Z"
+  interface: point-add-module-v1
+  reference:
+    avg_toffoli: 1284345
+    peak_qubits: 1153
+    score: 1480849785

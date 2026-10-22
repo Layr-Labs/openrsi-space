@@ -1,0 +1,15 @@
+schema_version: 1
+type: problem
+namespace: public/ecdsafail-challenge
+id: ecdsa-fail
+
+labels:
+  domain: quantum-resource-estimation
+  curve: secp256k1
+
+data:
+  objective: minimize the reversible quantum resource cost of secp256k1 point addition
+  metric:
+    name: ecdsafail_score
+    direction: minimize
+    formula: avg_toffoli * peak_qubits

@@ -3,6 +3,7 @@ import json
 from pathlib import Path
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from catalyst.common import CatalystError
 from catalyst.problem_assets import asset_path, install_assets, registered_assets
@@ -19,12 +20,15 @@ class ProblemAssetsTests(unittest.TestCase):
             self.assertTrue(manifest.is_file())
             self.assertFalse((runtime / execution['scaffold']).exists())
             added = install_assets(runtime, execution)
-            self.assertEqual(added, ['scaffolds/ecdsa-point-add-sdk-v1'])
+            self.assertEqual(added, ['scaffolds/ecdsa-point-add-sdk-v1', 'verifiers/ecdsa-fail/benchmark-sh'])
+            self.assertFalse((runtime / 'verifiers/ecdsa-fail/experiment-bin').exists())
             scaffold = yaml_file(runtime / execution['scaffold'])
             self.assertEqual(scaffold['schema_version'], 2)
             for destination, source in registered_assets().items():
+                if destination not in added:
+                    continue
                 for file in source.rglob('*'):
-                    if file.is_file():
+                    if file.is_file() and '__pycache__' not in file.parts and file.suffix not in {'.pyc', '.pyo'}:
                         self.assertEqual(file.read_bytes(),
                                          (runtime / destination / file.relative_to(source)).read_bytes())
             stub = (runtime / added[0] / 'candidate/mod.rs').read_text()
@@ -35,6 +39,20 @@ class ProblemAssetsTests(unittest.TestCase):
             self.assertEqual(edit['path'], 'src/bin/eval_circuit.rs')
             self.assertIn('&[1, 64, 512, NUM_TESTS]', edit['replacement'])
             self.assertIn('std::process::exit(1)', edit['replacement'])
+
+    def test_generated_bytecode_is_not_installed_as_a_trusted_input(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            source, runtime = root / 'source', root / 'runtime'
+            (source / '__pycache__').mkdir(parents=True)
+            runtime.mkdir()
+            (source / 'grade.py').write_text('# trusted verifier')
+            (source / '__pycache__/grade.cpython-312.pyc').write_bytes(b'local cache')
+            (source / 'grade.pyc').write_bytes(b'legacy cache')
+            with patch('catalyst.problem_assets.registered_assets',
+                       return_value={'verifiers/example': source}):
+                install_assets(runtime, {'verifier': 'example'})
+            self.assertEqual([p.name for p in (runtime / 'verifiers/example').iterdir()], ['grade.py'])
 
     def test_old_runtime_fails_explicitly_before_assembly(self):
         with tempfile.TemporaryDirectory() as temp:

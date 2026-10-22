@@ -8,7 +8,7 @@ dist/
 .DS_Store
 .env
 .env.*
-problems/
+/problems/
 # Generated receipt for Yukon's existing registered upload path.
 /submission/
 # Internal upstream handoffs and deployment-specific records stay private.

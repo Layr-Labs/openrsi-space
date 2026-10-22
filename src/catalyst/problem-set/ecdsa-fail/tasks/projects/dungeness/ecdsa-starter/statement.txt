@@ -1,0 +1,9 @@
+Improve the pinned secp256k1 point-addition circuit in src/point_add.
+
+The score is average Toffoli count times peak qubits; lower is better.
+Preserve correctness, reversibility, clean ancillas and phase behavior.
+The pinned executable verifier defines the precise interface and test domain.
+
+Use the evaluate command to check intermediate candidates. Retain your best
+verified candidate in the workspace before exiting. Dependencies are installed
+at image build time; the research container has no public internet access.

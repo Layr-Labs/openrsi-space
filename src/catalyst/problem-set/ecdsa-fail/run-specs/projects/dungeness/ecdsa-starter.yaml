@@ -1,0 +1,34 @@
+schema_version: 1
+type: run-spec
+id: ecdsa-starter
+
+# Copy to your own namespace before editing; run ownership comes from `init`.
+task: task:projects/dungeness/ecdsa-starter
+agent: agent:projects/dungeness/command
+checkpoint: checkpoint:public/github/layr-labs/ecdsafail-challenge/62ae3d00d1e01d7bc640b5163cfea8dabffd8392
+
+# The command example prints the task without making model calls. Replace it
+# with your own command harness to perform research.
+model_access:
+  models:
+    - provider: openai
+      upstream_id: openai/gpt-6-astra
+      request_model: gpt-6-astra
+      api: openai-responses
+      name_format: request
+
+budget:
+  max_usd: 1
+  max_model_tokens: 100000
+
+initialization:
+  mode: checkpoint
+
+web_search:
+  mode: disabled
+
+runtime:
+  env_file: .env
+  agent_timeout_sec: 900
+  keep_render: false
+  keep_images: false
