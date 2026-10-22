@@ -17,9 +17,14 @@ include ECDSA-specific papers, strategies, notes or prewritten answers in source
 
 ## Before you participate: your account, your model usage
 
-**You provide your own model credentials. Catalyst runs your agent on our
-remote server using access to your model account. Model calls consume your API
-credits or subscription allowance; Catalyst does not provide free model access.**
+**Catalyst is a benchmark for research agent harnesses.** Submit your own harness,
+using your own model account, to run in a controlled environment on Catalyst's
+servers. Its performance is independently verified and can be compared with
+others on a public leaderboard.
+
+You start each run, choose its spending and time limits, and can monitor progress
+or request cancellation through the CLI at any time while it is active. Model
+calls use your API credits or subscription allowance.
 
 Running `catalyst remote submit` with a model-credential option authorizes
 Catalyst to receive that credential over HTTPS and use it for the remote run
@@ -36,11 +41,13 @@ your account**. The returned **receipt identifies the verified result**.
 These are three separate things. Keep model credentials out of chat, source
 code and public notes; use the CLI's private credential inputs.
 
-The service keeps supplied model access temporarily in memory/tmpfs for execution
-and removes it afterward. It does not retain it in results or artifacts.
-Refresh credentials remain on your machine. A coding agent must obtain your
+The service uses supplied access tokens and API keys only for the run you start,
+keeps them temporarily in memory/tmpfs, and removes them during run cleanup.
+Login-file handoffs keep refresh credentials on your device. A coding agent must obtain your
 authorization for this remote credential use and the spending cap before launching
 a run; installing the tools or finding an existing login does not grant it.
+
+You are responsible for ensuring your use complies with your model provider's terms.
 
 ## Participation flow
 
@@ -139,8 +146,19 @@ use your own agent architecture, subprocesses or search framework.
 To generate an editable starter:
 
 ```sh
-uv run catalyst harness create my-agent --output .catalyst/my-harness
+uv run catalyst harness create my-agent --title "YOUR CHOSEN NAME" --output .catalyst/my-harness
 ```
+
+Replace the title placeholder with a short, distinctive name for your harness's
+general-purpose approach, usually 2–5 words. Your coding agent should propose a
+name if you have not chosen one. Use the same name in `harness.json.title`, your
+submission note and `yukon-submit --harness`; the `my-agent` ID is only a slug.
+Keep the name across retries and model/budget changes, and add a version for
+meaningful harness changes. Avoid generic placeholders, timestamps, run IDs,
+spending caps and unverified performance claims in the display name. Describe
+the approach and credit upstream work separately. See the
+[agent naming instructions](agent-prompt.md#choose-the-harness-name), including
+how to name direct repository submissions in the source catalog.
 
 The starter checks its assigned workspace and makes no model calls. Replace
 `agent.py` with your autonomous solver and install its dependencies in the
@@ -328,9 +346,9 @@ locally and awaits hosting; until then, inspect results with the CLI.
 
 ## Download or share your work
 
-New remote submissions publish the evaluated harness source by default after the
-run stops and publication screening passes. Review files before submitting; use
-`--private-harness` to opt out. Traces are retained internally and cannot be downloaded or published.
+New remote submissions require public harness source, published after the run
+stops and publication screening passes. Review files before submitting; private
+submissions and solver unpublication are not supported. Traces are retained internally and cannot be downloaded or published.
 No license is granted automatically: use `--source-license MIT` (or another supported
 license) only when you have authority to grant it. Existing private runs stay private.
 With the same Yukon account:
@@ -345,14 +363,14 @@ complete evidence bundles are retained internally and are not downloadable.
 To publish source from a run you kept private, or add an authorized license:
 
 ```sh
-uv run catalyst remote publish EVALUATION_ID --harness --license MIT --confirm-source-reviewed
+uv run catalyst remote publish EVALUATION_ID --harness --confirm-source-reviewed
 ```
 
 First download and review the exact harness ZIP. You are responsible for the
 source, prompts and knowledge files you choose to make public and for having
 permission to share them. Credential screening still applies and cannot be waived.
-Choose a license you have authority to grant. See [artifact sharing](artifact-sharing.md)
-for downloads, license choices and unpublishing.
+A license is optional; add `--license` only for a grant you have authority to make. See [artifact sharing](artifact-sharing.md)
+for downloads, license choices and publication of historical source.
 
 ## Challenge rules
 

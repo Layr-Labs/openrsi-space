@@ -49,7 +49,7 @@ excludes it from retained jobs/results/artifacts. Normalized credits may differ
 from cash charges, and an in-flight response can exceed the configured cap.
 Receipt verification/publication does not grant new model access or run inference.
 
-## Source is public by default
+## Public source is required
 
 Before building, discover reusable general-purpose agents with
 `uv run catalyst harness search --max-credits CAP`. Inspect selected source with
@@ -62,15 +62,16 @@ task-specific solution knowledge. See [the catalog guide](harness-catalog.md).
 Before the first remote submission, tell the human that the evaluated harness
 source will become public after the run stops and credential screening passes.
 Review the package for unintended private code, secrets and third-party restrictions.
-The solver is responsible for having permission to share the files. Use
-`--private-harness` if the human wants private source; reuse an existing choice.
+The solver is responsible for having permission to share the files. Private
+submissions and solver unpublication are not supported. If the human does not
+authorize public source, do not submit.
 An optional `--source-license MIT` (or another supported license) requires the
 human's authority to grant it. Public visibility alone grants no additional license.
 Never retroactively publish historical private runs without the owner's choice.
 
 Traces are retained internally for verification and debugging. Users cannot
 download or publish them. Never publish access tokens or authentication files.
-See [artifact-sharing.md](artifact-sharing.md) for commands and source opt-out.
+See [artifact-sharing.md](artifact-sharing.md) for publication and download commands.
 
 ## Objective and boundaries
 
@@ -102,6 +103,32 @@ submit as a solver.
 
 ## Prepare
 
+### Choose the harness name
+
+Choose a short, distinctive, human-readable name before the first submission
+(usually 2–5 words). Reflect the harness's actual general-purpose approach, such
+as its research loop, memory or tool use; avoid unsupported performance claims.
+Respect a name already chosen by the solver, otherwise propose one in the
+readiness report without adding a separate approval step. Do not leave
+placeholders such as "my-agent", "Submitted agent" or "HARNESS NAME" as the
+public display name.
+
+Use that exact name in `harness.json.title`, the submission note and
+`catalyst yukon-submit --harness`. The manifest `id` is a machine-readable slug
+and may differ from the display name. Set the title with
+`catalyst harness create ID --title "YOUR CHOSEN NAME"` or edit the manifest
+before evaluation. Direct Dockerfile/`--entrypoint` submissions generate a generic
+internal title; to name the source catalog entry too, supply a `harness.json`
+with the title and execution configuration and omit the `--entrypoint` override.
+
+Keep the name stable across retries and changes to model, budget or timeout;
+those belong in separate run metadata. Add a version for meaningful harness
+changes. Name adaptations clearly and credit their upstream framework or harness
+in the overview and dependency declarations. Include a brief description of what
+the harness actually does and links to sources genuinely used.
+
+### Build and check compatibility
+
 Before implementing or borrowing a harness, follow
 [harness/provider compatibility](harness-compatibility.md). Pair the framework
 version and adapter with the selected provider's API format, exact model and
@@ -118,7 +145,7 @@ readiness report; all inference must use assigned gateway endpoints.
    Reuse the solver's Yukon login. Do not print, log, package or publish keys.
 3. If needed, clone with `yukon clone layr-labs/catalyst` and enter the printed
    benchmark directory. Run `uv sync --frozen` and `yukon setup`.
-4. Create a starter with `uv run catalyst harness create my-agent --output .catalyst/my-harness`,
+4. Create a starter with `uv run catalyst harness create my-agent --title "YOUR CHOSEN NAME" --output .catalyst/my-harness`,
    or adapt the requested framework without forcing it into Codex. Source can
    use a Dockerfile plus `--entrypoint`, or the existing `harness.json`
    interface. Pin general-purpose build dependencies. The
@@ -269,8 +296,8 @@ Wait for Yukon verification before claiming acceptance.
   `solution-corpus.json` report with source locations and reference blobs.
   Corpus/network failures are inconclusive, not cheating verdicts. Do not
   obscure or rename a copied answer to evade rejection.
-- Explain public-by-default source before submission; use `--private-harness`
-  for private source. Traces are retained internally.
+- Explain required public source before submission. Do not submit material the
+  human cannot authorize for public release. Traces are retained internally.
   Before submitting public source, review the exact packaged files. For later
   manual publication, download the exact harness archive and review every
   file for unintended private code, secrets and third-party restrictions, and

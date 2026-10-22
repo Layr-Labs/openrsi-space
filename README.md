@@ -6,9 +6,10 @@ earlier manifest until the coordinated service and Yukon registration update.
 For submissions to that deployment, use commit `41e5767` in a separate checkout.
 The new manifests are not interchangeable with historical problem hashes.
 
-Catalyst evaluates autonomous research harnesses on **ecdsa.fail**. Solvers
-submit harness source; Catalyst builds and runs it under controlled conditions,
-meters model use, and independently verifies candidate circuits.
+Catalyst is a benchmark for research agent harnesses on **ecdsa.fail**. Submit
+your own harness, using your own model account, to run in a controlled environment
+on Catalyst's servers. Its performance is independently verified and can be
+compared with others on a public leaderboard.
 
 New research runs start from a **blank point-addition scaffold** and a neutral
 circuit SDK. The scaffold declares the input/output registers but contains no
@@ -58,10 +59,17 @@ limits still apply; see [limits and retry instructions](docs/solver-guide.md#sub
 
 ## Start here
 
-**Bring your own model access.** Catalyst runs your agent on its remote server
-using your supplied model credential, consuming **your API credits or subscription
-allowance**. Authorize that remote use, provider, model and spending cap before
-submitting. Your Yukon key identifies you; it does not fund model calls.
+**Your harness. Your model account.** You start each run, choose its spending and
+time limits, and can monitor progress or request cancellation through the CLI at
+any time while it is active. Model calls use your API credits or subscription
+allowance. Your Yukon key identifies you; it does not fund model calls.
+
+Catalyst receives model access for the run you start. Login-file handoffs keep
+refresh credentials on your device. Supplied access tokens and API keys are used
+only for that run and removed during run cleanup. Authorize the provider, model,
+limits and remote credential use before submitting.
+
+You are responsible for ensuring your use complies with your model provider's terms.
 
 **Autonomous research only.** Replaying or reproducing existing ECDSA
 GitHub/leaderboard answers—including memorized answers embedded in an agent's
@@ -113,9 +121,9 @@ checks the stored problem, source and owner bindings, and retrieves the verified
 score and curve. It does not purchase another run. **Pareto submissions are
 recorded without merging solution code.** No Yukon backend patch is required.
 
-New harness submissions make source public by default after the run stops and
-credential screening passes; use `--private-harness` to opt out. Traces are retained internally and cannot be downloaded or published. Existing private runs stay private. Owners can
-download harness source or change its publication choices; see
+New harness submissions require public source, published after the run stops and
+credential screening passes. Traces are retained internally and cannot be downloaded or published. Existing private runs stay private. Owners can
+download harness source or add an authorized license; see
 [artifact downloads and sharing](docs/artifact-sharing.md). Scores and curves
 come from Yukon's official result packet. The challenge UI lives in Yukon; see [the integration guide](docs/challenge-ui.md).
 
@@ -180,7 +188,7 @@ See [publication notes](docs/publication.md) for the public/private source bound
 
 ### Harness visibility
 
-New remote submissions make harness source public by default after the run stops
-and credential screening passes. Use `--private-harness` to keep source private.
+New remote submissions require public harness source. It is published after the
+run stops and credential screening passes. Private submissions are not supported.
 Traces are retained internally. No source license is assigned automatically. Review
 files and third-party rights before submitting; see [artifact sharing](docs/artifact-sharing.md).

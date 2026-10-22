@@ -1,11 +1,11 @@
 # Artifact downloads and publication
 
-New remote submissions publish their evaluated harness source by default after the
+New remote submissions require public harness source, published after the
 run stops and publication screening passes. Traces are retained internally for verification and debugging and cannot be
 downloaded or published, including by the run owner. Historical private runs remain private.
 
-Use `catalyst remote submit HARNESS_DIR --private-harness ...` to keep source
-private. The CLI announces visibility before reading a model credential. Review
+Private submissions are not supported, and solvers cannot unpublish source.
+The CLI announces required public visibility before reading a model credential. Review
 source, prompts, assets and third-party rights before submitting. The solver is
 responsible for permission to publish those files. Possible credentials block
 source publication even when public visibility was requested.
@@ -14,15 +14,19 @@ Public visibility does not assign a license. Optionally pass `--source-license M
 (or another supported license) when submitting. If omitted, the public page says
 that no additional license is granted; bundled licenses still apply.
 
-## Download harness source or change its visibility
+## Download harness source or publish historical source
 
 ```sh
 catalyst remote download EVALUATION_ID --kind harness --output harness.zip
 # Inspect every file in harness.zip before confirming:
-catalyst remote publish EVALUATION_ID --harness --license MIT --confirm-source-reviewed
+catalyst remote publish EVALUATION_ID --harness --confirm-source-reviewed
 
 catalyst remote sharing EVALUATION_ID
 ```
+
+Publication does not require a license. Add `--license MIT` (or another supported
+license) only to grant an authorized license; omitting it preserves any existing
+grant and otherwise grants no additional license.
 
 Supported source license identifiers: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause,
 GPL-3.0-only, GPL-3.0-or-later, AGPL-3.0-only, MPL-2.0, CC0-1.0, CC-BY-4.0.
@@ -64,14 +68,10 @@ Trace and complete-bundle download endpoints are disabled, including for
 historical runs that previously enabled trace sharing. Internal evidence remains
 available to operators for verification and debugging.
 
-```sh
-catalyst remote unpublish EVALUATION_ID --harness
-```
-
-Unpublishing stops new public access through Catalyst. It cannot revoke an
-already downloaded copy or retract an open-source license. Previously issued
-S3 download links expire within five minutes. No retrospective source publication
-occurs when deploying this feature or migrating an existing run.
+The API rejects requests to make harness source private. Credential screening
+can still withhold unsafe source; the public-source requirement never overrides it.
+Historical private runs are not published by this policy change. Publishing one
+requires explicit authorization and the same source review and screening checks.
 
 ## Storage
 

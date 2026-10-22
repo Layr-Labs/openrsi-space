@@ -51,9 +51,9 @@ the owner and run limits. An acknowledged request returns `evaluation_id` and
 the payload under the same request ID is rejected. The client preserves uncertain
 requests instead of issuing another paid run.
 
-New requests must explicitly include `publication`. The CLI defaults to public
-harness source, internally retained traces and no source license grant. `--private-harness`
-opts out of public source; `--source-license` selects an authorized license.
+New requests must explicitly include `publication`. New submissions must set `publication.harness` to `true`; private source is rejected.
+Traces remain internal and no license is granted automatically.
+`--source-license` selects an authorized license.
 Source is published automatically after the run stops and credential screening
 passes. Trace publication is disabled.
 Older clients that omit this field must upgrade before starting a new evaluation.
@@ -139,7 +139,7 @@ a later candidate cannot improve an earlier budget view. Missing budget results
 are explicit metadata, never invented Yukon tuple values. See [accounting](tier-accounting.md).
 
 Owners can download harness source and change its visibility. New harness source
-is public by default. Traces are retained internally for verification and debugging;
+must be public. Traces are retained internally for verification and debugging;
 trace and complete-bundle downloads are unavailable, including to the run owner.
 See [downloads and sharing](artifact-sharing.md).
 

@@ -31,8 +31,8 @@ restart across different comparison contracts; do not compare them as one leader
 
 Only published source from valid remote evaluations appears. A catalog entry
 does not mean the run has been submitted to or accepted by Yukon. Private,
-failed, invalid and local-test runs are excluded. Unpublishing removes future
-catalog and download access. Nothing republishes historical private source.
+failed, invalid and local-test runs are excluded. Solvers cannot unpublish source.
+Nothing republishes historical private source without explicit authorization.
 
 API routes:
 

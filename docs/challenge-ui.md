@@ -104,7 +104,7 @@ Only harness source can be published; traces are retained internally. A missing 
 means no public artifacts are available; an outage produces a retry state and
 does not turn a verified score into a failure. Missing historical source
 bindings do not get invented links. Each actual download rechecks publication
-at the verifier, including after an owner unpublishes a bundle.
+at the verifier, including when publication is withheld by credential screening.
 
 `CATALYST_EVALUATOR_URL` is an optional, server-only HTTPS origin. Without it,
 the score board still works and artifact browsing reports that it is not
