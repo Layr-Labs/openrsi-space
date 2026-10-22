@@ -1,0 +1,75 @@
+schema_version: 2
+type: scaffold
+namespace: projects/catalyst
+id: ecdsa-point-add-sdk-v1
+candidate_path: src/point_add
+workspace_paths:
+- NOTICE
+- Cargo.lock
+- Cargo.toml
+- rust-toolchain
+- benchmark.sh
+- src/lib.rs
+- src/circuit.rs
+- src/sim.rs
+- src/weierstrass_elliptic_curve.rs
+- src/bin/build_circuit.rs
+- src/bin/eval_circuit.rs
+trusted_files:
+  trusted/point_add_sdk.rs: src/point_add_sdk.rs
+  trusted/POINT_ADD_SDK.md: POINT_ADD_SDK.md
+candidate_files:
+  candidate/mod.rs: mod.rs
+text_edits:
+- path: src/lib.rs
+  pattern: (?<!\s)\s*\Z
+  replacement: |2
+
+    pub mod point_add_sdk;
+  matches: 1
+- path: src/bin/eval_circuit.rs
+  pattern: '    println!\("\\n-- correctness tests \(\{\} shots\) --", NUM_TESTS\);.*?    println!\("  all \{\} shots OK", r\.n_shots\);'
+  replacement: |2-
+        let validation_stages: &[usize] = &[1, 64, 512, NUM_TESTS];
+        let mut final_report = None;
+        for &target_shots in validation_stages {
+            println!("\n-- correctness stage ({} shots) --", target_shots);
+            let xof = fiat_shamir_seed(&ops);
+            let stage = run_tests(
+                &ops,
+                &regs,
+                total_qubits,
+                num_bits,
+                xof,
+                target_shots,
+            );
+            println!("  tested shots            : {}", stage.n_shots);
+            println!("  classical mismatches    : {}", stage.classical_failures);
+            println!("  phase-garbage batches   : {}", stage.phase_garbage_batches);
+            println!("  ancilla-garbage batches : {}", stage.ancilla_garbage_batches);
+            if !stage.ok {
+                let reason = stage
+                    .fail_reason
+                    .clone()
+                    .unwrap_or_else(|| "(no detail)".into());
+                println!("\n!! correctness FAILED at {} shots: {}", target_shots, reason);
+                let fail_note = format!(
+                    "{} | validation_stage={} | {}",
+                    note, target_shots, reason
+                );
+                append_results_row(
+                    "FAIL",
+                    stage.avg_tof,
+                    stage.avg_cliff,
+                    total_qubits,
+                    ops.len(),
+                    &fail_note,
+                );
+                std::process::exit(1);
+            }
+            println!("  stage {} shots OK", stage.n_shots);
+            final_report = Some(stage);
+        }
+        let r = final_report.expect("progressive validation stages are non-empty");
+        println!("  all {} shots OK", r.n_shots);
+  matches: 1

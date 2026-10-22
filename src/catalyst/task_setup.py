@@ -5,6 +5,7 @@ from pathlib import Path
 from catalyst.common import CatalystError, canonical, write_json, safe_relative
 from catalyst.executable import RUNTIME
 from catalyst.runtime_contract import require_capabilities
+from catalyst.problem_assets import asset_path, install_assets
 
 SERVICE_URL = "http://gateway:8080/task"
 PYTHON_IMAGE = "python:3.12.11-slim-bookworm@sha256:519591d6871b7bc437060736b9f7456b8731f1499a57e22e6c285135ae657bf7"
@@ -90,14 +91,15 @@ def validate_execution(source, problem_path, document):
     execution = document.get('execution', {})
     initialization = execution_initialization(execution)
     if initialization['mode'] == 'scaffold':
-        manifest = source / execution['scaffold']
+        manifest = asset_path(source, execution['scaffold'])
         if (not manifest.is_file()
-                or not manifest.resolve().is_relative_to((source / 'scaffolds').resolve())):
-            raise CatalystError('The pinned Dungeness runtime does not contain the trusted scaffold.')
+                or manifest.is_symlink()):
+            raise CatalystError('The trusted problem package does not contain the scaffold.')
         scaffold = yaml_file(manifest)
-        if (scaffold.get('schema_version') != 1 or scaffold.get('type') != 'scaffold'
+        if (scaffold.get('schema_version') != 2 or scaffold.get('type') != 'scaffold'
                 or execution.get('candidate_paths') != [scaffold.get('candidate_path')]):
             raise CatalystError('The scaffold must match the problem candidate path.')
+        require_capabilities(source, 'declarative-scaffolds-v2')
     if 'task' in execution or isinstance(execution.get('checkpoint'), str):
         raise CatalystError(
             "Legacy runtime task/checkpoint references are no longer supported. "
@@ -141,6 +143,7 @@ def install_task(runtime, problem_path, problem, strategy, run_id):
     """
     import shutil
     execution = validate_execution(runtime, problem_path, problem['document'])
+    asset_paths = install_assets(runtime, execution)
     repository = execution['repository']
     commit = repository['commit']
     paths = execution['candidate_paths']
@@ -198,7 +201,7 @@ def install_task(runtime, problem_path, problem, strategy, run_id):
         'data': {'objective': problem['document'].get('description', problem['document']['title']),
                  'metric': problem['document']['metric']},
     })
-    added = [str(task_path.parent.relative_to(runtime)), 'checkpoints/' + token, 'problems/' + token]
+    added = [*asset_paths, str(task_path.parent.relative_to(runtime)), 'checkpoints/' + token, 'problems/' + token]
     if verifier_ref is None:
         verifier = runtime / 'verifiers' / token
         shutil.copytree(problem_path / 'verifier', verifier)
