@@ -42,8 +42,11 @@ class LocalRunTests(unittest.TestCase):
             'services/gateway/gateway.py': 'async def assigned_task(): pass\nasync def assigned_file(): pass\nasync def assigned_resource(): pass\n',
             **{'verifiers/ecdsa-fail/benchmark-sh/' + name: 'fixture\n'
                for name in ('Dockerfile', 'grade.py', 'serve.py', 'test.sh', 'evaluator.lock.yaml')},
-            'scaffolds/ecdsa-point-add-sdk-v1/scaffold.yaml':
-                'schema_version: 1\ntype: scaffold\ncandidate_path: src/point_add\n',
+            'runtime-contract.json': json.dumps({
+                'schema_version': 1, 'runtime': 'dungeness',
+                'capabilities': ['assigned-problem-service-v1', 'optional-model-token-limit-v1',
+                                 'declarative-scaffolds-v2'],
+            }),
         }.items():
             path = self.source / name
             path.parent.mkdir(parents=True, exist_ok=True)

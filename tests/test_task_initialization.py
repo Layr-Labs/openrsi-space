@@ -35,6 +35,7 @@ class TaskInitializationTests(unittest.TestCase):
             root = Path(temporary)
             runtime = root / 'runtime'
             execution = copy.deepcopy(get_problem('ecdsa.fail')['dungeness'])
+            execution['scaffold'] = 'scaffolds/operator-example/scaffold.yaml'
             manifest = runtime / execution['scaffold']
             with self.assertRaisesRegex(CatalystError, 'does not contain'):
                 validate_execution(runtime, root, {'execution': execution})
@@ -45,5 +46,5 @@ class TaskInitializationTests(unittest.TestCase):
             outside = root / 'outside.yaml'
             write_yaml(outside, {'schema_version': 1, 'type': 'scaffold', 'candidate_path': 'src/point_add'})
             manifest.symlink_to(outside)
-            with self.assertRaisesRegex(CatalystError, 'does not contain'):
+            with self.assertRaisesRegex(CatalystError, 'escapes'):
                 validate_execution(runtime, root, {'execution': execution})
