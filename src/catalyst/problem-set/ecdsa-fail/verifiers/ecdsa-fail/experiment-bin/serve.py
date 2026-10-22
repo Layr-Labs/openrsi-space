@@ -141,6 +141,11 @@ def _emit_usage_event(kind: str, data: dict, event_id: str) -> None:
 def _record(event: dict) -> None:
     """Append one submission event to the canonical run log (best-effort)."""
     payload = dict(event)
+    # Display names belong to this challenge; retain flat fields for old readers.
+    payload["metrics"] = {
+        name: event[name] for name in ("avg_toffoli", "peak_qubits")
+        if event.get(name) is not None
+    }
     event_id = str(payload.pop("event_id", f"evaluation:{time.time_ns()}"))
     payload.update(
         {

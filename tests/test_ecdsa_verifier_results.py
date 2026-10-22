@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
-from catalyst.problem_assets import ROOT
+from catalyst.challenge.assets import ROOT
 
 
 def load(name, path):

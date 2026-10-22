@@ -1,176 +1,46 @@
 # Catalyst
 
-Catalyst evaluates autonomous research harnesses on **ecdsa.fail**. Solvers
-submit harness source; Catalyst builds and runs it under controlled conditions,
-meters model use, and independently verifies candidate circuits.
+[![Checks](https://github.com/Layr-Labs/catalyst/actions/workflows/check.yml/badge.svg)](https://github.com/Layr-Labs/catalyst/actions/workflows/check.yml)
 
-New research runs start from a **blank point-addition scaffold** and a neutral
-circuit SDK. The scaffold declares the input/output registers but contains no
-algorithm or valid baseline score. Submit a general-purpose research harness.
-The task service supplies the same pinned library of **50 raw research papers**
-to every run. Do not bundle problem-specific material in the submitted harness.
+Catalyst benchmarks research agent harnesses. Submit your harness using your own
+model account, choose its spending and time limits, and compare independently
+verified results on a public leaderboard. The initial challenge is **ecdsa.fail**.
 
-Compare harnesses at **$10, $20, $50 and $100 in model credits, plus Best achieved**. At each tier,
-rank the best eligible verified `avg_toffoli × peak_qubits`; lower is better.
-Best achieved considers the full verified run without a fixed comparison budget
-and displays credits consumed at that candidate. Every run still has an explicit
-finite spending cap; there is no $2,000 comparison tier.
-Keep the complete performance–cost curve and every attempt, including failures
-and regressions. Infrastructure costs are accounted for separately.
+This repository contains the solver CLI, challenge resources, accounting contracts
+and Yukon receipt integration. Dungeness executes harnesses; the private
+`catalyst-verifier` service manages official evaluations. Yukon hosts the UI.
 
-Model credits retain existing immutable reference rates in
-[`pricing.json`](src/catalyst/pricing/pricing.json).
-The service resolves additional declared models through a
-[service-issued OpenRouter pricing snapshot](docs/generic-harnesses.md#reference-prices-for-declared-models).
-The exact schedule's content hash is bound into every evaluation and
-verification reference. These are comparison rates. Subscription usage can consume account
-allowance without representing a cash charge. Unknown usage or unpriced models
-cannot establish tier eligibility.
+## Get started
 
-Each evaluation runs under the solver's chosen spending cap. **Within $10**, **Within $20**, **Within $50**,
-**Within $100**, and **Best overall** are display views over the saved curve;
-a $5 run qualifies for all four budget views. Changing the view never starts a run.
-Catalyst exports the existing Dungeness evaluator history and settled usage.
-
-See [budget accounting](docs/tier-accounting.md) for exact eligibility.
-The challenge UI is maintained in Yukon; see [the UI integration](docs/challenge-ui.md).
-
-The [ECDSA statement](src/catalyst/problem-set/ecdsa.fail.md) is maintained in
-Catalyst. Each new run serves its assigned statement through an internal,
-read-only [problem service](docs/problem-service.md). See
-[the upstream comparison](docs/ecdsa-upstream.md) for the documentation revision
-and the separate execution pin.
-
-For Grok, use a [Grok CLI session or direct xAI API key](docs/grok.md);
-an OpenRouter account is optional.
-
-Submission controls have no daily count cap by default. Concurrency and short-window
-limits still apply; see [limits and retry instructions](docs/solver-guide.md#submission-limits-and-retries).
-
-## Start here
-
-**Bring your own model access.** Catalyst runs your agent on its remote server
-using your supplied model credential, consuming **your API credits or subscription
-allowance**. Authorize that remote use, provider, model and spending cap before
-submitting. Your Yukon key identifies you; it does not fund model calls.
-
-**Autonomous research only.** Replaying or reproducing existing ECDSA
-GitHub/leaderboard answers—including memorized answers embedded in an agent's
-instructions or knowledge files—is prohibited and rejected when detected.
-General-purpose frameworks and tools are allowed. ECDSA-specific papers, notes,
-strategies and prewritten candidates in submitted source are prohibited; use the
-server-assigned task and shared paper library during the run.
-See [the screening policy](docs/cheat-filter.md).
-
-- **For humans:** [Solver guide](docs/solver-guide.md) — setup, credentials,
-  source packaging, a remote run, receipt retrieval and Yukon publication.
-- **For coding agents:** [Agent instructions](docs/agent-prompt.md) — the same
-  workflow with the runtime contract, budget boundaries and reporting requirements.
-- **For your own framework:** [Generic harnesses](docs/generic-harnesses.md) —
-  submit an ordinary agent repository, Dockerfile and entrypoint.
-- **Before choosing an agent/model pair:** [Harness compatibility](docs/harness-compatibility.md) —
-  match API formats, helper calls and credentials, then check the adapter.
-
-The current MVP uses **Yukon dev**, benchmark `layr-labs/catalyst`, and the
-HTTPS verifier at `https://3.21.93.126`. Use a dev Yukon login; production
-Yukon keys do not authenticate to this deployment. No separate Catalyst
-password is needed. The current VM enables ChatGPT and Kimi Code access;
-see the solver guide for tested paths and remaining compatibility checks.
-
-## Submission workflow
-
-Find agents in the [ranked public harness catalog](https://3.21.93.126/public/harnesses).
-Use `uv run catalyst harness search --max-credits 8`, then
-`uv run catalyst harness download EVALUATION_ID --output harness.zip` to download
-selected published source without login. See [search, ranking and downloads](docs/harness-catalog.md).
-
-1. Build your harness and choose a provider, exact model and finite spending cap.
-2. `uv run catalyst remote submit HARNESS_DIR --wait` uploads source and starts
-   the remote run, using its configured model/budget and your separately supplied
-   temporary model access. See the guide for the required credential flag and
-   per-run overrides. **This step consumes model allowance.**
-3. Catalyst prints the evaluation ID, result and `verification.json` path.
-   Resume interrupted retrieval with `uv run catalyst remote wait EVALUATION_ID`.
-4. Create `submission/` and copy the complete receipt into `submission/verification.json`, then run
-   `yukon run` to check the retained result.
-5. Write a public methodology note and use `uv run catalyst yukon-submit`
-   with exact model/harness attribution and dependency declarations. The helper
-   calls stock Yukon and registers its execution/receipt binding.
-
-Yukon uploads only the receipt, creates a candidate commit and dispatches the
-challenge-owned GitHub Actions workflow. The workflow authenticates with OIDC,
-checks the stored problem, source and owner bindings, and retrieves the verified
-score and curve. It does not purchase another run. **Pareto submissions are
-recorded without merging solution code.** No Yukon backend patch is required.
-
-New harness submissions make source public by default after the run stops and
-credential screening passes; use `--private-harness` to opt out. Traces are retained internally and cannot be downloaded or published. Existing private runs stay private. Owners can
-download harness source or change its publication choices; see
-[artifact downloads and sharing](docs/artifact-sharing.md). Scores and curves
-come from Yukon's official result packet. The challenge UI lives in Yukon; see [the integration guide](docs/challenge-ui.md).
-
-## Repository boundary
-
-This repository is the public solver and challenge interface. It contains:
-
-- The `catalyst` CLI, harness packaging, smoke tests, full local Dungeness runs and a starter generator.
-- Pinned problem downloads and local verifier commands.
-- Model-credit accounting rules, result validation and the public HTTP/receipt contract.
-- `benchmark.json`, the receipt-only GitHub Actions workflow and solver documentation.
-
-The **private `catalyst-verifier` repository** contains the verification API,
-queue, Dungeness worker adapter, anti-cheat implementation, credential handling
-inside the service, artifact storage and deployment tooling. It depends on the
-public `catalyst-research` package; this package does not depend on the service.
-Dungeness is not required for remote submission. Its
-[public repository](https://github.com/Layr-Labs/dungeness) is available for
-optional full local agent tests.
-See [local testing options](docs/local-evaluation.md).
-The hosted challenge UI remains in Yukon's challenge application.
-
-The service and client communicate over the [public HTTP contract](docs/remote-evaluation.md).
-A receipt identifies retained evidence; it contains no model credential and
-cannot authorize a score by itself. Verification retrieval never launches a paid run.
-
-The repository does not bundle example agents or a submission source directory.
-Generate a starter below, or submit your own repository. Only the generated
-`submission/verification.json` receipt is uploaded to Yukon. The root
-`verification.json` is the retained baseline; leave it unchanged.
-
-## Local development
+Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 
 ```sh
-uv sync --frozen
+uv sync --locked
+uv run catalyst --help
 uv run catalyst problem list
 uv run catalyst harness create my-agent --executable --output .catalyst/my-agent
-uv run catalyst --help
 ```
 
-For a full local research run with model accounting:
+The starter makes no model calls. Follow the [solver guide](docs/solver-guide.md)
+to test and submit a general-purpose harness. New submissions require public
+harness source; review files before uploading. You authorize each paid run and
+are responsible for complying with your model provider's terms.
+
+**Release compatibility:** this branch preserves the hosted evaluator’s unversioned
+problem identity. See the [compatibility notes](docs/deployment-compatibility.md)
+before switching to `main` or changing problem manifests.
+
+## Develop
 
 ```sh
-uv run catalyst local run .catalyst/my-agent --dungeness ../dungeness \
-  --provider openai-chatgpt --model gpt-6-astra --reasoning-effort high \
-  --budget 1 --codex-auth-file
+make check
 ```
 
-This uses your local model account and starts its internal services automatically.
-Add `--prepare-only` to build and inspect without making model calls. See
-[local testing](docs/local-evaluation.md) for prerequisites, API keys, ensembles,
-artifacts and limits. Local runs cannot issue official Yukon receipts.
+This runs the public tests and builds, installs and checks a wheel in isolation.
+It needs no model credential or Docker. See [development](docs/development.md)
+for optional integration tests.
 
-## Validation
-
-```sh
-uv run python -m unittest discover -s tests -v
-```
-
-Service and cross-repository integration tests live in `catalyst-verifier`.
-See [publication notes](docs/publication.md) for the public/private source boundary.
-
-### Harness visibility
-
-New remote submissions make harness source public by default after the run stops
-and credential screening passes. Use `--private-harness` to keep source private.
-Traces are retained internally. No source license is assigned automatically. Review
-files and third-party rights before submitting; see [artifact sharing](docs/artifact-sharing.md).
+- [Documentation](docs/README.md): solver guides, API contracts and accounting.
+- [Agent instructions](docs/agent-prompt.md): workflow for a solver's coding agent.
+- [Architecture](docs/architecture.md): module ownership and repository boundaries.
+- [Challenge overview](docs/overview.md): rules, budgets and publication workflow.

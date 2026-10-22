@@ -16,6 +16,7 @@ catalyst = "catalyst.cli:main"
 where = ["src"]
 
 [tool.setuptools.package-data]
+"*" = ["README.md"]
 catalyst = ["runtime/*.py", "problem-set/*.json", "problem-set/*.md", "problem-set/ecdsa-fail/**/*", "pricing/*.json", "providers.json"]
 
 [tool.setuptools.exclude-package-data]
