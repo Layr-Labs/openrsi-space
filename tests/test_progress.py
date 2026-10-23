@@ -11,6 +11,13 @@ from catalyst.remote import RemoteClient
 
 
 class ProgressTests(unittest.TestCase):
+    def test_unsettled_amount_is_not_displayed_as_complete_or_free(self):
+        result = {'status':'running', 'progress':{'schema_version':1,
+                  'usage':{'normalized_model_credits':0, 'accounting_state':'incomplete'}}}
+        self.assertIn('settled; total unknown (missing usage)', progress_line(result))
+        result['progress']['usage']['accounting_state'] = 'pending'
+        self.assertIn('settled; model request pending', progress_line(result))
+
     def test_progress_is_useful_and_provisional_without_raw_remote_text(self):
         result = {"status": "running", "progress": {
             "schema_version": 1, "elapsed_seconds": 487, "max_model_credits": 3,

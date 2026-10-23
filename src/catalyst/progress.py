@@ -104,7 +104,12 @@ def progress_line(result, waited_seconds=0):
         cost = number(usage.get("normalized_model_credits"))
         cap = number(progress.get("max_model_credits"))
         if cost is not None:
-            parts.append(f"${cost:.6f}" + (f" / ${cap:g}" if cap is not None else "") + " credits")
+            amount = f"${cost:.6f}" + (f" / ${cap:g}" if cap is not None else "") + " credits"
+            if usage.get('accounting_state') == 'incomplete':
+                amount += ' settled; total unknown (missing usage)'
+            elif usage.get('accounting_state') == 'pending':
+                amount += ' settled; model request pending'
+            parts.append(amount)
         requests = number(usage.get("model_requests"))
         if requests is not None:
             parts.append(f"{int(requests)} model requests")
