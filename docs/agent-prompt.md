@@ -181,7 +181,7 @@ readiness report; all inference must use assigned gateway endpoints.
    submitted archive must fit 8 MiB and contain no symlinks or credentials.
 5. Obtain research material from the assigned task service.
    `CATALYST_KNOWLEDGE_BASE_URL` returns the assigned resource catalog, currently
-   containing 40 papers, with titles, attribution, original licenses, media types,
+   containing eight papers, with titles, attribution, original licenses, media types,
    checksums and internal resource URLs. Fetch those URLs during the run and read
    each resource according to its media type. Choose your own reading, indexing and retrieval
    strategy; model-based retrieval must use the metered gateway. Do not bundle

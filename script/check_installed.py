@@ -55,7 +55,7 @@ with tempfile.TemporaryDirectory() as temporary:
         metadata, attachments = papers.prepare_library(
             binding, root / "papers", slug="ecdsa-fail", release="v1")
         opener.assert_not_called()
-    assert metadata["count"] == 40 and len(attachments) == 42
+    assert metadata["count"] == 8 and len(attachments) == 10
     assert not (root / "absent-cache").exists()
     files = load_files(canonical({"attachments": attachments}), root / "papers")
     assert "/ecdsa-fail/v1/knowledge-base" in files

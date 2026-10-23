@@ -1,394 +1,185 @@
 {
-  "checked_on": "2026-10-22",
+  "checked_on": "2026-10-23",
   "catalog": "ecdsa-papers-v1",
-  "method": "Publisher license metadata checked against version-specific arXiv pages where available; existing PDFs hash-checked and inspected for copyright notices. IACR PDFs could not be freshly downloaded (HTTP 403); retained copies match the previously pinned catalog. This records evidence, not a guarantee of copyright ownership.",
+  "method": "Exact paper versions checked against publisher license links and local PDF notices; local PDFs verified against the supplied eight-paper manifest. Replacement PDFs freshly downloaded from arXiv and matched to existing catalog hashes. IACR metadata checked through the web tool; direct download is blocked by HTTP 403.",
   "papers": [
     {
-      "id": "ecdsa-core-01",
-      "publisher_page": "https://arxiv.org/abs/2603.28846v2",
-      "publisher_page_sha256": "156a93df599ccc322b5cd700eb9aeb775a36e8eb0d51126e908c70d90b72f84e",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "ecdsa-core-02",
+      "title": "Optimized Point Addition Circuits for Elliptic Curve Discrete Logarithms",
+      "sha256": "8744ef6db6c60b62d952a1dd24e5bd433242af970f4755c8b49b020a731584af",
       "publisher_page": "https://arxiv.org/abs/2606.02235v1",
       "publisher_page_sha256": "37bb834c169d6a3ea296e0653937173606ab552a084839485a777ef56cdd7d1c",
+      "license_links": [
+        "http://creativecommons.org/licenses/by/4.0/"
+      ],
+      "pages": 19,
+      "pdf_notices": [],
       "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Required paper; replaces its IACR representation with the pinned arXiv v1 PDF."
+      "redistribution_status": "permitted_under_stated_license",
+      "license": "CC-BY-4.0",
+      "requirements": "Preserve attribution and notices, include the license link, and indicate modifications where applicable.",
+      "id": "ecdsa-core-02",
+      "file": "arxiv-2606-02235v1.pdf"
     },
     {
-      "id": "ecdsa-core-04",
-      "publisher_page": "https://eprint.iacr.org/2026/280",
-      "publisher_page_sha256": "b6b4c94dcc8928e6faa850b8b3b8639b8b7baf99bc682537cebe5eb8684441b0",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "ecdsa-core-06",
-      "publisher_page": "https://eprint.iacr.org/2020/077",
-      "publisher_page_sha256": "aaa6b65a2566c62e848484807bd9925c49c8f9fda8b523d7f5fffd4861cd4e2b",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "ecdsa-core-10",
-      "publisher_page": "https://eprint.iacr.org/2015/1060",
-      "publisher_page_sha256": "57ed824e06c91b04555d460a160abb5bb2da735a2e8dadcf35296cebbd3193a6",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "ecdsa-core-11",
-      "publisher_page": "https://eprint.iacr.org/2008/522",
-      "publisher_page_sha256": "c09c2d2a825faab1aab47fe1524a2476e7781f2a99e05ddb90450ee86a853a15",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "ecdsa-core-16",
-      "publisher_page": "https://arxiv.org/abs/1709.06648v3",
-      "publisher_page_sha256": "57356cd13b373743fb63b413210e2e178c5613b6d4393e6e2272964d1f6c603c",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "ecdsa-core-17",
-      "publisher_page": "https://arxiv.org/abs/2507.23079v1",
-      "publisher_page_sha256": "d92a042b4479730f3b7ba90ce682c107e075ad1837340d3ef96e8343cd00d7a7",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "ecdsa-core-18",
-      "publisher_page": "https://eprint.iacr.org/2025/626",
-      "publisher_page_sha256": "d47027cfecb099c42125978cf442aec824e91d039adabed7c0a02fd95289e6ef",
-      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "ecdsa-core-19",
+      "title": "Windowed quantum arithmetic",
+      "sha256": "a2196cd3a0e39958865dc958cd59a565de49af01f52562911f8bc535d34120a4",
       "publisher_page": "https://arxiv.org/abs/1905.07682v1",
       "publisher_page_sha256": "f2bafebb1949e4d40db04bee48021a17dbb78df4c8c0e938534775d3fd382738",
+      "license_links": [
+        "https://creativecommons.org/licenses/by/4.0/"
+      ],
       "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
+      "license": "CC-BY-4.0",
+      "pages": 11,
+      "pdf_notices": [],
+      "redistribution_status": "permitted_under_stated_license",
+      "requirements": "Preserve attribution and notices, include the license link, and indicate modifications where applicable.",
+      "replaces": "2410.00899v1.pdf",
+      "selection_reason": "Closely related arithmetic reference: windowed multiplication and modular arithmetic with reduced Toffoli counts.",
+      "pdf_downloaded_from": "https://arxiv.org/pdf/1905.07682v1",
+      "id": "ecdsa-core-19",
+      "file": "19-gidney-windowed-quantum-arithmetic.pdf"
     },
     {
-      "id": "ecdsa-core-20",
-      "publisher_page": "https://arxiv.org/abs/1905.08488v1",
-      "publisher_page_sha256": "b49855aa134285bb0703e50331ae38fb5e7ab6697ca1862e4e4db95a7cc77800",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "ecdsa-core-22",
+      "title": "Measurement-based uncomputation of quantum circuits for modular arithmetic",
+      "sha256": "c5b152e5dbfdbc767e49edaec45f3550e623fdefa269fdabed0ab578d7a392f0",
       "publisher_page": "https://arxiv.org/abs/2407.20167v1",
       "publisher_page_sha256": "e521bb8268acd81db34f61c0af4c78f657a33b8c9381687c26c204ff2debd9f4",
+      "license_links": [
+        "http://creativecommons.org/publicdomain/zero/1.0/"
+      ],
+      "pages": 45,
+      "pdf_notices": [],
       "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
+      "redistribution_status": "permitted_under_stated_license",
+      "license": "CC0-1.0",
+      "requirements": "CC0 public-domain dedication; retain source attribution for provenance.",
+      "id": "ecdsa-core-22",
+      "file": "22-luongo-measurement-uncomputation-modular-arithmetic.pdf"
     },
     {
-      "id": "ecdsa-core-26",
-      "publisher_page": "https://eprint.iacr.org/2019/266",
-      "publisher_page_sha256": "cac0ff81eb7d3a2782656c1e6a0fdca518aeac96b34b33f2b0c47a1f4bada1d0",
+      "title": "A Classical-Quantum Adder with Constant Workspace and Linear Gates",
+      "sha256": "31c8fb8d52329c79cd29816d8c22087d5e84aa6fee46458f1f5c0ef726adba3f",
+      "publisher_page": "https://arxiv.org/abs/2507.23079v1",
+      "publisher_page_sha256": "d92a042b4479730f3b7ba90ce682c107e075ad1837340d3ef96e8343cd00d7a7",
+      "license_links": [
+        "http://creativecommons.org/licenses/by/4.0/"
+      ],
+      "pages": 8,
+      "pdf_notices": [],
       "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
+      "redistribution_status": "permitted_under_stated_license",
+      "license": "CC-BY-4.0",
+      "requirements": "Preserve attribution and notices, include the license link, and indicate modifications where applicable.",
+      "id": "ecdsa-core-17",
+      "file": "17-gidney-classical-quantum-adder.pdf"
     },
     {
-      "id": "ecdsa-core-27",
-      "publisher_page": "https://arxiv.org/abs/2603.18110v2",
-      "publisher_page_sha256": "61f730984c55b8aa3dcefd0486c9264456cb737a6feea822bf2650cb32925a69",
-      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "ecdsa-core-28",
-      "publisher_page": "https://arxiv.org/abs/2510.10967v1",
-      "publisher_page_sha256": "272c46379de0d89b8713f3778844d0190a30c198d09eab90e9148afe137306e6",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "ecdsa-core-30",
+      "title": "Tight Bounds on the Spooky Pebble Game - Recycling Qubits with Measurements",
+      "sha256": "13ee62c1108a9a2bd9654235f6ad6cffe30660c35f524b60dd54a38af8d18997",
       "publisher_page": "https://arxiv.org/abs/2110.08973v3",
       "publisher_page_sha256": "0b150f8c8728c0cf880e55533ffcfd8415b608f70713cdc73a12b20883b17775",
+      "license_links": [
+        "http://creativecommons.org/licenses/by/4.0/"
+      ],
+      "pages": 25,
+      "pdf_notices": [],
       "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
+      "redistribution_status": "permitted_under_stated_license",
+      "license": "CC-BY-4.0",
+      "requirements": "Preserve attribution and notices, include the license link, and indicate modifications where applicable.",
+      "id": "ecdsa-core-30",
+      "file": "30-kornerup-spooky-pebble-game.pdf"
     },
     {
-      "id": "ecdsa-core-31",
-      "publisher_page": "https://arxiv.org/abs/2212.10395v2",
-      "publisher_page_sha256": "de923b3e98d3b446d4319d6b355a94d2681df8e3f4d8956a45a16564d63e3a0a",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "arxiv-2609-28882v1",
+      "title": "Efficient Record-and-Replay Arithmetic for Quantum Elliptic-Curve Point Addition",
+      "sha256": "a82133bcf4d42fe8bb8cd0ddfd223c29a820bbe685eb2e318ce073f58e04465a",
       "publisher_page": "https://arxiv.org/abs/2609.28882v1",
       "publisher_page_sha256": "7dc453832934f11214dbbd0a467a2924ff9223efe7b3acf4814094eb19896d39",
+      "license_links": [
+        "https://creativecommons.org/licenses/by/4.0/"
+      ],
       "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
+      "license": "CC-BY-4.0",
+      "pages": 35,
+      "pdf_notices": [],
+      "redistribution_status": "permitted_under_stated_license",
+      "requirements": "Preserve attribution and notices, include the license link, and indicate modifications where applicable.",
+      "replaces": "2607.13816v2.pdf",
+      "selection_reason": "Recent direct reference on reversible secp256k1 point addition and record-and-replay arithmetic. The paper explicitly reports remaining correctness limitations; its circuits are not accepted as verified solutions by inclusion in the library.",
+      "pdf_downloaded_from": "https://arxiv.org/pdf/2609.28882v1",
+      "id": "arxiv-2609-28882v1",
+      "file": "arxiv-2609-28882v1.pdf"
     },
     {
-      "id": "arxiv-2311-08555v1",
-      "publisher_page": "https://arxiv.org/abs/2311.08555v1",
-      "publisher_page_sha256": "6f289adcc15b958e93aa1cd0df48db2828ee371cdfe3e7b9ac92cb097ed5c452",
+      "title": "Verifiable Quantum Advantage via Optimized DQI Circuits",
+      "sha256": "dcbbd0034ebcc3918a31ecc211ab108ec3a11d02840a78f504f915b73a5370ca",
+      "publisher_page": "https://arxiv.org/abs/2510.10967v1",
+      "publisher_page_sha256": "272c46379de0d89b8713f3778844d0190a30c198d09eab90e9148afe137306e6",
+      "license_links": [
+        "http://creativecommons.org/licenses/by/4.0/"
+      ],
+      "pages": 52,
+      "pdf_notices": [],
       "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
+      "redistribution_status": "permitted_under_stated_license",
+      "license": "CC-BY-4.0",
+      "requirements": "Preserve attribution and notices, include the license link, and indicate modifications where applicable.",
+      "id": "ecdsa-core-28",
+      "file": "28-khattar-optimized-dqi-circuits.pdf"
     },
     {
-      "id": "arxiv-2506-03318v2",
-      "publisher_page": "https://arxiv.org/abs/2506.03318v2",
-      "publisher_page_sha256": "d5be3e9a2cbf54d1a13084f90c8932b48abce94583842e556b4bcda4909d2592",
+      "title": "Improved quantum circuits for elliptic curve discrete logarithms",
+      "sha256": "ed7daaba41f3a6d2a42536b977a91a97e343a23a9f0d9324d3b9aaf3eb0848c2",
+      "publisher_page": "https://eprint.iacr.org/2020/077",
+      "pages": 22,
+      "pdf_notices": [
+        "4 Our code will be released under an open source license."
+      ],
+      "license_links": [
+        "https://creativecommons.org/licenses/by/4.0/"
+      ],
+      "additional_evidence": "Publisher page successfully read using web browser tool; License section links CC BY 4.0. Direct urllib request returned HTTP 403.",
       "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "arxiv-2501-10228v1",
-      "publisher_page": "https://arxiv.org/abs/2501.10228v1",
-      "publisher_page_sha256": "112dc33f968447ab37ff12e820287e28aa6aef6e48e4802e930ec0c513d178ba",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "arxiv-2502-17325v1",
-      "publisher_page": "https://arxiv.org/abs/2502.17325v1",
-      "publisher_page_sha256": "b7aa224ad0d637c4664403146381e6423ee5550d2d5c973c57c04ba82570c4cb",
-      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "arxiv-2510-23212v1",
-      "publisher_page": "https://arxiv.org/abs/2510.23212v1",
-      "publisher_page_sha256": "8cdbdb8d574f20a90cdc5c3433b2e4b4078c89efa2d04cc6a54018e3e7318084",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "arxiv-2607-11713v1",
-      "publisher_page": "https://arxiv.org/abs/2607.11713v1",
-      "publisher_page_sha256": "1bac532cba4feffa10983c2e9d2b1425a429293c04b0ead3759a75b4ef52d17a",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "arxiv-2307-11417v1",
-      "publisher_page": "https://arxiv.org/abs/2307.11417v1",
-      "publisher_page_sha256": "319eaaefca669ad85b6568ce4f5bb402e3a726c0adb53fdeafbc2b130a825937",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "arxiv-2501-07060v1",
-      "publisher_page": "https://arxiv.org/abs/2501.07060v1",
-      "publisher_page_sha256": "9c1748f2d3001363579d9c30c7bcad03e1d2e7de35a65c700273132c307984da",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "arxiv-2609-26591v2",
-      "publisher_page": "https://arxiv.org/abs/2609.26591v2",
-      "publisher_page_sha256": "31b7d566294fe1a92481bd6f8fd5aae58c56e0a67fa6a69ea9744f9501473a89",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "arxiv-2302-06074v3",
-      "publisher_page": "https://arxiv.org/abs/2302.06074v3",
-      "publisher_page_sha256": "2bd859f34bb056c062bc9b203d66989f113ef1c28cd3c4b1a199db3924ca0b56",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "arxiv-2407-08695v2",
-      "publisher_page": "https://arxiv.org/abs/2407.08695v2",
-      "publisher_page_sha256": "4568fa909d5ec903f7ba50a1b4b863a72bfe4397a715dcde39f61a3a5a8e4b2f",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "arxiv-2508-17273v2",
-      "publisher_page": "https://arxiv.org/abs/2508.17273v2",
-      "publisher_page_sha256": "ec025bec9c736a53ce36208016a17a8091062718cf88eb38d922ef7f8512dd17",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "arxiv-2402-14396v2",
-      "publisher_page": "https://arxiv.org/abs/2402.14396v2",
-      "publisher_page_sha256": "c49c8659bbc07d221e7691f992fb51e8444f905a5c0842a25d47b57673823b83",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "arxiv-2605-20334v1",
-      "publisher_page": "https://arxiv.org/abs/2605.20334v1",
-      "publisher_page_sha256": "2519ba9239e18149e36ac22806d9bb2af8a267965baf934b042c560d6dfa93ac",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "arxiv-2407-17966v2",
-      "publisher_page": "https://arxiv.org/abs/2407.17966v2",
-      "publisher_page_sha256": "53b90f562559e256b866027ebd758687854ef3e5d4eac3aad7ebaa6e72c24fa2",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "arxiv-2401-10579v7",
-      "publisher_page": "https://arxiv.org/abs/2401.10579v7",
-      "publisher_page_sha256": "b327bc2bd511293f173bc6943673f1cfd9097e8be7d68bc9eb3eb772d58a2895",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "arxiv-2510-08432v3",
-      "publisher_page": "https://arxiv.org/abs/2510.08432v3",
-      "publisher_page_sha256": "cce983189f3dcde54751b93af9ed64f9e9d9f7a79eaf4fb0fd3e75ea807d213c",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Existing pinned PDF hash preserved; publisher metadata and cached PDF notices checked."
-    },
-    {
-      "id": "arxiv-2407-10171v1",
-      "publisher_page": "https://arxiv.org/abs/2407.10171v1",
-      "publisher_page_sha256": "7121bbdc59488adbea5660d4c3fda4388a226c09b09930c0a9b718bb94b387e8",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Qubit-count reduction and ancilla management through circuit rewriting."
-    },
-    {
-      "id": "arxiv-1905-09749v3",
-      "publisher_page": "https://arxiv.org/abs/1905.09749v3",
-      "publisher_page_sha256": "aecab66e50d6e56ffdeb14a7af4ee5cd188e73034ea0b3b1aa70207d31a86745",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Concrete modular-arithmetic resource estimates and space/time trade-offs."
-    },
-    {
-      "id": "arxiv-2205-01121v3",
-      "publisher_page": "https://arxiv.org/abs/2205.01121v3",
-      "publisher_page_sha256": "80a854272f38c6f11430db73efcef1a5257a91fdbd1cf69835bd62d23be4df6d",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "General circuit synthesis and optimization methods."
-    },
-    {
-      "id": "arxiv-2406-07486v1",
-      "publisher_page": "https://arxiv.org/abs/2406.07486v1",
-      "publisher_page_sha256": "ea4dccf4a2ee5d54a36f0ab1162bb06fb04e869f0df3e73b052697a474768622",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Optimized modular addition circuit constructions."
-    },
-    {
-      "id": "arxiv-2302-07040v3",
-      "publisher_page": "https://arxiv.org/abs/2302.07040v3",
-      "publisher_page_sha256": "6b9721b0a4c4d63c817db2afa51b1b9bd33ebbf9e401013c406034ee748f5595",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "note": "Gate-count optimization for Clifford+T circuit synthesis."
+      "redistribution_status": "permitted_under_stated_license",
+      "license": "CC-BY-4.0",
+      "requirements": "Preserve attribution and notices, include the license link, and indicate modifications where applicable.",
+      "id": "ecdsa-core-06",
+      "file": "06-haner-improved-quantum-circuits-ecdlp.pdf"
     }
   ],
-  "excluded_from_prelaunch_collection": [
+  "excluded_from_supplied_collection": [
     {
-      "id": "ecdsa-core-03",
+      "path": "2410.00899v1.pdf",
+      "title": "Quantum schoolbook multiplication with fewer Toffoli gates",
+      "sha256": "5da56cc0dd20b0afe73b3d0a188ba7e0e9826960c37b9b972671520755a74713",
+      "hash_matches": true,
+      "publisher_page": "https://arxiv.org/abs/2410.00899v1",
+      "publisher_page_sha256": "8ce67abeef8266c9586a231508ac3d511369428d7e2080f2d13b7d2b43de2aa0",
+      "license_links": [
+        "http://arxiv.org/licenses/nonexclusive-distrib/1.0/"
+      ],
+      "pages": 6,
+      "pdf_notices": [],
+      "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/",
+      "redistribution_status": "permission_not_established",
+      "reason": "The stated license grants distribution rights to arXiv, not a general third-party redistribution license. No separate permission found in PDF text or sources checked."
+    },
+    {
+      "path": "2607.13816v2.pdf",
       "title": "Quantum Algorithm for Elliptic Curve Discrete Logarithms with Space-Efficient Point Addition",
-      "source_url": "https://arxiv.org/abs/2607.13816v3",
+      "sha256": "8e61e2ce2be1a9a9404c67fe2b42b1e381093e215ada2e20ce3f2de925938901",
+      "hash_matches": true,
+      "publisher_page": "https://arxiv.org/abs/2607.13816v2",
+      "publisher_page_sha256": "330337d443672606f129dcd00ddfc3a67e401621b6aa4023e9dee589e87ff678",
+      "license_links": [
+        "http://arxiv.org/licenses/nonexclusive-distrib/1.0/"
+      ],
+      "pages": 50,
+      "pdf_notices": [],
       "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/",
-      "reason": "No third-party redistribution license established"
-    },
-    {
-      "id": "ecdsa-core-05",
-      "title": "New Quantum Circuits for Elliptic Curve Discrete Logarithms",
-      "source_url": "https://eprint.iacr.org/2026/106",
-      "license_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
-      "reason": "NonCommercial restriction"
-    },
-    {
-      "id": "ecdsa-core-07",
-      "title": "Quantum Resource Estimates for Computing Elliptic Curve Discrete Logarithms",
-      "source_url": "https://arxiv.org/abs/1706.06752v3",
-      "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/",
-      "reason": "No third-party redistribution license established"
-    },
-    {
-      "id": "ecdsa-core-08",
-      "title": "Shor's Discrete Logarithm Quantum Algorithm for Elliptic Curves",
-      "source_url": "https://arxiv.org/abs/quant-ph/0301141v2",
-      "license_url": "https://arxiv.org/licenses/assumed-1991-2003/",
-      "reason": "No third-party redistribution license established"
-    },
-    {
-      "id": "ecdsa-core-09",
-      "title": "How to Compute a 256-bit Elliptic Curve Private Key with Only 50 Million Toffoli Gates",
-      "source_url": "https://arxiv.org/abs/2306.08585v1",
-      "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/",
-      "reason": "No third-party redistribution license established"
-    },
-    {
-      "id": "ecdsa-core-12",
-      "title": "New Quantum Cryptanalysis of Binary Elliptic Curves (Extended Version)",
-      "source_url": "https://eprint.iacr.org/2025/017",
-      "license_url": "https://creativecommons.org/licenses/by-nc-sa/4.0/",
-      "reason": "NonCommercial restriction"
-    },
-    {
-      "id": "ecdsa-core-13",
-      "title": "A New Quantum Ripple-Carry Addition Circuit",
-      "source_url": "https://arxiv.org/abs/quant-ph/0410184v1",
-      "license_url": "https://arxiv.org/licenses/assumed-1991-2003/",
-      "reason": "No third-party redistribution license established"
-    },
-    {
-      "id": "ecdsa-core-14",
-      "title": "A Logarithmic-Depth Quantum Carry-Lookahead Adder",
-      "source_url": "https://arxiv.org/abs/quant-ph/0406142v1",
-      "license_url": "https://arxiv.org/licenses/assumed-1991-2003/",
-      "reason": "No third-party redistribution license established"
-    },
-    {
-      "id": "ecdsa-core-15",
-      "title": "Addition on a Quantum Computer",
-      "source_url": "https://arxiv.org/abs/quant-ph/0008033v1",
-      "license_url": "https://arxiv.org/licenses/assumed-1991-2003/",
-      "reason": "No third-party redistribution license established"
-    },
-    {
-      "id": "ecdsa-core-21",
-      "title": "Factoring Using 2n+2 Qubits with Toffoli Based Modular Multiplication",
-      "source_url": "https://arxiv.org/abs/1611.07995v2",
-      "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/",
-      "reason": "No third-party redistribution license established"
-    },
-    {
-      "id": "ecdsa-core-23",
-      "title": "High Performance Quantum Modular Multipliers",
-      "source_url": "https://arxiv.org/abs/1801.01081v1",
-      "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/",
-      "reason": "No third-party redistribution license established"
-    },
-    {
-      "id": "ecdsa-core-24",
-      "title": "Asymptotically Efficient Quantum Karatsuba Multiplication",
-      "source_url": "https://arxiv.org/abs/1904.07356v1",
-      "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/",
-      "reason": "No third-party redistribution license established"
-    },
-    {
-      "id": "ecdsa-core-25",
-      "title": "Efficient Quantum Modular Reduction: Crandall Reduction and Its Fault-Tolerant Resource Analysis",
-      "source_url": "https://arxiv.org/abs/2608.11563v1",
-      "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/",
-      "reason": "No third-party redistribution license established"
-    },
-    {
-      "id": "ecdsa-core-29",
-      "title": "Quantum Schoolbook Multiplication with Fewer Toffoli Gates",
-      "source_url": "https://arxiv.org/abs/2410.00899v1",
-      "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/",
-      "reason": "No third-party redistribution license established"
-    },
-    {
-      "id": "ecdsa-core-32",
-      "title": "Quantum Uncomputation of Clean and Dirty Ancilla Qubits",
-      "source_url": "https://arxiv.org/abs/2608.09578v1",
-      "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/",
-      "reason": "No third-party redistribution license established"
+      "redistribution_status": "permission_not_established",
+      "reason": "The stated license grants distribution rights to arXiv, not a general third-party redistribution license. No separate permission found in PDF text or sources checked."
     }
   ]
 }

@@ -198,7 +198,7 @@ Runtime requirements:
 
 - Install generic dependencies in the image. The research container has no
   public internet access. Read `CATALYST_KNOWLEDGE_BASE_URL` for the shared
-  40-paper catalog and internal PDF links. Do not bundle task-specific material.
+  eight-paper catalog and internal PDF links. Do not bundle task-specific material.
 - Read `CATALYST_TASK` for the problem instruction, writable workspace,
   candidate paths, declared models and metered gateway endpoints. Route every
   model request through those endpoints. Do not hard-code public provider URLs.

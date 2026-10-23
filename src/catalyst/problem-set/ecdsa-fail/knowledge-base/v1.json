@@ -1,51 +1,18 @@
 {
   "schema_version": 1,
   "id": "ecdsa-papers-v1",
-  "title": "Quantum ECDSA and circuit optimization — licensed library",
-  "curated_at": "2026-10-22",
-  "count": 40,
+  "title": "Quantum ECDSA and circuit optimization — eight-paper library",
+  "curated_at": "2026-10-23",
+  "count": 8,
   "provenance": {
-    "previous_collection": "prelaunch-50-paper-collection",
-    "retained_count": 35,
-    "added_count": 5,
+    "previous_collection": "prelaunch-40-paper-collection",
+    "previous_catalog_sha256": "8aee712ce329af7efbb4b7ec3f8e4c0007c98bedecda3f140633f9dfd70c697e",
+    "source_collection": "ecdsa-8-raw-paper-kb-v1",
     "required_paper": "arXiv:2606.02235v1",
-    "license_review": "licenses-v1.json",
-    "previous_catalog_sha256": "380233e137617f6cd2bbeedcd591023b05da7322ecdd8d943dabab0302df04cf"
+    "license_review": "licenses-v1.json"
   },
-  "rights_notice": "Unmodified papers remain under the individual Creative Commons licenses linked in each entry. Preserve author attribution, source links, and license notices when sharing these files. The Catalyst software license does not replace the paper licenses.",
+  "rights_notice": "Unmodified PDFs remain under their individual CC BY 4.0 or CC0 licenses. Preserve attribution, source links, license notices and applicable terms; no author endorsement is implied.",
   "papers": [
-    {
-      "id": "ecdsa-core-01",
-      "file": "01-babbush-securing-ecc-cryptocurrencies.pdf",
-      "title": "Securing Elliptic Curve Cryptocurrencies against Quantum Vulnerabilities: Resource Estimates and Mitigations",
-      "source_id": "arXiv:2603.28846",
-      "source_url": "https://arxiv.org/abs/2603.28846v2",
-      "pdf_url": "https://arxiv.org/pdf/2603.28846v2",
-      "authors": [
-        "Ryan Babbush",
-        "Adam Zalcman",
-        "Craig Gidney",
-        "Michael Broughton",
-        "Tanuj Khattar",
-        "Hartmut Neven",
-        "Thiago Bergamaschi",
-        "Justin Drake",
-        "Dan Boneh"
-      ],
-      "pages": 57,
-      "sha256": "1f59d951d24f360bb5fd89a25b22f28825519c65e17428f5ab204e7c2106ae99",
-      "bytes": 1964648,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "ecdsa-32-raw-paper-kb-v1",
-        "file": "01-babbush-securing-ecc-cryptocurrencies.pdf",
-        "sha256": "1f59d951d24f360bb5fd89a25b22f28825519c65e17428f5ab204e7c2106ae99"
-      },
-      "arxiv_id": "2603.28846v2"
-    },
     {
       "id": "ecdsa-core-02",
       "file": "arxiv-2606-02235v1.pdf",
@@ -54,7 +21,7 @@
       "source_url": "https://arxiv.org/abs/2606.02235v1",
       "pdf_url": "https://arxiv.org/pdf/2606.02235v1",
       "authors": [
-        "Schrottenloher, André"
+        "André Schrottenloher"
       ],
       "pages": 19,
       "sha256": "8744ef6db6c60b62d952a1dd24e5bd433242af970f4755c8b49b020a731584af",
@@ -65,39 +32,208 @@
       "license_status": "verified-version-specific-publisher-metadata",
       "arxiv_id": "2606.02235v1",
       "origin": {
-        "collection": "licensed-launch-library"
+        "collection": "ecdsa-8-raw-paper-kb-v1",
+        "file": "2606.02235v1.pdf",
+        "sha256": "8744ef6db6c60b62d952a1dd24e5bd433242af970f4755c8b49b020a731584af"
       }
     },
     {
-      "id": "ecdsa-core-04",
-      "file": "04-chevignard-reducing-qubits-ecdlp.pdf",
-      "title": "Reducing Qubits for the Elliptic Curve Discrete Logarithm Problem",
-      "source_id": "IACR-ePrint:2026/280",
-      "source_url": "https://eprint.iacr.org/2026/280",
-      "pdf_url": "https://eprint.iacr.org/2026/280.pdf",
+      "id": "ecdsa-core-19",
+      "file": "19-gidney-windowed-quantum-arithmetic.pdf",
+      "title": "Windowed quantum arithmetic",
+      "source_id": "arXiv:1905.07682v1",
+      "source_url": "https://arxiv.org/abs/1905.07682v1",
+      "pdf_url": "https://arxiv.org/pdf/1905.07682v1",
       "authors": [
-        "Clémence Chevignard",
-        "Pierre-Alain Fouque",
-        "André Schrottenloher"
+        "Gidney, Craig"
       ],
-      "pages": 34,
-      "sha256": "823e72795f0ef3ab17ef346d4ebc0b9ec9275d0b672e98a029d1e94c8d39f493",
-      "bytes": 502632,
+      "pages": 11,
+      "sha256": "a2196cd3a0e39958865dc958cd59a565de49af01f52562911f8bc535d34120a4",
+      "bytes": 536890,
       "media_type": "application/pdf",
       "modifications": "none",
       "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
+      "license_status": "verified-version-specific-publisher-metadata",
       "origin": {
-        "collection": "ecdsa-32-raw-paper-kb-v1",
-        "file": "04-chevignard-reducing-qubits-ecdlp.pdf",
-        "sha256": "823e72795f0ef3ab17ef346d4ebc0b9ec9275d0b672e98a029d1e94c8d39f493"
-      }
+        "collection": "ecdsa-8-raw-paper-kb-v1",
+        "file": "1905.07682v1.pdf",
+        "sha256": "a2196cd3a0e39958865dc958cd59a565de49af01f52562911f8bc535d34120a4"
+      },
+      "arxiv_id": "1905.07682v1"
+    },
+    {
+      "id": "ecdsa-core-22",
+      "file": "22-luongo-measurement-uncomputation-modular-arithmetic.pdf",
+      "title": "Measurement-based uncomputation of quantum circuits for modular arithmetic",
+      "source_id": "arXiv:2407.20167v1",
+      "source_url": "https://arxiv.org/abs/2407.20167v1",
+      "pdf_url": "https://arxiv.org/pdf/2407.20167v1",
+      "authors": [
+        "Alessandro Luongo",
+        "Antonio Michele Miti",
+        "Varun Narasimhachar",
+        "Adithya Sireesh"
+      ],
+      "pages": 45,
+      "sha256": "c5b152e5dbfdbc767e49edaec45f3550e623fdefa269fdabed0ab578d7a392f0",
+      "bytes": 1350633,
+      "media_type": "application/pdf",
+      "modifications": "none",
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "license_status": "verified-version-specific-publisher-metadata",
+      "origin": {
+        "collection": "ecdsa-8-raw-paper-kb-v1",
+        "file": "2407.20167v1.pdf",
+        "sha256": "c5b152e5dbfdbc767e49edaec45f3550e623fdefa269fdabed0ab578d7a392f0"
+      },
+      "arxiv_id": "2407.20167v1"
+    },
+    {
+      "id": "ecdsa-core-17",
+      "file": "17-gidney-classical-quantum-adder.pdf",
+      "title": "A Classical-Quantum Adder with Constant Workspace and Linear Gates",
+      "source_id": "arXiv:2507.23079v1",
+      "source_url": "https://arxiv.org/abs/2507.23079v1",
+      "pdf_url": "https://arxiv.org/pdf/2507.23079v1",
+      "authors": [
+        "Craig Gidney"
+      ],
+      "pages": 8,
+      "sha256": "31c8fb8d52329c79cd29816d8c22087d5e84aa6fee46458f1f5c0ef726adba3f",
+      "bytes": 1972384,
+      "media_type": "application/pdf",
+      "modifications": "none",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "license_status": "verified-version-specific-publisher-metadata",
+      "origin": {
+        "collection": "ecdsa-8-raw-paper-kb-v1",
+        "file": "2507.23079v1.pdf",
+        "sha256": "31c8fb8d52329c79cd29816d8c22087d5e84aa6fee46458f1f5c0ef726adba3f"
+      },
+      "arxiv_id": "2507.23079v1"
+    },
+    {
+      "id": "ecdsa-core-30",
+      "file": "30-kornerup-spooky-pebble-game.pdf",
+      "title": "Tight Bounds on the Spooky Pebble Game - Recycling Qubits with Measurements",
+      "source_id": "arXiv:2110.08973v3",
+      "source_url": "https://arxiv.org/abs/2110.08973v3",
+      "pdf_url": "https://arxiv.org/pdf/2110.08973v3",
+      "authors": [
+        "Niels Kornerup",
+        "Jonathan Sadun",
+        "David Soloveichik"
+      ],
+      "pages": 25,
+      "sha256": "13ee62c1108a9a2bd9654235f6ad6cffe30660c35f524b60dd54a38af8d18997",
+      "bytes": 752366,
+      "media_type": "application/pdf",
+      "modifications": "none",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "license_status": "verified-version-specific-publisher-metadata",
+      "origin": {
+        "collection": "ecdsa-8-raw-paper-kb-v1",
+        "file": "2110.08973v3.pdf",
+        "sha256": "13ee62c1108a9a2bd9654235f6ad6cffe30660c35f524b60dd54a38af8d18997"
+      },
+      "arxiv_id": "2110.08973v3"
+    },
+    {
+      "arxiv_id": "2609.28882v1",
+      "title": "Efficient Record-and-Replay Arithmetic for Quantum Elliptic-Curve Point Addition",
+      "authors": [
+        "Long, Jieyi",
+        "Pender, Theodore",
+        "Huang, Zhao",
+        "Santos, Manuel B.",
+        "Singh, Samrendra Kumar",
+        "Naskręcki, Bartosz",
+        "BitWonka",
+        "Dallaire-Demers, Pierre-Luc",
+        "Giannicola, Francesco",
+        "Paschoarelli, Ruben M. L.",
+        "Freuler, Oli",
+        "Lee, Jackie Chia-Hsun",
+        "Gnuchev, Vasily",
+        "Kannappan, Gopi",
+        "Boyer, John",
+        "Butler, Xavier",
+        "Balasubramani, Akash",
+        "Newman, Jordan",
+        "Dereje, Bereket",
+        "Hertlein, Alexander",
+        "Kodra, Robert",
+        "Levy, Lucas",
+        "Patel, Shaan",
+        "Rose, JT",
+        "Zweil, Matt",
+        "Wisdom, Okechukwu",
+        "El-Eter, Tarek",
+        "Lee, Edison",
+        "Dong, Michael",
+        "Li, Alan",
+        "Joseph, Anto",
+        "Nguyen, Duy",
+        "Naik, Gajesh",
+        "Anant, Gautham",
+        "Deb, Soubhik",
+        "Drake, Justin"
+      ],
+      "source_url": "https://arxiv.org/abs/2609.28882v1",
+      "published": "2026-09-24T00:59:32Z",
+      "pdf_url": "https://arxiv.org/pdf/2609.28882v1",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "id": "arxiv-2609-28882v1",
+      "file": "arxiv-2609-28882v1.pdf",
+      "sha256": "a82133bcf4d42fe8bb8cd0ddfd223c29a820bbe685eb2e318ce073f58e04465a",
+      "bytes": 755843,
+      "media_type": "application/pdf",
+      "modifications": "none",
+      "source_id": "arXiv:2609.28882v1",
+      "license_status": "verified-version-specific-publisher-metadata",
+      "origin": {
+        "collection": "ecdsa-8-raw-paper-kb-v1",
+        "file": "2609.28882v1.pdf",
+        "sha256": "a82133bcf4d42fe8bb8cd0ddfd223c29a820bbe685eb2e318ce073f58e04465a"
+      },
+      "pages": 35
+    },
+    {
+      "id": "ecdsa-core-28",
+      "file": "28-khattar-optimized-dqi-circuits.pdf",
+      "title": "Verifiable Quantum Advantage via Optimized DQI Circuits",
+      "source_id": "arXiv:2510.10967v1",
+      "source_url": "https://arxiv.org/abs/2510.10967v1",
+      "pdf_url": "https://arxiv.org/pdf/2510.10967v1",
+      "authors": [
+        "Tanuj Khattar",
+        "Noah Shutty",
+        "Craig Gidney",
+        "Adam Zalcman",
+        "Noureldin Yosri",
+        "Dmitri Maslov",
+        "Ryan Babbush",
+        "Stephen P. Jordan"
+      ],
+      "pages": 52,
+      "sha256": "dcbbd0034ebcc3918a31ecc211ab108ec3a11d02840a78f504f915b73a5370ca",
+      "bytes": 4052267,
+      "media_type": "application/pdf",
+      "modifications": "none",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "license_status": "verified-version-specific-publisher-metadata",
+      "origin": {
+        "collection": "ecdsa-8-raw-paper-kb-v1",
+        "file": "2510.10967v1.pdf",
+        "sha256": "dcbbd0034ebcc3918a31ecc211ab108ec3a11d02840a78f504f915b73a5370ca"
+      },
+      "arxiv_id": "2510.10967v1"
     },
     {
       "id": "ecdsa-core-06",
       "file": "06-haner-improved-quantum-circuits-ecdlp.pdf",
-      "title": "Improved Quantum Circuits for Elliptic Curve Discrete Logarithms",
-      "source_id": "IACR-ePrint:2020/077",
+      "title": "Improved quantum circuits for elliptic curve discrete logarithms",
+      "source_id": "IACR ePrint 2020/077",
       "source_url": "https://eprint.iacr.org/2020/077",
       "pdf_url": "https://eprint.iacr.org/2020/077.pdf",
       "authors": [
@@ -113,949 +249,11 @@
       "media_type": "application/pdf",
       "modifications": "none",
       "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
+      "license_status": "verified-version-specific-publisher-metadata",
       "origin": {
-        "collection": "ecdsa-32-raw-paper-kb-v1",
-        "file": "06-haner-improved-quantum-circuits-ecdlp.pdf",
+        "collection": "ecdsa-8-raw-paper-kb-v1",
+        "file": "2020-077.pdf",
         "sha256": "ed7daaba41f3a6d2a42536b977a91a97e343a23a9f0d9324d3b9aaf3eb0848c2"
-      }
-    },
-    {
-      "id": "ecdsa-core-10",
-      "file": "10-renes-complete-addition-formulas.pdf",
-      "title": "Complete Addition Formulas for Prime Order Elliptic Curves",
-      "source_id": "IACR-ePrint:2015/1060",
-      "source_url": "https://eprint.iacr.org/2015/1060",
-      "pdf_url": "https://eprint.iacr.org/2015/1060.pdf",
-      "authors": [
-        "Joost Renes",
-        "Craig Costello",
-        "Lejla Batina"
-      ],
-      "pages": 25,
-      "sha256": "b836c9cf41f7826f2c5a6e252487b5013a4da6dc9838da11397c4022a1567326",
-      "bytes": 381406,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "ecdsa-32-raw-paper-kb-v1",
-        "file": "10-renes-complete-addition-formulas.pdf",
-        "sha256": "b836c9cf41f7826f2c5a6e252487b5013a4da6dc9838da11397c4022a1567326"
-      }
-    },
-    {
-      "id": "ecdsa-core-11",
-      "file": "11-hisil-twisted-edwards-curves-revisited.pdf",
-      "title": "Twisted Edwards Curves Revisited",
-      "source_id": "IACR-ePrint:2008/522",
-      "source_url": "https://eprint.iacr.org/2008/522",
-      "pdf_url": "https://eprint.iacr.org/2008/522.pdf",
-      "authors": [
-        "Huseyin Hisil",
-        "Kenneth Koon-Ho Wong",
-        "Gary Carter",
-        "Ed Dawson"
-      ],
-      "pages": 17,
-      "sha256": "9e5a1c17edc33de7482255e86329b12f8140f480138013cae143a8b923add76c",
-      "bytes": 228839,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "ecdsa-32-raw-paper-kb-v1",
-        "file": "11-hisil-twisted-edwards-curves-revisited.pdf",
-        "sha256": "9e5a1c17edc33de7482255e86329b12f8140f480138013cae143a8b923add76c"
-      }
-    },
-    {
-      "id": "ecdsa-core-16",
-      "file": "16-gidney-halving-cost-addition.pdf",
-      "title": "Halving the Cost of Quantum Addition",
-      "source_id": "arXiv:1709.06648",
-      "source_url": "https://arxiv.org/abs/1709.06648v3",
-      "pdf_url": "https://arxiv.org/pdf/1709.06648v3",
-      "authors": [
-        "Craig Gidney"
-      ],
-      "pages": 6,
-      "sha256": "26cc5c81171026f61b4f994df92d1390e4a51986dd01779689fc69745d616e22",
-      "bytes": 469352,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "ecdsa-32-raw-paper-kb-v1",
-        "file": "16-gidney-halving-cost-addition.pdf",
-        "sha256": "26cc5c81171026f61b4f994df92d1390e4a51986dd01779689fc69745d616e22"
-      },
-      "arxiv_id": "1709.06648v3"
-    },
-    {
-      "id": "ecdsa-core-17",
-      "file": "17-gidney-classical-quantum-adder.pdf",
-      "title": "A Classical-Quantum Adder with Constant Workspace and Linear Gates",
-      "source_id": "arXiv:2507.23079",
-      "source_url": "https://arxiv.org/abs/2507.23079v1",
-      "pdf_url": "https://arxiv.org/pdf/2507.23079v1",
-      "authors": [
-        "Craig Gidney"
-      ],
-      "pages": 8,
-      "sha256": "31c8fb8d52329c79cd29816d8c22087d5e84aa6fee46458f1f5c0ef726adba3f",
-      "bytes": 1972384,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "ecdsa-32-raw-paper-kb-v1",
-        "file": "17-gidney-classical-quantum-adder.pdf",
-        "sha256": "31c8fb8d52329c79cd29816d8c22087d5e84aa6fee46458f1f5c0ef726adba3f"
-      },
-      "arxiv_id": "2507.23079v1"
-    },
-    {
-      "id": "ecdsa-core-18",
-      "file": "18-baksi-tree-based-carry-save-adder.pdf",
-      "title": "Tree-Based Quantum Carry-Save Addition",
-      "source_id": "IACR-ePrint:2025/626",
-      "source_url": "https://eprint.iacr.org/2025/626",
-      "pdf_url": "https://eprint.iacr.org/2025/626.pdf",
-      "authors": [
-        "Hyunjun Kim",
-        "Sejin Lim",
-        "Kyungbae Jang",
-        "Siyi Wang",
-        "Anubhab Baksi",
-        "Anupam Chattopadhyay",
-        "Hwajeong Seo"
-      ],
-      "pages": 28,
-      "sha256": "113813a4c5475b5b6ccc1269bbdac8a2e98764104d22739b326bc45ed1704fee",
-      "bytes": 2877150,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "ecdsa-32-raw-paper-kb-v1",
-        "file": "18-baksi-tree-based-carry-save-adder.pdf",
-        "sha256": "113813a4c5475b5b6ccc1269bbdac8a2e98764104d22739b326bc45ed1704fee"
-      }
-    },
-    {
-      "id": "ecdsa-core-19",
-      "file": "19-gidney-windowed-quantum-arithmetic.pdf",
-      "title": "Windowed Quantum Arithmetic",
-      "source_id": "arXiv:1905.07682",
-      "source_url": "https://arxiv.org/abs/1905.07682v1",
-      "pdf_url": "https://arxiv.org/pdf/1905.07682v1",
-      "authors": [
-        "Craig Gidney"
-      ],
-      "pages": 11,
-      "sha256": "a2196cd3a0e39958865dc958cd59a565de49af01f52562911f8bc535d34120a4",
-      "bytes": 536890,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "ecdsa-32-raw-paper-kb-v1",
-        "file": "19-gidney-windowed-quantum-arithmetic.pdf",
-        "sha256": "a2196cd3a0e39958865dc958cd59a565de49af01f52562911f8bc535d34120a4"
-      },
-      "arxiv_id": "1905.07682v1"
-    },
-    {
-      "id": "ecdsa-core-20",
-      "file": "20-gidney-approximate-encoded-permutations.pdf",
-      "title": "Approximate Encoded Permutations and Piecewise Quantum Adders",
-      "source_id": "arXiv:1905.08488",
-      "source_url": "https://arxiv.org/abs/1905.08488v1",
-      "pdf_url": "https://arxiv.org/pdf/1905.08488v1",
-      "authors": [
-        "Craig Gidney"
-      ],
-      "pages": 15,
-      "sha256": "394ff45aaa93036ca4f1487496f144f97b58599706c107ee3c67b33a98194e2f",
-      "bytes": 929244,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "ecdsa-32-raw-paper-kb-v1",
-        "file": "20-gidney-approximate-encoded-permutations.pdf",
-        "sha256": "394ff45aaa93036ca4f1487496f144f97b58599706c107ee3c67b33a98194e2f"
-      },
-      "arxiv_id": "1905.08488v1"
-    },
-    {
-      "id": "ecdsa-core-22",
-      "file": "22-luongo-measurement-uncomputation-modular-arithmetic.pdf",
-      "title": "Measurement-Based Uncomputation of Quantum Circuits for Modular Arithmetic",
-      "source_id": "arXiv:2407.20167",
-      "source_url": "https://arxiv.org/abs/2407.20167v1",
-      "pdf_url": "https://arxiv.org/pdf/2407.20167v1",
-      "authors": [
-        "Alessandro Luongo",
-        "Antonio Michele Miti",
-        "Varun Narasimhachar",
-        "Adithya Sireesh"
-      ],
-      "pages": 45,
-      "sha256": "c5b152e5dbfdbc767e49edaec45f3550e623fdefa269fdabed0ab578d7a392f0",
-      "bytes": 1350633,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "ecdsa-32-raw-paper-kb-v1",
-        "file": "22-luongo-measurement-uncomputation-modular-arithmetic.pdf",
-        "sha256": "c5b152e5dbfdbc767e49edaec45f3550e623fdefa269fdabed0ab578d7a392f0"
-      },
-      "arxiv_id": "2407.20167v1"
-    },
-    {
-      "id": "ecdsa-core-26",
-      "file": "26-bernstein-yang-fast-constant-time-gcd-inversion.pdf",
-      "title": "Fast Constant-Time GCD Computation and Modular Inversion",
-      "source_id": "IACR-ePrint:2019/266",
-      "source_url": "https://eprint.iacr.org/2019/266",
-      "pdf_url": "https://eprint.iacr.org/2019/266.pdf",
-      "authors": [
-        "Daniel J.  Bernstein",
-        "Bo-Yin Yang"
-      ],
-      "pages": 59,
-      "sha256": "2d4cd3d695ccd28010f29792f53fa3529ffcf5a7177b73923f84be148a1c3e98",
-      "bytes": 844556,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "ecdsa-32-raw-paper-kb-v1",
-        "file": "26-bernstein-yang-fast-constant-time-gcd-inversion.pdf",
-        "sha256": "2d4cd3d695ccd28010f29792f53fa3529ffcf5a7177b73923f84be148a1c3e98"
-      }
-    },
-    {
-      "id": "ecdsa-core-27",
-      "file": "27-mukhopadhyay-improved-division.pdf",
-      "title": "Improved Quantum Circuits for Division",
-      "source_id": "arXiv:2603.18110",
-      "source_url": "https://arxiv.org/abs/2603.18110v2",
-      "pdf_url": "https://arxiv.org/pdf/2603.18110v2",
-      "authors": [
-        "Mukhopadhyay, Priyanka",
-        "Gheorghiu, Alexandru",
-        "Krovi, Hari"
-      ],
-      "pages": 70,
-      "sha256": "d1b0078f0e4da554936e003f567b553a076a4ee11dec775027fee9efbf631d70",
-      "bytes": 664335,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "license_url": "https://creativecommons.org/licenses/by-sa/4.0/",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "ecdsa-32-raw-paper-kb-v1",
-        "file": "27-mukhopadhyay-improved-division.pdf",
-        "sha256": "d1b0078f0e4da554936e003f567b553a076a4ee11dec775027fee9efbf631d70"
-      },
-      "arxiv_id": "2603.18110v2"
-    },
-    {
-      "id": "ecdsa-core-28",
-      "file": "28-khattar-optimized-dqi-circuits.pdf",
-      "title": "Verifiable Quantum Advantage via Optimized DQI Circuits",
-      "source_id": "arXiv:2510.10967",
-      "source_url": "https://arxiv.org/abs/2510.10967v1",
-      "pdf_url": "https://arxiv.org/pdf/2510.10967v1",
-      "authors": [
-        "Khattar, Tanuj",
-        "Shutty, Noah",
-        "Gidney, Craig",
-        "Zalcman, Adam",
-        "Yosri, Noureldin",
-        "Maslov, Dmitri",
-        "Babbush, Ryan",
-        "Jordan, Stephen P."
-      ],
-      "pages": 52,
-      "sha256": "dcbbd0034ebcc3918a31ecc211ab108ec3a11d02840a78f504f915b73a5370ca",
-      "bytes": 4052267,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "ecdsa-32-raw-paper-kb-v1",
-        "file": "28-khattar-optimized-dqi-circuits.pdf",
-        "sha256": "dcbbd0034ebcc3918a31ecc211ab108ec3a11d02840a78f504f915b73a5370ca"
-      },
-      "arxiv_id": "2510.10967v1"
-    },
-    {
-      "id": "ecdsa-core-30",
-      "file": "30-kornerup-spooky-pebble-game.pdf",
-      "title": "Tight Bounds on the Spooky Pebble Game: Recycling Qubits with Measurements",
-      "source_id": "arXiv:2110.08973",
-      "source_url": "https://arxiv.org/abs/2110.08973v3",
-      "pdf_url": "https://arxiv.org/pdf/2110.08973v3",
-      "authors": [
-        "Niels Kornerup",
-        "Jonathan Sadun",
-        "David Soloveichik"
-      ],
-      "pages": 25,
-      "sha256": "13ee62c1108a9a2bd9654235f6ad6cffe30660c35f524b60dd54a38af8d18997",
-      "bytes": 752366,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "ecdsa-32-raw-paper-kb-v1",
-        "file": "30-kornerup-spooky-pebble-game.pdf",
-        "sha256": "13ee62c1108a9a2bd9654235f6ad6cffe30660c35f524b60dd54a38af8d18997"
-      },
-      "arxiv_id": "2110.08973v3"
-    },
-    {
-      "id": "ecdsa-core-31",
-      "file": "31-paradis-reqomp.pdf",
-      "title": "Reqomp: Space-Constrained Uncomputation for Quantum Circuits",
-      "source_id": "arXiv:2212.10395",
-      "source_url": "https://arxiv.org/abs/2212.10395v2",
-      "pdf_url": "https://arxiv.org/pdf/2212.10395v2",
-      "authors": [
-        "Anouk Paradis",
-        "Benjamin Bichsel",
-        "Martin Vechev"
-      ],
-      "pages": 23,
-      "sha256": "74f0862bd3f5b7b5db07a8ddb0d45335e8ced48f465bd30a923762436602c90f",
-      "bytes": 1345120,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "ecdsa-32-raw-paper-kb-v1",
-        "file": "31-paradis-reqomp.pdf",
-        "sha256": "74f0862bd3f5b7b5db07a8ddb0d45335e8ced48f465bd30a923762436602c90f"
-      },
-      "arxiv_id": "2212.10395v2"
-    },
-    {
-      "arxiv_id": "2609.28882v1",
-      "title": "Efficient Record-and-Replay Arithmetic for Quantum Elliptic-Curve Point Addition",
-      "authors": [
-        "Jieyi Long",
-        "Theodore Pender",
-        "Zhao Huang",
-        "Manuel B. Santos",
-        "Samrendra Kumar Singh",
-        "Bartosz Naskręcki",
-        " BitWonka",
-        "Pierre-Luc Dallaire-Demers",
-        "Francesco Giannicola",
-        "Ruben M. L. Paschoarelli",
-        "Oli Freuler",
-        "Jackie Chia-Hsun Lee",
-        "Vasily Gnuchev",
-        "Gopi Kannappan",
-        "John Boyer",
-        "Xavier Butler",
-        "Akash Balasubramani",
-        "Jordan Newman",
-        "Bereket Dereje",
-        "Alexander Hertlein",
-        "Robert Kodra",
-        "Lucas Levy",
-        "Shaan Patel",
-        "JT Rose",
-        "Matt Zweil",
-        "Okechukwu Wisdom",
-        "Tarek El-Eter",
-        "Edison Lee",
-        "Michael Dong",
-        "Alan Li",
-        "Anto Joseph",
-        "Duy Nguyen",
-        "Gajesh Naik",
-        "Gautham Anant",
-        "Soubhik Deb",
-        "Justin Drake"
-      ],
-      "source_url": "https://arxiv.org/abs/2609.28882v1",
-      "published": "2026-09-24T00:59:32Z",
-      "pdf_url": "https://arxiv.org/pdf/2609.28882v1",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "id": "arxiv-2609-28882v1",
-      "file": "arxiv-2609-28882v1.pdf",
-      "sha256": "a82133bcf4d42fe8bb8cd0ddfd223c29a820bbe685eb2e318ce073f58e04465a",
-      "bytes": 755843,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "source_id": "arXiv:2609.28882v1",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "curated-extension",
-        "source_id": "arXiv:2609.28882v1"
-      }
-    },
-    {
-      "arxiv_id": "2311.08555v1",
-      "title": "Efficient Quantum Modular Arithmetics for the ISQ Era",
-      "authors": [
-        "Parfait Atchade-Adelomou",
-        "Saul Gonzalez"
-      ],
-      "source_url": "https://arxiv.org/abs/2311.08555v1",
-      "published": "2023-11-14T21:34:39Z",
-      "pdf_url": "https://arxiv.org/pdf/2311.08555v1",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "id": "arxiv-2311-08555v1",
-      "file": "arxiv-2311-08555v1.pdf",
-      "sha256": "982a4937e8fde69891ea34cd1e4d60a8a1d3467f484f04a8a3cdd18b4ebd1d71",
-      "bytes": 715961,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "source_id": "arXiv:2311.08555v1",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "curated-extension",
-        "source_id": "arXiv:2311.08555v1"
-      }
-    },
-    {
-      "arxiv_id": "2506.03318v2",
-      "title": "Validation of Quantum Elliptic Curve Point Addition Circuits",
-      "authors": [
-        "Francis P. Papa"
-      ],
-      "source_url": "https://arxiv.org/abs/2506.03318v2",
-      "published": "2025-06-03T19:06:18Z",
-      "pdf_url": "https://arxiv.org/pdf/2506.03318v2",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "id": "arxiv-2506-03318v2",
-      "file": "arxiv-2506-03318v2.pdf",
-      "sha256": "e326f3dd71786103a0af09aec86e175e9e9b53e21fdd41c8c1f92650e6c4f755",
-      "bytes": 254547,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "source_id": "arXiv:2506.03318v2",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "curated-extension",
-        "source_id": "arXiv:2506.03318v2"
-      }
-    },
-    {
-      "arxiv_id": "2501.10228v1",
-      "title": "End-to-end compilable implementation of quantum elliptic curve logarithm in Qrisp",
-      "authors": [
-        "Diego Polimeni",
-        "Raphael Seidel"
-      ],
-      "source_url": "https://arxiv.org/abs/2501.10228v1",
-      "published": "2025-01-17T14:45:38Z",
-      "pdf_url": "https://arxiv.org/pdf/2501.10228v1",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "id": "arxiv-2501-10228v1",
-      "file": "arxiv-2501-10228v1.pdf",
-      "sha256": "53e41e0c8395d585e443599e9647d3154a59fe5084432762c70361df87c678d1",
-      "bytes": 902980,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "source_id": "arXiv:2501.10228v1",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "curated-extension",
-        "source_id": "arXiv:2501.10228v1"
-      }
-    },
-    {
-      "arxiv_id": "2502.17325v1",
-      "title": "Optimized circuits for windowed modular arithmetic with applications to quantum attacks against RSA",
-      "authors": [
-        "Alessandro Luongo",
-        "Varun Narasimhachar",
-        "Adithya Sireesh"
-      ],
-      "source_url": "https://arxiv.org/abs/2502.17325v1",
-      "published": "2025-02-24T16:59:16Z",
-      "pdf_url": "https://arxiv.org/pdf/2502.17325v1",
-      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
-      "id": "arxiv-2502-17325v1",
-      "file": "arxiv-2502-17325v1.pdf",
-      "sha256": "18c7eec0ebe311e319fecaf0d149047c1e100640168b7df53e2af4c648d693d4",
-      "bytes": 1419792,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "source_id": "arXiv:2502.17325v1",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "curated-extension",
-        "source_id": "arXiv:2502.17325v1"
-      }
-    },
-    {
-      "arxiv_id": "2510.23212v1",
-      "title": "Resource analysis of Shor's elliptic curve algorithm with an improved quantum adder on a two-dimensional lattice",
-      "authors": [
-        "Quan Gu",
-        "Han Ye",
-        "Junjie Chen",
-        "Xiongfeng Ma"
-      ],
-      "source_url": "https://arxiv.org/abs/2510.23212v1",
-      "published": "2025-10-27T11:02:10Z",
-      "pdf_url": "https://arxiv.org/pdf/2510.23212v1",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "id": "arxiv-2510-23212v1",
-      "file": "arxiv-2510-23212v1.pdf",
-      "sha256": "0d9061151450ea285b38f9345a58e9bdf8e3775695288fee46dbb81ea817ea13",
-      "bytes": 1050889,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "source_id": "arXiv:2510.23212v1",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "curated-extension",
-        "source_id": "arXiv:2510.23212v1"
-      }
-    },
-    {
-      "arxiv_id": "2607.11713v1",
-      "title": "Quantum Arithmetic Circuits in Public-Key Cryptography",
-      "authors": [
-        "Siyi Wang",
-        "Kyungbae Jang",
-        "Hyunji Kim",
-        "Anik Basu Bhaumik",
-        "Anubhab Baksi",
-        "Hwajeong Seo",
-        "Anupam Chattopadhyay"
-      ],
-      "source_url": "https://arxiv.org/abs/2607.11713v1",
-      "published": "2026-07-13T15:40:57Z",
-      "pdf_url": "https://arxiv.org/pdf/2607.11713v1",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "id": "arxiv-2607-11713v1",
-      "file": "arxiv-2607-11713v1.pdf",
-      "sha256": "e658053a911fdc8b5f411006b5219159b249073d3a412c044e328d5c4ec08c6a",
-      "bytes": 625657,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "source_id": "arXiv:2607.11713v1",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "curated-extension",
-        "source_id": "arXiv:2607.11713v1"
-      }
-    },
-    {
-      "arxiv_id": "2307.11417v1",
-      "title": "Uncomputation in the Qrisp high-level Quantum Programming Framework",
-      "authors": [
-        "Raphael Seidel",
-        "Nikolay Tcholtchev",
-        "Sebastian Bock",
-        "Manfred Hauswirth"
-      ],
-      "source_url": "https://arxiv.org/abs/2307.11417v1",
-      "published": "2023-07-21T08:21:03Z",
-      "pdf_url": "https://arxiv.org/pdf/2307.11417v1",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "id": "arxiv-2307-11417v1",
-      "file": "arxiv-2307-11417v1.pdf",
-      "sha256": "e7e48946fa10adaa34c02465ba718197cca2c146aa222ab8c9ade8edf1431bcd",
-      "bytes": 443690,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "source_id": "arXiv:2307.11417v1",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "curated-extension",
-        "source_id": "arXiv:2307.11417v1"
-      }
-    },
-    {
-      "arxiv_id": "2501.07060v1",
-      "title": "New Circuit for Quantum Adder by Constant",
-      "authors": [
-        "Dmytro Fedoriaka"
-      ],
-      "source_url": "https://arxiv.org/abs/2501.07060v1",
-      "published": "2025-01-13T04:52:01Z",
-      "pdf_url": "https://arxiv.org/pdf/2501.07060v1",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "id": "arxiv-2501-07060v1",
-      "file": "arxiv-2501-07060v1.pdf",
-      "sha256": "edf36daf4f8c0c76ac1aed4362f1e03bccf72d06b8b7502d744493ea65b30b16",
-      "bytes": 2390405,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "source_id": "arXiv:2501.07060v1",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "curated-extension",
-        "source_id": "arXiv:2501.07060v1"
-      }
-    },
-    {
-      "arxiv_id": "2609.26591v2",
-      "title": "A New Method For Manipulating Circuits, Application To Quantum Adders",
-      "authors": [
-        "William Schober",
-        "Scott Wesley"
-      ],
-      "source_url": "https://arxiv.org/abs/2609.26591v2",
-      "published": "2026-09-22T15:34:56Z",
-      "pdf_url": "https://arxiv.org/pdf/2609.26591v2",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "id": "arxiv-2609-26591v2",
-      "file": "arxiv-2609-26591v2.pdf",
-      "sha256": "36902c30d3cd37ee9a44fd589b88a6a6f8ae62e61b60f6835aa07a3a27a59563",
-      "bytes": 829928,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "source_id": "arXiv:2609.26591v2",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "curated-extension",
-        "source_id": "arXiv:2609.26591v2"
-      }
-    },
-    {
-      "arxiv_id": "2302.06074v3",
-      "title": "Asymptotically optimal synthesis of reversible circuits",
-      "authors": [
-        "Xian Wu Lvzhou Li"
-      ],
-      "source_url": "https://arxiv.org/abs/2302.06074v3",
-      "published": "2023-02-13T03:08:55Z",
-      "pdf_url": "https://arxiv.org/pdf/2302.06074v3",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "id": "arxiv-2302-06074v3",
-      "file": "arxiv-2302-06074v3.pdf",
-      "sha256": "ad714ae7bce1ab02f681f9ba0291cf09d5fc3cbb0aff1f7ac6afa1dd5435f31e",
-      "bytes": 570870,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "source_id": "arXiv:2302.06074v3",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "curated-extension",
-        "source_id": "arXiv:2302.06074v3"
-      }
-    },
-    {
-      "arxiv_id": "2407.08695v2",
-      "title": "Lower T-count with faster algorithms",
-      "authors": [
-        "Vivien Vandaele"
-      ],
-      "source_url": "https://arxiv.org/abs/2407.08695v2",
-      "published": "2024-07-11T17:31:20Z",
-      "pdf_url": "https://arxiv.org/pdf/2407.08695v2",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "id": "arxiv-2407-08695v2",
-      "file": "arxiv-2407-08695v2.pdf",
-      "sha256": "733969083a9fb07f95877a52fc6e32f458597ccf86c6c11e395e433b7140ddf5",
-      "bytes": 1104317,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "source_id": "arXiv:2407.08695v2",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "curated-extension",
-        "source_id": "arXiv:2407.08695v2"
-      }
-    },
-    {
-      "arxiv_id": "2508.17273v2",
-      "title": "A complete set of transformation rules for reversible circuits",
-      "authors": [
-        "Shiguang Feng",
-        "Lvzhou Li"
-      ],
-      "source_url": "https://arxiv.org/abs/2508.17273v2",
-      "published": "2025-08-24T09:45:14Z",
-      "pdf_url": "https://arxiv.org/pdf/2508.17273v2",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "id": "arxiv-2508-17273v2",
-      "file": "arxiv-2508-17273v2.pdf",
-      "sha256": "0fa31a516ee4335928a345fc091fede6bfa5ddbc906e0b99865e078b65a870b5",
-      "bytes": 594467,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "source_id": "arXiv:2508.17273v2",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "curated-extension",
-        "source_id": "arXiv:2508.17273v2"
-      }
-    },
-    {
-      "arxiv_id": "2402.14396v2",
-      "title": "Quantum Circuit Optimization with AlphaTensor",
-      "authors": [
-        "Francisco J. R. Ruiz",
-        "Tuomas Laakkonen",
-        "Johannes Bausch",
-        "Matej Balog",
-        "Mohammadamin Barekatain",
-        "Francisco J. H. Heras",
-        "Alexander Novikov",
-        "Nathan Fitzpatrick",
-        "Bernardino Romera-Paredes",
-        "John van de Wetering",
-        "Alhussein Fawzi",
-        "Konstantinos Meichanetzidis",
-        "Pushmeet Kohli"
-      ],
-      "source_url": "https://arxiv.org/abs/2402.14396v2",
-      "published": "2024-02-22T09:20:54Z",
-      "pdf_url": "https://arxiv.org/pdf/2402.14396v2",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "id": "arxiv-2402-14396v2",
-      "file": "arxiv-2402-14396v2.pdf",
-      "sha256": "3a211ad5013764ac58b7e69daa45361005e55e33c0c22e6de9a23b40cc9c221d",
-      "bytes": 2411595,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "source_id": "arXiv:2402.14396v2",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "curated-extension",
-        "source_id": "arXiv:2402.14396v2"
-      }
-    },
-    {
-      "arxiv_id": "2605.20334v1",
-      "title": "Halving the cost of QROM",
-      "authors": [
-        "Danial Motlagh",
-        "Matthew Pocrnic"
-      ],
-      "source_url": "https://arxiv.org/abs/2605.20334v1",
-      "published": "2026-05-19T18:00:04Z",
-      "pdf_url": "https://arxiv.org/pdf/2605.20334v1",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "id": "arxiv-2605-20334v1",
-      "file": "arxiv-2605-20334v1.pdf",
-      "sha256": "3d40ae04be4d1d9d08f53c5d2e1c96abcf5f40fc699760a2db6049c8f571afc8",
-      "bytes": 480444,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "source_id": "arXiv:2605.20334v1",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "curated-extension",
-        "source_id": "arXiv:2605.20334v1"
-      }
-    },
-    {
-      "arxiv_id": "2407.17966v2",
-      "title": "Rise of conditionally clean ancillae for efficient quantum circuit constructions",
-      "authors": [
-        "Tanuj Khattar",
-        "Craig Gidney"
-      ],
-      "source_url": "https://arxiv.org/abs/2407.17966v2",
-      "published": "2024-07-25T11:38:04Z",
-      "pdf_url": "https://arxiv.org/pdf/2407.17966v2",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "id": "arxiv-2407-17966v2",
-      "file": "arxiv-2407-17966v2.pdf",
-      "sha256": "8d4892b08148b638c8fc7f84bd6b158594bb738413a68e9dfffb7ac3d3013d0a",
-      "bytes": 5718645,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "source_id": "arXiv:2407.17966v2",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "curated-extension",
-        "source_id": "arXiv:2407.17966v2"
-      }
-    },
-    {
-      "arxiv_id": "2401.10579v7",
-      "title": "Trade-offs between classical and quantum space using spooky pebbling",
-      "authors": [
-        "Arend-Jan Quist",
-        "Alfons Laarman"
-      ],
-      "source_url": "https://arxiv.org/abs/2401.10579v7",
-      "published": "2024-01-19T09:41:47Z",
-      "pdf_url": "https://arxiv.org/pdf/2401.10579v7",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "id": "arxiv-2401-10579v7",
-      "file": "arxiv-2401-10579v7.pdf",
-      "sha256": "4aa4ba153a2708427d605f411e4e631a932bb1bcb5fff6b401050156f61dc8cb",
-      "bytes": 4769355,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "source_id": "arXiv:2401.10579v7",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "curated-extension",
-        "source_id": "arXiv:2401.10579v7"
-      }
-    },
-    {
-      "arxiv_id": "2510.08432v3",
-      "title": "Parallel Spooky Pebbling Makes Regev Factoring More Practical",
-      "authors": [
-        "Gregory D. Kahanamoku-Meyer",
-        "Seyoon Ragavan",
-        "Katherine Van Kirk"
-      ],
-      "source_url": "https://arxiv.org/abs/2510.08432v3",
-      "published": "2025-10-09T16:45:58Z",
-      "pdf_url": "https://arxiv.org/pdf/2510.08432v3",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "id": "arxiv-2510-08432v3",
-      "file": "arxiv-2510-08432v3.pdf",
-      "sha256": "2c231f78dcb358839ed55f543b9a4f1a2a1e5698880f8e20543fc6063c0b8c7f",
-      "bytes": 986202,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "source_id": "arXiv:2510.08432v3",
-      "license_status": "verified-publisher-metadata-and-cached-pdf-notices",
-      "origin": {
-        "collection": "curated-extension",
-        "source_id": "arXiv:2510.08432v3"
-      }
-    },
-    {
-      "id": "arxiv-2407-10171v1",
-      "file": "arxiv-2407-10171v1.pdf",
-      "title": "Qubit-count optimization using ZX-calculus",
-      "source_id": "arXiv:2407.10171v1",
-      "source_url": "https://arxiv.org/abs/2407.10171v1",
-      "pdf_url": "https://arxiv.org/pdf/2407.10171v1",
-      "authors": [
-        "Vandaele, Vivien"
-      ],
-      "pages": 25,
-      "sha256": "166efbb5aa2cc34762ff06ac731860e6339559a9c8c5d4d6a8eab7f5144b2851",
-      "bytes": 545441,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "license_status": "verified-version-specific-publisher-metadata",
-      "arxiv_id": "2407.10171v1",
-      "origin": {
-        "collection": "licensed-launch-library"
-      }
-    },
-    {
-      "id": "arxiv-1905-09749v3",
-      "file": "arxiv-1905-09749v3.pdf",
-      "title": "How to factor 2048 bit RSA integers in 8 hours using 20 million noisy qubits",
-      "source_id": "arXiv:1905.09749v3",
-      "source_url": "https://arxiv.org/abs/1905.09749v3",
-      "pdf_url": "https://arxiv.org/pdf/1905.09749v3",
-      "authors": [
-        "Gidney, Craig",
-        "Ekerå, Martin"
-      ],
-      "pages": 31,
-      "sha256": "297bfeafbc0705e915e2c886103e77676cd0b483699a79bb51ea75a077727912",
-      "bytes": 1285111,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "license_status": "verified-version-specific-publisher-metadata",
-      "arxiv_id": "1905.09749v3",
-      "origin": {
-        "collection": "licensed-launch-library"
-      }
-    },
-    {
-      "id": "arxiv-2205-01121v3",
-      "file": "arxiv-2205-01121v3.pdf",
-      "title": "Efficient variational synthesis of quantum circuits with coherent multi-start optimization",
-      "source_id": "arXiv:2205.01121v3",
-      "source_url": "https://arxiv.org/abs/2205.01121v3",
-      "pdf_url": "https://arxiv.org/pdf/2205.01121v3",
-      "authors": [
-        "Nemkov, Nikita A.",
-        "Kiktenko, Evgeniy O.",
-        "Luchnikov, Ilia A.",
-        "Fedorov, Aleksey K."
-      ],
-      "pages": 21,
-      "sha256": "6093b603cd93e013305ecbee7b32fb66d3d6cbff80e5695a51292db68e070389",
-      "bytes": 2478598,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "license_status": "verified-version-specific-publisher-metadata",
-      "arxiv_id": "2205.01121v3",
-      "origin": {
-        "collection": "licensed-launch-library"
-      }
-    },
-    {
-      "id": "arxiv-2406-07486v1",
-      "file": "arxiv-2406-07486v1.pdf",
-      "title": "Novel Optimized Designs of Modulo $2n+1$ Adder for Quantum Computing",
-      "source_id": "arXiv:2406.07486v1",
-      "source_url": "https://arxiv.org/abs/2406.07486v1",
-      "pdf_url": "https://arxiv.org/pdf/2406.07486v1",
-      "authors": [
-        "Gaur, Bhaskar",
-        "Thapliyal, Himanshu"
-      ],
-      "pages": 5,
-      "sha256": "daca30b71baf6c43f09c75602620b935b7feb170d93e813f70590c2a6fbc8cba",
-      "bytes": 1044691,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "license_status": "verified-version-specific-publisher-metadata",
-      "arxiv_id": "2406.07486v1",
-      "origin": {
-        "collection": "licensed-launch-library"
-      }
-    },
-    {
-      "id": "arxiv-2302-07040v3",
-      "file": "arxiv-2302-07040v3.pdf",
-      "title": "Optimal Hadamard gate count for Clifford$+T$ synthesis of Pauli rotations sequences",
-      "source_id": "arXiv:2302.07040v3",
-      "source_url": "https://arxiv.org/abs/2302.07040v3",
-      "pdf_url": "https://arxiv.org/pdf/2302.07040v3",
-      "authors": [
-        "Vandaele, Vivien",
-        "Martiel, Simon",
-        "Perdrix, Simon",
-        "Vuillot, Christophe"
-      ],
-      "pages": 32,
-      "sha256": "09194305a3b4f1ee7612a88554f921833171964dbe8d0e124937ba8ab5ff0e2a",
-      "bytes": 564497,
-      "media_type": "application/pdf",
-      "modifications": "none",
-      "license_url": "https://creativecommons.org/licenses/by/4.0/",
-      "license_status": "verified-version-specific-publisher-metadata",
-      "arxiv_id": "2302.07040v3",
-      "origin": {
-        "collection": "licensed-launch-library"
       }
     }
   ]

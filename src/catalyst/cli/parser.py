@@ -65,7 +65,7 @@ def build_parser():
     local_run.add_argument("--dungeness", required=True, help="Clean checkout of the public Dungeness runtime.")
     local_run.add_argument("--problem", default="ecdsa.fail")
     local_run.add_argument("--problem-release", choices=list(PROBLEM_RELEASES),
-                           help="Pinned problem release: v1 has 40 licensed papers bundled for offline preparation.")
+                           help="Pinned problem release: v1 has eight licensed papers bundled for offline preparation.")
     local_run.add_argument("--provider")
     local_run.add_argument("--model")
     local_run.add_argument("--reasoning-effort", choices=["low", "medium", "high", "xhigh", "max"])

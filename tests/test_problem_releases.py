@@ -14,18 +14,18 @@ from harness_fixture import create_harness
 
 class ProblemReleaseTests(unittest.TestCase):
     def test_launch_v1_has_the_complete_bundled_library(self):
-        # Pin the launch release after the explicitly requested prelaunch renumbering.
+        # Operator-requested eight-paper replacement retains the human tag v1.
         expected = {
-            "releases/v1.json": "673c7d05df56421d1b25f79fc5a9812113de36c3d915ed778a00ad1d15c764b5",
+            "releases/v1.json": "f526ae84a746fb8c0d6871b28492425b1e046c6e2432d7f6f1111ee8733bf3af",
             "description.md": "192fa7a23e5daed5ab8009135120fc8a94704420676c0c1d955211cf517d6a02",
-            "knowledge-base/v1.json": "8b418a26d01d90d620cd92422deb0aa60c43289a4c4ca3f977c7871b407ca713",
+            "knowledge-base/v1.json": "73153a6bc42f62535c9828fd44a589e5cde8f406c421dccc1b87b74f9dd07460",
         }
         for relative, digest in expected.items():
             self.assertEqual(hashlib.sha256((PROBLEM_SET / "ecdsa-fail" / relative).read_bytes()).hexdigest(), digest)
         problem = get_problem("ecdsa.fail", release="v1")
         self.assertEqual(get_problem("ecdsa.fail"), get_problem("ecdsa.fail", release="v1"))
         catalog = load_catalog(problem["dungeness"]["knowledge_base"])
-        self.assertEqual((catalog["count"], len(catalog["papers"])), (40, 40))
+        self.assertEqual((catalog["count"], len(catalog["papers"])), (8, 8))
         self.assertEqual(problem["dungeness"]["knowledge_base"]["sha256"], hashlib.sha256(canonical(catalog)).hexdigest())
         self.assertEqual({p.name for p in PROBLEM_SET.iterdir()}, {"README.md", "ecdsa-fail"})
         self.assertFalse(list(PROBLEM_SET.rglob("*v0*")))

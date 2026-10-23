@@ -16,7 +16,7 @@ retrieval tools are allowed. Incidental problem names, submission metadata and
 interface paths are allowed when they convey no solution knowledge.
 
 The trusted task service supplies the problem statement, blank scaffold, neutral
-SDK and the same pinned **40-paper library** to every run. The agent may read those
+SDK and the same pinned **eight-paper library** to every run. The agent may read those
 papers, index them, develop strategies and generate candidates during its metered
 run. Those trusted resources and newly generated candidates are outside the
 submitted-material prohibition. See [the library endpoint](problem-service.md#shared-paper-library).

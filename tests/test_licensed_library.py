@@ -17,9 +17,9 @@ class LicensedLibraryTests(unittest.TestCase):
 
     def test_licensed_selection_preserves_required_work_and_grading(self):
         catalog = self.catalog()
-        self.assertEqual(catalog["count"], 40)
-        self.assertEqual(len({p["sha256"] for p in catalog["papers"]}), 40)
-        self.assertEqual(len({p["id"] for p in catalog["papers"]}), 40)
+        self.assertEqual(catalog["count"], 8)
+        self.assertEqual(len({p["sha256"] for p in catalog["papers"]}), 8)
+        self.assertEqual(len({p["id"] for p in catalog["papers"]}), 8)
         allowed = {"https://creativecommons.org/licenses/by/4.0/",
                    "https://creativecommons.org/licenses/by-sa/4.0/",
                    "https://creativecommons.org/publicdomain/zero/1.0/"}
@@ -41,13 +41,15 @@ class LicensedLibraryTests(unittest.TestCase):
                          "762f1e2cb6054e88de4d4bb04bdbc496b186c9690721f8b8d767faf43b7cf250")
         evidence = json.loads((BUNDLED_PAPERS.parent / "licenses-v1.json").read_text())
         self.assertEqual({p["id"] for p in evidence["papers"]}, {p["id"] for p in catalog["papers"]})
-        self.assertEqual(len(evidence["excluded_from_prelaunch_collection"]), 15)
-        self.assertFalse({p["id"] for p in evidence["excluded_from_prelaunch_collection"]} & {p["id"] for p in catalog["papers"]})
+        self.assertEqual({p["path"] for p in evidence["excluded_from_supplied_collection"]},
+                         {"2410.00899v1.pdf", "2607.13816v2.pdf"})
+        self.assertFalse({p["sha256"] for p in evidence["excluded_from_supplied_collection"]}
+                         & {p["sha256"] for p in catalog["papers"]})
 
     def test_complete_library_is_bundled_without_network_or_cache(self):
         catalog = self.catalog()
         selected = catalog["papers"]
-        self.assertEqual(len(selected), 40)
+        self.assertEqual(len(selected), 8)
         self.assertEqual({p.name for p in BUNDLED_PAPERS.glob("*.pdf")}, {p["file"] for p in selected})
         with tempfile.TemporaryDirectory() as folder, patch("catalyst.challenge.papers.build_opener") as opener:
             for paper in selected:

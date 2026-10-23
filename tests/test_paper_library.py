@@ -17,9 +17,40 @@ class PaperLibraryTests(unittest.TestCase):
         binding = get_problem("ecdsa.fail")["dungeness"]["knowledge_base"]
         for invalid in ({**binding, "sha256": "0" * 64},
                         {**binding, "id": "ecdsa-papers-v2"},
+                        {**binding, "sha256": "8aee712ce329af7efbb4b7ec3f8e4c0007c98bedecda3f140633f9dfd70c697e"},
                         {**binding, "sha256": "380233e137617f6cd2bbeedcd591023b05da7322ecdd8d943dabab0302df04cf"}):
             with self.assertRaises(CatalystError):
                 load_catalog(invalid)
+
+    def test_eight_paper_release_prepares_offline_with_only_selected_files(self):
+        from catalyst.challenge.papers import BUNDLED_PAPERS
+        binding = get_problem("ecdsa.fail")["dungeness"]["knowledge_base"]
+        catalog = load_catalog(binding)
+        expected = {
+            "2606.02235v1", "1905.07682v1", "2407.20167v1", "2507.23079v1",
+            "2110.08973v3", "2609.28882v1", "2510.10967v1", "2020/077",
+        }
+        self.assertEqual({p["pdf_url"].split("/pdf/")[-1] if "arxiv.org" in p["pdf_url"]
+                          else p["pdf_url"].removeprefix("https://eprint.iacr.org/").removesuffix(".pdf")
+                          for p in catalog["papers"]}, expected)
+        self.assertEqual({p.name for p in BUNDLED_PAPERS.glob("*.pdf")},
+                         {p["file"] for p in catalog["papers"]})
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            with patch.dict("os.environ", {"CATALYST_PAPER_CACHE": str(root / "empty-cache")}), \
+                    patch("catalyst.challenge.papers.build_opener") as opener:
+                metadata, entries = prepare_library(binding, root / "files", slug="ecdsa-fail", release="v1")
+                opener.assert_not_called()
+            self.assertEqual(metadata["count"], 8)
+            self.assertEqual(metadata["url"], "http://gateway:8080/ecdsa-fail/v1/knowledge-base")
+            files = load_files(canonical({"attachments": entries}), root / "files")
+            for paper in catalog["papers"]:
+                self.assertIn(paper["license_url"], {
+                    "https://creativecommons.org/licenses/by/4.0/",
+                    "https://creativecommons.org/publicdomain/zero/1.0/",
+                })
+                path, _ = files["/task/files/" + paper["file"]]
+                self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), paper["sha256"])
 
     def test_download_hosts_are_bounded_and_never_accept_credentials_or_queries(self):
         for url in ("https://arxiv.org/pdf/1706.06752", "https://eprint.iacr.org/2026/1128.pdf"):
