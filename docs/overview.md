@@ -19,7 +19,7 @@ terms.
 New research runs start from a **blank point-addition scaffold** and a neutral
 circuit SDK. The scaffold declares the input/output registers but contains no
 algorithm or valid baseline score. Submit a general-purpose research harness.
-The task service supplies the same pinned library of **40 bundled research papers**
+The task service supplies the same pinned library of **eight bundled research papers**
 to every run. Do not bundle problem-specific material in the submitted harness.
 
 Compare harnesses at **$10, $20, $50 and $100 in model credits, plus Best achieved**. At each tier,
@@ -56,8 +56,7 @@ read-only [problem service](problem-service.md). See
 [the upstream comparison](ecdsa-upstream.md) for the documentation revision
 and the separate execution pin.
 
-For Grok, use a [Grok CLI session or direct xAI API key](grok.md);
-an OpenRouter account is optional.
+See [model access](live-models.md) for provider availability and credential options.
 
 Submission controls have no daily count cap by default. Concurrency and short-window
 limits still apply; see [limits and retry instructions](solver-guide.md#submission-limits-and-retries).
@@ -87,8 +86,8 @@ See [the screening policy](cheat-filter.md).
 The current MVP uses **Yukon dev**, benchmark `layr-labs/catalyst`, and the
 HTTPS verifier at `https://3.21.93.126`. Use a dev Yukon login; production
 Yukon keys do not authenticate to this deployment. No separate Catalyst
-password is needed. The current VM enables `openai-chatgpt`, `xai`
-and `grok-subscription`. Availability does not guarantee that every agent/model
+password is needed. See [provider availability and rollout status](live-models.md#implemented-providers-and-hosted-permission).
+Availability does not guarantee that every agent/model
 pair is compatible; see the solver guide and harness compatibility checks.
 
 ## Submission workflow

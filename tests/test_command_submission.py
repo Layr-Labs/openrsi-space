@@ -3,14 +3,30 @@ from contextlib import redirect_stdout, redirect_stderr
 import io
 import json
 from pathlib import Path
+import re
 import tempfile
 import unittest
 
 from catalyst.cli import main
-from catalyst.common import make_bundle, open_bundle
+from catalyst.common import make_bundle, open_bundle, validate_document
 
 
 class CommandSubmissionTests(unittest.TestCase):
+    def test_documented_manifest_is_complete_and_execution_only_build_is_actionable(self):
+        guide = Path(__file__).resolve().parents[1] / "docs/executable-harness.md"
+        examples = [json.loads(raw) for raw in re.findall(r"```json\n(.*?)\n```", guide.read_text(), re.S)]
+        manifest, = [item for item in examples if item.get("kind") == "harness"]
+        validate_document(manifest)
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "harness.json").write_text(json.dumps(manifest["execution"]))
+            error = io.StringIO()
+            with redirect_stderr(error):
+                self.assertNotEqual(main(["harness", "build", str(root)]), 0)
+            for field in ("execution", "schema_version", "kind", "id", "title"):
+                self.assertIn(field, error.getvalue())
+            self.assertIn("catalyst harness create", error.getvalue())
+
     def test_starter_and_derived_harness_keep_the_executable_contract(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

@@ -60,9 +60,6 @@ def create_harness(args):
 
 
 def model_access_input(args):
-    if getattr(args, "grok_auth_file", None):
-        from catalyst.credentials import encode_grok_access
-        return encode_grok_access(args.grok_auth_file)
     if args.codex_auth_file:
         from catalyst.credentials import encode_codex_access
         return encode_codex_access(args.codex_auth_file)
@@ -84,7 +81,7 @@ def model_access_input(args):
 
 def model_access_notice(args, client, evaluation=None):
     if not any(getattr(args, name, None) for name in (
-            "grok_auth_file", "codex_auth_file", "provider_access_file", "prompt_model_token", "model_token_stdin")):
+            "codex_auth_file", "provider_access_file", "prompt_model_token", "model_token_stdin")):
         return
     budget = (f" Spending cap: {evaluation['max_model_credits']:g} normalized model credits."
               if evaluation is not None else " The existing run's limits still apply.")
@@ -164,10 +161,20 @@ def remote_command(args, state):
         from catalyst.credentials import require_active_models
         from catalyst.contracts.accounting import evaluation_models
         require_active_models(evaluation_models(config))
-        for credential_file in (args.codex_auth_file, args.provider_access_file, getattr(args, "grok_auth_file", None)):
+        for credential_file in (args.codex_auth_file, args.provider_access_file):
             if credential_file and Path(credential_file).expanduser().resolve().is_relative_to(
                     Path(args.package).resolve()):
                 raise CatalystError("Keep credential files outside the submitted source directory.")
+        from catalyst.client.evaluations import request_body
+        from catalyst.client.local_check import check_submission
+        body = request_body(Path(args.package), client.base, evaluation_overrides=overrides,
+                            execution=execution, publication=publication,
+                            problem_release=args.problem_release, check_pricing=False)
+        local_check = check_submission(state, Path(args.package), body, client.base,
+                                       local_run=args.local_run, skip=args.skip_local_check)
+        print(f"Local Dungeness check: {local_check['status']}" +
+              (f" ({local_check['run_id']})" if 'run_id' in local_check else ""),
+              file=sys.stderr, flush=True)
         model_access_notice(args, client, config)
         model_token = model_access_input(args)
         try:
@@ -176,7 +183,7 @@ def remote_command(args, state):
                 **({"evaluation_overrides": overrides} if overrides else {}),
                 **({"execution": execution} if execution else {}),
                 **({"problem_release": args.problem_release} if args.problem_release else {}),
-                publication=publication)
+                publication=publication, local_check=local_check)
         finally:
             model_token = None
         if not args.wait:

@@ -36,7 +36,7 @@ The default starting workspace is a **blank point-addition scaffold**, with
 neutral helpers for registers, gates and wire allocation. It contains no
 point-addition algorithm and has no valid baseline score. Your agent must build
 and verify its first circuit, then retain improvements. Submit a general-purpose
-harness. The task service supplies 40 bundled research papers to all runs; do not
+harness. The task service supplies eight bundled research papers to all runs; do not
 include ECDSA-specific papers, strategies, notes or prewritten answers in source.
 
 ## Before you participate: your account, your model usage
@@ -103,13 +103,16 @@ that every charged request started before budget exhaustion. See [accounting det
 
 You need Git, [uv](https://docs.astral.sh/uv/getting-started/installation/),
 Python 3.11 or newer (uv can install Python), and a current Yukon CLI.
-For the recommended preflight, install and start Docker and clone the public
+For local testing, install and start Docker and clone the public
 [Dungeness repository](https://github.com/Layr-Labs/dungeness) to any location.
 Dungeness coordinates the harness, model gateway, problem service and evaluator
 in containers. Catalyst prepares and starts them with `catalyst local run`;
 no manual server setup or private repository is needed. Read the
 [architecture](architecture.md) and [local testing procedure](local-evaluation.md).
 Local scores help development; official results require a remote receipt.
+`remote submit` reuses a completed matching local run automatically. Use
+`--local-run PATH` for records elsewhere, or `--skip-local-check` to explicitly
+proceed without local testing. No valid circuit or minimum local spend is required.
 
 **Current MVP environment:** Yukon dev, benchmark `layr-labs/catalyst`,
 verifier `https://3.21.93.126`. Use a dev Yukon account/key; a production
@@ -212,9 +215,8 @@ Runtime requirements:
 - Declare models and choose spending caps and timeouts deliberately. Token
   ceilings are optional and disabled by default; tokens remain metered. The service must
   support the provider protocol and resolve reference pricing before inference.
-  The current VM enables `openai-chatgpt`, `xai` and
-  `grok-subscription`; arbitrary model names do not imply arbitrary provider
-  protocols are available.
+  See [provider availability and rollout status](live-models.md#implemented-providers-and-hosted-permission).
+  Arbitrary model names do not imply arbitrary provider protocols are available.
 
 See [the generic harness contract](generic-harnesses.md) for model ensembles,
 packaging, pricing and gateway details.

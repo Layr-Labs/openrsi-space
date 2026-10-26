@@ -1,11 +1,14 @@
 import os
 """Argument definitions for the public solver commands."""
 import argparse
+from catalyst import __version__
 from catalyst.challenge.catalog import PROBLEM_RELEASES
 from pathlib import Path
 
 def build_parser():
     parser = argparse.ArgumentParser(description="Prepare harnesses, use local checks, and submit verified research to Yukon.")
+    parser.add_argument("--version", action="version", version=f"catalyst {__version__}",
+                        help="Show the installed Catalyst package version and exit.")
     parser.add_argument("--state", default=os.environ.get("CATALYST_STATE", ".catalyst"),
                         help="Local state directory (default: .catalyst).")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -77,8 +80,6 @@ def build_parser():
     local_run.add_argument("--pricing", help="Optional trusted local pricing JSON; defaults to Catalyst's pinned schedule.")
     local_run.add_argument("--prepare-only", action="store_true", help="Build and prepare the run without reading credentials or calling models.")
     local_access = local_run.add_mutually_exclusive_group()
-    local_access.add_argument("--grok-auth-file", nargs="?", const=str(Path.home() / ".grok/auth.json"),
-                             help="Use a temporary Grok CLI subscription session; refresh credentials stay local.")
     local_access.add_argument("--codex-auth-file", nargs="?", const=str(Path.home() / ".codex/auth.json"),
                               help="Use temporary access from your local Codex login; refresh credentials stay outside the run.")
     local_access.add_argument("--provider-token-env", metavar="NAME",
@@ -104,6 +105,11 @@ def build_parser():
     remote_submit.add_argument("--problem-release", choices=list(PROBLEM_RELEASES),
                                help="Must match the evaluator's assigned release; default: v1.")
     remote_submit.add_argument("--wait", action="store_true", help="Wait, validate the result and save its verification reference.")
+    local_check = remote_submit.add_mutually_exclusive_group()
+    local_check.add_argument("--local-run", type=Path,
+                             help="Use an existing local run directory, run.json or Dungeness record.json.")
+    local_check.add_argument("--skip-local-check", action="store_true",
+                             help="Explicitly submit without a matching successful local Dungeness run.")
     remote_submit.add_argument("--source-license",
                                help="Optional license you have authority to grant for public source. Omission grants no additional license.")
     remote_submit.add_argument("--entrypoint", help="Launch argv for an existing repository without harness.json; parsed without a shell.")
@@ -119,8 +125,6 @@ def build_parser():
     token_input = remote_submit.add_mutually_exclusive_group()
     token_input.add_argument("--provider-access-file",
                              help="Authorize remote use of your model accounts via a private credential map; never package it.")
-    token_input.add_argument("--grok-auth-file", nargs="?", const=str(Path.home() / ".grok/auth.json"),
-                             help="Use a temporary Grok CLI subscription session; refresh credentials stay local.")
     token_input.add_argument("--codex-auth-file", nargs="?", const=str(Path.home() / ".codex/auth.json"),
                              help="Authorize remote use of your ChatGPT allowance; send temporary Codex access, keeping refresh credentials local.")
     token_input.add_argument("--prompt-model-token", action="store_true",
@@ -130,8 +134,6 @@ def build_parser():
     renewal = remote_sub.add_parser("renew-access", help="Replace temporary access for an owned queued evaluation.")
     renewal.add_argument("id")
     renewal_input = renewal.add_mutually_exclusive_group(required=True)
-    renewal_input.add_argument("--grok-auth-file", nargs="?", const=str(Path.home() / ".grok/auth.json"),
-                             help="Use a temporary Grok CLI subscription session; refresh credentials stay local.")
     renewal_input.add_argument("--codex-auth-file", nargs="?", const=str(Path.home() / ".codex/auth.json"))
     renewal_input.add_argument("--provider-access-file")
     renewal_input.add_argument("--prompt-model-token", action="store_true")

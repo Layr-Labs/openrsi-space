@@ -46,6 +46,45 @@ starting candidate unchanged and makes no model calls. It is only a packaging
 smoke test: the default blank scaffold is not a valid circuit, so this starter
 cannot earn a verified score until you implement the research agent.
 
+Without `--problem`, the complete smoke task JSON is:
+
+```json
+{
+  "schema_version": 1,
+  "problem": {"id": "smoke", "version": null},
+  "workspace": "/workspace/repo",
+  "candidate_paths": [],
+  "instruction": "",
+  "gateway": null,
+  "model": null,
+  "evidence": "smoke"
+}
+```
+
+With `--problem`, only `problem`, `candidate_paths` and `instruction` change:
+they contain the selected problem's ID and manifest hash, candidate paths, and
+title. There is no `problem_service`, research statement, library endpoint, model
+budget or `models` list. Check `evidence` before initializing model clients;
+smoke mode should exercise packaging with synthetic fixtures. Use a
+[local Dungeness run](local-evaluation.md#full-local-agent-run-with-dungeness)
+to test the live task and model integration.
+
+The copied workspace is mounted read/write; the original is untouched. Copying
+excludes `.git`, `.env*`, `.catalyst`, `.venv`, `__pycache__` and `.DS_Store`, and
+symlinks are rejected. Directory modes are preserved, so a read/write mount alone
+does not guarantee that every process can write. Create needed directories at
+runtime and check ownership/modes if creation fails, especially if your wrapper
+drops privileges. The generated image wrapper sets `USER root`; smoke still drops
+all capabilities and enables `no-new-privileges`.
+
+Catalyst replaces the image's `ENTRYPOINT`/`CMD` with its launcher and invokes the
+manifest's entrypoint as an argument list in `/workspace/repo`, without a login
+shell. Dockerfile `ENV` values, including `PATH`, are inherited; the launcher adds
+the task variables but does not reset `PATH` or source shell profiles. Install
+tools with an explicit Dockerfile `ENV PATH=...`, or use an absolute executable
+path. For a missing command, inspect `PATH`, the executable and its interpreter
+inside the built image; success in a host shell does not establish image behavior.
+
 Replace `agent.py` with your solver. Install runtime dependencies and problem
 toolchains in its Dockerfile. Python 3 and Bash are required for the platform
 launcher and Dungeness clients; the solver can use any language.
@@ -54,20 +93,28 @@ prompts and helper modules travel with the agent. Use the
 [general remote submission flow](generic-harnesses.md#submit-your-own-agent)
 to choose provider, model and budget separately from those source files.
 
-The `execution` field in the ordinary harness manifest is:
+A complete `harness.json` is shown below. The `execution` object is a field of
+this document, not a standalone manifest. `catalyst harness create` generates
+the manifest, Dockerfile and starter entrypoint together.
 
 ```json
 {
-  "interface": "catalyst-exec-v1",
-  "dockerfile": "Dockerfile",
-  "entrypoint": ["python3", "/opt/harness/agent.py"]
+  "schema_version": 1,
+  "kind": "harness",
+  "id": "my-agent",
+  "title": "My Agent",
+  "execution": {
+    "interface": "catalyst-exec-v1",
+    "dockerfile": "Dockerfile",
+    "entrypoint": ["python3", "/opt/harness/agent.py"]
+  }
 }
 ```
 
 Executable packages cannot select a host agent or Python adapter. Package
 general-purpose tools and retrieval code in any layout your agent supports.
 Problem-specific knowledge belongs to the trusted task: its library endpoint
-provides 40 bundled papers, and your agent chooses how to read or index them during
+provides eight bundled papers, and your agent chooses how to read or index them during
 the run. `CATALYST_KNOWLEDGE_BASE_URL` points to the catalog. Do not submit ECDSA
 papers, strategies, notes, solution code or answer caches. See the
 [screening policy](cheat-filter.md).

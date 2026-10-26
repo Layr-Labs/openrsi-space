@@ -84,6 +84,10 @@ headers; it does not adapt the coding agent to the model. The harness owns
 context-window settings and reasoning preferences. Catalyst does not assign
 one fixed context window or capability list to every ChatGPT model.
 The provider's protocol must be available and enabled by the operator.
+Check [hosted provider permissions](live-models.md#implemented-providers-and-hosted-permission):
+quotes and submissions check the same pinned Dungeness registry. A successful
+quote does not test credentials or harness API compatibility. Check rollout
+status when targeting an older hosted deployment.
 New model names do not need a code change or a model whitelist: the service
 resolves and freezes reference pricing before accepting the run.
 All inference uses the metered gateway.

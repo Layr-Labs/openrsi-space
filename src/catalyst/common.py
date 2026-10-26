@@ -69,6 +69,15 @@ def safe_relative(value: str) -> str:
 
 
 def validate_document(document: dict) -> None:
+    if (isinstance(document, dict) and document.get("kind") in (None, "harness")
+            and "execution" not in document
+            and {"interface", "dockerfile", "entrypoint"} <= document.keys()):
+        raise CatalystError(
+            "This is an execution object, not a complete harness.json. Put it under "
+            "execution and add schema_version: 1, kind: harness, id, and title. "
+            "Generate a complete starter with: catalyst harness create my-agent "
+            "--output ./my-agent. See docs/executable-harness.md."
+        )
     if not isinstance(document, dict) or document.get("schema_version") != 1:
         raise CatalystError("Expected a schema_version: 1 document.")
     kind = document.get("kind")

@@ -63,14 +63,9 @@ def validate_model(model, *, check_pricing=True, pricing=None):
         raise CatalystError("model requires a provider and exact model name.")
     if "reasoning_effort" in model and model["reasoning_effort"] not in {"low", "medium", "high", "xhigh", "max"}:
         raise CatalystError("Unsupported reasoning effort.")
-    from catalyst.credentials import PROVIDERS, RETIRED_PROVIDERS
-    if model["provider"] not in PROVIDERS | RETIRED_PROVIDERS:
-        raise CatalystError("Provider requires an authentication/protocol adapter.")
-    from catalyst.provider_profiles import PROFILES, upstream_model
-    if model['provider'] in PROFILES:
-        try:
-            upstream_model(model['provider'], model['name'])
-        except ValueError as error:
-            raise CatalystError(str(error)) from None
+    # Read historical and future provider IDs without making this a second
+    # availability list. Admission uses the selected runtime's trusted registry.
+    if not re.fullmatch(r"[a-z][a-z0-9-]{0,47}", model["provider"]):
+        raise CatalystError("Use a valid provider ID.")
     if check_pricing:
         model_prices(model, pricing)

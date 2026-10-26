@@ -16,9 +16,10 @@ harness. Every new evaluation starts fresh with that release's scaffold and
 resources. Preserve the original version and request ID when resuming an existing
 run; a new release requires a new evaluation, not editing saved requests or receipts.
 
-For Grok access, read [the Grok instructions](grok.md). Use `grok-subscription`
-with `--grok-auth-file`, or `xai` with an API key. Test the harness locally with Dungeness before recommending remote submission;
-report blockers or explicitly declined tests in the readiness report. Never put model credentials in the harness.
+Check [model access](live-models.md#implemented-providers-and-hosted-permission)
+for provider availability. Test the harness locally with Dungeness before
+recommending remote submission; report blockers or explicitly declined tests in
+the readiness report. Never put model credentials in the harness.
 
 Build an **autonomous research harness for ecdsa.fail**: an agent that explores,
 edits and evaluates quantum circuit candidates on its own during a run. Optimize
@@ -111,7 +112,7 @@ solution or baseline score. Implement and verify the first circuit before
 saving a best candidate; never assume that leaving the starter unchanged passes.
 Submit only a general-purpose harness, without ECDSA-specific papers, notes,
 strategies or prewritten candidates. The assigned task provides a pinned library
-of 40 bundled papers through `CATALYST_KNOWLEDGE_BASE_URL`. The agent chooses what to
+of eight bundled papers through `CATALYST_KNOWLEDGE_BASE_URL`. The agent chooses what to
 read and develops its candidate during the metered run.
 Catalyst measures what the submitted source achieves inside its controlled
 Dungeness run. An interactively improved solution on the solver's laptop is
@@ -205,7 +206,9 @@ readiness report; all inference must use assigned gateway endpoints.
 
 ## Local Dungeness preflight
 
-Treat a full local Dungeness run as the standard preflight before remote submission.
+Use an existing matching local Dungeness run before remote submission; do not
+repeat testing just to satisfy the CLI check. `remote submit` finds completed
+records automatically. Use `--local-run PATH` for a run stored elsewhere.
 Read [the architecture](architecture.md) and [local workflow](local-evaluation.md).
 Dungeness is the public execution backend: it coordinates the harness, model
 gateway, problem service and evaluator in Docker, meters usage and records results.
@@ -236,8 +239,12 @@ run spec or manually start the problem server. No private repository is needed.
 
 If the environment cannot run Docker or lacks authorized model access, or the
 human declines local testing, report the blocker and untested steps before
-requesting remote execution. Do not silently skip preflight. This is workflow
-guidance, not a new API admission requirement. Local results cannot mint receipts,
+requesting remote execution. Do not silently skip preflight or bypass it merely
+to clear a CLI error. When the human authorizes proceeding without local testing,
+use `--skip-local-check`. This is a CLI check, not an API admission requirement.
+Matching requires unchanged source, provider/model/reasoning settings and problem,
+completed execution and successful accounted model calls; it does not require a
+valid circuit or a minimum spend. Local results cannot mint receipts,
 reproduce private source screening or guarantee remote acceptance. Match the
 service's pinned task/runtime for comparisons; report any differences. Remote
 execution requires its own authorization, independent of local testing.

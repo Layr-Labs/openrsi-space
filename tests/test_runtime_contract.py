@@ -32,8 +32,14 @@ class RuntimeContractTests(unittest.TestCase):
     def test_missing_declared_feature_does_not_fall_back_to_legacy_code(self):
         self.declare([])
         (self.root / "dungeness").write_text("--no-model-token-limit")
-        with self.assertRaisesRegex(CatalystError, "optional-model-token-limit-v1"):
+        with self.assertRaisesRegex(CatalystError, "optional-model-token-limit-v1") as raised:
             require_capabilities(self.root, "optional-model-token-limit-v1")
+        message = str(raised.exception)
+        self.assertIn("git clone https://github.com/Layr-Labs/dungeness.git", message)
+        self.assertIn("dungeness providers", message)
+        self.assertIn("--dungeness", message)
+        self.assertIn("deployment-compatibility.md", message)
+        self.assertEqual(json.loads(self.path.read_text())["capabilities"], [])
 
     def test_invalid_contract_never_uses_legacy_detection(self):
         for document in (

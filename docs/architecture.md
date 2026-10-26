@@ -23,8 +23,10 @@ remove `--prepare-only` and supply model access to test the full research loop.
 Inspect failures and fix the harness before remote submission. Keep each evaluation
 fresh; do not carry local solutions or task-specific notes into the harness.
 Local results do not replace private screening, independent verification or receipts.
-If testing is blocked or declined, report the untested steps explicitly. The API
-does not enforce this recommended preflight.
+The CLI reuses a matching completed local run before submission; `--local-run PATH`
+selects records elsewhere. If testing is blocked or declined, report the untested
+steps and explicitly use `--skip-local-check`. The API does not trust or enforce
+local test evidence; no local traces are uploaded.
 
 
 ```mermaid

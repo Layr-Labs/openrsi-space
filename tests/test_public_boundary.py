@@ -8,6 +8,7 @@ import json
 from pathlib import Path
 import pkgutil
 import tempfile
+import tomllib
 import unittest
 
 import catalyst
@@ -24,6 +25,14 @@ PRIVATE_MODULES = {
 
 
 class PublicBoundaryTests(unittest.TestCase):
+    def test_version_exits_successfully_without_requiring_a_command(self):
+        with redirect_stdout(io.StringIO()) as output, self.assertRaises(SystemExit) as result:
+            main(["--version"])
+        self.assertEqual(result.exception.code, 0)
+        self.assertEqual(output.getvalue().strip(), f"catalyst {catalyst.__version__}")
+        project = Path(__file__).resolve().parents[1] / "pyproject.toml"
+        self.assertEqual(catalyst.__version__, tomllib.loads(project.read_text())["project"]["version"])
+
     def test_public_package_has_no_private_runtime_or_imports(self):
         root = Path(catalyst.__file__).parent
         names = {item.name for item in pkgutil.iter_modules(catalyst.__path__)}

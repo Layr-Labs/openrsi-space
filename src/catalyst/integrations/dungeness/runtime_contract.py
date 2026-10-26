@@ -40,5 +40,10 @@ def require_capabilities(root: Path, *required: str) -> None:
     if missing:
         raise CatalystError(
             "Dungeness lacks required native capabilities: " + ", ".join(missing) +
-            ". Install a compatible clean runtime and repin it."
+            ". Install a compatible runtime and repin it. Start with a fresh checkout: "
+            "git clone https://github.com/Layr-Labs/dungeness.git ./dungeness-compatible && git -C ./dungeness-compatible checkout --detach 08e8f7ddc3d87a1ec88e92052d28561ec27411e6. "
+            "Check `dungeness capabilities` and `dungeness providers` in that checkout. "
+            "Retry with --dungeness pointing to that checkout. "
+            "See https://github.com/Layr-Labs/catalyst/blob/main/docs/deployment-compatibility.md "
+            "for compatible runtime pins."
         )

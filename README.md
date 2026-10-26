@@ -19,6 +19,7 @@ Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 ```sh
 uv sync --locked
 uv run catalyst --help
+uv run catalyst --version
 uv run catalyst problem list
 uv run catalyst harness create my-agent --executable --output .catalyst/my-agent
 ```
@@ -28,6 +29,9 @@ to build a general-purpose harness, [test it locally with Dungeness](docs/local-
 then submit it for an official evaluation. Docker is needed for local integration tests. New submissions require public
 harness source; review files before uploading. You authorize each paid run and
 are responsible for complying with your model provider's terms.
+
+`remote submit` reuses a matching completed local run. Use `--local-run PATH`
+for records elsewhere, or explicitly `--skip-local-check` if testing is skipped.
 
 **Release compatibility:** `main` contains versioned problem manifests. Use the
 [deployment compatibility notes](docs/deployment-compatibility.md) when targeting
@@ -44,6 +48,7 @@ It needs no model credential or Docker. See [development](docs/development.md)
 for optional integration tests.
 
 - [Documentation](docs/README.md): solver guides, API contracts and accounting.
+- [Changelog](CHANGELOG.md): recent client changes and compatibility guidance.
 - [Agent instructions](docs/agent-prompt.md): workflow for a solver's coding agent.
 - [Architecture](docs/architecture.md): module ownership and repository boundaries.
 - [Challenge overview](docs/overview.md): rules, budgets and publication workflow.

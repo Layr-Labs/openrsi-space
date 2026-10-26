@@ -36,7 +36,9 @@ class LocalRunTests(unittest.TestCase):
         self.source.mkdir()
         subprocess.run(['git', 'init', '-q', str(self.source)], check=True)
         for name, content in {
-            'dungeness': '#!/usr/bin/env python3\n# --no-model-token-limit\n',
+            'dungeness': '#!/usr/bin/env python3\n# --no-model-token-limit\n'
+                         'import json\nprint(json.dumps({"schema_version":1,"runtime":"dungeness",'
+                         '"providers":["openai","openai-chatgpt","anthropic","openrouter"]}))\n',
             'src/dungeness/compiler.py': 'def resolve_problem_service(): pass\n',
             'services/gateway/gateway.py': 'async def assigned_task(): pass\nasync def assigned_file(): pass\nasync def assigned_resource(): pass\n',
             **{'verifiers/ecdsa-fail/benchmark-sh/' + name: 'fixture\n'
@@ -85,6 +87,9 @@ class LocalRunTests(unittest.TestCase):
             self.assertEqual(self.cli('--prepare-only'), 0, self.err.getvalue())
         metadata = self.metadata()
         self.assertEqual(metadata['status'], 'prepared')
+        from catalyst.challenge.catalog import initial_problems
+        from catalyst.contracts.results import digest
+        self.assertEqual(metadata['problem_set_digest'], digest(initial_problems()))
         self.assertFalse(metadata['official'])
         runtime = Path(metadata['runtime'])
         task_path, = runtime.glob('tasks/**/task.yaml')
@@ -115,6 +120,7 @@ class LocalRunTests(unittest.TestCase):
         checkpoint_path, = runtime.glob('checkpoints/catalyst-*/*.yaml')
         self.assertNotIn('reference', yaml_file(checkpoint_path)['data'])
         self.assertEqual(spec['budget']['max_usd'], 1)
+        self.assertEqual(spec['labels']['catalyst_problem_set_digest'], metadata['problem_set_digest'])
         self.assertEqual(spec['model_access']['models'][0]['request_model'], 'gpt-5.6-sol')
         self.assertEqual(local.git(runtime, 'status', '--porcelain'), '')
         self.assertTrue((task_path.parent / 'problem-service/server.py').is_file())

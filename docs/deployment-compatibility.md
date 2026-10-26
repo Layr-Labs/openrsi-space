@@ -16,3 +16,31 @@ claim. Update the public package before submitting against the new digest.
 The evaluator's configured problem, worker package and receipt authorization must
 be switched together. A repository update alone does not deploy the service.
 Deployment procedures and current rollout evidence belong in catalyst-verifier.
+
+## Local runtime compatibility
+
+This client requires a runtime with `model-provider-registry-v1` and
+`dungeness providers`, in addition to the existing execution and problem-service
+capabilities. The earlier gateway-hardening pin `11e3f4c` does not provide provider
+discovery. Upgrade and deploy the runtime together with the updated client.
+
+If preparation reports a missing capability, create a fresh checkout at an unused
+path; leave existing runs and working changes intact. The compatible runtime for this release is `08e8f7ddc3d87a1ec88e92052d28561ec27411e6`:
+
+```sh
+git clone https://github.com/Layr-Labs/dungeness.git /absolute/path/to/dungeness-compatible
+git -C /absolute/path/to/dungeness-compatible checkout --detach 08e8f7ddc3d87a1ec88e92052d28561ec27411e6
+/absolute/path/to/dungeness-compatible/dungeness capabilities
+/absolute/path/to/dungeness-compatible/dungeness providers
+```
+
+Retry with `--dungeness /absolute/path/to/dungeness-compatible`. Do not merely edit
+the capability declaration of an older runtime. Check the actual declarations and
+provider output. A local pin does not establish which revision the hosted
+evaluator uses; coordinate the release with its operator.
+
+For a bug report, include `catalyst --version` and the Dungeness revision from
+`git -C /absolute/path/to/dungeness rev-parse HEAD`. For a Catalyst source checkout,
+also include `git -C /absolute/path/to/catalyst rev-parse HEAD` and whether it has
+local changes: the package version alone does not distinguish development commits.
+See the [changelog](../CHANGELOG.md) for unreleased client changes.

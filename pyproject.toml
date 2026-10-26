@@ -17,7 +17,7 @@ where = ["src"]
 
 [tool.setuptools.package-data]
 "*" = ["README.md"]
-catalyst = ["runtime/*.py", "problem-set/*.md", "problem-set/ecdsa-fail/**/*", "pricing/*.json", "providers.json"]
+catalyst = ["runtime/*.py", "problem-set/*.md", "problem-set/ecdsa-fail/**/*", "pricing/*.json"]
 
 [tool.setuptools.exclude-package-data]
 "*" = ["**/__pycache__/*", "**/*.pyc", "**/*.pyo"]

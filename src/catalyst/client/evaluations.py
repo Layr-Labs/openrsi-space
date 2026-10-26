@@ -87,13 +87,17 @@ class RemoteClient:
         return legacy if legacy.is_file() else self.state / "remote/pending" / name
 
     def submit(self, submission: Path, *, judge=None, model_token=None, evaluation_overrides=None,
-               execution=None, publication=None, problem_release=None, _quote_retry=False):
+               execution=None, publication=None, problem_release=None, local_check=None, _quote_retry=False):
         if os.environ.get("GITHUB_ACTIONS") == "true":
             raise CatalystError("GitHub Actions must retrieve an existing result through catalyst yukon-run.")
         submission = submission.resolve()
         body = request_body(submission, self.base, judge=judge, evaluation_overrides=evaluation_overrides,
                             check_pricing=False, execution=execution, publication=publication,
                             problem_release=problem_release)
+        if local_check is not None:
+            from .local_check import request_identity
+            if local_check.get('request_identity') != request_identity(body):
+                raise CatalystError('Submission changed after its local check; review it and retry.')
         quote_path = None
         try:
             validate_evaluation_config(body["evaluation"])
@@ -143,16 +147,22 @@ class RemoteClient:
                 identity = evaluation_id(accepted.get("evaluation_id") if isinstance(accepted, dict) else None)
                 if accepted.get("request_id") != request["request_id"]:
                     raise CatalystError("Evaluator accepted a different operation key.")
-                private_json(self.folder(identity) / "session.json", {
+                session_path = self.folder(identity) / "session.json"
+                recorded_check = local_check
+                if local_check is not None and local_check.get('status') == 'resuming' and session_path.is_file():
+                    recorded_check = read_json(session_path).get('local_check', local_check)
+                private_json(session_path, {
                     "base": self.base, "request": request, "submission": str(submission),
                     **({"evaluation_overrides": evaluation_overrides} if evaluation_overrides else {}),
                     **({"pricing_quote": str(quote_path)} if quote_path else {}),
                     **({"execution": execution} if execution else {}),
+                    **({"local_check": recorded_check} if recorded_check is not None else {}),
                 })
         if identity is None:
             return self.submit(submission, judge=judge, model_token=model_token,
                                evaluation_overrides=evaluation_overrides, execution=execution,
-                               publication=publication, problem_release=problem_release, _quote_retry=True)
+                               publication=publication, problem_release=problem_release,
+                               local_check=local_check, _quote_retry=True)
         return {"evaluation_id": identity, "request_id": request["request_id"],
                 "source_digest": body["source"]["digest"], "evidence_mode": body["evidence_mode"]}
 

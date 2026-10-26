@@ -2,6 +2,7 @@
 import contextlib
 import hashlib
 import importlib
+from importlib.metadata import version
 import io
 import json
 import os
@@ -27,6 +28,8 @@ command = Path(sys.executable).parent / ("catalyst.exe" if os.name == "nt" else 
 clean_env = {key: value for key, value in os.environ.items() if key != "PYTHONPATH"}
 help_text = subprocess.check_output([str(command), "--help"], env=clean_env, text=True)
 assert "harness" in help_text and "remote" in help_text
+version_text = subprocess.check_output([str(command), "--version"], env=clean_env, text=True)
+assert version_text.strip() == f"catalyst {version('catalyst-research')}"
 expected = json.loads(Path(sys.argv[1]).read_text())
 for relative, digest in expected.items():
     assert hashlib.sha256((package / relative).read_bytes()).hexdigest() == digest, relative

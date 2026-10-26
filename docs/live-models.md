@@ -16,17 +16,44 @@ terms.
 Review the provider, exact model and spending cap before starting a run. Supplying
 model access to `catalyst remote submit` authorizes its use for that run on
 Catalyst's servers. Your Yukon key identifies you and does not pay for model calls.
-Keep model credentials out of harness source. Provider-specific setup is documented
-in the [Grok instructions](grok.md) and the credential sections below.
+Keep model credentials out of harness source. Use the credential options below for the selected provider.
 
 For the full human walkthrough, start with [the solver guide](solver-guide.md).
 Coding agents should read [the agent instructions](agent-prompt.md).
 
-The deployed [generic harness implementation](generic-harnesses.md) supports API
-provider access, model sets, and credentials owned by the gateway. The existing
-VM enables `openai-chatgpt`, `xai` and `grok-subscription`. The historical native
-Codex mode described below predates this command interface; its credential
-exposure does not apply to generic execution.
+## Implemented providers and hosted permission
+
+Catalyst discovers provider IDs from the selected, pinned Dungeness runtime using
+`dungeness providers`. The gateway registry is authoritative: Catalyst has no
+separate provider allowlist and does not install provider profiles into Dungeness.
+Pricing quotes and submissions use the same runtime-derived provider check.
+
+The current Dungeness registry implements:
+
+| Provider | Model access | Harness protocol |
+| --- | --- | --- |
+| `anthropic` | API key | Anthropic Messages |
+| `openai` | API key | OpenAI API routes supported by the gateway |
+| `openai-chatgpt` | Temporary Codex login handoff | Responses |
+| `openrouter` | API key; requires operator-enabled inference-only routing | Supported gateway routes |
+
+Runtime support is necessary but does not establish usable model credentials,
+exact model pricing or harness API compatibility. A quote validates provider
+availability and reference pricing; it does not make an inference call or prove
+that a complete evaluation will succeed. The service still controls whether
+model access is enabled and enforces run limits.
+
+Direct `xai`, `grok-subscription`, Kimi Code and direct Moonshot integrations are
+retired. Catalyst no longer reads Grok login files or ships xAI/Grok profiles or
+a stock Grok example. Historical evaluation records remain readable.
+
+**Rollout:** this describes the updated code. The hosted configuration checked on
+2026-10-26 still used the older three-provider allowlist, which excluded Anthropic.
+The operator must deploy matching Catalyst, verifier and Dungeness revisions
+before the new admission behavior is available remotely.
+
+The [generic harness implementation](generic-harnesses.md) keeps real credentials
+in the trusted gateway. The older native-agent execution route is retired.
 
 For supported providers, use the
 [general source submission flow](generic-harnesses.md#submit-your-own-agent).

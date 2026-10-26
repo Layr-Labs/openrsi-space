@@ -13,16 +13,11 @@ import uuid
 from catalyst.common import CatalystError, canonical, extract_bundle, now, read_json, snapshot_directory, write_json
 from catalyst.harnesses import executable
 from catalyst.integrations.dungeness.agent import install_agent, model_profile
-from catalyst.challenge.catalog import get_problem, problem_statement
+from catalyst.challenge.catalog import get_problem, problem_statement, initial_problems
+from catalyst.contracts.results import digest
 from catalyst.challenge.preparation import install_task, require_problem_service_runtime, write_yaml
 from catalyst.contracts.accounting import evaluation_models, pricing_schedule
-from catalyst.provider_profiles import PROFILES
-
-PROVIDER_ENV = {
-    'openai': 'TESTBED_OPENAI_API_KEY', 'anthropic': 'TESTBED_ANTHROPIC_API_KEY',
-    'openrouter': 'TESTBED_OPENROUTER_API_KEY',
-    **{name: 'TESTBED_' + profile['credential_env'] for name, profile in PROFILES.items()},
-}
+from catalyst.credentials import PROVIDER_ENV
 
 
 def git(root, *args):
@@ -34,7 +29,7 @@ def git(root, *args):
 
 def validate_credential_locations(args):
     package = Path(args.package).resolve()
-    for name in ('codex_auth_file', 'provider_access_file', 'grok_auth_file'):
+    for name in ('codex_auth_file', 'provider_access_file'):
         path = getattr(args, name, None)
         if path and Path(path).expanduser().resolve().is_relative_to(package):
             raise CatalystError('Keep model credential files outside the harness source directory.')
@@ -43,10 +38,7 @@ def validate_credential_locations(args):
 def credential_input(args, providers):
     from catalyst.credentials import decode_codex_access, encode_codex_access, validate_provider_access
     validate_credential_locations(args)
-    if getattr(args, 'grok_auth_file', None):
-        from catalyst.credentials import grok_access
-        access = {'grok-subscription': grok_access(args.grok_auth_file)}
-    elif args.codex_auth_file:
+    if args.codex_auth_file:
         access = {'openai-chatgpt': decode_codex_access(encode_codex_access(args.codex_auth_file))}
     elif args.provider_access_file:
         access = read_json(Path(args.provider_access_file).expanduser())
@@ -55,7 +47,7 @@ def credential_input(args, providers):
             raise CatalystError('--provider-token-env requires one API-key provider; use --provider-access-file for ensembles.')
         access = {next(iter(providers)): os.environ.get(args.provider_token_env)}
     else:
-        raise CatalystError('Select --grok-auth-file, --codex-auth-file, --provider-token-env NAME, or --provider-access-file PATH; '
+        raise CatalystError('Select --codex-auth-file, --provider-token-env NAME, or --provider-access-file PATH; '
                             'use --prepare-only to prepare without model access.')
     validate_provider_access(access)
     if set(access) != providers:
@@ -84,9 +76,6 @@ def temporary_environment(access):
                         key: value[key] for key in ('access_token', 'id_token', 'account_id')}}))
                 environment['DUNGENESS_CODEX_AUTH_FILE'] = str(path)
             else:
-                if PROFILES.get(provider, {}).get('credential_kind') == 'session-token':
-                    lines.append(f"{PROVIDER_ENV[provider]}_EXPIRES_AT={value['expires_at']}\n")
-                    value = value['access_token']
                 lines.append(f'{PROVIDER_ENV[provider]}={value}\n')
         env_file = root / 'runtime.env'
         env_file.touch(mode=0o600)
@@ -97,10 +86,22 @@ def temporary_environment(access):
             access.clear()
 
 
+def problem_files(selected):
+    """Stable local package bytes, also used to recognize older local records."""
+    document = {
+        'schema_version': 1, 'kind': 'problem', 'id': selected['id'], 'title': selected['title'],
+        'slug': selected['slug'], 'release': selected['release'],
+        'metric': selected['metric'], 'execution': selected['dungeness'],
+    }
+    return {'problem.json': (json.dumps(document, indent=2, ensure_ascii=False) + '\n').encode(),
+            'instructions.md': problem_statement(selected['id']).encode()}
+
+
 def prepare(state, package, source, evaluation, *, problem_id='ecdsa.fail', problem_release=None, pricing_path=None):
     from catalyst.credentials import require_active_models
     require_active_models(evaluation_models(evaluation))
     selected = get_problem(problem_id, release=problem_release)
+    problem_set_digest = digest(initial_problems(release=problem_release))
     source = source.expanduser().resolve()
     if not (source / 'dungeness').is_file():
         raise CatalystError('Point --dungeness at a Dungeness checkout (https://github.com/Layr-Labs/dungeness).')
@@ -133,12 +134,9 @@ def prepare(state, package, source, evaluation, *, problem_id='ecdsa.fail', prob
     (folder / 'harness.zip').write_bytes(harness_bytes)
     extract_bundle(harness_bytes, folder / 'inputs/harness')
     problem_path = folder / 'inputs/problem'
-    write_json(problem_path / 'problem.json', {
-        'schema_version': 1, 'kind': 'problem', 'id': selected['id'], 'title': selected['title'],
-        'slug': selected['slug'], 'release': selected['release'],
-        'metric': selected['metric'], 'execution': selected['dungeness'],
-    })
-    (problem_path / 'instructions.md').write_text(problem_statement(problem_id))
+    problem_path.mkdir(parents=True)
+    for name, content in problem_files(selected).items():
+        (problem_path / name).write_bytes(content)
     problem, problem_bytes = snapshot_directory(problem_path)
     (folder / 'problem.zip').write_bytes(problem_bytes)
     runtime = folder / 'dungeness'
@@ -173,7 +171,7 @@ def prepare(state, package, source, evaluation, *, problem_id='ecdsa.fail', prob
         'model_access': {'models': resolved, 'max_parallel_requests': 4,
                          'request_reservation_usd': min(evaluation['max_model_credits'] / 4, 1)},
         'runtime': {'env_file': str(env_file)},
-        'labels': {'evidence': 'local-development'},
+        'labels': {'evidence': 'local-development', 'catalyst_problem_set_digest': problem_set_digest},
     }
     spec_path = runtime / 'run-specs/projects/catalyst' / (run_id + '.yaml')
     write_yaml(spec_path, spec)
@@ -185,6 +183,7 @@ def prepare(state, package, source, evaluation, *, problem_id='ecdsa.fail', prob
     metadata = {
         'id': run_id, 'status': 'prepared', 'created_at': now(), 'evidence': 'local-development',
         'official': False, 'dungeness_commit': source_commit,
+        'problem_set_digest': problem_set_digest,
         'execution_commit': git(runtime, 'rev-parse', 'HEAD'), 'runtime': str(runtime),
         'spec_path': str(spec_path), 'record_path': str(record), 'artifacts': str(folder),
         'evaluation': evaluation, 'build_id': built['id'],

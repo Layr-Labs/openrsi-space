@@ -8,8 +8,9 @@ and Yukon publication fit together.
 
 Use packaging and synthetic checks first, then a model-enabled integration run.
 Preparation alone is not a complete test. If local execution is blocked or declined,
-report that explicitly before proceeding remotely; the API does not require proof
-of local testing. Neither local scores nor successful tests guarantee a receipt.
+report that explicitly before proceeding remotely. The CLI checks existing local
+records before submission; the API does not require proof of local testing.
+Neither local scores nor successful tests guarantee a receipt.
 
 ## Check a candidate circuit
 
@@ -39,7 +40,9 @@ uv run catalyst harness smoke BUILD_ID --workspace .catalyst/ecdsa-workspace --p
 
 Replace `BUILD_ID` with the build command's returned `id`. The smoke test runs
 on a copied workspace with no network, model access or host credentials. This
-checks packaging and launch behavior, not research quality.
+checks packaging and launch behavior, not research quality. See the
+[complete smoke task and launch contract](executable-harness.md#package-and-smoke-test-a-harness)
+for null model fields, absent problem-service fields, workspace permissions and `PATH`.
 
 ## Full local agent run with Dungeness
 
@@ -48,6 +51,9 @@ Install Git, Docker (running), and uv. Clone a clean copy of the public runtime:
 ```sh
 git clone https://github.com/Layr-Labs/dungeness.git /absolute/path/to/dungeness
 ```
+
+For a known-compatible pin and instructions for an older runtime, see
+[deployment compatibility](deployment-compatibility.md#local-runtime-compatibility).
 
 From your Catalyst checkout, discover the current problem release and prepare:
 
@@ -127,6 +133,35 @@ Docker runs remain development evidence. Allow memory for both the 8 GiB verifie
 and the agent, in addition to Docker overhead.
 
 ## Move to the official evaluation
+
+`catalyst remote submit` automatically reuses matching records under the selected
+`--state` directory's `local/`, or the harness's `.catalyst/local/`. No duplicate
+test, automatic local spending, or trace upload occurs. The record must show a
+completed command-harness run, no runtime trial errors, settled accounting, and
+a successful accounted response from every declared model. A valid circuit or
+minimum spending amount is not required. Budget-triggered shutdown can qualify.
+
+Harness source, provider/model/reasoning settings and assigned problem must match.
+Local spending, token and time limits may differ from the remote limits. Runtime
+revisions need not be identical; the recorded command interface must be compatible.
+This is a CLI readiness check, not trusted evidence or an anti-cheat guarantee.
+Existing older records are recognized by their exact local problem-package hash.
+
+If the records are elsewhere, supply the local run directory, its `run.json`, or
+Dungeness's `record.json` with adjacent `usage/events.jsonl`:
+
+```sh
+uv run catalyst remote submit ./my-harness --local-run /path/to/local-run
+```
+
+A directly launched Dungeness run must retain the Catalyst harness-source and
+problem identities and the `local-development` label to match. Keep the run's
+artifact folder intact. If local testing is blocked or intentionally omitted,
+report the untested steps and add `--skip-local-check` to your submission command.
+This flag does not authorize spending or credential transfer by itself. The choice
+is recorded in the local remote-session metadata; local traces stay on your machine.
+Unchanged saved submission retries remain usable without rerunning local tests.
+Status, wait, cancellation and receipt publication never require this check.
 
 Before proceeding, inspect startup, model/tool calls, workspace edits, candidate
 evaluation responses, metered usage and shutdown. Test interrupted attempts and
