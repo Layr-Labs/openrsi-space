@@ -47,10 +47,12 @@ Direct `xai`, `grok-subscription`, Kimi Code and direct Moonshot integrations ar
 retired. Catalyst no longer reads Grok login files or ships xAI/Grok profiles or
 a stock Grok example. Historical evaluation records remain readable.
 
-**Rollout:** this describes the updated code. The hosted configuration checked on
-2026-10-26 still used the older three-provider allowlist, which excluded Anthropic.
-The operator must deploy matching Catalyst, verifier and Dungeness revisions
-before the new admission behavior is available remotely.
+**Hosted rollout verified 2026-10-26:** the evaluator now derives provider
+availability from Dungeness revision `08e8f7d`; the old three-provider allowlist
+has been removed. Anthropic pricing and submission permission were checked over
+HTTPS without sending a model credential or starting an evaluation. Direct xAI
+and Grok subscription requests are rejected. This admission check does not claim
+a paid Anthropic inference test.
 
 The [generic harness implementation](generic-harnesses.md) keeps real credentials
 in the trusted gateway. The older native-agent execution route is retired.
