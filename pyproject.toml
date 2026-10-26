@@ -7,7 +7,7 @@ name = "catalyst-research"
 version = "0.2.0"
 description = "Public Catalyst solver tools, challenge contract, and Yukon receipt integration."
 requires-python = ">=3.11"
-dependencies = ["PyYAML>=6.0.3"]
+dependencies = ["PyYAML>=6.0.3", "python-dotenv==1.2.4"]
 
 [project.scripts]
 catalyst = "catalyst.cli:main"

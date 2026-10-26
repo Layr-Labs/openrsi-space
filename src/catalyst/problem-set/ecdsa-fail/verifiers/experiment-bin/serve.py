@@ -20,6 +20,7 @@ import fcntl
 import hashlib
 import json
 import os
+import stat
 import tempfile
 import threading
 import time
@@ -56,11 +57,17 @@ def _utc_now() -> str:
 
 def _append_jsonl_locked(path: Path, record: dict) -> None:
     encoded = json.dumps(record, sort_keys=True, separators=(",", ":"))
-    with path.open("a+", encoding="utf-8") as output:
-        try:
-            path.chmod(0o666)
-        except OSError:
-            pass
+    fd = os.open(path, os.O_RDWR | os.O_CREAT | os.O_APPEND | os.O_NOFOLLOW | os.O_NONBLOCK, 0o600)
+    try:
+        info = os.fstat(fd)
+        if not stat.S_ISREG(info.st_mode) or info.st_nlink != 1:
+            raise OSError("Event ledger must be a regular file without hard links")
+        os.fchmod(fd, 0o600)
+        output = os.fdopen(fd, "a+", encoding="utf-8")
+    except BaseException:
+        os.close(fd)
+        raise
+    with output:
         fcntl.flock(output.fileno(), fcntl.LOCK_EX)
         try:
             event_id = record.get("event_id")
@@ -132,7 +139,8 @@ def _emit_usage_event(kind: str, data: dict, event_id: str) -> None:
         except (OSError, json.JSONDecodeError):
             pass
     try:
-        USAGE_DIR.mkdir(parents=True, exist_ok=True)
+        USAGE_DIR.mkdir(parents=True, mode=0o700, exist_ok=True)
+        USAGE_DIR.chmod(0o700)
         _append_jsonl_locked(USAGE_DIR / "events.jsonl", record)
     except OSError:
         pass
@@ -155,7 +163,8 @@ def _record(event: dict) -> None:
         }
     )
     try:
-        USAGE_DIR.mkdir(parents=True, exist_ok=True)
+        USAGE_DIR.mkdir(parents=True, mode=0o700, exist_ok=True)
+        USAGE_DIR.chmod(0o700)
         _emit_usage_event(
             "evaluation.completed",
             payload,

@@ -36,6 +36,9 @@ class EvaluatorUsageEventTests(unittest.TestCase):
                 with self.subTest(path=path), tempfile.TemporaryDirectory() as directory:
                     module = load_server(path, f"evaluator_server_{index}")
                     usage = Path(directory)
+                    usage.chmod(0o777)
+                    (usage / "events.jsonl").touch()
+                    (usage / "events.jsonl").chmod(0o666)
                     module.USAGE_DIR = usage
                     module.RUN_ID = "test-run"
                     module._submissions = 3
@@ -62,6 +65,8 @@ class EvaluatorUsageEventTests(unittest.TestCase):
                         usage / "events.jsonl"
                     ).read_text(encoding="utf-8").splitlines()
                     self.assertEqual(len(lines), 1)
+                    self.assertEqual(usage.stat().st_mode & 0o777, 0o700)
+                    self.assertEqual((usage / "events.jsonl").stat().st_mode & 0o777, 0o600)
                     record = json.loads(lines[0])
                     self.assertEqual(record["source"], "evaluator")
                     self.assertEqual(record["kind"], "evaluation.completed")
