@@ -140,3 +140,10 @@ source or images.
 ## Official evaluation
 
 Submit the harness source using the [solver guide](solver-guide.md). The remote service builds and runs it with metered model access and independent verification. Operator Dungeness tooling lives in `catalyst-verifier`; it is not required locally.
+
+## Build review
+
+The [build review contract](build-review.md) keeps ordinary online package installation
+and multi-stage Dockerfiles, with source review followed by bounded image review.
+No private offline dependency format is required. See the documented coverage limits;
+code availability and deployment activation are separate.

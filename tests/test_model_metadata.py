@@ -1,5 +1,7 @@
 """Provider selection must not invent capabilities for an arbitrary model."""
 from pathlib import Path
+import json
+import tempfile
 import unittest
 from unittest.mock import patch
 
@@ -8,6 +10,21 @@ from catalyst.common import CatalystError
 
 
 class ModelMetadataTests(unittest.TestCase):
+    def test_duration_priced_quotes_require_matching_runtime(self):
+        with tempfile.TemporaryDirectory() as tmp, patch(
+                "catalyst.integrations.dungeness.providers.model_providers", return_value={"anthropic"}):
+            root = Path(tmp)
+            entry = {"provider": "anthropic", "upstream_id": "anthropic/example", "request_models": ["example"]}
+            for rates in ({"cache_write_1h_per_mtok": 8}, {"long_context": {"cache_write_1h_per_mtok": 16}}):
+                schedule = {"entries": [{**entry, **rates}]}
+                contract = {"schema_version": 1, "runtime": "dungeness", "capabilities": []}
+                (root / "runtime-contract.json").write_text(json.dumps(contract))
+                with self.assertRaisesRegex(CatalystError, "cache-duration-accounting-v1"):
+                    model_profile(root, "example", "anthropic", schedule)
+                contract["capabilities"] = ["cache-duration-accounting-v1"]
+                (root / "runtime-contract.json").write_text(json.dumps(contract))
+                self.assertEqual(model_profile(root, "example", "anthropic", schedule)["request_model"], "example")
+
     def test_new_model_does_not_inherit_codex_context_or_reasoning_limits(self):
         pricing = {"entries": [{
             "provider": "openai-chatgpt", "upstream_id": "example-new-model",

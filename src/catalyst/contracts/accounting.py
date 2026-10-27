@@ -65,7 +65,8 @@ def integer(value, label, minimum=0) -> int:
 def credits(usage: dict, model: dict, schedule=None) -> Decimal:
     """Price inclusive input/output counts; cache buckets are input subsets."""
     keys = {"input_tokens", "output_tokens", "cached_read_tokens", "cache_write_tokens"}
-    if not isinstance(usage, dict) or set(usage) != keys:
+    optional = {"cache_write_1h_tokens"}
+    if not isinstance(usage, dict) or not keys <= set(usage) or set(usage) - keys - optional:
         raise CatalystError("Usage requires input, output, cache-read and cache-write token counts.")
     counts = {key: integer(usage[key], key) for key in keys}
     uncached = counts["input_tokens"] - counts["cached_read_tokens"] - counts["cache_write_tokens"]
@@ -75,11 +76,18 @@ def credits(usage: dict, model: dict, schedule=None) -> Decimal:
     long_context = prices.get("long_context")
     if long_context and counts["input_tokens"] > long_context["threshold_input_tokens"]:
         prices = long_context
+    hour = integer(usage.get("cache_write_1h_tokens", 0), "cache_write_1h_tokens")
+    if hour > counts["cache_write_tokens"]:
+        raise CatalystError("One-hour cache writes exceed total cache writes.")
+    if (counts["cache_write_tokens"] and "cache_write_1h_per_mtok" in prices
+            and "cache_write_1h_tokens" not in usage):
+        raise CatalystError("Cache-duration usage is missing for duration-priced cache writes.")
     total = Decimal(0)
     for count, rate in (
         (uncached, "input_per_mtok"), (counts["output_tokens"], "output_per_mtok"),
         (counts["cached_read_tokens"], "cached_read_per_mtok"),
-        (counts["cache_write_tokens"], "cache_write_per_mtok"),
+        (counts["cache_write_tokens"] - hour, "cache_write_per_mtok"),
+        (hour, "cache_write_1h_per_mtok"),
     ):
         if count and rate not in prices:
             raise CatalystError(f"Unpriced token bucket: {rate}.")
