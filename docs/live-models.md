@@ -33,7 +33,7 @@ The current Dungeness registry implements:
 | Provider | Model access | Harness protocol |
 | --- | --- | --- |
 | `anthropic` | API key | Anthropic Messages |
-| `claude-subscription` | Access token and expiry; hosted rollout pending | Anthropic Messages |
+| `claude-subscription` | Access token and expiry; live-account validation pending | Anthropic Messages |
 | `openai` | API key | OpenAI API routes supported by the gateway |
 | `openai-chatgpt` | Temporary Codex login handoff | Responses |
 | `openrouter` | API key; requires operator-enabled inference-only routing | Supported gateway routes |

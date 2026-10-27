@@ -4,9 +4,11 @@ The `claude-subscription` route uses Anthropic Messages with a temporary bearer
 access token. `anthropic` remains the API-key route. The real credential is mounted
 only into the trusted gateway; the submitted harness receives a placeholder.
 
-**Status:** implemented and tested against synthetic upstream responses. Hosted
-rollout and an authorized live Claude inference check are pending. Older hosted
-runtimes will correctly report this provider as unavailable.
+**Status:** deployed to the hosted runtime on 2026-10-27. Gateway behavior and
+Claude Code 2.1.311 mechanics have been tested against synthetic upstream
+responses. An authorized live-account inference check is still pending; this is
+not confirmation of account eligibility. Older runtimes will correctly report
+this provider as unavailable.
 
 ## Supply access
 
