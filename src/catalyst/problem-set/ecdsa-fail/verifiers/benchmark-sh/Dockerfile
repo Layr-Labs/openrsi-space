@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 #
 # Verifier image for ecdsa-fail checkpoints using benchmark-sh. The candidate (the
 # src/point_add/ module) is untrusted; it is compiled and run here inside the
@@ -7,15 +6,22 @@
 # (evaluator/) supplies everything else. Rust deps are pre-fetched at build time
 # so the runtime build is offline.
 #
-# NOT YET COMPILE-TESTED: the pinned channel (1.93.0) matches the source history;
-# and build timings still need a real run (a heavy multi-shot simulation).
-FROM rust:1.93.0-bookworm
+FROM rust:1.93.0-bookworm@sha256:d0a4aa3ca2e1088ac0c81690914a0d810f2eee188197034edf366ed010a2b382
 
 # python3 runs grade.py; util-linux provides `setsid` (benchmark.sh isolates the
 # untrusted build_circuit in its own process group); `candidate` is the
 # unprivileged user that compiles and runs the untrusted circuit code.
-RUN apt-get update \
+# The snapshot matches the base distribution. Only timestamp freshness is relaxed;
+# Debian archive signatures and package hashes remain mandatory.
+RUN . /etc/os-release && test "$VERSION_CODENAME" = bookworm \
+    && rm -f /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources \
+    && printf '%s\n' \
+      'deb [check-valid-until=no signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] https://snapshot.debian.org/archive/debian/20261026T000000Z/ bookworm main' \
+      'deb [check-valid-until=no signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] https://snapshot.debian.org/archive/debian/20261026T000000Z/ bookworm-updates main' \
+      'deb [check-valid-until=no signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] https://snapshot.debian.org/archive/debian-security/20261026T000000Z/ bookworm-security main' > /etc/apt/sources.list \
+    && apt-get update \
     && apt-get install -y --no-install-recommends python3 util-linux \
+    && dpkg-query -W -f='${binary:Package}=${Version}\n' > /usr/local/share/catalyst-dpkg-manifest.txt \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --no-create-home --shell /usr/sbin/nologin --uid 10001 candidate
 

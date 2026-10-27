@@ -1,4 +1,3 @@
-# syntax=docker/dockerfile:1
 #
 # DRAFT verifier image for ecdsa-fail. The candidate (src/point_add.rs) is
 # untrusted; it is compiled and run here inside the clean no-network verifier.
@@ -6,16 +5,21 @@
 # counting/validation. Rust deps are pre-fetched at build time so the runtime
 # build is offline.
 #
-# NOTE: `rust:1.93.0-*` must exist for the pinned channel; if not, swap to a
-# rustup base and `rustup toolchain install 1.93.0`. Resource limits and build
-# timings still need a real run to size (a 200M-Toffoli sim over 64 shots is
-# heavy).
-FROM rust:1.93.0-bookworm
+FROM rust:1.93.0-bookworm@sha256:d0a4aa3ca2e1088ac0c81690914a0d810f2eee188197034edf366ed010a2b382
 
 # python3 runs grade.py; `candidate` is the unprivileged user that compiles and
 # runs the untrusted circuit code.
-RUN apt-get update \
+# The snapshot matches the base distribution. Only timestamp freshness is relaxed;
+# Debian archive signatures and package hashes remain mandatory.
+RUN . /etc/os-release && test "$VERSION_CODENAME" = bookworm \
+    && rm -f /etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources \
+    && printf '%s\n' \
+      'deb [check-valid-until=no signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] https://snapshot.debian.org/archive/debian/20261026T000000Z/ bookworm main' \
+      'deb [check-valid-until=no signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] https://snapshot.debian.org/archive/debian/20261026T000000Z/ bookworm-updates main' \
+      'deb [check-valid-until=no signed-by=/usr/share/keyrings/debian-archive-keyring.gpg] https://snapshot.debian.org/archive/debian-security/20261026T000000Z/ bookworm-security main' > /etc/apt/sources.list \
+    && apt-get update \
     && apt-get install -y --no-install-recommends python3 \
+    && dpkg-query -W -f='${binary:Package}=${Version}\n' > /usr/local/share/catalyst-dpkg-manifest.txt \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --no-create-home --shell /usr/sbin/nologin --uid 10001 candidate
 
@@ -32,7 +36,7 @@ COPY serve.py /tests/serve.py
 # Pre-fetch crate dependencies (network is available at build; runtime is not).
 # `cargo fetch` only downloads deps and does not require the missing point_add.rs.
 RUN cd /opt/evaluator \
-    && cargo fetch \
+    && cargo fetch --locked \
     && mkdir -p /workspace /logs/verifier \
     && chown -R root:root /opt/evaluator /tests \
     && chmod -R go-rwx /opt/evaluator \

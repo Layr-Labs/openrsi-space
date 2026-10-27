@@ -33,3 +33,15 @@ or reading `ops.bin`. The backport preserves the framing and scoring contract,
 but removes the duplicate allocation. The frontier checkpoint already contains
 streaming and compression upstream. The older single-file interface is
 unchanged and keeps its larger verifier memory envelope.
+
+Trusted verifier builds pin the Rust base by digest and use the signed Debian
+Bookworm archive snapshot at `20261026T000000Z` (main, updates and security).
+The recipe checks the base codename before apt runs; it never mixes distributions.
+Only archive timestamp expiry is disabled, not signature or package-hash checks.
+The installed package/version list is retained at
+`/usr/local/share/catalyst-dpkg-manifest.txt`. Cargo fetch uses `--locked`.
+
+Refresh the base and snapshot deliberately as a reviewed release, rebuild both
+verifier contexts, and compare the package manifests. Do not turn the snapshot
+into a mutable build argument. These pins stabilize dependency inputs; they do
+not claim byte-identical OCI images (build timestamps may differ).

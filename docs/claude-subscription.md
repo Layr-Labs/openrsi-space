@@ -43,9 +43,13 @@ the existing bounded inference operations, not OAuth refresh or account APIs.
 
 For a harness containing unmodified Claude Code, configure its `ANTHROPIC_BASE_URL`
 from that assigned URL and use `CLAUDE_CODE_OAUTH_TOKEN=testbed` as its placeholder.
-Unset `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` in the child process so they do
-not select another credential mechanism. This is an integration starting point;
-test your pinned Claude Code version locally before remote submission. The gateway
+Set `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1` so the CLI uses its supported
+gateway-compatible request format. This disables experimental tool-search and
+related beta schema features; it does not rewrite the client or loosen gateway
+policy. Unset `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` in the child process so they do
+not select another credential mechanism. Claude Code 2.1.311 passed a model-free request/stream check with this configuration.
+Test your pinned version locally before remote submission; live account eligibility
+and inference have not yet been validated. The gateway
 does not insert a Claude Code user-agent or rewrite prompts to impersonate a client.
 
 Accounting uses the provider's reported input/output and cache usage. The credit
