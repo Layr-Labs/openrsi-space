@@ -33,9 +33,13 @@ The current Dungeness registry implements:
 | Provider | Model access | Harness protocol |
 | --- | --- | --- |
 | `anthropic` | API key | Anthropic Messages |
+| `claude-subscription` | Access token and expiry; hosted rollout pending | Anthropic Messages |
 | `openai` | API key | OpenAI API routes supported by the gateway |
 | `openai-chatgpt` | Temporary Codex login handoff | Responses |
 | `openrouter` | API key; requires operator-enabled inference-only routing | Supported gateway routes |
+
+For Claude login access, see [credential format and harness pairing](claude-subscription.md).
+The new route is not yet deployed to the hosted execution AMI.
 
 Runtime support is necessary but does not establish usable model credentials,
 exact model pricing or harness API compatibility. A quote validates provider

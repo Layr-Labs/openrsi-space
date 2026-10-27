@@ -17,7 +17,7 @@ from catalyst.challenge.catalog import get_problem, problem_statement, initial_p
 from catalyst.contracts.results import digest
 from catalyst.challenge.preparation import install_task, require_problem_service_runtime, write_yaml
 from catalyst.contracts.accounting import evaluation_models, pricing_schedule
-from catalyst.credentials import PROVIDER_ENV
+from catalyst.credentials import provider_environment
 
 
 def git(root, *args):
@@ -43,7 +43,7 @@ def credential_input(args, providers):
     elif args.provider_access_file:
         access = read_json(Path(args.provider_access_file).expanduser())
     elif args.provider_token_env:
-        if len(providers) != 1 or 'openai-chatgpt' in providers:
+        if len(providers) != 1 or providers & {'openai-chatgpt', 'claude-subscription'}:
             raise CatalystError('--provider-token-env requires one API-key provider; use --provider-access-file for ensembles.')
         access = {next(iter(providers)): os.environ.get(args.provider_token_env)}
     else:
@@ -76,7 +76,7 @@ def temporary_environment(access):
                         key: value[key] for key in ('access_token', 'id_token', 'account_id')}}))
                 environment['DUNGENESS_CODEX_AUTH_FILE'] = str(path)
             else:
-                lines.append(f'{PROVIDER_ENV[provider]}={value}\n')
+                lines.extend(f'{key}={item}\n' for key, item in provider_environment(provider, value).items())
         env_file = root / 'runtime.env'
         env_file.touch(mode=0o600)
         env_file.write_text(''.join(lines))

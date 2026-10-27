@@ -1,6 +1,7 @@
 """Temporary credential encoding for the HTTPS client; refresh tokens stay local."""
 import base64
 import json
+from datetime import datetime, timezone
 from pathlib import Path
 from catalyst.common import CatalystError, canonical
 from catalyst.protocol import APIError
@@ -12,7 +13,7 @@ MAX_TOKEN_BYTES = 8192
 # Provider availability is discovered from the selected Dungeness runtime.
 PROVIDER_ENV = {"openai": "TESTBED_OPENAI_API_KEY", "anthropic": "TESTBED_ANTHROPIC_API_KEY",
                 "openrouter": "TESTBED_OPENROUTER_API_KEY"}
-PROVIDERS = frozenset(PROVIDER_ENV) | {"openai-chatgpt"}
+PROVIDERS = frozenset(PROVIDER_ENV) | {"openai-chatgpt", "claude-subscription"}
 # Read historical configurations without re-enabling their credentials or execution.
 RETIRED_PROVIDERS = frozenset({"kimi-code", "moonshot", "xai", "grok-subscription"})
 
@@ -70,12 +71,43 @@ def encode_provider_access(document):
     validate_token(encoded)
     return encoded
 
+def validate_session_access(value):
+    # Exact fields deliberately exclude refresh tokens and entire login files.
+    if not isinstance(value, dict) or set(value) != {"access_token", "expires_at"}:
+        raise CatalystError("Claude access requires only access_token and expires_at; refresh credentials stay local.")
+    validate_token(value["access_token"])
+    if any(c in value["access_token"] for c in "'\"\\$`#"):
+        raise CatalystError("Access token contains unsupported environment-file characters.")
+    try:
+        stamp = value["expires_at"]
+        if not isinstance(stamp, str) or len(stamp) > 64 or any(ord(c) < 33 or ord(c) > 126 for c in stamp):
+            raise ValueError
+        expiry = datetime.fromisoformat(stamp.replace("Z", "+00:00"))
+        if expiry.tzinfo is None or expiry <= datetime.now(timezone.utc):
+            raise ValueError
+    except (AttributeError, ValueError, TypeError, OverflowError):
+        raise CatalystError("Claude access requires a future expires_at timestamp with a timezone.") from None
+
+
+def provider_environment(provider, value):
+    """Shared local/remote credential staging; values go only to private tmpfs."""
+    if provider == "claude-subscription":
+        validate_session_access(value)
+        return {"TESTBED_CLAUDE_ACCESS_TOKEN": value["access_token"],
+                "TESTBED_CLAUDE_ACCESS_TOKEN_EXPIRES_AT": value["expires_at"]}
+    if provider in PROVIDER_ENV:
+        return {PROVIDER_ENV[provider]: value}
+    return {}
+
+
 def validate_provider_access(document):
     if not isinstance(document, dict) or not document or set(document) - PROVIDERS:
         raise CatalystError("Provider access must map supported providers to temporary credentials.")
     for provider, value in document.items():
         if provider == "openai-chatgpt":
             validate_access(value)
+        elif provider == "claude-subscription":
+            validate_session_access(value)
         else:
             validate_token(value)
             if any(c in value for c in "'\"\\$`#"):

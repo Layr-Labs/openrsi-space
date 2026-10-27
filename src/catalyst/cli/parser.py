@@ -84,7 +84,7 @@ def build_parser():
                               help="Use temporary access from your local Codex login; refresh credentials stay outside the run.")
     local_access.add_argument("--provider-token-env", metavar="NAME",
                               help="Read an API token from this environment variable; never pass the token as an argument.")
-    local_access.add_argument("--provider-access-file", help="Private provider credential map for an ensemble.")
+    local_access.add_argument("--provider-access-file", help="Private provider credential map, including session access and expiry.")
     commands.add_parser("yukon-setup", help="Download the pinned ecdsa.fail workspace for Yukon.")
     commands.add_parser("yukon-run", help="Trusted remote evaluation bridge invoked by Yukon.")
     yukon_submit = commands.add_parser("yukon-submit", help="Submit a receipt through stock Yukon and bind its Pareto execution.")

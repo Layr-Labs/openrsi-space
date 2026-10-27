@@ -19,7 +19,7 @@ def model_profile(source: Path, requested: str, provider="openai", pricing=None)
     if len(matches) != 1:
         raise CatalystError("Select a provider/model from the pinned Dungeness pricing policy.")
     return {"provider": provider, "upstream_id": matches[0]["upstream_id"],
-            "request_model": requested, "api": ("anthropic-messages" if provider == "anthropic"
+            "request_model": requested, "api": ("anthropic-messages" if provider in {"anthropic", "claude-subscription"}
                 else "openai-responses" if provider == "openai-chatgpt"
                 else "openai-completions"),
             "name_format": "request"}
