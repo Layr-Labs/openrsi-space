@@ -48,7 +48,11 @@ uv run catalyst harness create my-agent --output .catalyst/my-agent
 
 Replace `.catalyst/my-agent/agent.py` and install generic dependencies in its
 Dockerfile. The starter copies the whole source bundle into `/opt/harness/`.
-Do not package ECDSA-specific papers, notes, strategies or candidate code. The
+Do not package ECDSA-specific papers, notes, strategies or candidate code. Do not
+instruct the agent to focus on a predetermined task paper, including by title,
+identifier, indirect hint, or a ranking rule favoring that paper. This applies
+even when the paper is in the assigned library. Reading the library and selecting
+relevant resources during the run is allowed. The
 assigned task supplies a shared eight-paper library during execution. It initially makes
 no model calls; implement the research loop before requesting a model run.
 An existing framework can use its own entrypoint instead.

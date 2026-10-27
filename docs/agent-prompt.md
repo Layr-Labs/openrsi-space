@@ -110,6 +110,12 @@ New runs start from a blank `src/point_add/mod.rs` scaffold and the neutral
 `POINT_ADD_SDK.md` / `crate::point_add_sdk` helpers. There is no valid initial
 solution or baseline score. Implement and verify the first circuit before
 saving a best candidate; never assume that leaving the starter unchanged passes.
+Do not preselect a task paper in prompts or code, including through indirect hints
+or fixed resource-ranking preferences. The agent may discover and select papers
+from the assigned library during the run. Review metadata may describe the actual
+harness prompts and architecture on the leaderboard; do not include credentials
+or personal details in source or submission notes.
+
 Submit only a general-purpose harness, without ECDSA-specific papers, notes,
 strategies or prewritten candidates. The assigned task provides a pinned library
 of eight bundled papers through `CATALYST_KNOWLEDGE_BASE_URL`. The agent chooses what to

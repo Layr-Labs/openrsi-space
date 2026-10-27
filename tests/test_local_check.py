@@ -19,6 +19,8 @@ from harness_fixture import create_harness
 
 class LocalCheckTests(unittest.TestCase):
     def setUp(self):
+        # These fixtures simulate a solver's local CLI, even when tests run in CI.
+        self.enterContext(patch.dict('os.environ', {'GITHUB_ACTIONS': ''}))
         temporary = tempfile.TemporaryDirectory()
         self.addCleanup(temporary.cleanup)
         self.root = Path(temporary.name)

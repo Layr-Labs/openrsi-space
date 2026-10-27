@@ -111,13 +111,18 @@ def judgment(result: dict, request: dict) -> dict:
         artifact["metrics"]["modelAccess"] = result["model_access"]
     if "source_audit" in result:
         audit = result["source_audit"]
+        required = {"policy", "digest", "config_digest", "model", "status"}
         if (not isinstance(audit, dict)
-                or set(audit) != {"policy", "digest", "config_digest", "model", "status"}
+                or set(audit) != required
                 or audit["digest"] != request["source"]["digest"]
                 or audit["status"] != "passed"
-                or any(not isinstance(audit[k], str) or not audit[k] for k in audit)):
+                or any(not isinstance(audit[k], str) or not audit[k] for k in required)):
             raise CatalystError("Source audit does not match a passed review of this harness.")
-        artifact["metrics"]["sourceAudit"] = audit
+        from .harness_summary import public_summary
+        artifact["metrics"]["sourceAudit"] = {key: audit[key] for key in required}
+        summary = public_summary(result.get("harness_summary"))
+        if summary is not None:
+            artifact["metrics"]["sourceAudit"]["summary"] = summary
     if fields["scores"]:
         artifact["scores"] = scores if result["valid"] else None
     if fields["validity"]:

@@ -6,9 +6,11 @@ only into the trusted gateway; the submitted harness receives a placeholder.
 
 **Status:** deployed to the hosted runtime on 2026-10-27. Gateway behavior and
 Claude Code 2.1.311 mechanics have been tested against synthetic upstream
-responses. An authorized live-account inference check is still pending; this is
-not confirmation of account eligibility. Older runtimes will correctly report
-this provider as unavailable.
+responses. An authorized Opus 5.5/high staging check also passed with actual
+inference, a Bash tool round trip, accounting and credential cleanup. This is
+not confirmation of eligibility for other accounts. Native model-name matching
+and one-hour cache pricing require the matching client and runtime release;
+older runtimes reject duration-priced quotes.
 
 ## Supply access
 
@@ -50,11 +52,14 @@ gateway-compatible request format. This disables experimental tool-search and
 related beta schema features; it does not rewrite the client or loosen gateway
 policy. Unset `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` in the child process so they do
 not select another credential mechanism. Claude Code 2.1.311 passed a model-free request/stream check with this configuration.
-Test your pinned version locally before remote submission; live account eligibility
-and inference have not yet been validated. The gateway
+Test your pinned version locally before remote submission; account eligibility
+and compatibility depend on your provider and pinned CLI version. The gateway
 does not insert a Claude Code user-agent or rewrite prompts to impersonate a client.
 
-Accounting uses the provider's reported input/output and cache usage. The credit
+Accounting uses the provider's reported input/output and cache usage, including
+separate five-minute and one-hour cache writes where the quote prices them
+differently. Missing duration counts prevent settlement; they do not become
+zero-cost usage. The credit
 cap is a normalized USD-equivalent reference budget, not a claim that the provider
 charged cash or that a particular amount of subscription allowance remains.
 

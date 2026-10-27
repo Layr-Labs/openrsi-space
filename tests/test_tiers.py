@@ -173,6 +173,26 @@ class TierTests(unittest.TestCase):
 
 
 class PricingTests(unittest.TestCase):
+    def test_duration_priced_cache_writes_need_explicit_complete_counts(self):
+        model = {"provider": "anthropic", "name": "duration-fixture"}
+        entry = {"provider": model["provider"], "request_models": [model["name"]],
+                 "input_per_mtok": 4, "output_per_mtok": 20, "cached_read_per_mtok": .2,
+                 "cache_write_per_mtok": 5, "cache_write_1h_per_mtok": 8}
+        schedule = {"entries": [entry]}
+        counts = {"input_tokens": 1000, "output_tokens": 100, "cached_read_tokens": 200,
+                  "cache_write_tokens": 300, "cache_write_1h_tokens": 100}
+        self.assertEqual(credits(counts, model, schedule), Decimal(".00584"))
+        for value in (True, -1, 301, 1.5):
+            with self.assertRaises(CatalystError):
+                credits({**counts, "cache_write_1h_tokens": value}, model, schedule)
+        missing = {k: v for k, v in counts.items() if k != "cache_write_1h_tokens"}
+        with self.assertRaisesRegex(CatalystError, "duration usage is missing"):
+            credits(missing, model, schedule)
+        legacy = {"entries": [{k: v for k, v in entry.items() if k != "cache_write_1h_per_mtok"}]}
+        self.assertEqual(credits(missing, model, legacy), Decimal(".00554"))
+        with self.assertRaisesRegex(CatalystError, "Unpriced"):
+            credits(counts, model, legacy)
+
     def test_provider_routes_and_subscriptions_use_same_reference_credit_rates(self):
         tokens = {"input_tokens": 1_000_000, "output_tokens": 100_000,
                   "cached_read_tokens": 200_000, "cache_write_tokens": 0}

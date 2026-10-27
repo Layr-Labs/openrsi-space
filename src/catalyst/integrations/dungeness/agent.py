@@ -18,6 +18,9 @@ def model_profile(source: Path, requested: str, provider="openai", pricing=None)
                and requested in entry.get("request_models", [])]
     if len(matches) != 1:
         raise CatalystError("Select a provider/model from the pinned Dungeness pricing policy.")
+    if any("cache_write_1h_per_mtok" in rates for rates in (matches[0], matches[0].get("long_context", {}))):
+        from catalyst.runtime_contract import require_capabilities
+        require_capabilities(source, "cache-duration-accounting-v1")
     return {"provider": provider, "upstream_id": matches[0]["upstream_id"],
             "request_model": requested, "api": ("anthropic-messages" if provider in {"anthropic", "claude-subscription"}
                 else "openai-responses" if provider == "openai-chatgpt"
