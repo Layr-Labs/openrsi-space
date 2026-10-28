@@ -209,7 +209,9 @@ Runtime requirements:
   intermediate progress is recorded. Retain the best candidate in the designated
   workspace for final independent verification. Text claiming a score is not evidence.
 - Keep all credentials outside the source directory. The source archive is
-  limited to 8 MiB and cannot contain symlinks. `.env*`, Git metadata, local
+  limited to 8 MiB; expanded submitted source also defaults to 8 MiB. Check both
+  before upload with `uv run catalyst remote limits ./my-harness` (no credentials
+  or upload). See [source limits](source-limits.md). Source cannot contain symlinks. `.env*`, Git metadata, local
   state and virtual environments are excluded; these exclusions do not replace
   checking your own source for secrets.
 - Declare models and choose spending caps and timeouts deliberately. Token

@@ -44,7 +44,7 @@ ADMISSION_FIELDS = {
                    "problem_set", "pricing", "evaluation", "evaluation.schema_version",
                    "evaluation.limits", "evaluation.limits.max_seconds", "evaluation.limits.max_model_tokens",
                    "evaluation.model", "evaluation.model.reasoning_effort", "evaluation.max_model_credits", "judge", "context", "source",
-                   "source.archive_base64", "source.digest", "source.execution", "source.publication"},
+                   "source.archive_base64", "source.digest", "source.execution", "source.publication", "source.expanded_bytes"},
     "authorization": {"evaluation"}, "credentials": {"model_access"},
     "creation": {"request_id"}, "readiness": {"service"},
 }
@@ -59,12 +59,14 @@ ADMISSION_MESSAGES = {
     'source_not_publishable': 'The source did not pass the publication safety checks.',
     'screening_unavailable': 'Submission screening is temporarily unavailable.',
     'builder_unavailable': 'The isolated builder is temporarily unavailable.',
+    'source_package_too_large': 'Expanded harness source exceeds the review limit. Remove unused bundled files; retain runtime code and licenses. ZIP compression does not change the limit.',
     **{'submission_' + stage + '_rejected': 'Submission rejected during ' + stage + '.'
        for stage in ADMISSION_FIELDS},
 }
 
 
 ADMISSION_EXPECTATIONS = {'request_shape': 'The documented evaluation request envelope.',
+ 'source_package_too_large': 'Expanded source within the advertised byte limit; retain runtime code and licenses.',
  'protocol_mismatch': 'Match server_policy.protocol.',
  'evidence_mode_mismatch': 'Match server_policy.evidence_mode.',
  'problem_set_mismatch': 'Match server_policy.problem_set_digest.',
@@ -140,6 +142,11 @@ class HTTPFailure(CatalystError):
                 for name in ('limit', 'current', 'retry_after_seconds'):
                     value = details.get(name)
                     if type(value) is int and 0 <= value <= 2**53:
+                        self.details[name] = value
+            if status == 413 and code == 'source_package_too_large':
+                for name in ('current', 'limit'):
+                    value = details.get(name)
+                    if type(value) is int and 0 <= value <= 2**40:
                         self.details[name] = value
         message = f"Evaluator returned HTTP {status}"
         code = self.details.get('code')
