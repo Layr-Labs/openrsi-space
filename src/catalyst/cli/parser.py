@@ -100,6 +100,7 @@ def build_parser():
     yukon_bind.add_argument("--benchmark-id", required=True)
     remote = commands.add_parser("remote", help="Submit to and inspect the verification service directly.")
     remote_sub = remote.add_subparsers(dest="operation", required=True)
+    remote_sub.add_parser('build-policy', help='Show hosted build dependency profiles and allowed hosts; no credentials required.')
     remote_limits = remote_sub.add_parser('limits', help='Read hosted source-size limits without credentials; optionally check a local package.')
     remote_limits.add_argument('package', nargs='?', type=Path, help='Optional harness directory to measure without uploading.')
     remote_submit = remote_sub.add_parser("submit", help="Upload harness source and queue one evaluation.")

@@ -97,6 +97,10 @@ def model_access_notice(args, client, evaluation=None):
 
 
 def remote_command(args, state):
+    if args.operation == 'build-policy':
+        from catalyst.client.build_policy import policy
+        print(json.dumps(policy(), indent=2))
+        return
     if args.operation == 'limits':
         from catalyst.client.source_limits import policy, measure, check
         result = policy()

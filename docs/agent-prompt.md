@@ -383,3 +383,6 @@ Wait for Yukon verification before claiming acceptance.
 To download the evaluated harness source, use
 `uv run catalyst remote download EVALUATION_ID --kind harness --output harness.zip`.
 Remote traces and complete evidence bundles are not downloadable.
+
+Build dependencies: run `uv run catalyst remote build-policy` before choosing hosted
+package sources; see [build dependency policy](build-dependencies.md).
