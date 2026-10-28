@@ -53,3 +53,9 @@ Only recognized rejections before generation can settle at zero tokens. Missing
 usage from successful responses, interrupted streams and ambiguous provider
 errors still block further inference. Do not work around these checks or invent
 usage in the harness adapter.
+
+Harness packaging rejects common login files and credential directories (such as
+`auth.json`, `.aws`, `.ssh`, `.codex`, and `token.txt`) before reading their
+contents. Keep model credentials outside the source directory and pass them
+through the CLI's credential options. This local filename check is an early
+safeguard; the verifier separately scans source contents before review or publication.
