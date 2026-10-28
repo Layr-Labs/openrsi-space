@@ -7,6 +7,7 @@ from pathlib import Path
 import re
 import ssl
 import time
+import uuid
 import urllib.error
 import urllib.parse
 import urllib.request
@@ -36,30 +37,129 @@ def credential_url(url, *, model_access=False):
             raise CatalystError("Provider tokens require an HTTPS evaluation submission or credential-renewal endpoint.")
 
 
+ADMISSION_FIELDS = {
+    "authentication": {"authorization"},
+    "framing": {"content_length", "content_type", "body"},
+    "validation": {"request", "publication", "request_id", "protocol", "evidence_mode",
+                   "problem_set", "pricing", "evaluation", "evaluation.schema_version",
+                   "evaluation.limits", "evaluation.limits.max_seconds", "evaluation.limits.max_model_tokens",
+                   "evaluation.model", "evaluation.model.reasoning_effort", "evaluation.max_model_credits", "judge", "context", "source",
+                   "source.archive_base64", "source.digest", "source.execution", "source.publication"},
+    "authorization": {"evaluation"}, "credentials": {"model_access"},
+    "creation": {"request_id"}, "readiness": {"service"},
+}
+QUOTA_MESSAGES = {
+    'account_concurrency': 'Your account has reached its active-run limit; wait for a run to finish or cancel it.',
+    'global_capacity': 'All evaluation slots are occupied; retry after a run finishes.',
+    'submission_rate_limit': 'Too many new submissions in the short submission window.',
+    'daily_quota': 'The operator-configured daily evaluation quota is reached.',
+}
+ADMISSION_MESSAGES = {
+    **QUOTA_MESSAGES,
+    'source_not_publishable': 'The source did not pass the publication safety checks.',
+    'screening_unavailable': 'Submission screening is temporarily unavailable.',
+    'builder_unavailable': 'The isolated builder is temporarily unavailable.',
+    **{'submission_' + stage + '_rejected': 'Submission rejected during ' + stage + '.'
+       for stage in ADMISSION_FIELDS},
+}
+
+
+ADMISSION_EXPECTATIONS = {'request_shape': 'The documented evaluation request envelope.',
+ 'protocol_mismatch': 'Match server_policy.protocol.',
+ 'evidence_mode_mismatch': 'Match server_policy.evidence_mode.',
+ 'problem_set_mismatch': 'Match server_policy.problem_set_digest.',
+ 'pricing_snapshot_unrecognized': 'The pinned schedule or a quote issued by this evaluator.',
+ 'pricing_quote_expired': 'An unexpired evaluator pricing quote.',
+ 'evaluation_schema': 'Schema v3, or v4 with an explicit models list; documented fields only.',
+ 'limit_fields': 'max_seconds and optional max_model_tokens.',
+ 'time_limit': 'A positive integer max_seconds.',
+ 'token_limit': 'null or a positive integer max_model_tokens.',
+ 'reasoning_effort': 'low, medium, high, xhigh or max.',
+ 'model_shape': 'A provider ID, exact model name and optional reasoning_effort.',
+ 'source_envelope': 'digest and archive_base64 fields.',
+ 'source_encoding': 'Valid base64 for the source bundle.',
+ 'source_digest_mismatch': 'The digest of the submitted harness snapshot.',
+ 'request_id_conflict': 'The unchanged original request for this request ID.',
+ 'codex_access_format': 'The supported temporary Codex access handoff.',
+ 'credit_limit': 'A positive max_model_credits value.',
+ 'model_unpriced': 'A pricing schedule covering the selected provider and model.',
+ 'authentication_required': 'A valid Yukon/evaluator login.',
+ 'source_not_publishable': 'Inspectable harness source without credentials, private files or '
+                           'opaque archives.',
+ 'check_failed': None}
+
+def safe_uuid(value):
+    if not isinstance(value, str) or len(value) != 36:
+        return None
+    try:
+        return value if str(uuid.UUID(value)) == value else None
+    except ValueError:
+        return None
+
+
 class HTTPFailure(CatalystError):
     def __init__(self, status, details=None):
         self.status = status
-        messages = {
-            'account_concurrency': 'Your account has reached its active-run limit; wait for a run to finish or cancel it.',
-            'global_capacity': 'All evaluation slots are occupied; retry after a run finishes.',
-            'submission_rate_limit': 'Too many new submissions in the short submission window.',
-            'daily_quota': 'The operator-configured daily evaluation quota is reached.',
-        }
+        self.diagnostic_path = None
+        self.diagnostic_write_failed = False
         self.details = {}
-        if (status == 429 and isinstance(details, dict) and isinstance(details.get('code'), str)
-                and details['code'] in messages):
-            self.details['code'] = details['code']
-            if isinstance(details.get('scope'), str) and details['scope'] in {'account', 'global'}:
-                self.details['scope'] = details['scope']
-            for name in ('limit', 'current', 'retry_after_seconds'):
+        if isinstance(details, dict):
+            edge_id = details.get('edge_id')
+            if isinstance(edge_id, str) and re.fullmatch(r'[a-f0-9]{32}', edge_id):
+                self.details['edge_id'] = edge_id
+            code = details.get('code')
+            if isinstance(code, str) and code in ADMISSION_MESSAGES:
+                self.details['code'] = code
+            stage, field = details.get('stage'), details.get('field')
+            if isinstance(stage, str) and stage in ADMISSION_FIELDS:
+                self.details['stage'] = stage
+                if isinstance(field, str) and field in ADMISSION_FIELDS[stage]:
+                    self.details['field'] = field
+            reason = details.get('reason')
+            if isinstance(reason, str) and reason in ADMISSION_EXPECTATIONS:
+                self.details['reason'] = reason
+                expected = ADMISSION_EXPECTATIONS[reason]
+                if expected is not None:
+                    self.details['expected'] = expected
+            for name, pattern in (('expected_protocol', r'catalyst-evaluation-v[0-9]{1,3}'),
+                                  ('expected_problem_set_digest', r'[a-f0-9]{64}')):
                 value = details.get(name)
-                if type(value) is int and 0 <= value <= 2**53:
+                if isinstance(value, str) and re.fullmatch(pattern, value):
                     self.details[name] = value
+            mode = details.get('expected_evidence_mode')
+            if isinstance(mode, str) and mode in {'remote', 'local-test', 'local-ecdsa'}:
+                self.details['expected_evidence_mode'] = mode
+            for name in ('correlation_id', 'request_id'):
+                value = safe_uuid(details.get(name))
+                if value is not None:
+                    self.details[name] = value
+            if status == 429 and isinstance(code, str) and code in QUOTA_MESSAGES:
+                scope = details.get('scope')
+                if isinstance(scope, str) and scope in {'account', 'global'}:
+                    self.details['scope'] = scope
+                for name in ('limit', 'current', 'retry_after_seconds'):
+                    value = details.get(name)
+                    if type(value) is int and 0 <= value <= 2**53:
+                        self.details[name] = value
         message = f"Evaluator returned HTTP {status}"
+        code = self.details.get('code')
+        if code:
+            message += ': ' + ADMISSION_MESSAGES[code]
         if self.details:
-            message += ': ' + messages[self.details['code']]
             message += ' (' + ', '.join(f'{k}={v}' for k, v in self.details.items()) + ')'
-        super().__init__(message + '; request remains resumable. Retry the same saved request ID.')
+        if status in (400, 413, 415, 422):
+            message += '; saved request preserved. Diagnose the rejection before retrying.'
+        else:
+            message += '; request remains resumable. Retry the same saved request ID.'
+        super().__init__(message)
+
+    def __str__(self):
+        message = super().__str__()
+        if self.diagnostic_path is not None:
+            message += f' Sanitized admission diagnostics: {self.diagnostic_path}'
+        elif self.diagnostic_write_failed:
+            message += ' Could not save admission diagnostics; retain the displayed IDs.'
+        return message
 
 
 def fetch(url: str, token: str, *, document=None, limit=4 * 1024 * 1024, timeout=30,
@@ -109,14 +209,19 @@ def fetch(url: str, token: str, *, document=None, limit=4 * 1024 * 1024, timeout
         # Never echo arbitrary error text, provider diagnostics or credentials.
         status, details = error.code, None
         try:
-            if status == 429:
-                body = error.read(8193)
-                if len(body) <= 8192:
-                    details = json.loads(body)
+            body = error.read(8193)
+            if len(body) <= 8192:
+                details = json.loads(body)
         except (ValueError, OSError, http.client.HTTPException):
             pass
         finally:
+            correlation_id = safe_uuid(error.headers.get('X-Catalyst-Correlation-ID')) if error.headers else None
+            edge_id = error.headers.get('X-Catalyst-Edge-ID') if error.headers else None
             error.close()
+        if isinstance(edge_id, str) and re.fullmatch(r'[a-f0-9]{32}', edge_id):
+            details = {**(details if isinstance(details, dict) else {}), 'edge_id': edge_id}
+        if correlation_id:
+            details = {**(details if isinstance(details, dict) else {}), 'correlation_id': correlation_id}
         raise HTTPFailure(status, details) from None
     except (urllib.error.URLError, http.client.HTTPException, OSError) as error:
         if isinstance(getattr(error, "reason", error), ssl.SSLCertVerificationError):

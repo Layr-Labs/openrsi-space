@@ -221,3 +221,22 @@ evidence; it does not advertise a download. Upgrade older clients before using
 The public contract is defined by this guide and the public client validators.
 Service deployment, queue administration, corpus operations and screening
 implementation belong in `catalyst-verifier`.
+
+## Rejected submissions without an evaluation ID
+
+The CLI displays safe admission diagnostics for HTTP errors, including the
+server correlation ID, rejection code, failing field and known validation reason.
+Where available, it includes a validated expected protocol/mode/problem digest.
+It never prints the raw response body or arbitrary server error text.
+
+If an evaluation submission receives an HTTP error, the latest sanitized report
+is saved at `<state>/remote/diagnostics/<request-id>.json` with private permissions.
+The saved request, source and settings are preserved. This report contains no
+source archive, authorization header, model credential or raw response body.
+A malformed/non-JSON edge error can still retain `edge_id` from the response header.
+
+For support, provide that report and the time of the attempt. The operator can
+look up durable admission records without an evaluation ID. A rejection before
+job creation does not have a run to fetch. Diagnose a 400 before retrying; do not
+change the request ID to try to bypass it. Updating the CLI does not recover an
+error body discarded by an older version and does not submit anything by itself.

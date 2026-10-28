@@ -8,7 +8,7 @@ import sys
 import time
 import urllib.parse
 import uuid
-from catalyst.common import CatalystError, read_json, snapshot_directory, write_json
+from catalyst.common import CatalystError, now, read_json, snapshot_directory, write_json
 from catalyst.contracts.harness import SOURCE_EXCLUDES, validate_execution
 from catalyst.contracts.evaluation import validate_evaluation_config
 from catalyst.contracts.results import (
@@ -134,6 +134,17 @@ class RemoteClient:
                 accepted = json.loads(transport.solver_fetch(self.base, "/evaluations", self.bearer,
                                                    document=request, **private))
             except transport.HTTPFailure as error:
+                # Keep only the transport's allowlisted diagnostic projection, not
+                # the raw response, source envelope, headers or model credential.
+                local_id = transport.safe_uuid(request.get("request_id"))
+                diagnostic = self.state / "remote/diagnostics" / ((local_id or pending.stem) + ".json")
+                try:
+                    private_json(diagnostic, {"schema_version": 1, "at": now(),
+                        "request_id": local_id, "http_status": error.status,
+                        "details": error.details})
+                    error.diagnostic_path = diagnostic
+                except OSError:
+                    error.diagnostic_write_failed = True
                 if error.status != 410 or quote_path is None or _quote_retry:
                     raise
                 # 410 is an explicit service guarantee that this operation has
