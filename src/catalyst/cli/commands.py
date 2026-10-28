@@ -97,6 +97,17 @@ def model_access_notice(args, client, evaluation=None):
 
 
 def remote_command(args, state):
+    if args.operation == 'limits':
+        from catalyst.client.source_limits import policy, measure, check
+        result = policy()
+        if args.package is not None:
+            from catalyst.client.evaluations import source_snapshot
+            snapshot, archive = source_snapshot(args.package)
+            result['local_source'] = measure(snapshot, archive)
+            check(result['local_source'], result['max_expanded_source_bytes'], result['max_archive_bytes'])
+            result['within_size_limits'] = True
+        print(json.dumps(result, indent=2))
+        return
     from catalyst.client.evaluations import RemoteClient
     client = RemoteClient(state)
     if args.operation == "diagnostics":

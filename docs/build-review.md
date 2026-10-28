@@ -1,5 +1,9 @@
 # Harness build review
 
+Before submitting, check the [source-size limits](source-limits.md): by default,
+both expanded submitted source and its ZIP must fit 8 MiB. Large text packages use
+bounded batch reviews followed by a cross-file review; Docker image size is separate.
+
 The revised two-stage review supports normal Dockerfiles and online dependency
 installation inside Catalyst's isolated builder. Use ordinary apt, pip/uv, npm,
 Cargo and Git workflows on hosts permitted by the existing build network policy.

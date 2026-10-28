@@ -37,8 +37,10 @@ def request_body(submission: Path, base: str, *, judge=None, context=None,
         raise CatalystError("Submission must contain an executable harness.")
     execution = snapshot["document"].get("execution")
     validate_execution(execution)
-    if execution["dockerfile"] not in snapshot["files"] or len(archive) > MAX_SOURCE_BYTES:
-        raise CatalystError("Missing build recipe or source exceeds the 8 MiB submission limit.")
+    if execution["dockerfile"] not in snapshot["files"]:
+        raise CatalystError("Missing build recipe in harness source.")
+    from .source_limits import measure, check, DEFAULT_EXPANDED_BYTES
+    check(measure(snapshot, archive), DEFAULT_EXPANDED_BYTES, MAX_SOURCE_BYTES)
     problem_set, mode = initial_problems(release=problem_release), "remote"
     if os.environ.get("CATALYST_LOCAL_ECDSA") == "1":
         if os.environ.get("CATALYST_LOCAL_TEST") == "1":

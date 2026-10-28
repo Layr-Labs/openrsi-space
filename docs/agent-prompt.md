@@ -21,6 +21,11 @@ for provider availability. Test the harness locally with Dungeness before
 recommending remote submission; report blockers or explicitly declined tests in
 the readiness report. Never put model credentials in the harness.
 
+Before submission, run `uv run catalyst remote limits ./my-harness` and include
+the reported expanded-source and ZIP sizes in the readiness report. Both default
+to 8 MiB; use the service's advertised limits. Remove unused assets/examples/tests,
+not required runtime code or license notices. See [source limits](source-limits.md).
+
 Build an **autonomous research harness for ecdsa.fail**: an agent that explores,
 edits and evaluates quantum circuit candidates on its own during a run. Optimize
 both verified circuit performance (`avg_toffoli × peak_qubits`, lower is better)
@@ -185,7 +190,8 @@ readiness report; all inference must use assigned gateway endpoints.
    or adapt the requested framework without forcing it into Codex. Source can
    use a Dockerfile plus `--entrypoint`, or the existing `harness.json`
    interface. Pin general-purpose build dependencies. The
-   submitted archive must fit 8 MiB and contain no symlinks or credentials.
+   submitted archive and expanded source must each fit 8 MiB by default and
+   contain no symlinks or credentials; check the [deployed limits](source-limits.md).
 5. Obtain research material from the assigned task service.
    `CATALYST_KNOWLEDGE_BASE_URL` returns the assigned resource catalog, currently
    containing eight papers, with titles, attribution, original licenses, media types,
