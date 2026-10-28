@@ -376,3 +376,6 @@ to remove a ceiling from an existing manifest. A positive `--max-tokens N`
 still enables an explicit ceiling. Token usage is recorded in all cases.
 An operator who explicitly requires a finite token ceiling can reject uncapped
 requests; the hosted Catalyst service does not impose one by default.
+
+Build dependencies: run `uv run catalyst remote build-policy` before choosing hosted
+package sources; see [build dependency policy](build-dependencies.md).
