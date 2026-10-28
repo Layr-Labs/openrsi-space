@@ -28,3 +28,48 @@ class AdmissionErrorTests(unittest.TestCase):
             self.assertNotIn('private-token', str(error))
         for code in ('account_concurrency','global_capacity','submission_rate_limit','daily_quota'):
             self.assertIn(code, str(HTTPFailure(429, {'code': code, 'limit': 1, 'current': 1})))
+
+    def test_400_keeps_safe_diagnostics_and_ignores_raw_expected_and_body(self):
+        rid = 'ec0dd72e-f01d-4d43-8007-747575cf550f'
+        cid = 'b091bf85-75bb-4c09-a71a-0d38cbab5e7a'
+        body = {'code':'submission_validation_rejected','stage':'validation',
+                'field':'evaluation.limits.max_seconds','reason':'time_limit',
+                'expected':'private-token-do-not-print','error':'private-token-do-not-print',
+                'request_id':rid,'correlation_id':cid}
+        error = HTTPError('https://example.invalid/evaluations',400,'bad',{},io.BytesIO(json.dumps(body).encode()))
+        with patch('catalyst.remote.urllib.request.build_opener') as opener:
+            opener.return_value.open.side_effect=error
+            with self.assertRaises(HTTPFailure) as raised: fetch('https://example.invalid/evaluations','private-token')
+        self.assertEqual(raised.exception.details['field'],'evaluation.limits.max_seconds')
+        self.assertEqual(raised.exception.details['expected'],'A positive integer max_seconds.')
+        self.assertIn(cid,str(raised.exception));self.assertIn(rid,str(raised.exception))
+        self.assertNotIn('private-token',str(raised.exception))
+        self.assertNotIn('Retry the same',str(raised.exception))
+
+    def test_non_json_oversized_and_malicious_fields_keep_only_valid_correlation(self):
+        cid='b091bf85-75bb-4c09-a71a-0d38cbab5e7a'
+        for body in (b'<html>private-token</html>',b'x'*9000,
+                     json.dumps({'code':'private-token','stage':[],'field':'private-token',
+                                 'request_id':'private-token','reason':'private-token'}).encode()):
+            error=HTTPError('https://example.invalid/evaluations',400,'bad',
+                            {'X-Catalyst-Correlation-ID':cid},io.BytesIO(body))
+            with patch('catalyst.remote.urllib.request.build_opener') as opener:
+                opener.return_value.open.side_effect=error
+                with self.assertRaises(HTTPFailure) as raised:fetch('https://example.invalid/evaluations','private-token')
+            self.assertEqual(raised.exception.details,{'correlation_id':cid})
+            self.assertNotIn('private-token',str(raised.exception))
+
+    def test_edge_generated_error_id_is_saved_without_body_or_headers(self):
+        eid='a'*32
+        error=HTTPError('https://example.invalid/evaluations',413,'too large',
+                        {'X-Catalyst-Edge-ID':eid,'Authorization':'private-token'},io.BytesIO(b'<html>private-token</html>'))
+        with patch('catalyst.remote.urllib.request.build_opener') as opener:
+            opener.return_value.open.side_effect=error
+            with self.assertRaises(HTTPFailure) as raised:fetch('https://example.invalid/evaluations','private-token')
+        self.assertEqual(raised.exception.details,{'edge_id':eid})
+        self.assertNotIn('private-token',str(raised.exception))
+
+    def test_malicious_expected_value_is_not_retained(self):
+        error=HTTPFailure(400,{'expected_protocol':'private-token','expected_evidence_mode':'private-token',
+                              'expected_problem_set_digest':'private-token','edge_id':'private-token'})
+        self.assertEqual(error.details,{})
