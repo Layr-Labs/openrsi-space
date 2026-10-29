@@ -44,7 +44,7 @@ include ECDSA-specific papers, strategies, notes or prewritten answers in source
 | Requirement | What to prepare |
 | --- | --- |
 | Public harness source | ZIP and expanded source each **8 MiB** by default. Run `catalyst remote limits ./my-harness` for the live limits. |
-| Funded model access | Run `catalyst remote funding-policy`. If enabled, select an exact advertised provider/model and use `--platform-funded`; supply no personal remote model credential. |
+| Funded model access | Run `catalyst remote funding-policy`. If enabled, choose an exact model on a funded provider, with validated pricing and use `--platform-funded`; supply no personal remote model credential. |
 | Local run bundle for funding | A completed matching Dungeness run, with retained logs. The CLI uploads a separate **private** bundle, at most **64 MiB / 1,000 model calls**. |
 | Local spending for funding | Settled normalized credits must be **at least half the remote cap**: 10 locally for a 20-credit remote run. A cap alone is not proof of actual spending. |
 | Matching | Unchanged harness source, problem digest, provider, model and reasoning settings. Do not combine unrelated runs or copy local solutions into source. |
@@ -273,7 +273,8 @@ execution once ready. You decide when the harness is ready for remote evaluation
 ### Platform-funded run, when enabled
 
 Check `uv run catalyst remote funding-policy` before choosing your local model.
-Use an exact advertised API provider/model and a completed matching local run.
+Choose an exact model on a funded API provider and a completed local run with
+identical provider, model and reasoning settings. The service validates its price.
 For this 3-credit example, the local record needs at least **1.5 settled credits**.
 The CLI uploads its private evidence separately from source; it reads and sends no
 personal model credential for the remote run.

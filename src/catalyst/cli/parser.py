@@ -100,7 +100,7 @@ def build_parser():
     yukon_bind.add_argument("--benchmark-id", required=True)
     remote = commands.add_parser("remote", help="Submit to and inspect the verification service directly.")
     remote_sub = remote.add_subparsers(dest="operation", required=True)
-    remote_sub.add_parser('funding-policy', help='Show platform-funded API models and allowances; no credentials required.')
+    remote_sub.add_parser('funding-policy', help='Show funded providers, model-selection policy and allowances; no credentials required.')
     remote_sub.add_parser('funding', help='Show your platform spending reservations and settlement status.')
     remote_sub.add_parser('build-policy', help='Show hosted build dependency profiles and allowed hosts; no credentials required.')
     remote_limits = remote_sub.add_parser('limits', help='Read hosted source-size limits without credentials; optionally check a local package.')

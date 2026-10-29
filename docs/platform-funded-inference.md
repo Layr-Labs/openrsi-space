@@ -7,7 +7,7 @@ identifies your account, and platform allowances determine admission.
 ```sh
 catalyst remote funding-policy
 catalyst remote submit ./my-harness --platform-funded \
-  --provider openai --model MODEL_FROM_POLICY --budget 3 --local-run /path/to/local/run.json
+  --provider openai --model EXACT_MODEL_ID --budget 3 --local-run /path/to/local/run.json
 catalyst remote funding
 ```
 
@@ -16,8 +16,14 @@ Check source size with `catalyst remote limits ./my-harness`: both the public ZI
 and expanded source default to **8 MiB**. The private evidence limit below is
 separate and does not increase the source limit.
 
-Choose an exact API model shown by `funding-policy` and pair your harness with
-that provider's API format. Keep using the assigned gateway and placeholder
+You choose the exact model ID on a funded provider reported by `funding-policy`
+(for example, `openrouter` with an exact `author/model` ID). The service validates
+and pins its pricing; unknown models, automatic model routing and unsupported
+charges are rejected before a run starts. Pair your harness with that API format.
+The provider, exact model and reasoning settings must be identical in your local
+Dungeness evidence and remote request. Changing any of them requires matching
+evidence for the new configuration. Existing operator-restricted deployments may
+also report a `models` list; respect it when present. Keep using the assigned gateway and placeholder
 credentials. Do not include personal model keys or login files in this flow.
 `--platform-funded` cannot be combined with credential input flags.
 

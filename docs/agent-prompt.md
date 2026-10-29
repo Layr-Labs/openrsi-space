@@ -46,7 +46,7 @@ Never ask for model secrets in a chat prompt.
 ## Funded submission checklist
 
 Before proposing platform funding, run `catalyst remote funding-policy`; do not
-assume it is enabled. Select an advertised exact API provider/model and pass
+assume it is enabled. Choose an exact model on a funded provider, obtain validated pricing, and pass
 `--platform-funded`, with no personal model credential flag. Obtain authorization
 for the remote cap and public source publication.
 

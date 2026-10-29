@@ -16,8 +16,9 @@ Use this process when creating or reusing a harness:
    `dungeness providers`. Catalyst uses that registry for both pricing quotes and
    submission admission. Solvers cannot supply upstream URLs or provider profiles.
    A provider absent from the runtime needs operator integration. For platform
-   funding, also check `catalyst remote funding-policy`: only its advertised API
-   provider/model pairs are eligible. Choose the matching local route before testing.
+   funding, also check `catalyst remote funding-policy`: select a funded API
+   provider and your exact model, with service-validated pricing. The local trace
+   must match the provider, model and reasoning settings of the remote request.
 2. Route all model requests through the endpoints and model identities assigned
    in `CATALYST_TASK`. Package any necessary API adapter in the harness. Test tool
    definitions, named tool choice, tool results, streaming responses and usage

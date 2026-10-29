@@ -1,7 +1,7 @@
 # Model access and funding
 
 For platform-funded remote runs, first check `catalyst remote funding-policy`.
-When enabled, use an exact advertised API provider/model and `--platform-funded`;
+When enabled, choose an exact model on an advertised funded API provider and use `--platform-funded`;
 no personal remote model credential is needed. A matching local evidence bundle
 and at least half the remote cap spent locally are required. Local tests still
 use your authorized model access. See [platform-funded inference](platform-funded-inference.md).
@@ -35,8 +35,10 @@ Coding agents should read [the agent instructions](agent-prompt.md).
 Catalyst discovers provider IDs from the selected, pinned Dungeness runtime using
 `dungeness providers`. The gateway registry is authoritative: Catalyst has no
 separate general provider allowlist and does not install provider profiles into Dungeness.
-Platform funding additionally restricts inference to the exact API provider/model
-pairs advertised by `remote funding-policy`; runtime support alone does not grant funding.
+Platform funding additionally requires a configured provider credential. Solvers
+choose the exact model; the service validates its pricing and requires matching
+local evidence. Check `remote funding-policy` for funded providers and any
+explicit operator restrictions; runtime support alone does not grant funding.
 Pricing quotes and submissions use the same runtime-derived provider check.
 
 The current Dungeness registry implements:

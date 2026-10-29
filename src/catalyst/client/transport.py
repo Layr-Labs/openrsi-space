@@ -60,6 +60,7 @@ ADMISSION_MESSAGES = {
     "funding_unavailable": "Platform funding is disabled or unavailable; contact the operator.",
     "funding_paused": "Platform funding is paused for reconciliation; contact the operator.",
     "funding_model_not_allowed": "Choose a model from /public/funding-policy.",
+    "funding_provider_not_available": "Choose a funded provider from /public/funding-policy and declare your exact model. Matching local evidence and a valid pricing quote are required.",
     "funding_not_enrolled": "Your account is not enrolled for platform-funded inference.",
     "funding_identity_required": "Sign in with GitHub through Yukon again, then retry with your Yukon key.",
     "funding_identity_conflict": "GitHub account binding conflicts; contact the operator.",

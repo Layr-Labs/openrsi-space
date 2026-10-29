@@ -40,7 +40,7 @@ platform-funded runs require evidence unless the operator grants an exemption.
   by default. Check `uv run catalyst remote limits ./my-harness`; exclude
   credentials, generated outputs and problem-specific material.
 - **Funded runs, when enabled:** check `uv run catalyst remote funding-policy`
-  for availability and exact models. Use `--platform-funded --local-run PATH`;
+  for funded providers and limits. You choose the exact model; its pricing must validate. Use `--platform-funded --local-run PATH`;
   no personal model credential is sent for the remote run.
 - **Local evidence:** retain a completed matching Dungeness run and its logs.
   The CLI uploads a separate private bundle, up to **64 MiB / 1,000 model calls**.
