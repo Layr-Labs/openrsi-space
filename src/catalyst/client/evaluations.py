@@ -9,6 +9,7 @@ import time
 import urllib.parse
 import uuid
 from catalyst.common import CatalystError, now, read_json, snapshot_directory, write_json
+from catalyst.credentials import platform_access
 from catalyst.contracts.harness import SOURCE_EXCLUDES, validate_execution
 from catalyst.contracts.evaluation import validate_evaluation_config
 from catalyst.contracts.results import (
@@ -112,7 +113,8 @@ class RemoteClient:
                     body["pricing"] = read_json(quote_path)
                 else:
                     reply = json.loads(transport.solver_fetch(self.base, "/pricing/quote", self.bearer,
-                        document={"models": evaluation_models(body["evaluation"])}))
+                        document={"models": evaluation_models(body["evaluation"]),
+                                  **({"funding": "platform"} if platform_access(body["evaluation"]) else {})}))
                     body["pricing"] = reply["pricing"]
                     validate_evaluation_config(body["evaluation"], pricing=body["pricing"])
                     private_json(quote_path, body["pricing"])
@@ -121,7 +123,10 @@ class RemoteClient:
         if temporary_access(body["evaluation"]):
             validate_token(model_token)
         elif model_token is not None:
-            raise CatalystError("Use grant_temporary_provider in evaluation.json for live model access.")
+            raise CatalystError("This access mode does not accept personal model credentials.")
+        if platform_access(body['evaluation']):
+            from .local_evidence import attach
+            attach(self, body, local_check)
         pending = self.pending_path(body)
         with request_lock(pending):
             if pending.is_file():

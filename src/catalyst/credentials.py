@@ -7,6 +7,11 @@ from catalyst.common import CatalystError, canonical
 from catalyst.protocol import APIError
 
 TEMPORARY_GRANT = "grant_temporary_provider"
+PLATFORM_GRANT = "grant_platform_funded"
+
+def platform_access(evaluation):
+    return evaluation["llm_access"]["grant_id"] == PLATFORM_GRANT
+
 TOKEN_HEADER = "X-Catalyst-Model-Token"
 MAX_TOKEN_BYTES = 8192
 # Credential serialization/staging formats, not the service admission policy.

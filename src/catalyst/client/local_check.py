@@ -97,7 +97,8 @@ def check_submission(state, package, body, base, *, local_run=None, skip=False):
                     expected_name = digest({'base': base, 'body': body_without_id}) + '.json'
                     if (saved.get('request_id') and path.name == expected_name
                             and request_identity(saved) == identity):
-                        return {**decision, 'status': 'resuming', 'request_id': saved['request_id']}
+                        return {**decision, 'status': 'resuming', 'request_id': saved['request_id'],
+                                **({'local_evidence': saved['local_evidence']} if 'local_evidence' in saved else {})}
                 except (OSError, ValueError, KeyError, TypeError, CatalystError):
                     continue
     paths = [local_run] if local_run is not None else sorted({

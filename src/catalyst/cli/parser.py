@@ -100,6 +100,8 @@ def build_parser():
     yukon_bind.add_argument("--benchmark-id", required=True)
     remote = commands.add_parser("remote", help="Submit to and inspect the verification service directly.")
     remote_sub = remote.add_subparsers(dest="operation", required=True)
+    remote_sub.add_parser('funding-policy', help='Show platform-funded API models and allowances; no credentials required.')
+    remote_sub.add_parser('funding', help='Show your platform spending reservations and settlement status.')
     remote_sub.add_parser('build-policy', help='Show hosted build dependency profiles and allowed hosts; no credentials required.')
     remote_limits = remote_sub.add_parser('limits', help='Read hosted source-size limits without credentials; optionally check a local package.')
     remote_limits.add_argument('package', nargs='?', type=Path, help='Optional harness directory to measure without uploading.')
@@ -126,6 +128,8 @@ def build_parser():
     remote_submit_tokens.add_argument("--no-token-limit", action="store_true", help="Disable a token ceiling; retain the credit and time limits.")
     remote_submit.add_argument("--max-seconds", type=int, help="Override wall time; new evaluations default to 10800 seconds (3 hours).")
     token_input = remote_submit.add_mutually_exclusive_group()
+    token_input.add_argument("--platform-funded", action="store_true",
+                             help="Use an operator-funded API model; send no personal model credential.")
     token_input.add_argument("--provider-access-file",
                              help="Authorize remote use of your model accounts via a private credential map; never package it.")
     token_input.add_argument("--codex-auth-file", nargs="?", const=str(Path.home() / ".codex/auth.json"),
