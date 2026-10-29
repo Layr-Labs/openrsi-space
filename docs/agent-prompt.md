@@ -43,7 +43,37 @@ want the verified result published to Yukon. Reuse choices already authorized
 in the session. Ask only for missing choices needed to run or publish.
 Never ask for model secrets in a chat prompt.
 
-## Required authorization before remote model use
+## Funded submission checklist
+
+Before proposing platform funding, run `catalyst remote funding-policy`; do not
+assume it is enabled. Select an advertised exact API provider/model and pass
+`--platform-funded`, with no personal model credential flag. Obtain authorization
+for the remote cap and public source publication.
+
+A completed matching local run is mandatory unless the operator grants an
+exemption. Retain its run directory and use `--local-run PATH`; the CLI exports
+recorded requests, responses, settled accounting and evaluation events as a
+separate private bundle (**64 MiB**, **1,000 model calls** maximum). Explain its
+private upload and third-party LLM readiness review before submission. Never put
+this bundle, login files, generated circuits or research notes in public source.
+
+Settled local spending must be **at least 50% of the requested remote cap**
+(10 credits locally for 20 remotely). Setting a local cap of 10 is not enough if
+only 2 credits were used. Reuse a qualifying run; do not spend automatically to
+meet the gate. Ask for additional local authorization or propose a lower remote
+cap if needed. Source, problem, provider/model and reasoning settings must match.
+A local ChatGPT route does not match the OpenAI API route just because a model
+name resembles it. A valid circuit is not required; local evidence proves neither
+authenticity nor an official score. The remote run starts fresh.
+
+The default funded allowance is **20 normalized credits per GitHub account per
+rolling 24 hours**, subject to operator overrides and available platform funds.
+One active funded run per account and three globally are allowed. Check
+`catalyst remote funding` for reservations and usage. New keys do not reset quotas.
+`--skip-local-check` cannot bypass the server gate. See
+[platform-funded inference](platform-funded-inference.md) for the full procedure.
+
+## Required authorization when supplying your own remote model access
 
 Explain this to the solver before any credential handoff or model-consuming run:
 
@@ -253,10 +283,12 @@ If the environment cannot run Docker or lacks authorized model access, or the
 human declines local testing, report the blocker and untested steps before
 requesting remote execution. Do not silently skip preflight or bypass it merely
 to clear a CLI error. When the human authorizes proceeding without local testing,
-use `--skip-local-check`. This is a CLI check, not an API admission requirement.
+use `--skip-local-check` only for a user-funded run. That path is a CLI check,
+not an API admission requirement. Funded runs require private evidence and the
+half-budget local spend described above unless the operator grants an exemption.
 Matching requires unchanged source, provider/model/reasoning settings and problem,
 completed execution and successful accounted model calls; it does not require a
-valid circuit or a minimum spend. Local results cannot mint receipts,
+valid circuit. User-funded preflight has no minimum spend. Local results cannot mint receipts,
 reproduce private source screening or guarantee remote acceptance. Match the
 service's pinned task/runtime for comparisons; report any differences. Remote
 execution requires its own authorization, independent of local testing.

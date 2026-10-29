@@ -17,14 +17,14 @@ resources. Preserve the original version and request ID when resuming an existin
 run; a new release requires a new evaluation, not editing saved requests or receipts.
 
 Catalyst is a benchmark for research agent harnesses. You submit your own
-harness, using your own model account, to run in a controlled environment on
+harness to run in a controlled environment on
 Catalyst's servers so that its performance can be independently verified and
 compared with others on a public leaderboard.
 
 You start each run, choose its spending and time limits, and can monitor its
 progress or request cancellation through the CLI at any time while it is active.
 
-Catalyst receives temporary model access for the run you start. When you use a
+For user-funded runs, Catalyst receives temporary model access for the run you start. When you use a
 supported login handoff, your refresh credentials stay on your device. Supplied
 access tokens are discarded during run cleanup. If you use an API key, Catalyst
 uses it only for the run you start and removes it during cleanup.
@@ -39,7 +39,27 @@ and verify its first circuit, then retain improvements. Submit a general-purpose
 harness. The task service supplies eight bundled research papers to all runs; do not
 include ECDSA-specific papers, strategies, notes or prewritten answers in source.
 
-## Before you participate: your account, your model usage
+## Submission requirements
+
+| Requirement | What to prepare |
+| --- | --- |
+| Public harness source | ZIP and expanded source each **8 MiB** by default. Run `catalyst remote limits ./my-harness` for the live limits. |
+| Funded model access | Run `catalyst remote funding-policy`. If enabled, select an exact advertised provider/model and use `--platform-funded`; supply no personal remote model credential. |
+| Local run bundle for funding | A completed matching Dungeness run, with retained logs. The CLI uploads a separate **private** bundle, at most **64 MiB / 1,000 model calls**. |
+| Local spending for funding | Settled normalized credits must be **at least half the remote cap**: 10 locally for a 20-credit remote run. A cap alone is not proof of actual spending. |
+| Matching | Unchanged harness source, problem digest, provider, model and reasoning settings. Do not combine unrelated runs or copy local solutions into source. |
+| Funded allowance | Default **20 credits/account/rolling 24 hours**; one active/account, three globally. Verified GitHub identity binds the allowance; operator overrides may apply. |
+
+Keep the local run directory intact and use `--local-run PATH`, or let the CLI
+find a matching retained run. The private bundle includes recorded model requests,
+responses, usage and evaluation events; it is scanned for secrets and sampled by
+a third-party LLM for readiness review. It is not public harness source or a replay
+proof. A valid local circuit is not required. The remote run starts fresh.
+Local tests use your separately authorized model access, even when the remote run
+is funded. **`--skip-local-check` does not bypass funded admission**; only an
+operator exemption can. See the [funded workflow](platform-funded-inference.md).
+
+## When supplying your own model access
 
 Running `catalyst remote submit` with a model-credential option authorizes
 Catalyst to receive that credential over HTTPS and use it for the remote run
@@ -65,7 +85,7 @@ does not grant it. See [model access](live-models.md) for credential inputs.
 **The flow:** build your autonomous agent → test locally with Dungeness → review
 readiness and approve a remote run → evaluate it on Catalyst → get a receipt →
 submit that receipt to Yukon. Model-enabled local tests and remote evaluations
-consume your model allowance; checking or publishing a receipt does not run
+consume your model allowance unless the remote run is platform-funded; checking or publishing a receipt does not run
 the agent again.
 
 Want a coding agent to do the setup? Give it [the agent instructions](agent-prompt.md)
@@ -111,8 +131,10 @@ no manual server setup or private repository is needed. Read the
 [architecture](architecture.md) and [local testing procedure](local-evaluation.md).
 Local scores help development; official results require a remote receipt.
 `remote submit` reuses a completed matching local run automatically. Use
-`--local-run PATH` for records elsewhere, or `--skip-local-check` to explicitly
-proceed without local testing. No valid circuit or minimum local spend is required.
+`--local-run PATH` for records elsewhere. For user-funded runs,
+`--skip-local-check` explicitly proceeds without local testing; there is no
+minimum local spend. Funded runs instead require the bundle and half-budget
+spending described above, unless the operator grants an exemption.
 
 **Current MVP environment:** Yukon dev, benchmark `layr-labs/catalyst`,
 verifier `https://3.21.93.126`. Use a dev Yukon account/key; a production

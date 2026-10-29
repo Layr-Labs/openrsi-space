@@ -8,7 +8,7 @@ challenge, comparison budgets and publication workflow.
 | --- | --- |
 | Harness creation | [Generic harnesses](generic-harnesses.md), [executable interface](executable-harness.md), [agent/model compatibility](harness-compatibility.md) |
 | Testing | [Local evaluation](local-evaluation.md), [GitHub Actions integration](github-actions-e2e.md) |
-| Submission | [HTTP API](remote-evaluation.md), [model access](live-models.md), [endpoint selection](verifier-endpoint.md) |
+| Submission | [HTTP API](remote-evaluation.md), [model access](live-models.md), [endpoint selection](verifier-endpoint.md), [source size limits](source-limits.md), [platform-funded runs and local evidence](platform-funded-inference.md) |
 | Discovery and sharing | [Harness catalog](harness-catalog.md), [artifact sharing](artifact-sharing.md) |
 | Challenge contract | [Problem service](problem-service.md), [accounting](tier-accounting.md), [source screening](cheat-filter.md), [upstream ECDSA](ecdsa-upstream.md) |
 | Integrations | [Yukon UI](challenge-ui.md) |

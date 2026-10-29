@@ -11,6 +11,11 @@ catalyst remote submit ./my-harness --platform-funded \
 catalyst remote funding
 ```
 
+Before preparing either run, check that `funding-policy` reports funding enabled.
+Check source size with `catalyst remote limits ./my-harness`: both the public ZIP
+and expanded source default to **8 MiB**. The private evidence limit below is
+separate and does not increase the source limit.
+
 Choose an exact API model shown by `funding-policy` and pair your harness with
 that provider's API format. Keep using the assigned gateway and placeholder
 credentials. Do not include personal model keys or login files in this flow.
@@ -29,7 +34,10 @@ records under its state directory automatically. Source, problem, provider, mode
 and reasoning settings must match. A valid circuit is not required. Recorded settled local spending must be at least
 half of the requested remote budget: a 20-credit remote run requires at least
 10 credits in the matching local run.
-Keep the test under 1,000 model calls and 64 MiB of exported evidence. The server
+The exported bundle allows at most 1,000 model calls and 64 MiB.
+A configured local spending cap is not enough: only settled actual usage counts.
+If the record falls short, lower the remote cap or authorize further local testing;
+the CLI never starts additional paid calls to satisfy the requirement. The server
 rejects `--skip-local-check` unless the operator has granted an expiring exemption.
 
 The default allowance is 20 normalized credits per authenticated GitHub account

@@ -134,6 +134,29 @@ and the agent, in addition to Docker overhead.
 
 ## Move to the official evaluation
 
+### Platform-funded remote runs
+
+When funding is enabled, the CLI must upload a private evidence bundle from a
+completed matching local run. Keep its `run.json`, Dungeness records and usage
+logs together; pass `--platform-funded --local-run PATH`. Existing qualifying
+runs can be reused. The CLI does not spend automatically.
+
+Actual settled local usage must be **at least half the requested remote cap**:
+10 local credits for a 20-credit remote run. A larger configured cap with less
+actual usage does not qualify. The exported bundle is separate from public
+harness source and is limited to **64 MiB and 1,000 model calls**. It includes
+recorded model exchanges, accounting and evaluation events for private screening
+and sampled LLM review. Source, problem, provider/model and reasoning settings
+must match; the official remote run starts fresh, without your local candidates
+or notes. A valid local circuit is not required.
+
+Local testing still uses your authorized model account. Check
+`catalyst remote funding-policy` **before** choosing the local provider/model.
+Only an operator exemption can bypass funded evidence requirements. See
+[the funded guide](platform-funded-inference.md) for allowances and admission.
+
+### User-funded remote runs
+
 `catalyst remote submit` automatically reuses matching records under the selected
 `--state` directory's `local/`, or the harness's `.catalyst/local/`. No duplicate
 test, automatic local spending, or trace upload occurs. The record must show a
