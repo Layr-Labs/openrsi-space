@@ -50,3 +50,11 @@ An oversized new request returns `413`, code `source_package_too_large`, field
 capacity failure identifies the review phase in owner diagnostics. Keep the request
 or evaluation ID; remove unused files or contact the operator if required framework
 code still cannot fit. Do not repeatedly submit unchanged source.
+
+Source capture uses directory-relative, no-follow file descriptors. Symlinks,
+special files and detected concurrent edits are rejected before packaging.
+Keep the source directory stable while submitting; retry after stopping writers
+if the CLI reports a changed path. Once captured, packaging and uploading use
+those same immutable bytes. This is not a filesystem-wide transactional snapshot.
+Secure capture requires POSIX no-follow descriptor support and real directory
+components; resolve trusted symlinked workspace ancestors before submission.

@@ -192,23 +192,8 @@ def open_bundle(content: bytes) -> tuple[dict, dict[str, bytes]]:
 
 def snapshot_directory(path: Path, *, exclude: frozenset[str] = frozenset(),
                        harness_document=None) -> tuple[dict, bytes]:
-    if not path.is_dir():
-        raise CatalystError(f"Not a package directory: {path}")
-    files = {}
-    harness_source = harness_document is not None or (path / "harness.json").is_file()
-    for item in sorted(path.rglob("*")):
-        relative = item.relative_to(path)
-        if relative.as_posix() in exclude:
-            continue
-        if any(part in IGNORED or part.startswith(".env") for part in relative.parts):
-            continue
-        if harness_source:
-            from catalyst.contracts.source_safety import check_source_path
-            check_source_path(relative)
-        if item.is_symlink():
-            raise CatalystError(f"Package symlinks are unsupported: {relative}")
-        if item.is_file() and item.name != RESERVED:
-            files[relative.as_posix()] = item.read_bytes()
+    from .source_snapshot import capture
+    files = capture(path, exclude=exclude, harness=harness_document is not None)
     if harness_document is not None:
         if "harness.json" in files:
             raise CatalystError("Use the existing harness.json entrypoint or remove the launch override.")
