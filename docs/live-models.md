@@ -1,180 +1,73 @@
 # Model access and funding
 
-For platform-funded remote runs, first check `catalyst remote funding-policy`.
-When enabled, choose an exact model on an advertised funded API provider and use `--platform-funded`;
-no personal remote model credential is needed. A matching local evidence bundle
-and at least half the remote cap spent locally are required. Local tests still
-use your authorized model access. See [platform-funded inference](platform-funded-inference.md).
+Hosted evaluations currently use platform-funded API access. Check
+`catalyst remote funding-policy`, choose an advertised provider and exact model,
+and submit with `--platform-funded --local-run PATH`. Do not send a personal
+model credential. Matching local evidence must show at least half the requested
+remote cap in settled usage. See [platform-funded inference](platform-funded-inference.md).
 
-The personal-credential instructions below apply to local tests and user-funded
-remote runs. They are not a requirement for platform-funded remote submissions.
-
-Catalyst is a benchmark for research agent harnesses. You submit your own
-harness to run in a controlled environment on
-Catalyst's servers so that its performance can be independently verified and
-compared with others on a public leaderboard.
-
-When you supply personal model access, Catalyst receives it for the run you start. When you use a
-supported login handoff, your refresh credentials stay on your device. Supplied
-access tokens are discarded during run cleanup. If you use an API key, Catalyst
-uses it only for the run you start and removes it during cleanup.
-
-You are responsible for ensuring your use complies with your model provider's
-terms.
-
-Review the provider, exact model and spending cap before starting a run. Supplying
-model access to `catalyst remote submit` authorizes its use for that run on
-Catalyst's servers. Your Yukon key identifies you and does not pay for model calls.
-Keep model credentials out of harness source. Use the credential options below for the selected provider.
-
-For the full human walkthrough, start with [the solver guide](solver-guide.md).
-Coding agents should read [the agent instructions](agent-prompt.md).
+Remote subscription-token submission has been removed. `openai-chatgpt` and
+`claude-subscription` cannot be selected for remote submission, quoting or
+credential renewal. Remote commands no longer accept `--codex-auth-file`.
+Personal API-key handoff remains implemented but is disabled on the hosted service.
+Do not use an old subscription example or change provider labels to bypass this policy.
 
 ## Implemented providers and hosted permission
 
-Catalyst discovers provider IDs from the selected, pinned Dungeness runtime using
-`dungeness providers`. The gateway registry is authoritative: Catalyst has no
-separate general provider allowlist and does not install provider profiles into Dungeness.
-Platform funding additionally requires a configured provider credential. Solvers
-choose the exact model; the service validates its pricing and requires matching
-local evidence. Check `remote funding-policy` for funded providers and any
-explicit operator restrictions; runtime support alone does not grant funding.
-Pricing quotes and submissions use the same runtime-derived provider check.
+Catalyst discovers provider implementations from the pinned Dungeness runtime.
+Runtime availability does not grant remote permission: subscription routes are
+local-only, and platform funding additionally requires an operator-funded API
+provider. Pricing quotes and submissions enforce the same remote restrictions.
 
-The current Dungeness registry implements:
-
-| Provider | Model access | Harness protocol |
+| Provider | Local access | Hosted access |
 | --- | --- | --- |
-| `anthropic` | API key | Anthropic Messages |
-| `claude-subscription` | Access token and expiry; see the recorded validation below | Anthropic Messages |
-| `openai` | API key | OpenAI API routes supported by the gateway |
-| `openai-chatgpt` | Temporary Codex login handoff | Responses |
-| `openrouter` | API key; requires operator-enabled inference-only routing | Supported gateway routes |
+| `openrouter` | Your API key | Platform funding when advertised |
+| `openai` | Your API key | Personal API-key support retained but disabled |
+| `anthropic` | Your API key | Personal API-key support retained but disabled |
+| `openai-chatgpt` | Existing local Codex login, if authorized | Not supported |
+| `claude-subscription` | Authorized local login access | Not supported |
 
-For Claude login access, see [credential format and harness pairing](claude-subscription.md).
-The route is included in the hosted runtime. The linked guide records the
-2026-10-27 validation; account eligibility and harness compatibility still need checking.
+Select the exact model advertised by the funded provider. The submitted harness
+must construct compatible requests and tool definitions and use its assigned
+gateway with placeholder credentials. The trusted gateway holds the platform key.
+A successful pricing quote is not proof that the harness/provider pairing works.
+Test locally first with matching provider, model and reasoning settings.
 
-Runtime support is necessary but does not establish usable model credentials,
-exact model pricing or harness API compatibility. A quote validates provider
-availability and reference pricing; it does not make an inference call or prove
-that a complete evaluation will succeed. The service still controls whether
-model access is enabled and enforces run limits.
+Direct xAI, Grok subscription, Kimi Code and Moonshot routes remain retired.
+Historical receipts and results remain readable; reading them does not permit a new run.
 
-Direct `xai`, `grok-subscription`, Kimi Code and direct Moonshot integrations are
-retired. Catalyst no longer reads Grok login files or ships xAI/Grok profiles or
-a stock Grok example. Historical evaluation records remain readable.
+## First-time login
 
-**Runtime pin verified 2026-10-29:** the hosted execution image uses Dungeness
-`840cf5cbd86a73e30d2130f278a1dbd725baa0b4`. The evaluator derives provider support
-from that runtime; direct xAI and Grok subscription integrations remain retired.
-Check current pricing and funding policy before choosing a model. The image’s
-model-free release checks do not establish account eligibility or live inference
-compatibility for every model.
+Yukon authentication identifies your account; it does not supply model access.
+Use your Yukon login or supply `YUKON_API_TOKEN` privately in your terminal.
+Never place credentials in source, submission notes or chat messages.
 
-The [generic harness implementation](generic-harnesses.md) keeps real credentials
-in the trusted gateway. The older native-agent execution route is retired.
+Local Dungeness testing uses your own authorized model access. See
+[local testing](local-evaluation.md). Local `--codex-auth-file` and private
+provider maps stay on your machine; they are not remote handoff options.
+A subscription-backed local run does not satisfy the provider/model binding for
+a funded OpenRouter run. Use the same provider and exact model for qualifying evidence.
 
-For supported providers, use the
-[general source submission flow](generic-harnesses.md#submit-your-own-agent).
-The provider/model belongs to the run configuration. There is no required
-provider-specific harness and no model account registration on the server.
-
-Submit source with the provider, model, reasoning effort and spending cap in
-`evaluation.json` or the per-run CLI flags.
-For example, a compatible Codex harness can select `openai-chatgpt`,
-`gpt-6-astra`, high reasoning effort and a one-credit cap. The server builds the source and runs its entrypoint
-inside Dungeness against the pinned ECDSA problem.
-
-## Which token, and where does it come from?
-
-| Item | Where the user gets it | What it does |
-| --- | --- | --- |
-| Yukon API key | Sign in to the **dev Yukon website**, open the account's **API keys** page (`/api-keys`), and create a key. An existing dev CLI login also works. | Identifies the solver to Catalyst and Yukon. |
-| Temporary ChatGPT access | Sign in locally with Codex; explicitly authorize `--codex-auth-file` to read the selected login file. No manual token extraction is needed. | Allows this run to call the selected model through Dungeness. |
-| Verification receipt | Catalyst writes `HARNESS_DIRECTORY/verification.json` after a successful `remote submit --wait`. The CLI prints its exact path. | Identifies the verified execution, harness and problem for Yukon. It is not a login credential. |
-| GitHub OIDC token | GitHub Actions obtains it automatically. | Authenticates the hosted workflow when it retrieves the receipt. Users do not create or copy it. |
-
-This deployment uses `https://api-dev.yukon.org`. A production key from
-`www.yukon.org` will not work here; use the dev website supplied by the operator.
-There is no separate `CATALYST_API_TOKEN` for normal users.
-
-### First-time login
-
-If already logged into Yukon dev, reuse that login. Otherwise, supply the dev
-key privately in the terminal where you will run Catalyst and Yukon:
+## Submit source and obtain the receipt
 
 ```sh
-export YUKON_API_URL=https://api-dev.yukon.org
-# Paste the dev key at the following hidden prompt, then press Enter.
-read -r -s YUKON_API_TOKEN
-export YUKON_API_TOKEN
+uv run catalyst remote submit /path/to/harness \
+  --platform-funded --local-run /path/to/completed-local-run \
+  --provider openrouter --model openai/gpt-6-astra \
+  --reasoning-effort high --budget 3 --wait
 ```
 
-For ChatGPT, reuse an existing `~/.codex/auth.json`. This MVP reads file-based
-Codex credentials. If that file is absent, create a file-based login where your
-workspace's authentication policy permits it:
+Choose an eligible exact model and authorized budget. The local run must match
+this configuration and source. Retrieve an interrupted wait with
+`catalyst remote wait EVALUATION_ID`; do not submit another paid run just to
+retrieve its result. Publish the verified receipt using the
+[Yukon submission workflow](github-actions-e2e.md#solver-commands).
 
-```sh
-codex -c 'cli_auth_credentials_store="file"' login
-codex -c 'cli_auth_credentials_store="file"' login status
-```
+## Optional personal API-key support
 
-Complete the browser sign-in with ChatGPT. Codex can otherwise store credentials
-in an OS keyring, which this MVP does not read. See
-[OpenAI's authentication documentation](https://learn.chatgpt.com/docs/auth).
-For a custom login-file location, pass
-`--codex-auth-file /absolute/path/to/auth.json`.
-
-### Submit source and obtain the receipt
-
-```sh
-export CATALYST_EVALUATOR_URL=https://3.21.93.126
-unset CATALYST_API_TOKEN CATALYST_LOCAL_TEST CATALYST_LOCAL_ECDSA CATALYST_LOCAL_PROBLEM_SET
-uv run catalyst remote submit .catalyst/my-harness \
-  --provider openai-chatgpt --model gpt-6-astra --reasoning-effort high --budget 1 \
-  --codex-auth-file --wait
-```
-
-The resulting receipt is `.catalyst/my-harness/verification.json`.
-Create `submission/` and copy the complete file into the Yukon checkout's
-`submission/verification.json`;
-do not extract an authentication token or invent a score. If waiting was
-interrupted, use `catalyst remote wait EVALUATION_ID` to retrieve the same run.
-See [the complete Yukon submission commands](github-actions-e2e.md#solver-commands).
-
-Yukon dev login authenticates the solver. `--codex-auth-file` reads the existing
-ChatGPT login from `~/.codex/auth.json` (or an explicit path). Only access token,
-ID token, account ID and login timestamp cross the authenticated HTTPS connection. The renewable
-refresh token stays on the client. Credentials are excluded from source packages,
-request JSON, databases, receipts and public results.
-
-The API holds credentials in memory and delivers them once to its worker over a
-private inherited socket. The worker stages authentication in Linux
-`/dev/shm` tmpfs with private permissions. In current generic execution, only
-the trusted gateway receives real provider access; the harness uses a placeholder
-credential and the gateway endpoint from `CATALYST_TASK`. Staging is removed
-when execution finishes. Core dumps and swap must remain disabled.
-The earlier native Codex route exposed temporary access to the harness container;
-that historical route has weaker credential isolation.
-Refresh credentials are never delivered. Provider expiry requires fresh access.
-A service restart loses queued credentials and fails affected jobs without
-silently restarting inference.
-
-Dungeness provides token accounting and enforces the configured budget between
-responses. Its token limit uses the native cache-weighted budget counter;
-Catalyst checks that counter against the terminal ledger while retaining raw
-provider token counts for credit pricing. A final in-flight response can exceed the cap. Catalyst retains the
-actual usage. Validity policy v3 accepts in-flight overshoot only with trusted
-evidence that every charged request started before budget exhaustion;
-it never clips usage to manufacture eligibility. Normalized credits use pinned
-prices and do not imply a ChatGPT subscription incurs a cash charge.
-
-## Service operation
-
-Provider configuration and deployment are maintained in the private `catalyst-verifier` repository. Solvers use the public credential options above.
-
-## Platform-funded remote runs
-
-If enabled, use `catalyst remote funding-policy` and `--platform-funded`; no personal
-model credential is needed. See [platform-funded inference](platform-funded-inference.md).
+This interface is retained for operators who explicitly enable it later. It is
+currently disabled in production. It accepts API keys only, through the hidden
+prompt, stdin or a private `--provider-access-file` map. Subscription credentials,
+Codex login envelopes, refresh tokens and login-file objects are not accepted.
+API keys are transferred separately from source over HTTPS, staged privately for
+the trusted gateway, and removed during cleanup. The harness receives placeholders.

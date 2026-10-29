@@ -60,9 +60,6 @@ def create_harness(args):
 
 
 def model_access_input(args):
-    if args.codex_auth_file:
-        from catalyst.credentials import encode_codex_access
-        return encode_codex_access(args.codex_auth_file)
     if args.provider_access_file:
         from catalyst.credentials import encode_provider_access
         return encode_provider_access(read_json(Path(args.provider_access_file).expanduser()))
@@ -70,7 +67,7 @@ def model_access_input(args):
         import getpass
         if not sys.stdin.isatty():
             raise CatalystError("Use a terminal for the hidden provider-token prompt.")
-        return getpass.getpass("Provider access token (not saved): ")
+        return getpass.getpass("Provider API key (not saved): ")
     if args.model_token_stdin:
         from catalyst.credentials import MAX_TOKEN_BYTES, validate_token
         token = sys.stdin.readline(MAX_TOKEN_BYTES + 2).rstrip("\r\n")
@@ -81,14 +78,14 @@ def model_access_input(args):
 
 def model_access_notice(args, client, evaluation=None):
     if not any(getattr(args, name, None) for name in (
-            "codex_auth_file", "provider_access_file", "prompt_model_token", "model_token_stdin")):
+            "provider_access_file", "prompt_model_token", "model_token_stdin")):
         return
     budget = (f" Spending cap: {evaluation['max_model_credits']:g} normalized model credits."
               if evaluation is not None else " The existing run's limits still apply.")
     print(
         f"REMOTE MODEL ACCESS: You are sending your model credential to {client.base}. "
         "Catalyst runs your agent on its remote server using YOUR model account; "
-        "calls consume YOUR API credits or subscription allowance. "
+        "calls consume YOUR API credits. Subscription login handoffs are not supported. "
         "Use this credential option only if you authorize that remote use."
         + budget + " Normalized credits are not a guaranteed cash-billing limit. "
         "Your Yukon key is separate and does not fund model calls.",
@@ -186,16 +183,16 @@ def remote_command(args, state):
         # Validate choices before asking the solver for a credential.
         from catalyst.client.configuration import evaluation_config
         config = evaluation_config(Path(args.package) / "evaluation.json", overrides, check_pricing=False)
-        from catalyst.credentials import require_active_models
+        from catalyst.credentials import require_remote_models
         from catalyst.contracts.accounting import evaluation_models
-        require_active_models(evaluation_models(config))
+        require_remote_models(evaluation_models(config))
         from catalyst.credentials import platform_access
         if platform_access(config):
-            if any(getattr(args, key, None) for key in ("codex_auth_file", "provider_access_file", "prompt_model_token", "model_token_stdin")):
+            if any(getattr(args, key, None) for key in ("provider_access_file", "prompt_model_token", "model_token_stdin")):
                 raise CatalystError("Platform-funded submissions must not include personal model credentials.")
             print("Platform-funded inference: no personal model credential will be read or transferred. "
                   "Admission is subject to your account allowance and the platform funding policy.", file=sys.stderr, flush=True)
-        for credential_file in (args.codex_auth_file, args.provider_access_file):
+        for credential_file in (args.provider_access_file,):
             if credential_file and Path(credential_file).expanduser().resolve().is_relative_to(
                     Path(args.package).resolve()):
                 raise CatalystError("Keep credential files outside the submitted source directory.")

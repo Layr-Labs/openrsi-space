@@ -14,11 +14,11 @@ your own agent/model integration.
 
 For login, credential setup, receipt retrieval and Yukon publication, use the
 [solver guide](solver-guide.md). [Agent instructions](agent-prompt.md) cover the
-same flow for coding agents. The personal-credential examples below are for
-user-funded evaluations. For platform funding, first check `remote funding-policy`
-and choose an exact model on a funded API provider with validated pricing. Replace the credential flag with
-`--platform-funded --local-run PATH` after completing a matching local run with
-at least half the remote cap in settled usage. See [the funded workflow](platform-funded-inference.md).
+same flow for coding agents. Hosted runs use platform funding; personal API-key
+handoff is retained but disabled, and subscription-token handoff is removed.
+Use `--platform-funded --local-run PATH` with a matching completed local run
+showing at least half the remote cap in settled usage. See
+[the funded workflow](platform-funded-inference.md).
 The source ZIP and expanded source must each fit the advertised 8 MiB default;
 check `remote limits HARNESS_DIR` before uploading.
 
@@ -33,7 +33,7 @@ model ID, matching the client implemented by your harness:
 uv run catalyst remote submit /path/to/your-agent \
   --entrypoint "python3 /app/main.py" \
   --provider PROVIDER --model MODEL_ID --budget 3 \
-  --prompt-model-token --wait
+  --platform-funded --local-run /path/to/completed-local-run --wait
 ```
 
 The command must match the location established by your Dockerfile. Use
@@ -74,18 +74,12 @@ Submit the same source with a model choice and spending cap:
 ```sh
 uv run catalyst remote submit .catalyst/my-agent \
   --provider PROVIDER --model MODEL_ID --budget 3 \
-  --prompt-model-token --wait
+  --platform-funded --local-run /path/to/completed-local-run --wait
 ```
 
-The hidden prompt takes the credential for your selected provider. Kimi Code
-and direct Moonshot access are no longer supported.
-No persistent server-side model account is created; the credential is handed
-off for this evaluation and removed afterwards.
-
-`--provider`, `--model` and `--budget` are provider-neutral flags. For example,
-select `--provider openai --model gpt-6-astra` with an OpenAI API key, or
-`--provider openai-chatgpt --model gpt-6-astra --codex-auth-file` with the existing
-ChatGPT handoff instead of the hidden prompt.
+Hosted runs receive no personal model credentials. For example, select
+`--provider openrouter --model openai/gpt-6-astra` with matching local evidence
+and the platform-funded flag. Remote subscription provider IDs are rejected.
 The harness's model client must implement the chosen provider's supported
 protocol and use the gateway endpoint supplied in `CATALYST_TASK`.
 The gateway substitutes trusted credentials using configured authentication
@@ -307,25 +301,14 @@ If the catalog endpoint requires authentication, the operator can supply
 is used only at that fixed catalog URL, never taken from solver model access,
 and is excluded from snapshots and worker environments. Redirects are refused.
 
-For a single API provider, use the existing hidden token prompt or stdin
-handoff. Multiple providers can use `--provider-access-file` pointing to a
-private JSON map of provider names to access tokens. For `openai-chatgpt`,
-the map value is the temporary access object produced from the local Codex
-login; it must not contain a refresh token. For ChatGPT alone, keep using
-`--codex-auth-file`. Neither credential file belongs in the harness directory.
+The optional personal API-key interface is implemented but disabled in production.
+If an operator enables it later, the hidden prompt or stdin accepts a single API
+key; `--provider-access-file` accepts API-key maps. Remote subscription handoffs
+and the remote `--codex-auth-file` option have been removed.
 
-The same authenticated HTTPS/private worker channel carries the credentials.
-The worker stages them in Linux tmpfs. API keys reach only the gateway's
-environment; ChatGPT access is mounted only into the gateway. The harness uses
-the public `testbed` placeholder. Credentials are removed after the run and
-excluded from receipts and published evidence.
-
-ChatGPT is a Responses provider, not a universal substitute for every
-framework's model client. Configure your submitted client to use the assigned
-gateway and its placeholder credential; it must not read native authentication
-inside the harness container. Test its request format and tool definitions.
-The legacy Responses adapter has been removed; any protocol conversion belongs in the
-submitted harness. For streamed chat requests, the gateway
+API keys are staged privately for the trusted gateway. The harness uses the
+`testbed` placeholder, never native authentication files. Protocol conversion
+belongs in the submitted harness. For streamed chat requests, the gateway
 requests the final usage chunk and drains it even if the agent disconnects.
 
 ## Parallel accounting and evaluation

@@ -97,6 +97,8 @@ class RemoteClient:
         body = request_body(submission, self.base, judge=judge, evaluation_overrides=evaluation_overrides,
                             check_pricing=False, execution=execution, publication=publication,
                             problem_release=problem_release)
+        from catalyst.credentials import require_remote_models, decode_remote_access
+        require_remote_models(evaluation_models(body['evaluation']))
         if local_check is not None:
             from .local_check import request_identity
             if local_check.get('request_identity') != request_identity(body):
@@ -119,9 +121,9 @@ class RemoteClient:
                     validate_evaluation_config(body["evaluation"], pricing=body["pricing"])
                     private_json(quote_path, body["pricing"])
             validate_evaluation_config(body["evaluation"], pricing=body["pricing"])
-        from catalyst.credentials import temporary_access, validate_token
+        from catalyst.credentials import temporary_access
         if temporary_access(body["evaluation"]):
-            validate_token(model_token)
+            decode_remote_access(body['evaluation'], model_token)
         elif model_token is not None:
             raise CatalystError("This access mode does not accept personal model credentials.")
         if platform_access(body['evaluation']):
@@ -239,6 +241,10 @@ class RemoteClient:
 
     def renew_access(self, identity, token):
         identity = evaluation_id(identity)
+        from catalyst.credentials import decode_remote_access, remote_api_keys
+        remote_api_keys(token)
+        if (self.folder(identity) / 'session.json').is_file():
+            decode_remote_access(self.session(identity)['request']['evaluation'], token)
         result = json.loads(transport.solver_fetch(
             self.base, f"/evaluations/{identity}/credentials", self.bearer,
             document={}, model_token=token))

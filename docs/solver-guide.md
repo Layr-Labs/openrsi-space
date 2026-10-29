@@ -24,10 +24,10 @@ compared with others on a public leaderboard.
 You start each run, choose its spending and time limits, and can monitor its
 progress or request cancellation through the CLI at any time while it is active.
 
-For user-funded runs, Catalyst receives temporary model access for the run you start. When you use a
-supported login handoff, your refresh credentials stay on your device. Supplied
-access tokens are discarded during run cleanup. If you use an API key, Catalyst
-uses it only for the run you start and removes it during cleanup.
+Hosted runs currently use platform-funded API access and receive no personal
+model credentials. Remote subscription-token handoffs have been removed.
+Personal API-key handoff remains implemented but is disabled on the hosted service.
+Local testing uses your own authorized model access on your machine.
 
 You are responsible for ensuring your use complies with your model provider's
 terms.
@@ -291,10 +291,10 @@ your local record does not qualify, stop and resolve the reported reason; do not
 automatically switch to personal model access or start more paid local testing.
 See [funded submission details](platform-funded-inference.md).
 
-### User-funded alternative
+### Personal API-key interface (currently disabled)
 
-**The commands in this subsection grant Catalyst remote access to your model account for
-this evaluation and consume your credits or subscription allowance.**
+**This interface is retained for a future operator-enabled API-key mode and is
+currently disabled on the hosted service. Subscription-token submission is removed.**
 Run them only when you authorize that use and have reviewed the spending cap.
 
 These are separate credentials and outputs:
@@ -302,7 +302,7 @@ These are separate credentials and outputs:
 | Item | Purpose |
 | --- | --- |
 | Yukon dev login/key | Identifies you to Catalyst and Yukon |
-| Model access | Lets this evaluation use your provider/subscription allowance |
+| Model access | Would authorize API usage if the operator enables personal API keys |
 | `verification.json` receipt | Refers to the completed evaluation, source and problem; it is not a login key |
 | GitHub OIDC | Authenticates Yukon's verification workflow automatically; you do not supply it |
 
@@ -329,24 +329,9 @@ up to 21,600 seconds (6 hours) with `--max-seconds 21600`.
 These examples also override any shorter time limit saved in an existing
 `evaluation.json`. Use `--max-seconds` to request a shorter run if desired.
 
-For a Codex/ChatGPT harness instead:
-
-```sh
-uv run catalyst remote submit .catalyst/my-harness \
-  --provider openai-chatgpt --model gpt-6-astra \
-  --reasoning-effort high --budget 3 \
-  --no-token-limit --max-seconds 10800 \
-  --codex-auth-file --wait
-```
-
-`--codex-auth-file` reads an existing local `~/.codex/auth.json` and sends its
-temporary access material to the remote service; it is not local-only.
-No manual token extraction is needed. You can supply an explicit path. See
-[model login setup](live-models.md#first-time-login) if the file is absent.
-A submitted Codex harness has completed remote execution and independent
-verification with no model-token ceiling. Your own harness still needs to
-match the selected provider's API and tool definitions; see
-[harness compatibility](harness-compatibility.md).
+Codex harnesses can use a compatible API model through the funded gateway. Remote
+`--codex-auth-file` and subscription routes are not supported. Follow the funded
+submission example above and check [harness compatibility](harness-compatibility.md).
 
 Credentials travel over authenticated HTTPS, remain temporary in service
 memory/tmpfs, and are excluded from persisted jobs, receipts and artifacts.
@@ -433,8 +418,9 @@ locally and awaits hosting; until then, inspect results with the CLI.
 New remote submissions require public harness source, published after the run
 stops and publication screening passes. Review files before submitting; private
 submissions and solver unpublication are not supported. Traces are retained internally and cannot be downloaded or published.
-No license is granted automatically: use `--source-license MIT` (or another supported
-license) only when you have authority to grant it. Existing private runs stay private.
+An additional source license is optional. Without one, other participants may use your harness only under the limited participant license in the OpenRSI Terms of Service: to develop and submit their own harnesses to Eigen Labs challenges, with attribution to you.
+Coding agents should leave `--source-license` unset unless you explicitly ask for a
+source license. Existing third-party licenses still apply. Existing private runs stay private.
 With the same Yukon account:
 
 ```sh
@@ -453,7 +439,8 @@ uv run catalyst remote publish EVALUATION_ID --harness --confirm-source-reviewed
 First download and review the exact harness ZIP. You are responsible for the
 source, prompts and knowledge files you choose to make public and for having
 permission to share them. Credential screening still applies and cannot be waived.
-A license is optional; add `--license` only for a grant you have authority to make. See [artifact sharing](artifact-sharing.md)
+A license is optional; agents should add `--license` only when explicitly requested
+for a grant you have authority to make. See [artifact sharing](artifact-sharing.md)
 for downloads, license choices and publication of historical source.
 
 ## Challenge rules

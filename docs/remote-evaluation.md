@@ -31,12 +31,11 @@ that key for a temporary solver session using `catalyst-yukon-session-v1`.
 The service establishes ownership through its configured Yukon instance;
 clients cannot assert another owner or choose the authentication issuer.
 
-Model access is separate from Yukon authentication. `--codex-auth-file`,
-`--provider-access-file`, `--prompt-model-token` or `--model-token-stdin` explicitly
-authorizes remote use of the solver's model account. The client sends temporary
-access separately from the source archive and evaluation JSON over HTTPS.
-Refresh credentials remain local. Access must not appear in receipts, source,
-public results or retained traces. See [model access](live-models.md).
+Model access is separate from Yukon authentication. Hosted runs are platform-funded
+and receive no personal model credentials. Remote subscription-token submission
+has been removed, including the remote `--codex-auth-file` option. API-key handoff
+through `--provider-access-file`, the hidden prompt or stdin remains implemented
+but is currently disabled on the hosted service. See [model access](live-models.md).
 
 Platform-funded requests instead use the non-secret grant
 `evaluation.llm_access.grant_id: grant_platform_funded` and send no
@@ -87,8 +86,10 @@ the payload under the same request ID is rejected. The client preserves uncertai
 requests instead of issuing another paid run.
 
 New requests must explicitly include `publication`. New submissions must set `publication.harness` to `true`; private source is rejected.
-Traces remain internal and no license is granted automatically.
-`--source-license` selects an authorized license.
+Traces remain internal. A source license is optional; leave `--source-license`
+unset unless the user explicitly asks for one. No additional source license is
+assigned automatically; see [artifact sharing](artifact-sharing.md) for the limited
+participant license under the OpenRSI Terms of Service and existing third-party rights.
 Source is published automatically after the run stops and credential screening
 passes. Trace publication is disabled.
 Older clients that omit this field must upgrade before starting a new evaluation.

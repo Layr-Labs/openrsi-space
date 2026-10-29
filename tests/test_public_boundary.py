@@ -70,7 +70,7 @@ class PublicBoundaryTests(unittest.TestCase):
             self.assertEqual(main(["problem", "list"]), 0)
             self.assertIn("ecdsa.fail", output.getvalue())
 
-    def test_only_temporary_subscription_access_is_encoded(self):
+    def test_local_codex_access_excludes_refresh_credentials(self):
         document = {"auth_mode": "chatgpt", "last_refresh": "2026-10-14T00:00:00Z",
                     "tokens": {"access_token": "synthetic-access", "id_token": "synthetic-id",
                                "account_id": "synthetic-account", "refresh_token": "must-remain-local"}}
