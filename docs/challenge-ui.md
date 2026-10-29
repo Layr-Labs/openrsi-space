@@ -43,8 +43,8 @@ and [funding requirements](platform-funded-inference.md):
 - Local evidence is readiness input, not an official score or replay proof. The
   remote run starts fresh. Only a verified receipt is published to Yukon.
 
-Yukon must provide the verified GitHub account identity required for funded
-admission. Deploying UI text alone does not activate platform funding.
+Funding reuses the account ID from Yukon's existing authenticated `/api/me` API.
+No Yukon backend change is needed. Deploying UI text alone does not activate funding.
 
 ## Results and source
 

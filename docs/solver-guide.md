@@ -48,7 +48,7 @@ include ECDSA-specific papers, strategies, notes or prewritten answers in source
 | Local run bundle for funding | A completed matching Dungeness run, with retained logs. The CLI uploads a separate **private** bundle, at most **64 MiB / 1,000 model calls**. |
 | Local spending for funding | Settled normalized credits must be **at least half the remote cap**: 10 locally for a 20-credit remote run. A cap alone is not proof of actual spending. |
 | Matching | Unchanged harness source, problem digest, provider, model and reasoning settings. Do not combine unrelated runs or copy local solutions into source. |
-| Funded allowance | Default **20 credits/account/rolling 24 hours**. Each account may have one funded evaluation running at a time. The daily allowance can fund multiple sequential runs; unused reserved funds return after settlement. Verified GitHub identity binds the allowance; operator overrides may apply. |
+| Funded allowance | Default **20 credits/account/rolling 24 hours**. Each account may have one funded evaluation running at a time. The daily allowance can fund multiple sequential runs; unused reserved funds return after settlement. The authenticated Yukon account ID binds the allowance; operator overrides may apply. |
 
 Keep the local run directory intact and use `--local-run PATH`, or let the CLI
 find a matching retained run. The private bundle includes recorded model requests,

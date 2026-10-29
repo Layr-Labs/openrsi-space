@@ -46,9 +46,9 @@ If the record falls short, lower the remote cap or authorize further local testi
 the CLI never starts additional paid calls to satisfy the requirement. The server
 rejects `--skip-local-check` unless the operator has granted an expiring exemption.
 
-The default allowance is 20 normalized credits per authenticated GitHub account
+The default allowance is 20 model credits (USD equivalent) per authenticated Yukon account
 per rolling 24 hours. Changing Yukon keys does not reset it. The operator may
-adjust an account's allowance by its verified GitHub identity. Each account may
+adjust an account's allowance by its authenticated Yukon account ID. Each account may
 have one funded evaluation running at a time. You can split the daily allowance
 across multiple sequential runs; it is not a one-run-per-day limit. Each run
 reserves its requested cap and returns unused funds after settled usage is known.

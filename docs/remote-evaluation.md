@@ -42,8 +42,8 @@ Platform-funded requests instead use the non-secret grant
 `evaluation.llm_access.grant_id: grant_platform_funded` and send no
 `X-Catalyst-Model-Token`. Discover availability, funded providers and any explicit model restrictions through
 `GET /public/funding-policy`. Authenticated `GET /funding` reports the account’s
-reservations and settled usage. GitHub identity must be verified by the configured
-Yukon authentication service; the client cannot choose its own identity binding.
+reservations and settled usage. The existing authenticated Yukon `/api/me` response supplies the account ID;
+the client cannot choose its own identity binding. No new Yukon endpoint is needed.
 
 For a funded submission, `POST /local-evidence` uploads the private
 `catalyst-local-evidence-v1` JSON bundle and returns its digest. Include that digest
