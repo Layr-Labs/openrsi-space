@@ -286,6 +286,14 @@ Different reasoning rates and other unknown nonzero charges are rejected, as are
 paid provider tools, multimodal requests and model fallbacks. Agent-executed function tools remain
 available. The service never accepts solver-authored prices or upstream URLs.
 
+For local OpenRouter runs, disable default plugins and hosted server tools in the
+workspace owning your key, then set `TESTBED_OPENROUTER_INFERENCE_ONLY=1` in the
+environment of `catalyst local run`. This explicitly confirms that configuration;
+it does not change your OpenRouter settings. The local CLI forwards the assertion
+to the trusted gateway. Normal harness-executed function calls still work, including
+shell commands and file edits inside Dungeness. Hosted evaluations use the
+operator's confirmation for the platform account.
+
 The worker installs the frozen snapshot in its trusted Dungeness runtime.
 The gateway uses it for admission/accounting; Catalyst uses the same snapshot
 to verify the complete usage ledger, intermediate scores and final receipt.
