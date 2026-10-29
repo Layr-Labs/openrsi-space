@@ -38,6 +38,14 @@ def require_capabilities(root: Path, *required: str) -> None:
             raise CatalystError("Invalid Dungeness runtime capabilities.")
         missing = sorted(set(required) - set(capabilities))
     if missing:
+        if "bounded-model-admission-v1" in missing:
+            raise CatalystError(
+                "Dungeness lacks required native capabilities: " + ", ".join(missing) +
+                ". Install the matching bounded-admission runtime release and repin it; "
+                "the verifier and execution image must be upgraded together. Check "
+                "`dungeness capabilities` before retrying. See "
+                "https://github.com/Layr-Labs/catalyst/blob/main/docs/deployment-compatibility.md."
+            )
         raise CatalystError(
             "Dungeness lacks required native capabilities: " + ", ".join(missing) +
             ". Install a compatible runtime and repin it. Start with a fresh checkout: "
