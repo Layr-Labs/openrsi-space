@@ -51,7 +51,7 @@ as top-level `local_evidence` in the evaluation request. The bundle contains
 recorded model exchanges, settled accounting and evaluation events, not arbitrary
 local files. Source, problem and model settings must match, and settled local
 spending must be at least half the requested remote cap. The upload is limited
-to 64 MiB and 1,000 model calls, separately from the public source ZIP.
+to 192 MiB and 1,000 model calls, separately from the public source ZIP.
 The server screens it for secrets and performs bounded LLM readiness review; it
 is not proof of full replay or authenticity. Only an operator exemption can
 bypass the funded evidence gate. See [funded submission details](platform-funded-inference.md).

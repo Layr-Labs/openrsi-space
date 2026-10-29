@@ -9,7 +9,7 @@ from catalyst.contracts.results import digest
 from catalyst.tiers import evaluation_models
 from .local_check import validate_record, _record
 
-MAX_BYTES = 64 * 1024 * 1024
+MAX_BYTES = 192 * 1024 * 1024
 KINDS = {'model.request','model.response','model.accounting','evaluation.completed'}
 
 
@@ -21,7 +21,7 @@ def bundle(path, body):
     with (record_path.parent / 'usage/events.jsonl').open() as stream:
         for line in stream:
             if len(line.encode()) > MAX_BYTES:
-                raise CatalystError('A local event exceeds 64 MiB. Use a shorter readiness test.')
+                raise CatalystError('A local event exceeds 192 MiB. Use a shorter readiness test.')
             event = json.loads(line)
             if event.get('run_id') != check['run_id'] or event.get('kind') not in KINDS:
                 continue
@@ -71,7 +71,7 @@ def bundle(path, body):
     except (ValueError, InvalidOperation):
         raise CatalystError('Local evidence needs settled spending for every model request (provider-reported cost for OpenRouter).') from None
     if len(canonical(document)) > MAX_BYTES:
-        raise CatalystError('Private local evidence exceeds 64 MiB. Use a shorter local readiness run.')
+        raise CatalystError('Private local evidence exceeds 192 MiB. Use a shorter local readiness run.')
     return document
 
 

@@ -7,7 +7,7 @@ the solver's model-context limit. Generated snapshot metadata is excluded from
 the expanded-source count.
 
 For platform-funded runs, the required local-run evidence is a **separate private
-upload**, capped at **64 MiB and 1,000 model calls**. Do not include it in the
+upload**, capped at **192 MiB and 1,000 model calls**. Do not include it in the
 public harness ZIP. Its settled local spending must reach half the remote cap;
 see [funded submission requirements](platform-funded-inference.md).
 

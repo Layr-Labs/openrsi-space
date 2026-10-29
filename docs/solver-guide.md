@@ -45,7 +45,7 @@ include ECDSA-specific papers, strategies, notes or prewritten answers in source
 | --- | --- |
 | Public harness source | ZIP and expanded source each **8 MiB** by default. Run `catalyst remote limits ./my-harness` for the live limits. |
 | Funded model access | Run `catalyst remote funding-policy`. If enabled, choose an exact model on a funded provider, with validated pricing and use `--platform-funded`; supply no personal remote model credential. |
-| Local run bundle for funding | A completed matching Dungeness run, with retained logs. The CLI uploads a separate **private** bundle, at most **64 MiB / 1,000 model calls**. |
+| Local run bundle for funding | A completed matching Dungeness run, with retained logs. The CLI uploads a separate **private** bundle, at most **192 MiB / 1,000 model calls**. |
 | Local spending for funding | Settled normalized credits must be **at least half the remote cap**: 10 locally for a 20-credit remote run. A cap alone is not proof of actual spending. |
 | Matching | Unchanged harness source, problem digest, provider, model and reasoning settings. Do not combine unrelated runs or copy local solutions into source. |
 | Funded allowance | Default **20 credits/account/rolling 24 hours**. Each account may have one funded evaluation running at a time. The daily allowance can fund multiple sequential runs; unused reserved funds return after settlement. The authenticated Yukon account ID binds the allowance; operator overrides may apply. |

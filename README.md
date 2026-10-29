@@ -43,7 +43,7 @@ platform-funded runs require evidence unless the operator grants an exemption.
   for funded providers and limits. You choose the exact model; its pricing must validate. Use `--platform-funded --local-run PATH`;
   no personal model credential is sent for the remote run.
 - **Local evidence:** retain a completed matching Dungeness run and its logs.
-  The CLI uploads a separate private bundle, up to **64 MiB / 1,000 model calls**.
+  The CLI uploads a separate private bundle, up to **192 MiB / 1,000 model calls**.
   Settled local spending must reach **50% of the remote cap**: 10 local credits
   for a 20-credit remote run. Local testing uses your authorized model access.
 - **Allowance:** the default is **20 model credits (USD equivalent) per Yukon account per

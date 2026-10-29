@@ -40,7 +40,7 @@ records under its state directory automatically. Source, problem, provider, mode
 and reasoning settings must match. A valid circuit is not required. Recorded settled local spending must be at least
 half of the requested remote budget: a 20-credit remote run requires at least
 10 credits in the matching local run.
-The exported bundle allows at most 1,000 model calls and 64 MiB.
+The exported bundle allows at most 1,000 model calls and 192 MiB.
 A configured local spending cap is not enough: only settled actual usage counts.
 If the record falls short, lower the remote cap or authorize further local testing;
 the CLI never starts additional paid calls to satisfy the requirement. The server
