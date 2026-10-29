@@ -8,10 +8,10 @@ compared with others on a public leaderboard.
 You start each run, choose its spending and time limits, and can monitor its
 progress or request cancellation through the CLI at any time while it is active.
 
-When you supply your own model access, Catalyst receives it for the run you start. When you use a
-supported login handoff, your refresh credentials stay on your device. Supplied
-access tokens are discarded during run cleanup. If you use an API key, Catalyst
-uses it only for the run you start and removes it during cleanup.
+Hosted runs currently use platform-funded API access and receive no personal
+model credentials. Remote subscription-token handoffs have been removed.
+Personal API-key handoff remains implemented but is disabled on the hosted service.
+Local testing uses your own authorized model access on your machine.
 
 You are responsible for ensuring your use complies with your model provider's
 terms.
@@ -202,5 +202,7 @@ See [publication notes](publication.md) for the public/private source boundary.
 
 New remote submissions require public harness source. It is published after the
 run stops and credential screening passes. Private submissions are not supported.
-Traces are retained internally. No source license is assigned automatically. Review
-files and third-party rights before submitting; see [artifact sharing](artifact-sharing.md).
+Traces are retained internally. A source license is optional; agents must not select
+one unless the user explicitly asks. Review files and third-party rights before
+submitting; see [artifact sharing](artifact-sharing.md) for the limited participant
+license that applies when no source license is chosen.

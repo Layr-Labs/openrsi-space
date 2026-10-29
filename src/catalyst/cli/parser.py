@@ -116,7 +116,7 @@ def build_parser():
     local_check.add_argument("--skip-local-check", action="store_true",
                              help="Explicitly submit without a matching successful local Dungeness run.")
     remote_submit.add_argument("--source-license",
-                               help="Optional license you have authority to grant for public source. Omission grants no additional license.")
+                               help="Optional source license; leave unset unless explicitly requested. Existing third-party licenses still apply.")
     remote_submit.add_argument("--entrypoint", help="Launch argv for an existing repository without harness.json; parsed without a shell.")
     remote_submit.add_argument("--dockerfile", help="Relative build recipe for --entrypoint (default: Dockerfile).")
     remote_submit.add_argument("--provider", help="Model provider; use with --model (for example, openai).")
@@ -131,17 +131,14 @@ def build_parser():
     token_input.add_argument("--platform-funded", action="store_true",
                              help="Use an operator-funded API model; send no personal model credential.")
     token_input.add_argument("--provider-access-file",
-                             help="Authorize remote use of your model accounts via a private credential map; never package it.")
-    token_input.add_argument("--codex-auth-file", nargs="?", const=str(Path.home() / ".codex/auth.json"),
-                             help="Authorize remote use of your ChatGPT allowance; send temporary Codex access, keeping refresh credentials local.")
+                             help="Supply a private API-key map if the operator enables personal API keys; never package it.")
     token_input.add_argument("--prompt-model-token", action="store_true",
-                             help="Authorize remote use of your model account with a token entered at a hidden prompt.")
+                             help="Supply an API key at a hidden prompt if personal API-key access is enabled.")
     token_input.add_argument("--model-token-stdin", action="store_true",
-                             help="Authorize remote use of your model account with one private provider-token line from stdin.")
-    renewal = remote_sub.add_parser("renew-access", help="Replace temporary access for an owned queued evaluation.")
+                             help="Supply one private API-key line from stdin if personal API-key access is enabled.")
+    renewal = remote_sub.add_parser("renew-access", help="Replace an API key for an owned queued evaluation, when enabled.")
     renewal.add_argument("id")
     renewal_input = renewal.add_mutually_exclusive_group(required=True)
-    renewal_input.add_argument("--codex-auth-file", nargs="?", const=str(Path.home() / ".codex/auth.json"))
     renewal_input.add_argument("--provider-access-file")
     renewal_input.add_argument("--prompt-model-token", action="store_true")
     renewal_input.add_argument("--model-token-stdin", action="store_true")
@@ -167,7 +164,7 @@ def build_parser():
         action.add_argument("id")
         action.add_argument("--harness", action="store_true")
         if operation == "publish":
-            action.add_argument("--license", help="Source license; preserves existing third-party notices.")
+            action.add_argument("--license", help="Optional source license; leave unset unless explicitly requested. Preserves existing third-party notices.")
             action.add_argument("--confirm-source-reviewed", action="store_true",
                                 help="Confirm review of the exact source bundle and responsibility for its public release; credential screening still applies.")
     return parser, commands

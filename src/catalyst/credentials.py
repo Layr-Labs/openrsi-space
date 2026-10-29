@@ -1,4 +1,4 @@
-"""Temporary credential encoding for the HTTPS client; refresh tokens stay local."""
+"""API-key handoff and separate local-only subscription credential helpers."""
 import base64
 import json
 from datetime import datetime, timezone
@@ -19,6 +19,7 @@ MAX_TOKEN_BYTES = 8192
 PROVIDER_ENV = {"openai": "TESTBED_OPENAI_API_KEY", "anthropic": "TESTBED_ANTHROPIC_API_KEY",
                 "openrouter": "TESTBED_OPENROUTER_API_KEY"}
 PROVIDERS = frozenset(PROVIDER_ENV) | {"openai-chatgpt", "claude-subscription"}
+SUBSCRIPTION_PROVIDERS = frozenset({"openai-chatgpt", "claude-subscription"})
 # Read historical configurations without re-enabling their credentials or execution.
 RETIRED_PROVIDERS = frozenset({"kimi-code", "moonshot", "xai", "grok-subscription"})
 
@@ -26,6 +27,12 @@ def require_active_models(models):
     for model in models:
         if model["provider"] in RETIRED_PROVIDERS:
             raise CatalystError("This provider integration is retired; choose a provider supported by the selected Dungeness runtime.")
+
+def require_remote_models(models):
+    """Subscription credentials are local-only, never a remote handoff."""
+    require_active_models(models)
+    if any(model['provider'] in SUBSCRIPTION_PROVIDERS for model in models):
+        raise CatalystError('Remote subscription-token submission has been removed. Use platform-funded API access.')
 
 PREFIX = "chatgpt_"
 ACCESS_PREFIX = "providers_"
@@ -67,14 +74,58 @@ def decode_codex_access(value):
         validate_access(access)
         return access
     except (ValueError, TypeError):
-        raise CatalystError("Invalid temporary Codex access; submit using --codex-auth-file.") from None
+        raise CatalystError("Invalid local Codex access; select a valid local login file.") from None
 
 def encode_provider_access(document):
-    """Encode a private provider map for the existing HTTPS handoff channel."""
-    validate_provider_access(document)
+    """Encode API keys only for the optional HTTPS handoff channel."""
+    validate_remote_provider_access(document)
     encoded = ACCESS_PREFIX + base64.urlsafe_b64encode(canonical(document)).decode()
     validate_token(encoded)
     return encoded
+
+def validate_remote_provider_access(document):
+    if not isinstance(document, dict) or not document or set(document) - set(PROVIDER_ENV):
+        raise CatalystError('Remote credential maps accept API keys only; subscription-token submission has been removed.')
+    validate_provider_access(document)
+    for value in document.values():
+        validate_api_key(value)
+
+def validate_api_key(value):
+    validate_token(value)
+    if value.startswith(('chatgpt_', 'providers_', 'sk-ant-oat', 'eyJ')):
+        raise CatalystError('Remote subscription-token submission has been removed; supply an API key.')
+
+def remote_api_keys(token):
+    """Accept a raw API key or a strictly API-key-only provider map."""
+    validate_token(token)
+    if not token.startswith(ACCESS_PREFIX):
+        validate_api_key(token)
+        return token
+    try:
+        access = json.loads(base64.b64decode(token[len(ACCESS_PREFIX):], altchars=b'-_', validate=True))
+    except (ValueError, TypeError):
+        raise CatalystError('Invalid remote API-key map.') from None
+    validate_remote_provider_access(access)
+    return access
+
+def decode_remote_access(evaluation, token):
+    """Decode API keys without any subscription-login decoding or staging."""
+    from catalyst.tiers import evaluation_models
+    models = evaluation_models(evaluation)
+    require_remote_models(models)
+    providers = {model['provider'] for model in models}
+    access = remote_api_keys(token)
+    try:
+        if isinstance(access, str):
+            if len(providers) != 1:
+                raise ValueError
+            access = {next(iter(providers)): access}
+        validate_remote_provider_access(access)
+        if set(access) != providers:
+            raise ValueError
+        return access
+    except (ValueError, TypeError, AttributeError):
+        raise CatalystError("API keys must cover exactly the run's provider set.") from None
 
 def validate_session_access(value):
     # Exact fields deliberately exclude refresh tokens and entire login files.

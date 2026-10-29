@@ -79,7 +79,7 @@ can fund multiple sequential runs; unused reserved funds return after settlement
 Explain this to the solver before any credential handoff or model-consuming run:
 
 > Catalyst is a benchmark for research agent harnesses. You submit your own
-> harness, using your own model account, to run in a controlled environment on
+> harness to run in a controlled environment on
 > Catalyst's servers so that its performance can be independently verified and
 > compared with others on a public leaderboard.
 >
@@ -87,11 +87,10 @@ Explain this to the solver before any credential handoff or model-consuming run:
 > progress or request cancellation through the CLI at any time while it is
 > active.
 >
-> Catalyst receives temporary model access for the run you start. When you use
-> a supported login handoff, your refresh credentials stay on your device.
-> Supplied access tokens are discarded during run cleanup. If you use an API
-> key, Catalyst uses it only for the run you start and removes it during
-> cleanup.
+> Hosted runs use platform-funded API access and receive no personal model
+> credentials. Remote subscription-token handoffs have been removed. Personal
+> API-key handoff is implemented but disabled. Local testing uses your own
+> authorized model access on your machine.
 >
 > You are responsible for ensuring your use complies with your model
 > provider's terms.
@@ -106,9 +105,9 @@ or consume allowance.
 Until authorized, prepare the harness and commands without reading model secrets,
 sending them, or launching remote inference. Use the CLI's hidden prompt, stdin,
 or an explicitly selected credential file outside the source package; never
-ask the solver to paste a secret into chat. With `remote submit`, `--codex-auth-file` sends temporary
-access from the local login to the remote service; that command is not a local-only run.
-Refresh credentials must remain local.
+ask the solver to paste a secret into chat. Remote subscription-token submission
+has been removed; never read a login file for a remote handoff. Hosted runs use
+platform funding; personal API-key submission is currently disabled.
 
 Explain that the service keeps model access temporarily for execution and
 excludes it from retained jobs/results/artifacts. Normalized credits may differ
@@ -131,8 +130,12 @@ Review the package for unintended private code, secrets and third-party restrict
 The solver is responsible for having permission to share the files. Private
 submissions and solver unpublication are not supported. If the human does not
 authorize public source, do not submit.
-An optional `--source-license MIT` (or another supported license) requires the
-human's authority to grant it. Public visibility alone grants no additional license.
+A source license is optional. Don’t select one unless the user explicitly asks for it.
+Do not ask the user to choose a license as a routine submission step. Leave
+`--source-license` and `--license` unset unless explicitly requested. If requested,
+use only a supported license the user has authority to grant. Preserve existing
+third-party licenses and attribution notices; see [artifact sharing](artifact-sharing.md)
+for the limited participant license that applies when no source license is chosen.
 Never retroactively publish historical private runs without the owner's choice.
 
 Traces are retained internally for verification and debugging. Users cannot
@@ -312,8 +315,8 @@ uv run catalyst remote submit HARNESS_DIR \
   --no-token-limit --max-seconds TIME_CAP --wait
 ```
 
-For a separately authorized user-funded run, use the chosen provider/model/budget
-and compatible model client with its credential input:
+The following API-key interface is retained but currently disabled on the hosted
+service. Use it only if an operator explicitly enables personal API keys later:
 
 ```sh
 uv run catalyst remote submit HARNESS_DIR \
@@ -330,9 +333,9 @@ metered for credit accounting; spending limits and execution timeouts still appl
 New evaluations default to 10,800 seconds (3 hours). The current service permits
 up to 21,600 seconds (6 hours) with `--max-seconds 21600`. Existing manifests retain their saved time limit; use `--max-seconds 10800`
 to override an older short limit, or request a shorter run explicitly.
-Use `--codex-auth-file` instead of the hidden prompt for a ChatGPT login.
-For multiple providers, use `--provider-access-file` pointing outside the
-source tree. Never add a refresh token to a package or request.
+Remote commands do not accept `--codex-auth-file` or subscription credentials.
+If personal API keys are enabled later, `--provider-access-file` accepts only
+API-key maps outside the source tree. Never submit login or refresh credentials.
 
 This is the inference-consuming step. Stay within the authorized allowance;
 the cap limits a run and is not a spending target. Account for earlier failed

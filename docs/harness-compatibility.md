@@ -25,11 +25,10 @@ Use this process when creating or reusing a harness:
    reporting. Translate both requests and responses when the protocols differ.
    Disable unsupported provider-hosted tools and unmetered fallback clients.
 3. For funded remote access, use `--platform-funded` and no personal model credential.
-   For local testing or a user-funded remote run, select the matching private
-   credential option: for an API-key provider, use
-   `--prompt-model-token`; for the supported Codex login handoff, use
-   `--codex-auth-file`. Credentials stay outside the source and reach only the
-   trusted gateway. One access method does not authorize fallback to another.
+   Personal API-key submission is currently disabled and remote subscription
+   handoffs have been removed. For local testing, use the private access option
+   described in the local guide. A qualifying local evidence run must match the
+   funded remote provider, model and reasoning settings.
 4. Run the packaging/entrypoint smoke checks and exercise the adapter against a
    strict mock of the selected API, including auxiliary requests and a complete
    tool-call round trip. A mock should reject malformed fields rather than return

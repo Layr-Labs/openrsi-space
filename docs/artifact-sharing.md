@@ -10,9 +10,13 @@ source, prompts, assets and third-party rights before submitting. The solver is
 responsible for permission to publish those files. Possible credentials block
 source publication even when public visibility was requested.
 
-Public visibility does not assign a license. Optionally pass `--source-license MIT`
-(or another supported license) when submitting. If omitted, the public page says
-that no additional license is granted; bundled licenses still apply.
+An additional source license is optional. Without one, other participants may use your harness only under the limited participant license in the OpenRSI Terms of Service: to develop and submit their own harnesses to Eigen Labs challenges, with attribution to you.
+
+For coding agents: A source license is optional. Don’t select one unless the user explicitly asks for it.
+Do not pause submission to ask for a license choice. Leave `--source-license`
+unset by default. When explicitly requested, use `--source-license LICENSE` for
+a supported license the user has authority to grant. Existing third-party licenses
+and attribution notices still apply.
 
 ## Download harness source or publish historical source
 
@@ -26,7 +30,8 @@ catalyst remote sharing EVALUATION_ID
 
 Publication does not require a license. Add `--license MIT` (or another supported
 license) only to grant an authorized license; omitting it preserves any existing
-grant and otherwise grants no additional license.
+grant. Without a selected source license, the limited participant license
+described above applies; omission does not assign an additional source license.
 
 Supported source license identifiers: MIT, Apache-2.0, BSD-2-Clause, BSD-3-Clause,
 GPL-3.0-only, GPL-3.0-or-later, AGPL-3.0-only, MPL-2.0, CC0-1.0, CC-BY-4.0.

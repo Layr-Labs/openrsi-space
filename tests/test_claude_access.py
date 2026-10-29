@@ -12,7 +12,9 @@ class ClaudeAccessTests(unittest.TestCase):
                 'expires_at':(datetime.now(timezone.utc)+timedelta(hours=1)).isoformat()}}
 
     def test_exact_access_fields_no_refresh_and_valid_expiry(self):
-        valid=self.access();self.assertTrue(encode_provider_access(valid).startswith('providers_'))
+        valid=self.access();validate_provider_access(valid)
+        with self.assertRaisesRegex(CatalystError, 'API keys only'):
+            encode_provider_access(valid)
         for change in ({'refresh_token':'never-transfer'}, {'expires_at':'2000-01-01T00:00:00Z'},
                        {'expires_at':'2030-01-01T00:00:00'}, {'expires_at':'2030-01-01\n00:00:00Z'},
                        {'access_token':'injected\nENV=value'}):

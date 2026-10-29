@@ -4,13 +4,10 @@ The `claude-subscription` route uses Anthropic Messages with a temporary bearer
 access token. `anthropic` remains the API-key route. The real credential is mounted
 only into the trusted gateway; the submitted harness receives a placeholder.
 
-**Status:** deployed to the hosted runtime on 2026-10-27. Gateway behavior and
-Claude Code 2.1.311 mechanics have been tested against synthetic upstream
-responses. An authorized Opus 5.5/high staging check also passed with actual
-inference, a Bash tool round trip, accounting and credential cleanup. This is
-not confirmation of eligibility for other accounts. Native model-name matching
-and one-hour cache pricing require the matching client and runtime release;
-older runtimes reject duration-priced quotes.
+**Local testing only.** Remote subscription-token submission and renewal have
+been removed. This route may be used by an authorized local Dungeness run;
+it is not eligible for hosted submission or hosted pricing quotes. Personal
+API-key submission is also currently disabled; hosted runs use platform funding.
 
 ## Supply access
 
@@ -33,10 +30,10 @@ expiry before every inference request, without falling back to an API key.
 
 Select `claude-subscription` and the exact Claude model in the run configuration.
 Pass the file using `--provider-access-file /absolute/private/access.json` to
-`catalyst local run`, `catalyst remote submit`, or `catalyst remote renew`.
+`catalyst local run` only.
 For local testing, supply a pricing snapshot with `--pricing`; it must contain a
-`claude-subscription` entry for the selected model. Hosted submission obtains an
-immutable quote from the evaluator. Existing pricing snapshots are unchanged.
+`claude-subscription` entry for the selected model. Subscription pricing snapshots for local runs must come from the local runtime;
+the hosted evaluator no longer issues subscription quotes.
 
 ## Pair the harness and route
 
@@ -52,7 +49,7 @@ gateway-compatible request format. This disables experimental tool-search and
 related beta schema features; it does not rewrite the client or loosen gateway
 policy. Unset `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` in the child process so they do
 not select another credential mechanism. Claude Code 2.1.311 passed a model-free request/stream check with this configuration.
-Test your pinned version locally before remote submission; account eligibility
+Test your pinned version locally; account eligibility
 and compatibility depend on your provider and pinned CLI version. The gateway
 does not insert a Claude Code user-agent or rewrite prompts to impersonate a client.
 
