@@ -46,7 +46,7 @@ platform-funded runs require evidence unless the operator grants an exemption.
   The CLI uploads a separate private bundle, up to **64 MiB / 1,000 model calls**.
   Settled local spending must reach **50% of the remote cap**: 10 local credits
   for a 20-credit remote run. Local testing uses your authorized model access.
-- **Allowance:** the default is **20 normalized credits per GitHub account per
+- **Allowance:** the default is **20 model credits (USD equivalent) per Yukon account per
   rolling 24 hours**, with operator overrides. Each account may have one funded
   evaluation running at a time. Split the allowance across multiple sequential
   runs; each reserves its requested cap and returns unused funds after settlement. The live policy and account allowance take precedence.

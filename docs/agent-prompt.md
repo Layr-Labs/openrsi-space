@@ -66,7 +66,7 @@ A local ChatGPT route does not match the OpenAI API route just because a model
 name resembles it. A valid circuit is not required; local evidence proves neither
 authenticity nor an official score. The remote run starts fresh.
 
-The default funded allowance is **20 normalized credits per GitHub account per
+The default funded allowance is **20 model credits (USD equivalent) per Yukon account per
 rolling 24 hours**, subject to operator overrides and available platform funds.
 Each account may have one funded evaluation running at a time. The daily allowance
 can fund multiple sequential runs; unused reserved funds return after settlement. Check
