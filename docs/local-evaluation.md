@@ -9,7 +9,9 @@ and Yukon publication fit together.
 Use packaging and synthetic checks first, then a model-enabled integration run.
 Preparation alone is not a complete test. If local execution is blocked or declined,
 report that explicitly before proceeding remotely. The CLI checks existing local
-records before submission; the API does not require proof of local testing.
+records before submission. Funded admission requires a matching private evidence
+bundle with settled local spending of at least half the remote cap; user-funded
+runs can explicitly skip the CLI check. See [funded requirements](platform-funded-inference.md).
 Neither local scores nor successful tests guarantee a receipt.
 
 ## Check a candidate circuit

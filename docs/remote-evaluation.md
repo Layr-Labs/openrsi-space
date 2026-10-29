@@ -2,7 +2,9 @@
 
 The public client and the private `catalyst-verifier` service communicate over
 HTTPS. No private Python package, Dungeness checkout or server credential is
-required by solvers or the challenge's GitHub workflow. Extraction does not
+required to call the remote API. Funded solvers must retain evidence from a
+matching local Dungeness run, even though the submission command itself does
+not launch a local runtime. Extraction does not
 change the existing wire protocols, evaluation IDs or receipts.
 
 ## Authentication and model access
@@ -36,6 +38,24 @@ access separately from the source archive and evaluation JSON over HTTPS.
 Refresh credentials remain local. Access must not appear in receipts, source,
 public results or retained traces. See [model access](live-models.md).
 
+Platform-funded requests instead use the non-secret grant
+`evaluation.llm_access.grant_id: grant_platform_funded` and send no
+`X-Catalyst-Model-Token`. Discover availability and exact eligible models through
+`GET /public/funding-policy`. Authenticated `GET /funding` reports the account’s
+reservations and settled usage. GitHub identity must be verified by the configured
+Yukon authentication service; the client cannot choose its own identity binding.
+
+For a funded submission, `POST /local-evidence` uploads the private
+`catalyst-local-evidence-v1` JSON bundle and returns its digest. Include that digest
+as top-level `local_evidence` in the evaluation request. The bundle contains
+recorded model exchanges, settled accounting and evaluation events, not arbitrary
+local files. Source, problem and model settings must match, and settled local
+spending must be at least half the requested remote cap. The upload is limited
+to 64 MiB and 1,000 model calls, separately from the public source ZIP.
+The server screens it for secrets and performs bounded LLM readiness review; it
+is not proof of full replay or authenticity. Only an operator exemption can
+bypass the funded evidence gate. See [funded submission details](platform-funded-inference.md).
+
 GitHub Actions uses a short-lived OIDC identity for receipt retrieval. That
 identity authenticates the workflow; it is not the evaluation receipt and cannot
 supply model access or create a paid run.
@@ -49,6 +69,7 @@ supply model access or create a paid run.
 protocol: catalyst-evaluation-v3
 request_id: stable UUID
 source: {digest, archive_base64}
+local_evidence: private bundle digest for funded submissions
 evaluation: declared models, spending cap, limits and non-secret access grant
 publication: {harness: true, traces: false, license: null}
 problem_set: pinned challenge definition

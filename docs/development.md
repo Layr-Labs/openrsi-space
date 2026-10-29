@@ -71,8 +71,15 @@ check does not issue an official receipt or establish a leaderboard improvement.
 
 The UI's “How it works” and “Participate” sections are the primary explanation for
 solvers. Keep their benchmark description aligned with the opening of
-[the challenge overview](overview.md): solvers submit their own harness, use their
-own model account, start and control each run, and compare independently verified
-results. Explain run-scoped access, supported login handoffs keeping refresh
-credentials local, cleanup of supplied access, and provider-terms responsibility.
+[the challenge overview](overview.md): solvers submit their own harness, start and
+control each run, and compare independently verified results. Local tests use
+their authorized model access. Platform-funded remote runs, when enabled, require
+private local evidence and use platform API access without a personal model
+credential. Keep the half-budget local-spend rule and source/evidence limits
+consistent across human and coding-agent instructions. Describe account-facing
+allowances, not internal fleet capacity.
+
+For user-funded remote runs, explain authorized credential transfer, supported
+login handoffs keeping refresh credentials local, cleanup of supplied access and
+provider-terms responsibility. Do not imply that every remote run needs a personal key.
 Keep provider-specific credential fields in the technical model-access guide.

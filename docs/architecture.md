@@ -24,16 +24,27 @@ Inspect failures and fix the harness before remote submission. Keep each evaluat
 fresh; do not carry local solutions or task-specific notes into the harness.
 Local results do not replace private screening, independent verification or receipts.
 The CLI reuses a matching completed local run before submission; `--local-run PATH`
-selects records elsewhere. If testing is blocked or declined, report the untested
-steps and explicitly use `--skip-local-check`. The API does not trust or enforce
-local test evidence; no local traces are uploaded.
+selects records elsewhere. For platform-funded submissions, the CLI uploads a
+separate private bundle of recorded model exchanges, settled usage and evaluation
+events. Admission checks source/problem/model matching and requires at least half
+the remote cap spent locally. A bounded LLM review checks readiness, not complete
+state replay or authenticity. The remote run starts fresh; local candidates do not
+become its starting point. See [funding and evidence](platform-funded-inference.md).
+
+For user-funded runs, the existing CLI preflight does not upload local traces.
+If testing is blocked or declined, report the untested steps and explicitly use
+`--skip-local-check`. That flag does not bypass funded admission without an
+operator exemption.
 
 
 ```mermaid
 flowchart LR
-    Solver[Solver: source + temporary model access] --> Client[Public Catalyst CLI]
+    Solver[Solver: harness source + selected run limits] --> Client[Public Catalyst CLI]
+    Local[Matching local evidence for funded runs] --> Client
     Client -->|Authenticated HTTPS| API[Private catalyst-verifier API]
-    API --> Worker[Private worker + Dungeness]
+    API --> Review[Source screening + funded evidence review]
+    Review --> Worker[Private worker + Dungeness]
+    Access[Platform API access or authorized solver access] --> Worker
     Worker --> Verify[Independent ECDSA verifier]
     Verify --> Evidence[Retained source, usage, candidates and results]
     Evidence -->|Receipt| Client
@@ -65,10 +76,11 @@ Catalyst's `runtime/problem_server.py`, independently of the submitted harness.
 Dungeness wires this service into Compose and exposes the assigned document
 through the gateway's `GET /task`. See [the task contract](problem-service.md).
 
-Knowledge files, memory and retrieval software are part of the submitted harness
-image. Catalyst does not extract them into a knowledge-base sidecar or prescribe
-how the agent reads them. Their bytes are covered by the harness source and image
-identities. The trusted problem service is separate from those agent-owned files.
+General-purpose memory and retrieval software can be part of the submitted
+harness image; their bytes are covered by source and image identities. Do not
+bundle problem-specific papers, notes or answers. The trusted problem service
+supplies the assigned library at runtime, and each run builds its own fresh memory.
+Catalyst does not prescribe the harness’s reading or indexing strategy.
 
 ## Module boundaries
 
@@ -109,9 +121,16 @@ service is a separate operator action after testing.
 
 ## Trust and privacy
 
-The solver authorizes use of their model account for a specific run and cap.
-Refresh credentials remain local. Model access is sent separately from source
-and receipts over authenticated HTTPS. See [model access](live-models.md).
+For platform-funded remote runs, the solver submits no personal model credential.
+The operator supplies API access through the trusted gateway. Local model tests
+still use the solver’s separately authorized access. The uploaded local evidence
+is private, screened for secrets and sampled by a third-party LLM; it is never
+added to public harness source.
+
+For user-funded runs, the solver authorizes use of their model account for the
+selected run and cap. Refresh credentials remain local. Model access is sent
+separately from source and receipts over authenticated HTTPS. See
+[model access](live-models.md).
 
 The service binds evidence to the authenticated owner, pinned problem,
 source/image/configuration/pricing/policy identities and metered usage. Yukon

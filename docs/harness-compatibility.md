@@ -15,13 +15,17 @@ Use this process when creating or reusing a harness:
    The selected Dungeness runtime reports its trusted provider IDs through
    `dungeness providers`. Catalyst uses that registry for both pricing quotes and
    submission admission. Solvers cannot supply upstream URLs or provider profiles.
-   A provider absent from the runtime needs operator integration.
+   A provider absent from the runtime needs operator integration. For platform
+   funding, also check `catalyst remote funding-policy`: only its advertised API
+   provider/model pairs are eligible. Choose the matching local route before testing.
 2. Route all model requests through the endpoints and model identities assigned
    in `CATALYST_TASK`. Package any necessary API adapter in the harness. Test tool
    definitions, named tool choice, tool results, streaming responses and usage
    reporting. Translate both requests and responses when the protocols differ.
    Disable unsupported provider-hosted tools and unmetered fallback clients.
-3. Select the matching private credential option: for an API-key provider, use
+3. For funded remote access, use `--platform-funded` and no personal model credential.
+   For local testing or a user-funded remote run, select the matching private
+   credential option: for an API-key provider, use
    `--prompt-model-token`; for the supported Codex login handoff, use
    `--codex-auth-file`. Credentials stay outside the source and reach only the
    trusted gateway. One access method does not authorize fallback to another.
@@ -31,7 +35,9 @@ Use this process when creating or reusing a harness:
    success for any JSON. `catalyst harness smoke` alone does not test live provider
    compatibility. Complete a [local Dungeness run](local-evaluation.md) before
    remote submission; the CLI reuses a matching local record, with an explicit
-   `--skip-local-check` override when local testing is skipped.
+   `--skip-local-check` override for user-funded runs. Funded admission requires
+   a matching private local bundle and half the remote cap in settled local usage;
+   the flag cannot bypass that gate without an operator exemption.
 5. Report the tested framework version, provider/model/access method, supported
    API operations and any untested boundary in the readiness report. A live
    compatibility run consumes model allowance and needs the user's authorization
