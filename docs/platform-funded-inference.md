@@ -42,8 +42,9 @@ rejects `--skip-local-check` unless the operator has granted an expiring exempti
 
 The default allowance is 20 normalized credits per authenticated GitHub account
 per rolling 24 hours. Changing Yukon keys does not reset it. The operator may
-adjust an account's allowance by its verified GitHub identity. There is one active
-run per account, three globally, and separate limits on screening/upload attempts.
+adjust an account's allowance by its verified GitHub identity. Each account may
+have one funded evaluation running at a time. Separate limits apply to
+screening/upload attempts.
 A passing review establishes readiness, not authenticity or deterministic replay;
 your remote run begins fresh and is the only source of an official score.
 

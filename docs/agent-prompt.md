@@ -68,7 +68,7 @@ authenticity nor an official score. The remote run starts fresh.
 
 The default funded allowance is **20 normalized credits per GitHub account per
 rolling 24 hours**, subject to operator overrides and available platform funds.
-One active funded run per account and three globally are allowed. Check
+Each account may have one funded evaluation running at a time. Check
 `catalyst remote funding` for reservations and usage. New keys do not reset quotas.
 `--skip-local-check` cannot bypass the server gate. See
 [platform-funded inference](platform-funded-inference.md) for the full procedure.

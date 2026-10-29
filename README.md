@@ -47,8 +47,8 @@ platform-funded runs require evidence unless the operator grants an exemption.
   Settled local spending must reach **50% of the remote cap**: 10 local credits
   for a 20-credit remote run. Local testing uses your authorized model access.
 - **Allowance:** the default is **20 normalized credits per GitHub account per
-  rolling 24 hours**, with operator overrides; one active funded run per account,
-  three globally. The live policy and account allowance take precedence.
+  rolling 24 hours**, with operator overrides. Each account may have one funded
+  evaluation running at a time. The live policy and account allowance take precedence.
 
 See [funded submission instructions](docs/platform-funded-inference.md) for
 matching rules, private review and budget reservations. Local results are never
