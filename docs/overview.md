@@ -1,14 +1,14 @@
 # Challenge overview
 
 Catalyst is a benchmark for research agent harnesses. You submit your own
-harness, using your own model account, to run in a controlled environment on
+harness to run in a controlled environment on
 Catalyst's servers so that its performance can be independently verified and
 compared with others on a public leaderboard.
 
 You start each run, choose its spending and time limits, and can monitor its
 progress or request cancellation through the CLI at any time while it is active.
 
-Catalyst receives temporary model access for the run you start. When you use a
+When you supply your own model access, Catalyst receives it for the run you start. When you use a
 supported login handoff, your refresh credentials stay on your device. Supplied
 access tokens are discarded during run cleanup. If you use an API key, Catalyst
 uses it only for the run you start and removes it during cleanup.
@@ -63,8 +63,17 @@ limits still apply; see [limits and retry instructions](solver-guide.md#submissi
 
 ## Start here
 
-Choose the provider, exact model, limits and remote credential use before
-submitting. Your Yukon key identifies you; it does not fund model calls.
+Choose the funding mode, provider, exact model and run limits before testing.
+For platform funding, first check `catalyst remote funding-policy` for availability
+and eligible API models. Local tests use your authorized model access; funded
+remote runs use platform API access and send no personal model credential.
+Your Yukon key identifies your account and its allowance; it is not model credit.
+
+Both the public ZIP and expanded source default to **8 MiB**. Funded runs also
+require a separate **private** local-run bundle (up to **64 MiB / 1,000 model calls**)
+with matching source/problem/models and settled local spending of at least half
+the remote cap. A 20-credit remote run needs 10 local credits. Reuse a qualifying
+run; its result is not an official score. See [funded submission requirements](platform-funded-inference.md).
 
 **Autonomous research only.** Replaying or reproducing existing ECDSA
 GitHub/leaderboard answers—including memorized answers embedded in an agent's
@@ -97,11 +106,14 @@ Use `uv run catalyst harness search --max-credits 8`, then
 `uv run catalyst harness download EVALUATION_ID --output harness.zip` to download
 selected published source without login. See [search, ranking and downloads](harness-catalog.md).
 
-1. Build your harness and choose a provider, exact model and finite spending cap.
-2. `uv run catalyst remote submit HARNESS_DIR --wait` uploads source and starts
-   the remote run, using its configured model/budget and your separately supplied
-   temporary model access. See the guide for the required credential flag and
-   per-run overrides. **This step consumes model allowance.**
+1. Build a general-purpose harness, check source limits and select model access.
+   Test locally with Dungeness using authorized spending and retain the run logs.
+2. For enabled platform funding, use `remote submit` with `--platform-funded` and
+   `--local-run PATH`, plus the matching provider/model, current problem release
+   and authorized remote cap. The CLI uploads public source and private evidence
+   separately. Otherwise, separately authorize the user-funded path and supply
+   its private credential flag. See the [solver walkthrough](solver-guide.md#4-choose-funding-and-start-the-official-evaluation).
+   **Remote execution consumes the selected model account or platform allocation.**
 3. Catalyst prints the evaluation ID, result and `verification.json` path.
    Resume interrupted retrieval with `uv run catalyst remote wait EVALUATION_ID`.
 4. Create `submission/` and copy the complete receipt into `submission/verification.json`, then run
@@ -135,9 +147,10 @@ The **private `catalyst-verifier` repository** contains the verification API,
 queue, Dungeness worker adapter, anti-cheat implementation, credential handling
 inside the service, artifact storage and deployment tooling. It depends on the
 public `catalyst-research` package; this package does not depend on the service.
-Dungeness is not required for remote submission. Its
-[public repository](https://github.com/Layr-Labs/dungeness) is available for
-optional full local agent tests.
+The remote service owns its Dungeness runtime; the submission CLI does not launch
+it locally. However, funded admission requires evidence from a completed matching
+local Dungeness run. Use the [public runtime](https://github.com/Layr-Labs/dungeness)
+for local testing; an existing qualifying run can be reused.
 See [local testing options](local-evaluation.md).
 The hosted challenge UI remains in Yukon's challenge application.
 
@@ -164,12 +177,14 @@ uv run catalyst --help
 For a full local research run with model accounting:
 
 ```sh
-uv run catalyst local run .catalyst/my-agent --dungeness ../dungeness \
+uv run catalyst local run .catalyst/my-agent --dungeness /absolute/path/to/dungeness \
   --provider openai-chatgpt --model gpt-6-astra --reasoning-effort high \
   --budget 1 --codex-auth-file
 ```
 
-This uses your local model account and starts its internal services automatically.
+This user-funded local example starts its services automatically. It does not
+establish eligibility for a funded remote run on a different provider route;
+choose the funded API provider/model before local testing when funding is intended.
 Add `--prepare-only` to build and inspect without making model calls. See
 [local testing](local-evaluation.md) for prerequisites, API keys, ensembles,
 artifacts and limits. Local runs cannot issue official Yukon receipts.

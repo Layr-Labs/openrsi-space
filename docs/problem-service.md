@@ -65,9 +65,9 @@ does not turn the model gateway into a candidate-execution process.
 
 The problem's `execution.knowledge_base` pins the canonical SHA-256 of
 [the paper catalog](../src/catalyst/problem-set/ecdsa-fail/knowledge-base/v1.json).
-Release v1 contains 40 content-pinned research papers about quantum elliptic-curve
+Release v1 contains eight content-pinned research papers about quantum elliptic-curve
 arithmetic, reversible circuits, synthesis, uncomputation and resource reduction.
-All 40 unmodified PDFs ship inside the Catalyst package, with author attribution,
+All eight unmodified PDFs ship inside the Catalyst package, with author attribution,
 original source links, recorded Creative Commons licenses and SHA-256 checksums.
 The required paper is André Schrottenloher's arXiv:2606.02235v1. Preparation verifies
 all bundled bytes and needs no external paper downloads. Existing requests and receipts keep their exact original identities.
@@ -76,23 +76,23 @@ Inside a run:
 
 ```sh
 curl -fsS "$CATALYST_KNOWLEDGE_BASE_URL"
-# http://gateway:8080/task/files/knowledge-base.json
+# Example assigned URL: http://gateway:8080/ecdsa-fail/v1/knowledge-base
 ```
 
-The JSON `papers` array contains each PDF's internal `url`, checksum and size.
-Download from those URLs; agents do not need internet access or a credential.
-The launcher exposes the catalog URL in both the resolved task and this environment
-variable. Reading is optional: the harness chooses its own retrieval strategy.
+The current JSON catalog has a `resources` array with each entry's internal
+`url`, media type, checksum and size. Fetch those URLs and interpret the declared
+media type; do not assume resources must always be PDFs. Historical packages may
+expose a `papers` array instead. The launcher supplies the assigned catalog URL in
+`CATALYST_TASK` and `CATALYST_KNOWLEDGE_BASE_URL`. Harnesses choose their own
+reading and retrieval strategy during execution.
 
-Trusted task preparation downloads the pinned files once and verifies every hash.
-The default cache is `~/.cache/catalyst/papers`; an operator or local developer can
-set `CATALYST_PAPER_CACHE` to another directory. The current library is about 59 MB.
-The cache can be seeded with the exact selected PDFs before preparation, including
-the original collection's 32 files under their unchanged filenames. No local
-Dungeness knowledge-base directory is required at runtime. Missing files are
-downloaded from the catalog's arXiv/IACR URLs and accepted only if their bytes
-match the pinned checksums. A changed upstream edition stops preparation; the
-operator must supply the retained original. No arbitrary URL is accepted.
+Normal preparation verifies the eight PDFs bundled in the installed package and
+needs no external paper downloads. It can reuse matching files from
+`~/.cache/catalyst/papers` (or `CATALYST_PAPER_CACHE`). If a bundled file is absent,
+the compatibility fallback downloads only its catalog-pinned URL and requires an
+exact checksum match. A changed or corrupt bundled file fails preparation. Update
+the package or restore the exact pinned bytes; do not substitute another edition.
+No local Dungeness knowledge-base directory is required.
 The immutable copies are mounted read-only in the existing problem service;
 there is no separate knowledge-base service. The gateway serves only declared
 files, checks their complete hashes before returning content, and never forwards

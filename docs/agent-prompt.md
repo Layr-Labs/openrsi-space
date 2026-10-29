@@ -68,7 +68,7 @@ authenticity nor an official score. The remote run starts fresh.
 
 The default funded allowance is **20 normalized credits per GitHub account per
 rolling 24 hours**, subject to operator overrides and available platform funds.
-One active funded run per account and three globally are allowed. Check
+Each account may have one funded evaluation running at a time. Check
 `catalyst remote funding` for reservations and usage. New keys do not reset quotas.
 `--skip-local-check` cannot bypass the server gate. See
 [platform-funded inference](platform-funded-inference.md) for the full procedure.
@@ -301,7 +301,18 @@ provider/model, proposed spending and time limits, and any optional token ceilin
 to run unless the human has already explicitly authorized execution once ready.
 Approval to build or explore the harness alone is not approval to launch it.
 
-With the user's chosen provider/model/budget and compatible model client:
+For platform funding, first check availability and model eligibility with
+`uv run catalyst remote funding-policy`. With a qualifying local record, submit:
+
+```sh
+uv run catalyst remote submit HARNESS_DIR \
+  --platform-funded --local-run LOCAL_RUN_PATH \
+  --problem-release TAG --provider PROVIDER --model EXACT_MODEL --budget APPROVED_CAP \
+  --no-token-limit --max-seconds TIME_CAP --wait
+```
+
+For a separately authorized user-funded run, use the chosen provider/model/budget
+and compatible model client with its credential input:
 
 ```sh
 uv run catalyst remote submit HARNESS_DIR \

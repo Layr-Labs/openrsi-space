@@ -25,11 +25,11 @@ capabilities. The earlier gateway-hardening pin `11e3f4c` does not provide provi
 discovery. Upgrade and deploy the runtime together with the updated client.
 
 If preparation reports a missing capability, create a fresh checkout at an unused
-path; leave existing runs and working changes intact. The compatible runtime for this release is `08e8f7ddc3d87a1ec88e92052d28561ec27411e6`:
+path; leave existing runs and working changes intact. The hosted runtime pin verified on 2026-10-29 is `840cf5cbd86a73e30d2130f278a1dbd725baa0b4`:
 
 ```sh
 git clone https://github.com/Layr-Labs/dungeness.git /absolute/path/to/dungeness-compatible
-git -C /absolute/path/to/dungeness-compatible checkout --detach 08e8f7ddc3d87a1ec88e92052d28561ec27411e6
+git -C /absolute/path/to/dungeness-compatible checkout --detach 840cf5cbd86a73e30d2130f278a1dbd725baa0b4
 /absolute/path/to/dungeness-compatible/dungeness capabilities
 /absolute/path/to/dungeness-compatible/dungeness providers
 ```

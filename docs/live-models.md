@@ -1,11 +1,20 @@
-# Temporary model access
+# Model access and funding
+
+For platform-funded remote runs, first check `catalyst remote funding-policy`.
+When enabled, use an exact advertised API provider/model and `--platform-funded`;
+no personal remote model credential is needed. A matching local evidence bundle
+and at least half the remote cap spent locally are required. Local tests still
+use your authorized model access. See [platform-funded inference](platform-funded-inference.md).
+
+The personal-credential instructions below apply to local tests and user-funded
+remote runs. They are not a requirement for platform-funded remote submissions.
 
 Catalyst is a benchmark for research agent harnesses. You submit your own
-harness, using your own model account, to run in a controlled environment on
+harness to run in a controlled environment on
 Catalyst's servers so that its performance can be independently verified and
 compared with others on a public leaderboard.
 
-Catalyst receives temporary model access for the run you start. When you use a
+When you supply personal model access, Catalyst receives it for the run you start. When you use a
 supported login handoff, your refresh credentials stay on your device. Supplied
 access tokens are discarded during run cleanup. If you use an API key, Catalyst
 uses it only for the run you start and removes it during cleanup.
@@ -25,7 +34,9 @@ Coding agents should read [the agent instructions](agent-prompt.md).
 
 Catalyst discovers provider IDs from the selected, pinned Dungeness runtime using
 `dungeness providers`. The gateway registry is authoritative: Catalyst has no
-separate provider allowlist and does not install provider profiles into Dungeness.
+separate general provider allowlist and does not install provider profiles into Dungeness.
+Platform funding additionally restricts inference to the exact API provider/model
+pairs advertised by `remote funding-policy`; runtime support alone does not grant funding.
 Pricing quotes and submissions use the same runtime-derived provider check.
 
 The current Dungeness registry implements:
@@ -33,13 +44,14 @@ The current Dungeness registry implements:
 | Provider | Model access | Harness protocol |
 | --- | --- | --- |
 | `anthropic` | API key | Anthropic Messages |
-| `claude-subscription` | Access token and expiry; live-account validation pending | Anthropic Messages |
+| `claude-subscription` | Access token and expiry; see the recorded validation below | Anthropic Messages |
 | `openai` | API key | OpenAI API routes supported by the gateway |
 | `openai-chatgpt` | Temporary Codex login handoff | Responses |
 | `openrouter` | API key; requires operator-enabled inference-only routing | Supported gateway routes |
 
 For Claude login access, see [credential format and harness pairing](claude-subscription.md).
-The new route is not yet deployed to the hosted execution AMI.
+The route is included in the hosted runtime. The linked guide records the
+2026-10-27 validation; account eligibility and harness compatibility still need checking.
 
 Runtime support is necessary but does not establish usable model credentials,
 exact model pricing or harness API compatibility. A quote validates provider
@@ -51,12 +63,12 @@ Direct `xai`, `grok-subscription`, Kimi Code and direct Moonshot integrations ar
 retired. Catalyst no longer reads Grok login files or ships xAI/Grok profiles or
 a stock Grok example. Historical evaluation records remain readable.
 
-**Hosted rollout verified 2026-10-26:** the evaluator now derives provider
-availability from Dungeness revision `08e8f7d`; the old three-provider allowlist
-has been removed. Anthropic pricing and submission permission were checked over
-HTTPS without sending a model credential or starting an evaluation. Direct xAI
-and Grok subscription requests are rejected. This admission check does not claim
-a paid Anthropic inference test.
+**Runtime pin verified 2026-10-29:** the hosted execution image uses Dungeness
+`840cf5cbd86a73e30d2130f278a1dbd725baa0b4`. The evaluator derives provider support
+from that runtime; direct xAI and Grok subscription integrations remain retired.
+Check current pricing and funding policy before choosing a model. The image’s
+model-free release checks do not establish account eligibility or live inference
+compatibility for every model.
 
 The [generic harness implementation](generic-harnesses.md) keeps real credentials
 in the trusted gateway. The older native-agent execution route is retired.
@@ -77,7 +89,7 @@ inside Dungeness against the pinned ECDSA problem.
 | Item | Where the user gets it | What it does |
 | --- | --- | --- |
 | Yukon API key | Sign in to the **dev Yukon website**, open the account's **API keys** page (`/api-keys`), and create a key. An existing dev CLI login also works. | Identifies the solver to Catalyst and Yukon. |
-| Temporary ChatGPT access | Sign in locally with Codex; Catalyst reads the login file automatically. No manual token extraction is needed. | Allows this run to call the selected model through Dungeness. |
+| Temporary ChatGPT access | Sign in locally with Codex; explicitly authorize `--codex-auth-file` to read the selected login file. No manual token extraction is needed. | Allows this run to call the selected model through Dungeness. |
 | Verification receipt | Catalyst writes `HARNESS_DIRECTORY/verification.json` after a successful `remote submit --wait`. The CLI prints its exact path. | Identifies the verified execution, harness and problem for Yukon. It is not a login credential. |
 | GitHub OIDC token | GitHub Actions obtains it automatically. | Authenticates the hosted workflow when it retrieves the receipt. Users do not create or copy it. |
 

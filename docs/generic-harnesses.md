@@ -14,8 +14,13 @@ your own agent/model integration.
 
 For login, credential setup, receipt retrieval and Yukon publication, use the
 [solver guide](solver-guide.md). [Agent instructions](agent-prompt.md) cover the
-same flow for coding agents. The commands below start remote evaluations when
-supplied with valid model access.
+same flow for coding agents. The personal-credential examples below are for
+user-funded evaluations. For platform funding, first check `remote funding-policy`
+and use an exact eligible API provider/model. Replace the credential flag with
+`--platform-funded --local-run PATH` after completing a matching local run with
+at least half the remote cap in settled usage. See [the funded workflow](platform-funded-inference.md).
+The source ZIP and expanded source must each fit the advertised 8 MiB default;
+check `remote limits HARNESS_DIR` before uploading.
 
 Submit an existing repository containing the general-purpose harness, prompts,
 configuration, helper programs and dependencies, with its existing directory
@@ -120,12 +125,13 @@ directory is rejected before submission.
 
 ## Runtime dependency
 
-Dungeness is not required on a solver's machine for remote submission. The
+The remote submission command does not launch Dungeness on the solver’s machine. The
 private `catalyst-verifier` service owns its pinned runtime and the adapter that
 installs submitted command harnesses. The public CLI packages source, checks
 the local entrypoint and talks to the service through HTTPS. Anyone can clone
 the public [Dungeness repository](https://github.com/Layr-Labs/dungeness) for
-optional local runs.
+local tests. Funded admission requires a matching retained local run and its
+private evidence bundle; reuse an existing qualifying run.
 See [local testing options](local-evaluation.md). Local output does not replace
 an official remote receipt. Your harness receives the execution interface below.
 
@@ -321,11 +327,9 @@ All admitted requests share one ledger and a bounded number of active slots.
 Credits are reserved until the upstream response has drained and settled;
 client disconnection does not release the reservation prematurely.
 Missing usage blocks further admissions. Explicit HTTP 400 input-validation
-errors with an `invalid_request_error` body settle at zero tokens. Dungeness also
-recognizes the Grok subscription proxy's HTTP 422 plain-text JSON-deserialization
-rejection before generation. This requires a runtime containing that fix; check
-the deployed revision. The rejection basis is retained in the ledger. Other
-422 errors are not automatically free. Successful responses without usage,
+errors with an `invalid_request_error` body settle at zero tokens. The rejection
+basis is retained in the ledger. HTTP 422 responses are not automatically free.
+Successful responses without usage,
 interrupted streams, and ambiguous errors still block further inference.
 Catalyst prices each settled receipt using that receipt's authorized model,
 then checks the terminal total.
