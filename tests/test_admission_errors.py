@@ -5,6 +5,13 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 from catalyst.remote import fetch, HTTPFailure
 
+
+class EvidenceDiagnosticTests(unittest.TestCase):
+    def test_evidence_field_survives_sanitization(self):
+        details = {'code': 'local_evidence_required', 'stage': 'creation', 'field': 'local_evidence'}
+        self.assertEqual(HTTPFailure(403, details).details['field'], 'local_evidence')
+        self.assertNotIn('field', HTTPFailure(403, {**details, 'field': 'untrusted-field'}).details)
+
 class AdmissionErrorTests(unittest.TestCase):
     def test_http_error_displays_only_safe_structured_fields(self):
         body = {'error': 'private-token-do-not-print', 'code': 'daily_quota', 'scope': 'account',
