@@ -43,3 +43,17 @@ class EvidenceExportTests(LocalCheckTests):
         self.save()
         with self.assertRaisesRegex(CatalystError, 'provider-reported cost'):
             bundle(self.path, self.body)
+
+    def test_private_bundle_limit_includes_envelope_and_rejects_overflow(self):
+        from catalyst.client.local_evidence import MAX_BYTES
+        from catalyst.common import canonical
+        self.assertEqual(MAX_BYTES, 192 * 1024 * 1024)
+        self.record['data']['configuration']['repository'] = {'commit': '1'*40}
+        self.event['data']['normalized_usd'] = 100
+        self.save()
+        size = len(canonical(bundle(self.path, self.body)))
+        with patch('catalyst.client.local_evidence.MAX_BYTES', size):
+            self.assertEqual(len(canonical(bundle(self.path, self.body))), size)
+        with patch('catalyst.client.local_evidence.MAX_BYTES', size - 1):
+            with self.assertRaisesRegex(CatalystError, '192 MiB'):
+                bundle(self.path, self.body)

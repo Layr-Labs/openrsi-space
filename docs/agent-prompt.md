@@ -53,7 +53,7 @@ for the remote cap and public source publication.
 A completed matching local run is mandatory unless the operator grants an
 exemption. Retain its run directory and use `--local-run PATH`; the CLI exports
 recorded requests, responses, settled accounting and evaluation events as a
-separate private bundle (**64 MiB**, **1,000 model calls** maximum). Explain its
+separate private bundle (**192 MiB**, **1,000 model calls** maximum). Explain its
 private upload and third-party LLM readiness review before submission. Never put
 this bundle, login files, generated circuits or research notes in public source.
 

@@ -146,7 +146,7 @@ runs can be reused. The CLI does not spend automatically.
 Actual settled local usage must be **at least half the requested remote cap**:
 10 local credits for a 20-credit remote run. A larger configured cap with less
 actual usage does not qualify. The exported bundle is separate from public
-harness source and is limited to **64 MiB and 1,000 model calls**. It includes
+harness source and is limited to **192 MiB and 1,000 model calls**. It includes
 recorded model exchanges, accounting and evaluation events for private screening
 and sampled LLM review. Source, problem, provider/model and reasoning settings
 must match; the official remote run starts fresh, without your local candidates
