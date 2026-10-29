@@ -65,7 +65,7 @@ limits still apply; see [limits and retry instructions](solver-guide.md#submissi
 
 Choose the funding mode, provider, exact model and run limits before testing.
 For platform funding, first check `catalyst remote funding-policy` for availability
-and eligible API models. Local tests use your authorized model access; funded
+and funded API providers. Choose an exact model with validated pricing. Local tests use your authorized model access; funded
 remote runs use platform API access and send no personal model credential.
 Your Yukon key identifies your account and its allowance; it is not model credit.
 

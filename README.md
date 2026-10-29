@@ -40,7 +40,7 @@ platform-funded runs require evidence unless the operator grants an exemption.
   by default. Check `uv run catalyst remote limits ./my-harness`; exclude
   credentials, generated outputs and problem-specific material.
 - **Funded runs, when enabled:** check `uv run catalyst remote funding-policy`
-  for availability and exact models. Use `--platform-funded --local-run PATH`;
+  for funded providers and limits. You choose the exact model; its pricing must validate. Use `--platform-funded --local-run PATH`;
   no personal model credential is sent for the remote run.
 - **Local evidence:** retain a completed matching Dungeness run and its logs.
   The CLI uploads a separate private bundle, up to **64 MiB / 1,000 model calls**.
@@ -48,7 +48,8 @@ platform-funded runs require evidence unless the operator grants an exemption.
   for a 20-credit remote run. Local testing uses your authorized model access.
 - **Allowance:** the default is **20 normalized credits per GitHub account per
   rolling 24 hours**, with operator overrides. Each account may have one funded
-  evaluation running at a time. The live policy and account allowance take precedence.
+  evaluation running at a time. Split the allowance across multiple sequential
+  runs; each reserves its requested cap and returns unused funds after settlement. The live policy and account allowance take precedence.
 
 See [funded submission instructions](docs/platform-funded-inference.md) for
 matching rules, private review and budget reservations. Local results are never

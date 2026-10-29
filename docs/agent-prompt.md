@@ -46,7 +46,7 @@ Never ask for model secrets in a chat prompt.
 ## Funded submission checklist
 
 Before proposing platform funding, run `catalyst remote funding-policy`; do not
-assume it is enabled. Select an advertised exact API provider/model and pass
+assume it is enabled. Choose an exact model on a funded provider, obtain validated pricing, and pass
 `--platform-funded`, with no personal model credential flag. Obtain authorization
 for the remote cap and public source publication.
 
@@ -68,7 +68,8 @@ authenticity nor an official score. The remote run starts fresh.
 
 The default funded allowance is **20 normalized credits per GitHub account per
 rolling 24 hours**, subject to operator overrides and available platform funds.
-Each account may have one funded evaluation running at a time. Check
+Each account may have one funded evaluation running at a time. The daily allowance
+can fund multiple sequential runs; unused reserved funds return after settlement. Check
 `catalyst remote funding` for reservations and usage. New keys do not reset quotas.
 `--skip-local-check` cannot bypass the server gate. See
 [platform-funded inference](platform-funded-inference.md) for the full procedure.

@@ -31,7 +31,8 @@ def bundle(path, body):
             keys = {'model.request': {'model','provider','operation','request'},
                     'model.response': {'model','provider','operation','status','content_type','response'},
                     'model.accounting': {'model','provider','status','accounting_method','total_tokens',
-                                         'input_tokens','output_tokens','normalized_usd'},
+                                         'input_tokens','output_tokens','normalized_usd','billed_usd','billing_source',
+                                         'upstream_request_id'},
                     'evaluation.completed': {'status','score','metrics'}}[event['kind']]
             item = {'kind':event['kind'], 'request_id':event.get('request_id'), 'sequence':event.get('sequence'),
                     'data':{k:v for k,v in data.items() if k in keys}}
@@ -45,7 +46,17 @@ def bundle(path, body):
                 'status':'completed', 'events':events}
     from decimal import Decimal, InvalidOperation
     try:
-        amounts = [e['data'].get('normalized_usd') for e in events if e['kind']=='model.accounting']
+        amounts = []
+        for event in events:
+            if event['kind'] != 'model.accounting':
+                continue
+            data = event['data']
+            if data.get('provider') == 'openrouter':
+                if data.get('billing_source') not in {'openrouter_usage', 'openrouter_generation'}:
+                    raise CatalystError('OpenRouter local evidence requires provider-reported cost. Update Dungeness and use a run with complete provider accounting.')
+                amounts.append(data.get('billed_usd'))
+            else:
+                amounts.append(data.get('normalized_usd'))
         if not amounts or any(isinstance(n,bool) or not isinstance(n,(int,float)) for n in amounts):
             raise ValueError
         spent = sum((Decimal(str(n)) for n in amounts), Decimal(0))
@@ -55,8 +66,10 @@ def bundle(path, body):
         if spent < minimum:
             raise CatalystError(f'Recorded local spending is {spent} credits; at least {minimum} is required '
                                 'for this remote budget. Provide a larger matching local run or lower --budget.')
+    except CatalystError:
+        raise
     except (ValueError, InvalidOperation):
-        raise CatalystError('Local evidence needs settled normalized spending for every model request.') from None
+        raise CatalystError('Local evidence needs settled spending for every model request (provider-reported cost for OpenRouter).') from None
     if len(canonical(document)) > MAX_BYTES:
         raise CatalystError('Private local evidence exceeds 64 MiB. Use a shorter local readiness run.')
     return document

@@ -16,7 +16,7 @@ For login, credential setup, receipt retrieval and Yukon publication, use the
 [solver guide](solver-guide.md). [Agent instructions](agent-prompt.md) cover the
 same flow for coding agents. The personal-credential examples below are for
 user-funded evaluations. For platform funding, first check `remote funding-policy`
-and use an exact eligible API provider/model. Replace the credential flag with
+and choose an exact model on a funded API provider with validated pricing. Replace the credential flag with
 `--platform-funded --local-run PATH` after completing a matching local run with
 at least half the remote cap in settled usage. See [the funded workflow](platform-funded-inference.md).
 The source ZIP and expanded source must each fit the advertised 8 MiB default;
