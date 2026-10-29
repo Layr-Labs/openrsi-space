@@ -46,7 +46,7 @@ ADMISSION_FIELDS = {
                    "evaluation.model", "evaluation.model.reasoning_effort", "evaluation.max_model_credits", "judge", "context", "source",
                    "source.archive_base64", "source.digest", "source.execution", "source.publication", "source.expanded_bytes"},
     "authorization": {"evaluation"}, "credentials": {"model_access"},
-    "creation": {"request_id"}, "readiness": {"service"},
+    "creation": {"request_id", "local_evidence"}, "readiness": {"service"},
 }
 QUOTA_MESSAGES = {
     'account_concurrency': 'Your account has reached its active-run limit; wait for a run to finish or cancel it.',
