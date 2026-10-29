@@ -67,6 +67,10 @@ def temporary_environment(access):
                        ('PATH', 'HOME', 'TMPDIR', 'USER', 'LOGNAME', 'DOCKER_HOST', 'DOCKER_CONTEXT', 'TERM')
                        if key in os.environ}
         lines = []
+        # This is an explicit operator assertion, not a credential or a default.
+        # Keep it in the trusted runtime input so Compose can configure the gateway.
+        if 'openrouter' in access and os.environ.get('TESTBED_OPENROUTER_INFERENCE_ONLY') == '1':
+            lines.append('TESTBED_OPENROUTER_INFERENCE_ONLY=1\n')
         for provider, value in access.items():
             if provider == 'openai-chatgpt':
                 path = root / 'auth.json'
