@@ -97,6 +97,13 @@ def model_access_notice(args, client, evaluation=None):
 
 
 def remote_command(args, state):
+    if args.operation == 'funding-policy':
+        from catalyst.client import transport
+        result = json.loads(transport.fetch(transport.endpoint() + '/public/funding-policy', None, limit=65536))
+        if not isinstance(result, dict) or result.get('protocol') != 'catalyst-funding-policy-v1':
+            raise CatalystError('Evaluator returned an invalid funding policy.')
+        print(json.dumps(result, indent=2))
+        return
     if args.operation == 'build-policy':
         from catalyst.client.build_policy import policy
         print(json.dumps(policy(), indent=2))
@@ -114,6 +121,10 @@ def remote_command(args, state):
         return
     from catalyst.client.evaluations import RemoteClient
     client = RemoteClient(state)
+    if args.operation == 'funding':
+        from catalyst.client import transport
+        print(json.dumps(json.loads(transport.solver_fetch(client.base, '/funding', client.bearer)), indent=2))
+        return
     if args.operation == "diagnostics":
         print(json.dumps(client.diagnostics(args.id, args.output), indent=2))
         return
@@ -170,12 +181,20 @@ def remote_command(args, state):
         ) if getattr(args, key) is not None}
         if args.no_token_limit:
             overrides["max_tokens"] = None
+        if args.platform_funded:
+            overrides["platform_funded"] = True
         # Validate choices before asking the solver for a credential.
         from catalyst.client.configuration import evaluation_config
         config = evaluation_config(Path(args.package) / "evaluation.json", overrides, check_pricing=False)
         from catalyst.credentials import require_active_models
         from catalyst.contracts.accounting import evaluation_models
         require_active_models(evaluation_models(config))
+        from catalyst.credentials import platform_access
+        if platform_access(config):
+            if any(getattr(args, key, None) for key in ("codex_auth_file", "provider_access_file", "prompt_model_token", "model_token_stdin")):
+                raise CatalystError("Platform-funded submissions must not include personal model credentials.")
+            print("Platform-funded inference: no personal model credential will be read or transferred. "
+                  "Admission is subject to your account allowance and the platform funding policy.", file=sys.stderr, flush=True)
         for credential_file in (args.codex_auth_file, args.provider_access_file):
             if credential_file and Path(credential_file).expanduser().resolve().is_relative_to(
                     Path(args.package).resolve()):

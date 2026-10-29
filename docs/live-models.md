@@ -159,3 +159,8 @@ prices and do not imply a ChatGPT subscription incurs a cash charge.
 ## Service operation
 
 Provider configuration and deployment are maintained in the private `catalyst-verifier` repository. Solvers use the public credential options above.
+
+## Platform-funded remote runs
+
+If enabled, use `catalyst remote funding-policy` and `--platform-funded`; no personal
+model credential is needed. See [platform-funded inference](platform-funded-inference.md).

@@ -7,9 +7,11 @@ from catalyst.contracts.evaluation import validate_evaluation_config
 def evaluation_config(path: Path, overrides: dict | None = None, *, check_pricing=True, pricing=None) -> dict:
     """Resolve run settings independently of the submitted source bundle."""
     overrides = overrides or {}
-    allowed = {"provider", "model", "reasoning_effort", "budget", "max_tokens", "max_seconds"}
+    allowed = {"provider", "model", "reasoning_effort", "budget", "max_tokens", "max_seconds", "platform_funded"}
     if set(overrides) - allowed:
         raise CatalystError("Unknown evaluation setting.")
+    if "platform_funded" in overrides and type(overrides["platform_funded"]) is not bool:
+        raise CatalystError("platform_funded must be true or false.")
     if path.is_file():
         config = copy.deepcopy(read_json(path))
         if not isinstance(config, dict):
@@ -36,6 +38,9 @@ def evaluation_config(path: Path, overrides: dict | None = None, *, check_pricin
             if not isinstance(config.get("model"), dict):
                 raise CatalystError("model must be an object.")
             config["model"]["reasoning_effort"] = overrides["reasoning_effort"]
+    if overrides.get("platform_funded") is True:
+        from catalyst.credentials import PLATFORM_GRANT
+        config["llm_access"] = {"grant_id": PLATFORM_GRANT}
     if "budget" in overrides:
         config["max_model_credits"] = overrides["budget"]
     for option, key in (("max_tokens", "max_model_tokens"), ("max_seconds", "max_seconds")):

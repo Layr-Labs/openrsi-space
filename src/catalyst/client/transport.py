@@ -52,10 +52,26 @@ QUOTA_MESSAGES = {
     'account_concurrency': 'Your account has reached its active-run limit; wait for a run to finish or cancel it.',
     'global_capacity': 'All evaluation slots are occupied; retry after a run finishes.',
     'submission_rate_limit': 'Too many new submissions in the short submission window.',
+    'funding_allowance_exhausted': 'Funded allowance is exhausted or reserved; wait for settlement or contact the operator. Amounts are in microcredits (1,000,000 = one normalized credit).',
     'daily_quota': 'The operator-configured daily evaluation quota is reached.',
 }
 ADMISSION_MESSAGES = {
     **QUOTA_MESSAGES,
+    "funding_unavailable": "Platform funding is disabled or unavailable; contact the operator.",
+    "funding_paused": "Platform funding is paused for reconciliation; contact the operator.",
+    "funding_model_not_allowed": "Choose a model from /public/funding-policy.",
+    "funding_not_enrolled": "Your account is not enrolled for platform-funded inference.",
+    "funding_identity_required": "Sign in with GitHub through Yukon again, then retry with your Yukon key.",
+    "funding_identity_conflict": "GitHub account binding conflicts; contact the operator.",
+    "local_evidence_insufficient_spend": "Recorded local spending must be at least half of the requested remote budget. Lower the budget or provide a larger matching local run.",
+    "local_evidence_required": "Provide --local-run PATH to a completed matching local Dungeness run. Only the operator can exempt a funded run.",
+    "local_evidence_invalid": "Local evidence is incomplete or invalid. Run a completed local readiness test with the current client.",
+    "local_evidence_mismatch": "Local evidence must match the submitted source, problem, provider, model and reasoning settings.",
+    "local_evidence_not_private": "Local evidence contains possible secrets or opaque content. Remove secrets from harness logs and repeat the test.",
+    "local_evidence_capacity": "Private evidence storage is full; contact the operator or wait for upload expiry.",
+    "local_evidence_rate_limit": "Too many evidence uploads; retry in an hour.",
+    "local_evidence_too_large": "Local evidence exceeds 64 MiB; run a shorter readiness test.",
+    "funding_run_limit": "Reduce the run budget to the limit in /public/funding-policy.",
     'source_not_publishable': 'The source did not pass the publication safety checks.',
     'screening_unavailable': 'Submission screening is temporarily unavailable.',
     'builder_unavailable': 'The isolated builder is temporarily unavailable.',
@@ -139,7 +155,7 @@ class HTTPFailure(CatalystError):
                 scope = details.get('scope')
                 if isinstance(scope, str) and scope in {'account', 'global'}:
                     self.details['scope'] = scope
-                for name in ('limit', 'current', 'retry_after_seconds'):
+                for name in ('limit', 'current', 'requested', 'retry_after_seconds'):
                     value = details.get(name)
                     if type(value) is int and 0 <= value <= 2**53:
                         self.details[name] = value
