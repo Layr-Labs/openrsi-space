@@ -3,6 +3,7 @@ import base64
 from contextlib import redirect_stderr
 import io
 import json
+import os
 from pathlib import Path
 import unittest
 from unittest.mock import patch
@@ -46,6 +47,7 @@ class RemoteApiKeysOnlyTests(unittest.TestCase):
                                   '--codex-auth-file', '/unused/auth.json'])
         self.assertEqual(args.codex_auth_file, '/unused/auth.json')
 
+    @patch.dict(os.environ, {"GITHUB_ACTIONS": ""})
     def test_direct_client_rejects_subscription_before_network(self):
         client = RemoteClient.__new__(RemoteClient)
         client.base = 'https://example.invalid'
