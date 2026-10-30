@@ -173,6 +173,7 @@ def prepare(state, package, source, evaluation, *, problem_id='ecdsa.fail', prob
         'budget': task_input['budget'], 'initialization': assigned['initialization'],
         'web_search': {'profile': 'web-search-profile:system/dungeness/disabled-v1'},
         'model_access': {'models': resolved, 'max_parallel_requests': 4,
+                         'bounded_requests': True, 'max_output_tokens': 65536,
                          'request_reservation_usd': min(evaluation['max_model_credits'] / 4, 1)},
         'runtime': {'env_file': str(env_file)},
         'labels': {'evidence': 'local-development', 'catalyst_problem_set_digest': problem_set_digest},
