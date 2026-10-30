@@ -6,7 +6,6 @@ import json
 from pathlib import Path
 from catalyst.common import CatalystError, canonical
 from catalyst.contracts.results import digest
-from catalyst.tiers import evaluation_models
 from .local_check import validate_record, _record
 
 MAX_BYTES = 192 * 1024 * 1024
@@ -41,7 +40,7 @@ def bundle(path, body):
                 raise CatalystError('Private local evidence exceeds the upload limit. Run a shorter local readiness test; logs are not silently truncated.')
             events.append(item)
     document = {'protocol':'catalyst-local-evidence-v1', 'source_digest':body['source']['digest'],
-                'problem_digest':digest(body['problem_set']), 'models':evaluation_models(body['evaluation']),
+                'problem_digest':digest(body['problem_set']), 'models':check['models'],
                 'run_id':check['run_id'], 'runtime_revision':record['data']['configuration']['repository'].get('commit') or 'unknown',
                 'status':'completed', 'events':events}
     from decimal import Decimal, InvalidOperation

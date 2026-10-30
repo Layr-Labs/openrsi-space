@@ -148,7 +148,7 @@ Actual settled local usage must be **at least the full requested remote cap**:
 actual usage does not qualify. The exported bundle is separate from public
 harness source and is limited to **192 MiB and 1,000 model calls**. It includes
 recorded model exchanges, accounting and evaluation events for private screening
-and sampled LLM review. Source, problem, provider/model and reasoning settings
+and sampled LLM review. Source, problem, model (or supported provider equivalent) and reasoning settings
 must match; the official remote run starts fresh, without your local candidates
 or notes. A valid local circuit is not required.
 
@@ -166,7 +166,7 @@ completed command-harness run, no runtime trial errors, settled accounting, and
 a successful accounted response from every declared model. A valid circuit or
 minimum spending amount is not required. Budget-triggered shutdown can qualify.
 
-Harness source, provider/model/reasoning settings and assigned problem must match.
+Harness source, model (or supported provider equivalent), reasoning settings and assigned problem must match.
 Local spending, token and time limits may differ from the remote limits. Runtime
 revisions need not be identical; the recorded command interface must be compatible.
 This is a CLI readiness check, not trusted evidence or an anti-cheat guarantee.

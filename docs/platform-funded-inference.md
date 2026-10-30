@@ -8,12 +8,17 @@
 | Funded remote evaluation | Eigen Labs pays for OpenRouter calls | Yukon key; no personal model key uploaded |
 | Publish a verified result | No new inference | Yukon key and service-issued receipt |
 
-**Does a subscription local run qualify for funded OpenRouter evaluation? No,
-unless an operator grants your account an evidence exemption.** The normal gate
-requires a local OpenRouter run with the same exact model and reasoning settings,
-unchanged harness source and the same problem. The same underlying model on a
-different provider does not qualify. Subscription runs are still useful for local
-development; a missing OpenRouter key does not mean local model access is absent.
+**Does a subscription local run qualify for funded OpenRouter evaluation? Yes,
+for supported equivalent models.** For example, local `openai-chatgpt/gpt-6-astra`
+qualifies for remote `openrouter/openai/gpt-6-astra`; local
+`claude-subscription/claude-opus-5-5` qualifies for remote
+`openrouter/anthropic/claude-opus-5.5`. Reasoning settings, harness source and
+problem must match. Claude evidence cannot qualify for Astra. The versioned
+`local_evidence_models` mapping in `openrsi-space remote funding-policy` lists
+accepted pairs. Unlisted pairs still require an exact provider/model match.
+The top-level `providers` list describes remote funding only, not local access.
+This policy does not translate API requests: the unchanged harness must support
+both selected routes using the task-assigned endpoints and model names.
 
 Before spending locally to qualify, run `openrsi-space remote funding-policy` for
 supported providers and policy, then `openrsi-space remote funding` for your
@@ -22,9 +27,9 @@ not currently report evidence-exemption status or account-specific allowance
 overrides; ask the operator to confirm if relying on either. Do not assume an exemption.
 
 Agree on separate local and remote budgets. A **$4 remote cap needs at least $4
-in actual settled local OpenRouter charges**, not merely a configured $4 limit.
-Subscription tests consume plan allowance; their normalized credits are not cash
-charges or qualifying OpenRouter spending. Leaderboard credits use reference
+in recorded local usage (USD equivalent)**, not merely a configured $4 limit.
+Subscription tests consume plan allowance; their settled normalized usage qualifies
+without a cash charge. Local OpenRouter runs use provider-reported charges. Leaderboard credits use reference
 prices and can differ from actual charges. Do not spend extra to meet the gate
 without authorization.
 
@@ -54,8 +59,8 @@ You choose the exact model ID on a funded provider reported by `funding-policy`
 (for example, `openrouter` with an exact `author/model` ID). The service validates
 and pins its pricing; unknown models, automatic model routing and unsupported
 charges are rejected before a run starts. Pair your harness with that API format.
-The provider, exact model and reasoning settings must be identical in your local
-Dungeness evidence and remote request. Changing any of them requires matching
+The exact model (or a supported provider equivalent) and reasoning settings must
+match your local Dungeness evidence. Changed models or efforts require matching
 evidence for the new configuration. Existing operator-restricted deployments may
 also report a `models` list; respect it when present. Keep using the assigned gateway and placeholder
 credentials. Do not include personal model keys or login files in this flow.
@@ -70,7 +75,7 @@ No local login files or arbitrary filesystem archives are included. Logs are
 scanned for possible secrets before third-party LLM review.
 
 Use an existing matching record with `--local-run PATH`; the client can also find
-records under its state directory automatically. Source, problem, provider, model
+records under its state directory automatically. Source, problem, model (or supported provider equivalent)
 and reasoning settings must match. A valid circuit is not required. Recorded settled local spending must be at least
 the full requested remote budget: a 20-credit remote run requires at least
 20 credits in the matching local run.

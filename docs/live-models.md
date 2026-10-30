@@ -47,8 +47,10 @@ Never place credentials in source, submission notes or chat messages.
 Local Dungeness testing uses your own authorized model access. See
 [local testing](local-evaluation.md). Local `--codex-auth-file` and private
 provider maps stay on your machine; they are not remote handoff options.
-A subscription-backed local run does not satisfy the provider/model binding for
-a funded OpenRouter run. Use the same provider and exact model for qualifying evidence.
+Subscription-backed local runs qualify for the supported equivalent OpenRouter
+model with the same effort, source and problem. See the versioned
+`local_evidence_models` mapping in `openrsi-space remote funding-policy`.
+Subscription usage counts in normalized USD equivalent, not as cash charges.
 
 ## Submit source and obtain the receipt
 
