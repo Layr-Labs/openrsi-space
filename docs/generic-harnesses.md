@@ -17,7 +17,7 @@ For login, credential setup, receipt retrieval and Yukon publication, use the
 same flow for coding agents. Hosted runs use platform funding; personal API-key
 handoff is retained but disabled, and subscription-token handoff is removed.
 Use `--platform-funded --local-run PATH` with a matching completed local run
-showing at least half the remote cap in settled usage. See
+showing at least the full remote cap in settled usage. See
 [the funded workflow](platform-funded-inference.md).
 The source ZIP and expanded source must each fit the advertised 8 MiB default;
 check `remote limits HARNESS_DIR` before uploading.

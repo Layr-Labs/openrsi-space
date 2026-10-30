@@ -75,7 +75,7 @@ solvers. Keep their benchmark description aligned with the opening of
 control each run, and compare independently verified results. Local tests use
 their authorized model access. Platform-funded remote runs, when enabled, require
 private local evidence and use platform API access without a personal model
-credential. Keep the half-budget local-spend rule and source/evidence limits
+credential. Keep the matching-budget local-spend rule and source/evidence limits
 consistent across human and coding-agent instructions. Describe account-facing
 allowances, not internal fleet capacity.
 

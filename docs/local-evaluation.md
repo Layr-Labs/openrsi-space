@@ -10,7 +10,7 @@ Use packaging and synthetic checks first, then a model-enabled integration run.
 Preparation alone is not a complete test. If local execution is blocked or declined,
 report that explicitly before proceeding remotely. The CLI checks existing local
 records before submission. Funded admission requires a matching private evidence
-bundle with settled local spending of at least half the remote cap; user-funded
+bundle with settled local spending of at least the full remote cap; user-funded
 runs can explicitly skip the CLI check. See [funded requirements](platform-funded-inference.md).
 Neither local scores nor successful tests guarantee a receipt.
 
@@ -143,8 +143,8 @@ completed matching local run. Keep its `run.json`, Dungeness records and usage
 logs together; pass `--platform-funded --local-run PATH`. Existing qualifying
 runs can be reused. The CLI does not spend automatically.
 
-Actual settled local usage must be **at least half the requested remote cap**:
-10 local credits for a 20-credit remote run. A larger configured cap with less
+Actual settled local usage must be **at least the full requested remote cap**:
+20 local credits for a 20-credit remote run. A larger configured cap with less
 actual usage does not qualify. The exported bundle is separate from public
 harness source and is limited to **192 MiB and 1,000 model calls**. It includes
 recorded model exchanges, accounting and evaluation events for private screening

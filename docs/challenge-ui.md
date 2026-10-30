@@ -35,7 +35,7 @@ and [funding requirements](platform-funded-inference.md):
 
 - Public source ZIP and expanded files each default to 8 MiB; use live limits.
 - When enabled, funded remote submissions require a matching private local-run
-  bundle and settled local usage of at least half the remote cap.
+  bundle and settled local usage of at least the full remote cap.
 - Local tests use the solver's authorized model access. Funded remote runs use
   platform API access and transfer no personal model credential.
 - Each account may have one funded evaluation running at a time. Backend fleet

@@ -60,7 +60,7 @@ def bundle(path, body):
         if not amounts or any(isinstance(n,bool) or not isinstance(n,(int,float)) for n in amounts):
             raise ValueError
         spent = sum((Decimal(str(n)) for n in amounts), Decimal(0))
-        minimum = Decimal(str(body['evaluation']['max_model_credits'])) / 2
+        minimum = Decimal(str(body['evaluation']['max_model_credits']))
         if any(not Decimal(str(n)).is_finite() or n<0 for n in amounts):
             raise ValueError
         if spent < minimum:
