@@ -80,4 +80,4 @@ requires explicit authorization and the same source review and screening checks.
 
 ## Storage
 
-The service retains evidence in operator-managed storage. Changing storage does not change evaluation IDs or owner permissions. Storage backends and migration tools are maintained in the private `catalyst-verifier` repository.
+The service retains evidence in operator-managed storage. Changing storage does not change evaluation IDs or owner permissions. Storage backends and migration tools are maintained in the private `openrsi-space-verifier` repository.

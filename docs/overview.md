@@ -142,7 +142,7 @@ This repository is the public solver and challenge interface. It contains:
 - Model-credit accounting rules, result validation and the public HTTP/receipt contract.
 - `benchmark.json`, the receipt-only GitHub Actions workflow and solver documentation.
 
-The **private `catalyst-verifier` repository** contains the verification API,
+The **private `openrsi-space-verifier` repository** contains the verification API,
 queue, Dungeness worker adapter, anti-cheat implementation, credential handling
 inside the service, artifact storage and deployment tooling. It depends on the
 public `catalyst-research` package; this package does not depend on the service.
@@ -194,7 +194,7 @@ artifacts and limits. Local runs cannot issue official Yukon receipts.
 uv run python -m unittest discover -s tests -v
 ```
 
-Service and cross-repository integration tests live in `catalyst-verifier`.
+Service and cross-repository integration tests live in `openrsi-space-verifier`.
 See [publication notes](publication.md) for the public/private source boundary.
 
 ### Harness visibility

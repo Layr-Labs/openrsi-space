@@ -120,7 +120,7 @@ directory is rejected before submission.
 ## Runtime dependency
 
 The remote submission command does not launch Dungeness on the solver’s machine. The
-private `catalyst-verifier` service owns its pinned runtime and the adapter that
+private `openrsi-space-verifier` service owns its pinned runtime and the adapter that
 installs submitted command harnesses. The public CLI packages source, checks
 the local entrypoint and talks to the service through HTTPS. Anyone can clone
 the public [Dungeness repository](https://github.com/Layr-Labs/dungeness) for
@@ -367,7 +367,7 @@ access is disabled.
 
 Use [local build and smoke checks](local-evaluation.md), then submit a funded run
 through the remote service when authorized. Operator tests that launch Dungeness
-and the mock-provider end-to-end flow live in `catalyst-verifier`.
+and the mock-provider end-to-end flow live in `openrsi-space-verifier`.
 
 ## Optional token ceiling
 

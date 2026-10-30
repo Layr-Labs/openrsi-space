@@ -3,7 +3,7 @@
 OpenRSI contains the solver CLI, challenge statement and contract, receipt-only
 Yukon workflow, and public tests and documentation. The verification API, workers,
 anti-cheat implementation, artifact storage and deployment tooling belong in the
-private `catalyst-verifier` repository. The challenge UI belongs in Yukon.
+private `openrsi-space-verifier` repository. The challenge UI belongs in Yukon.
 
 Removing files from the current tree does not remove them from Git history or
 old pull-request references. Before changing repository visibility, maintainers

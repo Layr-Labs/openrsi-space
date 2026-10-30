@@ -35,7 +35,7 @@ def create_starter(target: Path) -> dict:
         "function tools, tool results, streaming and usage reporting against a strict mock.\n"
         "Use only the gateway endpoints assigned in CATALYST_TASK; keep credentials\n"
         "outside the harness. A packaging smoke check does not establish live compatibility.\n\n"
-        "Read https://github.com/Layr-Labs/catalyst/blob/main/docs/harness-compatibility.md\n"
+        "Read https://github.com/Layr-Labs/openrsi-space/blob/main/docs/harness-compatibility.md\n"
         "and report checks completed or skipped before an authorized model-consuming run.\n"
     )
     (target / "Dockerfile").write_text(

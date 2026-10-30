@@ -1,6 +1,6 @@
 # OpenRSI
 
-[![Checks](https://github.com/Layr-Labs/catalyst/actions/workflows/check.yml/badge.svg)](https://github.com/Layr-Labs/catalyst/actions/workflows/check.yml)
+[![Checks](https://github.com/Layr-Labs/openrsi-space/actions/workflows/check.yml/badge.svg)](https://github.com/Layr-Labs/openrsi-space/actions/workflows/check.yml)
 
 OpenRSI is a benchmark for research agent harnesses. You submit your own
 harness to run in a controlled environment on
@@ -10,11 +10,11 @@ The initial challenge is **ecdsa.fail**.
 
 This repository contains the solver CLI, challenge resources, accounting contracts
 and Yukon receipt integration. Dungeness executes harnesses; the private
-`catalyst-verifier` service manages official evaluations. Yukon hosts the UI.
+`openrsi-space-verifier` service manages official evaluations. Yukon hosts the UI.
 
 The platform is **OpenRSI**; the solver command is **`openrsi-space`**.
-The repository and Python package names are unchanged. After updating your
-checkout, run `uv sync --locked` and replace `catalyst` with `openrsi-space` in
+The repository is **`Layr-Labs/openrsi-space`**. Python imports and existing
+configuration names remain compatible. After updating your checkout, run `uv sync --locked` and replace `catalyst` with `openrsi-space` in
 your scripts. The old command is no longer installed; existing `.catalyst` state
 and `CATALYST_*` configuration still work.
 
@@ -23,6 +23,8 @@ and `CATALYST_*` configuration still work.
 Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 
 ```sh
+git clone https://github.com/Layr-Labs/openrsi-space.git
+cd openrsi-space
 uv sync --locked
 uv run openrsi-space --help
 uv run openrsi-space --version

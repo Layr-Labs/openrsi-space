@@ -1,6 +1,6 @@
 # Public remote evaluation contract
 
-The public client and the private `catalyst-verifier` service communicate over
+The public client and the private `openrsi-space-verifier` service communicate over
 HTTPS. No private Python package, Dungeness checkout or server credential is
 required to call the remote API. Funded solvers must retain evidence from a
 matching local Dungeness run, even though the submission command itself does
@@ -242,7 +242,7 @@ evidence; it does not advertise a download. Upgrade older clients before using
 
 The public contract is defined by this guide and the public client validators.
 Service deployment, queue administration, corpus operations and screening
-implementation belong in `catalyst-verifier`.
+implementation belong in `openrsi-space-verifier`.
 
 ## Rejected submissions without an evaluation ID
 
