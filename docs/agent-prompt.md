@@ -1,5 +1,17 @@
 # OpenRSI: instructions for a coding agent
 
+Before setup: local Codex/ChatGPT or Claude subscription access is separate from
+Yukon authentication and remote funding. **Subscription local runs do not qualify
+for funded OpenRouter evaluation without an operator evidence exemption**, even
+with the same underlying model. Check eligibility before spending on a qualifying
+run. See [local access, budgets and remote eligibility](platform-funded-inference.md#local-access-and-remote-eligibility).
+
+Do not declare local model access unavailable merely because there is no
+OpenRouter API key. With the user's authorization, check their selected local
+login through its supported CLI without displaying credentials. Explain whether
+the planned test is development-only or intended to qualify for remote funding.
+Do not read credentials until authorized, and never transfer local login files.
+
 ## Select the current problem release
 
 Before preparing a new evaluation, run `uv run openrsi-space problem current`. This
@@ -62,8 +74,8 @@ Settled local spending must be **at least 100% of the requested remote cap**
 only 2 credits were used. Reuse a qualifying run; do not spend automatically to
 meet the gate. Ask for additional local authorization or propose a lower remote
 cap if needed. Source, problem, provider/model and reasoning settings must match.
-A local ChatGPT route does not match the OpenAI API route just because a model
-name resembles it. A valid circuit is not required; local evidence proves neither
+A local ChatGPT or Claude subscription route does not match OpenRouter just because
+the underlying model is the same. A valid circuit is not required; local evidence proves neither
 authenticity nor an official score. The remote run starts fresh.
 
 The default funded allowance is **20 model credits (USD equivalent) per Yukon account per

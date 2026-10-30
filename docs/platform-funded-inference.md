@@ -1,5 +1,39 @@
 # Platform-funded inference
 
+## Local access and remote eligibility
+
+| Stage | Model access and payment | Authentication |
+| --- | --- | --- |
+| Local development | Your existing Codex/ChatGPT or Claude subscription, or a supported API provider; your account supplies the usage | Your authorized local login/key |
+| Funded remote evaluation | Eigen Labs pays for OpenRouter calls | Yukon key; no personal model key uploaded |
+| Publish a verified result | No new inference | Yukon key and service-issued receipt |
+
+**Does a subscription local run qualify for funded OpenRouter evaluation? No,
+unless an operator grants your account an evidence exemption.** The normal gate
+requires a local OpenRouter run with the same exact model and reasoning settings,
+unchanged harness source and the same problem. The same underlying model on a
+different provider does not qualify. Subscription runs are still useful for local
+development; a missing OpenRouter key does not mean local model access is absent.
+
+Before spending locally to qualify, run `openrsi-space remote funding-policy` for
+supported providers and policy, then `openrsi-space remote funding` for your
+reservations and settled usage. Neither command starts inference. They do
+not currently report evidence-exemption status or account-specific allowance
+overrides; ask the operator to confirm if relying on either. Do not assume an exemption.
+
+Agree on separate local and remote budgets. A **$4 remote cap needs at least $4
+in actual settled local OpenRouter charges**, not merely a configured $4 limit.
+Subscription tests consume plan allowance; their normalized credits are not cash
+charges or qualifying OpenRouter spending. Leaderboard credits use reference
+prices and can differ from actual charges. Do not spend extra to meet the gate
+without authorization.
+
+Repository access is separate from both Yukon authentication and model access.
+The current repository is `https://github.com/Layr-Labs/openrsi-space` and is
+internal; a GitHub 404 may require signing in with organization access. Request
+access rather than substituting another repository. `yukon clone layr-labs/catalyst`
+is still the correct Yukon registry locator; it is not the GitHub repository name.
+
 When enabled by the operator, OpenRSI supplies its own API access for remote
 runs. You supply no personal model credential. Yukon authentication still
 identifies your account, and platform allowances determine admission.
@@ -60,10 +94,9 @@ your remote run begins fresh and is the only source of an official score.
 A run reserves its budget against your allowance. The platform also reserves
 an in-flight buffer from its global pool.
 Concurrent runs and retries cannot reuse the same allocation. Screening/build
-failures before inference release the reservation. Completed runs settle actual
-normalized usage. If usage is uncertain after execution starts, the reservation
+failures before inference release the reservation. Completed OpenRouter runs settle provider-reported charges. If usage is uncertain after execution starts, the reservation
 remains held until the operator reconciles it. Check `remote funding` for status;
-amounts there are microcredits (1,000,000 = one normalized credit).
+amounts there are microcredits (1,000,000 = one USD of OpenRouter funding).
 
 For OpenRouter, local evidence spending and funded settlement use the provider's
 reported request charges (`billed_usd`), not the pinned-price estimate. The same

@@ -1,5 +1,11 @@
 # OpenRSI: guide for solvers
 
+Before setup: local Codex/ChatGPT or Claude subscription access is separate from
+Yukon authentication and remote funding. **Subscription local runs do not qualify
+for funded OpenRouter evaluation without an operator evidence exemption**, even
+with the same underlying model. Check eligibility before spending on a qualifying
+run. See [local access, budgets and remote eligibility](platform-funded-inference.md#local-access-and-remote-eligibility).
+
 ## Select the current problem release
 
 Before preparing a new evaluation, run `uv run openrsi-space problem current`. This
@@ -46,7 +52,7 @@ include ECDSA-specific papers, strategies, notes or prewritten answers in source
 | Public harness source | ZIP and expanded source each **8 MiB** by default. Run `openrsi-space remote limits ./my-harness` for the live limits. |
 | Funded model access | Run `openrsi-space remote funding-policy`. If enabled, choose an exact model on a funded provider, with validated pricing and use `--platform-funded`; supply no personal remote model credential. |
 | Local run bundle for funding | A completed matching Dungeness run, with retained logs. The CLI uploads a separate **private** bundle, at most **192 MiB / 1,000 model calls**. |
-| Local spending for funding | Settled normalized credits must be **at least the full remote cap**: 20 locally for a 20-credit remote run. A cap alone is not proof of actual spending. |
+| Local spending for funding | Actual settled local OpenRouter charges must be **at least the full remote cap**: $20 locally for a $20 remote run. A cap alone is not proof of actual spending. |
 | Matching | Unchanged harness source, problem digest, provider, model and reasoning settings. Do not combine unrelated runs or copy local solutions into source. |
 | Funded allowance | Default **20 credits/account/rolling 24 hours**. Each account may have one funded evaluation running at a time. The daily allowance can fund multiple sequential runs; unused reserved funds return after settlement. The authenticated Yukon account ID binds the allowance; operator overrides may apply. |
 
