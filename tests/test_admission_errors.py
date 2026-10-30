@@ -13,6 +13,19 @@ class EvidenceDiagnosticTests(unittest.TestCase):
         self.assertNotIn('field', HTTPFailure(403, {**details, 'field': 'untrusted-field'}).details)
 
 class AdmissionErrorTests(unittest.TestCase):
+    def test_source_findings_survive_without_paths_values_or_unknown_rules(self):
+        finding = {'file_index': 2, 'line': 19, 'rule': 'possible-credential',
+                   'path': 'private-token', 'value': 'private-token'}
+        error = HTTPFailure(400, {'code': 'source_not_publishable', 'source_findings': [
+            finding, {'file_index': True, 'line': 19, 'rule': 'possible-credential'},
+            {'file_index': 2, 'line': 19, 'rule': 'private-token'}, None]})
+        self.assertEqual(error.details['source_findings'],
+                         [{'file_index': 2, 'line': 19, 'rule': 'possible-credential'}])
+        self.assertIn('zero-based', str(error))
+        self.assertNotIn('private-token', str(error))
+        self.assertNotIn('source_findings', HTTPFailure(400, {'code': 'source_not_publishable',
+                                                           'source_findings': 'private-token'}).details)
+
     def test_http_error_displays_only_safe_structured_fields(self):
         body = {'error': 'private-token-do-not-print', 'code': 'daily_quota', 'scope': 'account',
                 'limit': 10, 'current': 10, 'retry_after_seconds': 420, 'debug': 'private-token-do-not-print'}

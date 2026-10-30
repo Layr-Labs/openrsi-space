@@ -119,3 +119,13 @@ do not expire automatically. Global capacity and enrollment still apply.
 
 The default evaluator is `https://3.21.93.126`; set `CATALYST_EVALUATOR_URL` to
 use another trusted deployment. Public policy commands require no login.
+
+### A source-publication rejection
+
+`source_not_publishable` happens before an evaluation starts. New diagnostics
+include `source_findings`: the scanner rule, a one-based line number, and a
+zero-based file index. Match that index to the sorted keys of the saved source
+archive's `catalyst-snapshot.json.files` (not the generated snapshot itself).
+The response contains no matched credential values or source excerpts.
+Preserve the saved request and local evidence while diagnosing it; a server-side
+scanner correction does not require changing your harness or repeating inference.
