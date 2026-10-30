@@ -7,6 +7,27 @@ from catalyst.common import CatalystError
 
 
 class EvidenceExportTests(LocalCheckTests):
+    def test_subscription_export_keeps_local_identity_for_funded_equivalent(self):
+        self.record['data']['model'] = {'provider': 'openai-chatgpt', 'request_model': 'gpt-6-astra',
+                                         'defaults': {'reasoning_effort': 'high'}}
+        self.record['data']['configuration']['repository'] = {'commit': '1'*40}
+        self.body['evaluation'].update(model={'provider': 'openrouter', 'name': 'openai/gpt-6-astra',
+                                              'reasoning_effort': 'high'}, max_model_credits=10)
+        self.event.update(sequence=3, request_id='req-1')
+        self.event['data'].update(provider='openai-chatgpt', model='gpt-6-astra', normalized_usd=10,
+                                  billed_usd=0)
+        self.save()
+        exported = bundle(self.path, self.body)
+        self.assertEqual(exported['models'], [{'provider': 'openai-chatgpt', 'name': 'gpt-6-astra',
+                                               'reasoning_effort': 'high'}])
+        self.assertEqual(exported['events'][0]['data']['provider'], 'openai-chatgpt')
+        self.body['evaluation']['max_model_credits'] = 10.000001
+        with self.assertRaisesRegex(CatalystError, 'at least'):
+            bundle(self.path, self.body)
+        self.body['evaluation']['model']['reasoning_effort'] = 'medium'
+        with self.assertRaisesRegex(ValueError, 'reasoning'):
+            bundle(self.path, self.body)
+
     def test_exports_only_same_run_known_events_with_model_payloads(self):
         self.record['data']['configuration']['repository']={'commit':'1'*40}
         self.event['data']['normalized_usd']=100

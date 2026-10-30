@@ -1,10 +1,10 @@
 # OpenRSI: guide for solvers
 
 Before setup: local Codex/ChatGPT or Claude subscription access is separate from
-Yukon authentication and remote funding. **Subscription local runs do not qualify
-for funded OpenRouter evaluation without an operator evidence exemption**, even
-with the same underlying model. Check eligibility before spending on a qualifying
-run. See [local access, budgets and remote eligibility](platform-funded-inference.md#local-access-and-remote-eligibility).
+Yukon authentication and remote funding. **Codex/ChatGPT and Claude subscription local runs qualify for supported equivalent
+OpenRouter models**, with the same reasoning settings, harness source and problem.
+The local run bundle must record at least the requested remote cap in USD-equivalent
+usage. No personal OpenRouter key is required. See [local access, budgets and remote eligibility](platform-funded-inference.md#local-access-and-remote-eligibility).
 
 ## Select the current problem release
 
@@ -52,7 +52,7 @@ include ECDSA-specific papers, strategies, notes or prewritten answers in source
 | Public harness source | ZIP and expanded source each **8 MiB** by default. Run `openrsi-space remote limits ./my-harness` for the live limits. |
 | Funded model access | Run `openrsi-space remote funding-policy`. If enabled, choose an exact model on a funded provider, with validated pricing and use `--platform-funded`; supply no personal remote model credential. |
 | Local run bundle for funding | A completed matching Dungeness run, with retained logs. The CLI uploads a separate **private** bundle, at most **192 MiB / 1,000 model calls**. |
-| Local spending for funding | Actual settled local OpenRouter charges must be **at least the full remote cap**: $20 locally for a $20 remote run. A cap alone is not proof of actual spending. |
+| Local spending for funding | Recorded local usage in USD equivalent must be **at least the full remote cap**: $20 locally for a $20 remote run. A cap alone is not proof of actual spending. |
 | Matching | Unchanged harness source, problem digest, provider, model and reasoning settings. Do not combine unrelated runs or copy local solutions into source. |
 | Funded allowance | Default **20 credits/account/rolling 24 hours**. Each account may have one funded evaluation running at a time. The daily allowance can fund multiple sequential runs; unused reserved funds return after settlement. The authenticated Yukon account ID binds the allowance; operator overrides may apply. |
 
@@ -284,8 +284,8 @@ execution once ready. You decide when the harness is ready for remote evaluation
 
 Check `uv run openrsi-space remote funding-policy` before choosing your local model.
 Choose an exact model on a funded API provider and a completed local run with
-identical provider, model and reasoning settings. The service validates its price.
-For this 3-credit example, the local record needs at least **1.5 settled credits**.
+the same model (or supported provider equivalent) and reasoning settings. The service validates its price.
+For this 3-credit example, the local record needs at least **3 settled credits (USD equivalent)**.
 The CLI uploads its private evidence separately from source; it reads and sends no
 personal model credential for the remote run.
 

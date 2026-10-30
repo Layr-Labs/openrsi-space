@@ -79,7 +79,11 @@ uv run openrsi-space remote submit .catalyst/my-agent \
 
 Hosted runs receive no personal model credentials. For example, select
 `--provider openrouter --model openai/gpt-6-astra` with matching local evidence
-and the platform-funded flag. Remote subscription provider IDs are rejected.
+and the platform-funded flag. A matching local Codex/ChatGPT Astra run qualifies;
+use the OpenRouter provider/model only for the remote request. Local subscription
+usage counts in normalized USD equivalent. Remote subscription provider IDs are
+rejected because the platform funds OpenRouter, not because subscription evidence
+is ineligible. See [evidence matching](platform-funded-inference.md).
 The harness's model client must implement the chosen provider's supported
 protocol and use the gateway endpoint supplied in `CATALYST_TASK`.
 The gateway substitutes trusted credentials using configured authentication

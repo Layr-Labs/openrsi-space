@@ -6,6 +6,7 @@ import shlex
 from catalyst.common import CatalystError, digest_files, read_json
 from catalyst.contracts.accounting import evaluation_models
 from catalyst.contracts.results import digest
+from catalyst.contracts.model_equivalence import model_binding
 
 
 def request_identity(body):
@@ -16,9 +17,13 @@ def request_identity(body):
 
 
 def _models(models, *, runtime=False):
-    return sorted((m['provider'], m['request_model'] if runtime else m['name'],
-                   (m.get('defaults', {}) if runtime else m).get('reasoning_effort') or '')
-                  for m in models)
+    return model_binding(record_models(models) if runtime else models)
+
+
+def record_models(models):
+    return [{'provider': m['provider'], 'name': m['request_model'],
+             **({'reasoning_effort': m['defaults']['reasoning_effort']}
+                if m.get('defaults', {}).get('reasoning_effort') else {})} for m in models]
 
 
 def _record(path):
@@ -61,7 +66,7 @@ def validate_record(path, body):
         raise ValueError('the assigned problem changed')
     models = agent.get('model_access', {}).get('models') or [data['model']]
     if _models(models, runtime=True) != _models(evaluation_models(body['evaluation'])):
-        raise ValueError('the provider, model or reasoning settings changed')
+        raise ValueError('the model or reasoning settings differ, or the provider pair has no supported equivalence')
     usage = data['usage']
     if usage.get('model_accounting_state') != 'settled' or usage.get('model_requests', 0) < 1:
         raise ValueError('model usage is missing or unsettled')
@@ -74,10 +79,11 @@ def validate_record(path, body):
                     and item.get('status') == 'success' and item.get('accounting_method') == 'gateway'
                     and item.get('total_tokens', 0) > 0):
                 successful.add((item.get('provider'), item.get('model')))
-    required = {(m['provider'], m['name']) for m in evaluation_models(body['evaluation'])}
+    required = {(m['provider'], m['request_model']) for m in models}
     if not required <= successful:
         raise ValueError('not every declared model has a successful accounted response')
-    return {'status': 'passed', 'run_id': data['run_id'], 'record_path': str(path)}
+    return {'status': 'passed', 'run_id': data['run_id'], 'record_path': str(path),
+            'models': record_models(models)}
 
 
 def check_submission(state, package, body, base, *, local_run=None, skip=False):
