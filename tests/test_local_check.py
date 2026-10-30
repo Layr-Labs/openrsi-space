@@ -96,7 +96,7 @@ class LocalCheckTests(unittest.TestCase):
                 self.check()
 
     def test_missing_prepared_failed_unsettled_and_zero_call_runs_do_not_pass(self):
-        with self.assertRaisesRegex(CatalystError, '--skip-local-check'):
+        with self.assertRaisesRegex(CatalystError, 'cannot be skipped'):
             self.check()
         self.save()
         original = deepcopy(self.record)
@@ -166,20 +166,19 @@ class LocalCheckTests(unittest.TestCase):
             credential.assert_not_called()
             factory.return_value.submit.assert_not_called()
 
-    def test_cli_pass_and_explicit_skip_forward_decision_without_trace(self):
+    def test_cli_pass_forwards_completed_local_decision(self):
         self.save()
-        for extra, status in [([], 'passed'), (['--skip-local-check'], 'skipped')]:
-            parser, _ = build_parser()
-            args = parser.parse_args(['remote', 'submit', str(self.harness), *extra])
-            with patch('catalyst.client.evaluations.RemoteClient') as factory, \
-                    patch('catalyst.cli.model_access_input', return_value=None), \
-                    redirect_stderr(io.StringIO()), redirect_stdout(io.StringIO()):
-                factory.return_value.base = self.base
-                factory.return_value.submit.return_value = {}
-                remote_command(args, self.state)
-                decision = factory.return_value.submit.call_args.kwargs['local_check']
-                self.assertEqual(decision['status'], status)
-                self.assertEqual(decision['request_identity'], request_identity(self.body))
+        parser, _ = build_parser()
+        args = parser.parse_args(['remote', 'submit', str(self.harness)])
+        with patch('catalyst.client.evaluations.RemoteClient') as factory, \
+                patch('catalyst.cli.model_access_input', return_value=None), \
+                redirect_stderr(io.StringIO()), redirect_stdout(io.StringIO()):
+            factory.return_value.base = self.base
+            factory.return_value.submit.return_value = {}
+            remote_command(args, self.state)
+            decision = factory.return_value.submit.call_args.kwargs['local_check']
+            self.assertEqual(decision['status'], 'passed')
+            self.assertEqual(decision['request_identity'], request_identity(self.body))
 
     def test_source_change_after_check_fails_before_network(self):
         self.save()
@@ -213,7 +212,7 @@ class LocalCheckTests(unittest.TestCase):
         self.assertEqual(requests[0]['request_id'], requests[1]['request_id'])
         self.assertEqual(client.session(accepted['evaluation_id'])['local_check']['status'], 'passed')
 
-    def test_check_flags_are_mutually_exclusive(self):
+    def test_skip_flag_is_no_longer_accepted(self):
         parser, _ = build_parser()
         with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
-            parser.parse_args(['remote', 'submit', str(self.harness), '--local-run', 'somewhere', '--skip-local-check'])
+            parser.parse_args(['remote', 'submit', str(self.harness), '--skip-local-check'])

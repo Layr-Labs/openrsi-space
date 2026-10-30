@@ -7,6 +7,14 @@ from catalyst.common import CatalystError
 
 
 class EvidenceExportTests(LocalCheckTests):
+    def test_old_skipped_decision_cannot_omit_evidence_upload(self):
+        from catalyst.client.local_evidence import attach
+        from unittest.mock import Mock
+        with patch('catalyst.client.transport.solver_fetch') as network:
+            with self.assertRaisesRegex(CatalystError, 'no local evidence'):
+                attach(Mock(), self.body, {'status': 'skipped'})
+            network.assert_not_called()
+
     def test_subscription_export_keeps_local_identity_for_funded_equivalent(self):
         self.record['data']['model'] = {'provider': 'openai-chatgpt', 'request_model': 'gpt-6-astra',
                                          'defaults': {'reasoning_effort': 'high'}}

@@ -51,8 +51,8 @@ harness source; review files before uploading. You authorize each paid run and
 are responsible for complying with your model provider's terms.
 
 `remote submit` reuses a matching completed local run. Use `--local-run PATH`
-for records elsewhere. User-funded runs can explicitly use `--skip-local-check`;
-platform-funded runs require evidence unless the operator grants an exemption.
+for records elsewhere. Every new hosted submission requires a matching completed
+local run bundle; there is no skip option or evidence exemption.
 
 ### Before submitting
 

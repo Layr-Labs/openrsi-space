@@ -81,9 +81,6 @@ def attach(client, body, local_check):
         # Resume the same operation with the same immutable uploaded evidence.
         body['local_evidence'] = local_check['local_evidence']
         return
-    if local_check.get('status') == 'skipped':
-        # This requests an operator exemption; the server must authorize it.
-        return
     if not local_check.get('record_path'):
         raise CatalystError('The saved request has no local evidence. Supply --local-run PATH; no new run was submitted.')
     from . import transport

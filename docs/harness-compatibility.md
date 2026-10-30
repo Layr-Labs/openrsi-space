@@ -28,16 +28,15 @@ Use this process when creating or reusing a harness:
    Personal API-key submission is currently disabled and remote subscription
    handoffs have been removed. For local testing, use the private access option
    described in the local guide. A qualifying local evidence run must match the
-   funded remote provider, model and reasoning settings.
+   funded remote model (or its supported local equivalent) and reasoning settings.
 4. Run the packaging/entrypoint smoke checks and exercise the adapter against a
    strict mock of the selected API, including auxiliary requests and a complete
    tool-call round trip. A mock should reject malformed fields rather than return
    success for any JSON. `openrsi-space harness smoke` alone does not test live provider
    compatibility. Complete a [local Dungeness run](local-evaluation.md) before
-   remote submission; the CLI reuses a matching local record, with an explicit
-   `--skip-local-check` override for user-funded runs. Funded admission requires
-   a matching private local bundle and the full remote cap in settled local usage;
-   the flag cannot bypass that gate without an operator exemption.
+   remote submission; the CLI reuses a matching local record. Every new hosted
+   submission requires its private local bundle and the full remote cap in recorded
+   local usage (USD equivalent). There is no skip option or evidence exemption.
 5. Report the tested framework version, provider/model/access method, supported
    API operations and any untested boundary in the readiness report. A live
    compatibility run consumes model allowance and needs the user's authorization

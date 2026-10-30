@@ -112,11 +112,8 @@ def build_parser():
     remote_submit.add_argument("--problem-release", choices=list(PROBLEM_RELEASES),
                                help="Must match the evaluator's assigned release; default: v1.")
     remote_submit.add_argument("--wait", action="store_true", help="Wait, validate the result and save its verification reference.")
-    local_check = remote_submit.add_mutually_exclusive_group()
-    local_check.add_argument("--local-run", type=Path,
-                             help="Use an existing local run directory, run.json or Dungeness record.json.")
-    local_check.add_argument("--skip-local-check", action="store_true",
-                             help="Explicitly submit without a matching successful local Dungeness run.")
+    remote_submit.add_argument("--local-run", type=Path,
+                               help="Use a completed local run directory, run.json or Dungeness record.json; required evidence is otherwise discovered locally.")
     remote_submit.add_argument("--source-license",
                                help="Optional source license; leave unset unless explicitly requested. Existing third-party licenses still apply.")
     remote_submit.add_argument("--entrypoint", help="Launch argv for an existing repository without harness.json; parsed without a shell.")

@@ -22,9 +22,8 @@ both selected routes using the task-assigned endpoints and model names.
 
 Before spending locally to qualify, run `openrsi-space remote funding-policy` for
 supported providers and policy, then `openrsi-space remote funding` for your
-reservations and settled usage. Neither command starts inference. They do
-not currently report evidence-exemption status or account-specific allowance
-overrides; ask the operator to confirm if relying on either. Do not assume an exemption.
+reservations and settled usage. Neither command starts inference. Account-specific allowance overrides can be confirmed with the operator;
+allowance changes do not waive required local evidence.
 
 Agree on separate local and remote budgets. A **$4 remote cap needs at least $4
 in recorded local usage (USD equivalent)**, not merely a configured $4 limit.
@@ -82,8 +81,9 @@ the full requested remote budget: a 20-credit remote run requires at least
 The exported bundle allows at most 1,000 model calls and 192 MiB.
 A configured local spending cap is not enough: only settled actual usage counts.
 If the record falls short, lower the remote cap or authorize further local testing;
-the CLI never starts additional paid calls to satisfy the requirement. The server
-rejects `--skip-local-check` unless the operator has granted an expiring exemption.
+the CLI never starts additional paid calls to satisfy the requirement. Every new
+funded submission requires the bundle; neither solver flags nor operator allowance
+overrides can waive it.
 
 The default allowance is 20 model credits (USD equivalent) per authenticated Yukon account
 per rolling 24 hours. Changing Yukon keys does not reset it. The operator may
