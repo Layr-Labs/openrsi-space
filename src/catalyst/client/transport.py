@@ -129,6 +129,17 @@ class HTTPFailure(CatalystError):
             code = details.get('code')
             if isinstance(code, str) and code in ADMISSION_MESSAGES:
                 self.details['code'] = code
+            if code == 'source_not_publishable' and isinstance(details.get('source_findings'), list):
+                rules = {'source-screening-size-limit', 'source-screening-complexity-limit',
+                         'private-credential-or-service-file', 'nested-archive-not-reviewable',
+                         'opaque-source-not-reviewable', 'embedded-credential', 'possible-credential'}
+                findings = [{'file_index': item['file_index'], 'line': item['line'], 'rule': item['rule']}
+                            for item in details['source_findings'][:10] if isinstance(item, dict)
+                            and isinstance(item.get('rule'), str) and item['rule'] in rules
+                            and type(item.get('file_index')) is int and 0 <= item['file_index'] < 10000
+                            and type(item.get('line')) is int and 1 <= item['line'] <= 64 * 1024 * 1024]
+                if findings:
+                    self.details['source_findings'] = findings
             stage, field = details.get('stage'), details.get('field')
             if isinstance(stage, str) and stage in ADMISSION_FIELDS:
                 self.details['stage'] = stage
@@ -171,6 +182,8 @@ class HTTPFailure(CatalystError):
             message += ': ' + ADMISSION_MESSAGES[code]
         if self.details:
             message += ' (' + ', '.join(f'{k}={v}' for k, v in self.details.items()) + ')'
+        if 'source_findings' in self.details:
+            message += '; file_index is zero-based in the saved source files sorted by relative path; line is one-based'
         if status in (400, 413, 415, 422):
             message += '; saved request preserved. Diagnose the rejection before retrying.'
         else:
