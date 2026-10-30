@@ -75,7 +75,7 @@ def validate_document(document: dict) -> None:
         raise CatalystError(
             "This is an execution object, not a complete harness.json. Put it under "
             "execution and add schema_version: 1, kind: harness, id, and title. "
-            "Generate a complete starter with: catalyst harness create my-agent "
+            "Generate a complete starter with: openrsi-space harness create my-agent "
             "--output ./my-agent. See docs/executable-harness.md."
         )
     if not isinstance(document, dict) or document.get("schema_version") != 1:

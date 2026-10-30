@@ -1,8 +1,8 @@
 # Challenge overview
 
-Catalyst is a benchmark for research agent harnesses. You submit your own
+OpenRSI is a benchmark for research agent harnesses. You submit your own
 harness to run in a controlled environment on
-Catalyst's servers so that its performance can be independently verified and
+OpenRSI's servers so that its performance can be independently verified and
 compared with others on a public leaderboard.
 
 You start each run, choose its spending and time limits, and can monitor its
@@ -45,13 +45,13 @@ cannot establish tier eligibility.
 Each evaluation runs under the solver's chosen spending cap. **Within $10**, **Within $20**, **Within $50**,
 **Within $100**, and **Best overall** are display views over the saved curve;
 a $5 run qualifies for all four budget views. Changing the view never starts a run.
-Catalyst exports the existing Dungeness evaluator history and settled usage.
+OpenRSI exports the existing Dungeness evaluator history and settled usage.
 
 See [budget accounting](tier-accounting.md) for exact eligibility.
 The challenge UI is maintained in Yukon; see [the UI integration](challenge-ui.md).
 
 The [ECDSA statement](../src/catalyst/problem-set/ecdsa-fail/description.md) is maintained in
-Catalyst. Each new run serves its assigned statement through an internal,
+OpenRSI. Each new run serves its assigned statement through an internal,
 read-only [problem service](problem-service.md). See
 [the upstream comparison](ecdsa-upstream.md) for the documentation revision
 and the separate execution pin.
@@ -64,7 +64,7 @@ limits still apply; see [limits and retry instructions](solver-guide.md#submissi
 ## Start here
 
 Choose the funding mode, provider, exact model and run limits before testing.
-For platform funding, first check `catalyst remote funding-policy` for availability
+For platform funding, first check `openrsi-space remote funding-policy` for availability
 and funded API providers. Choose an exact model with validated pricing. Local tests use your authorized model access; funded
 remote runs use platform API access and send no personal model credential.
 Your Yukon key identifies your account and its allowance; it is not model credit.
@@ -94,7 +94,7 @@ See [the screening policy](cheat-filter.md).
 
 The current MVP uses **Yukon dev**, benchmark `layr-labs/catalyst`, and the
 HTTPS verifier at `https://3.21.93.126`. Use a dev Yukon login; production
-Yukon keys do not authenticate to this deployment. No separate Catalyst
+Yukon keys do not authenticate to this deployment. No separate OpenRSI
 password is needed. See [provider availability and rollout status](live-models.md#implemented-providers-and-hosted-permission).
 Availability does not guarantee that every agent/model
 pair is compatible; see the solver guide and harness compatibility checks.
@@ -102,8 +102,8 @@ pair is compatible; see the solver guide and harness compatibility checks.
 ## Submission workflow
 
 Find agents in the [ranked public harness catalog](https://3.21.93.126/public/harnesses).
-Use `uv run catalyst harness search --max-credits 8`, then
-`uv run catalyst harness download EVALUATION_ID --output harness.zip` to download
+Use `uv run openrsi-space harness search --max-credits 8`, then
+`uv run openrsi-space harness download EVALUATION_ID --output harness.zip` to download
 selected published source without login. See [search, ranking and downloads](harness-catalog.md).
 
 1. Build a general-purpose harness, check source limits and select model access.
@@ -114,11 +114,11 @@ selected published source without login. See [search, ranking and downloads](har
    separately. Otherwise, separately authorize the user-funded path and supply
    its private credential flag. See the [solver walkthrough](solver-guide.md#4-choose-funding-and-start-the-official-evaluation).
    **Remote execution consumes the selected model account or platform allocation.**
-3. Catalyst prints the evaluation ID, result and `verification.json` path.
-   Resume interrupted retrieval with `uv run catalyst remote wait EVALUATION_ID`.
+3. OpenRSI prints the evaluation ID, result and `verification.json` path.
+   Resume interrupted retrieval with `uv run openrsi-space remote wait EVALUATION_ID`.
 4. Create `submission/` and copy the complete receipt into `submission/verification.json`, then run
    `yukon run` to check the retained result.
-5. Write a public methodology note and use `uv run catalyst yukon-submit`
+5. Write a public methodology note and use `uv run openrsi-space yukon-submit`
    with exact model/harness attribution and dependency declarations. The helper
    calls stock Yukon and registers its execution/receipt binding.
 
@@ -138,7 +138,7 @@ come from Yukon's official result packet. The challenge UI lives in Yukon; see [
 
 This repository is the public solver and challenge interface. It contains:
 
-- The `catalyst` CLI, harness packaging, smoke tests, full local Dungeness runs and a starter generator.
+- The `openrsi-space` CLI, harness packaging, smoke tests, full local Dungeness runs and a starter generator.
 - Pinned problem downloads and local verifier commands.
 - Model-credit accounting rules, result validation and the public HTTP/receipt contract.
 - `benchmark.json`, the receipt-only GitHub Actions workflow and solver documentation.
@@ -169,15 +169,15 @@ See [development](development.md) for the repository layout and `make check`.
 
 ```sh
 uv sync --frozen
-uv run catalyst problem list
-uv run catalyst harness create my-agent --executable --output .catalyst/my-agent
-uv run catalyst --help
+uv run openrsi-space problem list
+uv run openrsi-space harness create my-agent --executable --output .catalyst/my-agent
+uv run openrsi-space --help
 ```
 
 For a full local research run with model accounting:
 
 ```sh
-uv run catalyst local run .catalyst/my-agent --dungeness /absolute/path/to/dungeness \
+uv run openrsi-space local run .catalyst/my-agent --dungeness /absolute/path/to/dungeness \
   --provider openai-chatgpt --model gpt-6-astra --reasoning-effort high \
   --budget 1 --codex-auth-file
 ```

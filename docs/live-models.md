@@ -1,7 +1,7 @@
 # Model access and funding
 
 Hosted evaluations currently use platform-funded API access. Check
-`catalyst remote funding-policy`, choose an advertised provider and exact model,
+`openrsi-space remote funding-policy`, choose an advertised provider and exact model,
 and submit with `--platform-funded --local-run PATH`. Do not send a personal
 model credential. Matching local evidence must show at least half the requested
 remote cap in settled usage. See [platform-funded inference](platform-funded-inference.md).
@@ -14,7 +14,7 @@ Do not use an old subscription example or change provider labels to bypass this 
 
 ## Implemented providers and hosted permission
 
-Catalyst discovers provider implementations from the pinned Dungeness runtime.
+OpenRSI discovers provider implementations from the pinned Dungeness runtime.
 Runtime availability does not grant remote permission: subscription routes are
 local-only, and platform funding additionally requires an operator-funded API
 provider. Pricing quotes and submissions enforce the same remote restrictions.
@@ -51,7 +51,7 @@ a funded OpenRouter run. Use the same provider and exact model for qualifying ev
 ## Submit source and obtain the receipt
 
 ```sh
-uv run catalyst remote submit /path/to/harness \
+uv run openrsi-space remote submit /path/to/harness \
   --platform-funded --local-run /path/to/completed-local-run \
   --provider openrouter --model openai/gpt-6-astra \
   --reasoning-effort high --budget 3 --wait
@@ -59,7 +59,7 @@ uv run catalyst remote submit /path/to/harness \
 
 Choose an eligible exact model and authorized budget. The local run must match
 this configuration and source. Retrieve an interrupted wait with
-`catalyst remote wait EVALUATION_ID`; do not submit another paid run just to
+`openrsi-space remote wait EVALUATION_ID`; do not submit another paid run just to
 retrieve its result. Publish the verified receipt using the
 [Yukon submission workflow](github-actions-e2e.md#solver-commands).
 

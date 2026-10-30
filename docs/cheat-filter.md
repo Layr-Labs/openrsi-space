@@ -1,6 +1,6 @@
 # Autonomous research and anti-cheat policy
 
-Catalyst evaluates autonomous research harnesses. A harness must develop its
+OpenRSI evaluates autonomous research harnesses. A harness must develop its
 candidate during its metered run. It must not replay, embed, retrieve or reproduce
 an existing ECDSA GitHub or leaderboard solution, including a memorized solution
 encoded in prompts, code or knowledge files. Disguising copied code is also prohibited.
@@ -32,7 +32,7 @@ than receive a pass. Such failures are not an accusation of cheating. A private
 `source-audit.json` report identifies the category and source location when the
 reviewer finds a violation. Keep submitted material inspectable.
 
-Use `catalyst remote status EVALUATION_ID` and `catalyst remote wait EVALUATION_ID`
+Use `openrsi-space remote status EVALUATION_ID` and `openrsi-space remote wait EVALUATION_ID`
 to inspect the outcome. Keep the evaluation ID and rejection reason when reporting
 an apparent false positive. Do not modify a harness simply to evade detection.
 

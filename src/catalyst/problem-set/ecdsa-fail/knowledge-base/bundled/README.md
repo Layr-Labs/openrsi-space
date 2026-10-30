@@ -8,5 +8,5 @@ requires no external downloads. Total PDF size is about 9.8 MiB.
 Author attribution, original sources, individual license URLs and SHA-256 hashes
 are in [`../v1.json`](../v1.json). License evidence is recorded in
 [`../licenses-v1.json`](../licenses-v1.json). Preserve these notices when copying
-the papers. Each paper's own license applies, separately from the Catalyst
+the papers. Each paper's own license applies, separately from the OpenRSI
 software license.

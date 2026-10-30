@@ -174,7 +174,7 @@ def inspect_build(state: Path, identity: str) -> dict:
     version_id(identity)
     file = state / "builds" / identity / "build.json"
     if not file.is_file():
-        raise CatalystError("Build not found; run catalyst harness build PATH first.")
+        raise CatalystError("Build not found; run openrsi-space harness build PATH first.")
     metadata = read_json(file)
     image_id = metadata.get("image_id", "")
     if not isinstance(image_id, str) or not IMAGE_RE.fullmatch(image_id):

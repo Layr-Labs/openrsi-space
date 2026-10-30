@@ -1,6 +1,6 @@
 """Install public, operator-owned problem assets into disposable runtimes.
 
-The registry is part of the Catalyst distribution, never a submitted harness.
+The registry is part of the OpenRSI distribution, never a submitted harness.
 Only scaffold and verifier directories may be installed through this interface.
 """
 import json

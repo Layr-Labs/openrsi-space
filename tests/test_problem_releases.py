@@ -17,7 +17,8 @@ class ProblemReleaseTests(unittest.TestCase):
         # Operator-requested eight-paper replacement retains the human tag v1.
         expected = {
             "releases/v1.json": "f526ae84a746fb8c0d6871b28492425b1e046c6e2432d7f6f1111ee8733bf3af",
-            "description.md": "192fa7a23e5daed5ab8009135120fc8a94704420676c0c1d955211cf517d6a02",
+            # CLI spelling only; papers, release manifest and task remain unchanged.
+            "description.md": "1013689d74d6ce31b1622636fd5da3d8f366cca274d8691d1ba06a0b64c12c44",
             "knowledge-base/v1.json": "73153a6bc42f62535c9828fd44a589e5cde8f406c421dccc1b87b74f9dd07460",
         }
         for relative, digest in expected.items():

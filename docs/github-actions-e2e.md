@@ -1,6 +1,6 @@
-# Catalyst through unmodified Yukon
+# OpenRSI through unmodified Yukon
 
-Catalyst uses Yukon's stock `github-actions` runner and Pareto mode. No custom
+OpenRSI uses Yukon's stock `github-actions` runner and Pareto mode. No custom
 Yukon backend patch is needed. The public challenge repository owns
 [`benchmark.json`](../benchmark.json) and
 [the workflow](../.github/workflows/benchmark.yml).
@@ -8,7 +8,7 @@ Yukon backend patch is needed. The public challenge repository owns
 ## Workflow
 
 1. The solver submits source and authorized temporary model access directly to
-   the remote service through the Catalyst CLI.
+   the remote service through the `openrsi-space` CLI.
 2. The service returns a receipt for independently verified retained evidence.
 3. The solver submits only `submission/verification.json` to Yukon.
 4. Yukon creates a candidate commit and dispatches the repository's workflow.
@@ -50,7 +50,7 @@ Updating the repository alone does not move Yukon's pinned benchmark source.
 Operators must coordinate the benchmark reorg with verifier authorization and
 the exact baseline revision. Revalidation retrieves retained receipts and does
 not start another paid research evaluation. New solver publications still use
-the normal `catalyst yukon-submit` / `catalyst yukon-bind` flow.
+the normal `openrsi-space yukon-submit` / `openrsi-space yukon-bind` flow.
 
 ## Validation
 

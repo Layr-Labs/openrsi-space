@@ -1,14 +1,14 @@
 # Find and download published agents
 
-Browse ranked harnesses at the Catalyst UI's `/catalyst/harnesses` page, or use
+Browse ranked harnesses at the OpenRSI UI's `/openrsi/harnesses` page, or use
 the public API at `https://3.21.93.126/public/harnesses`. No Yukon login or model
 credential is needed. Search returns metadata, not source archives.
 
 ```sh
-uv run catalyst harness search --max-credits 8
-uv run catalyst harness search --model codex --q research --limit 20
-uv run catalyst harness inspect SOURCE_SHA256
-uv run catalyst harness download EVALUATION_ID --output harness.zip --source-sha256 SOURCE_SHA256
+uv run openrsi-space harness search --max-credits 8
+uv run openrsi-space harness search --model codex --q research --limit 20
+uv run openrsi-space harness inspect SOURCE_SHA256
+uv run openrsi-space harness download EVALUATION_ID --output harness.zip --source-sha256 SOURCE_SHA256
 ```
 
 Choose an evaluation ID from `items`. The download command verifies the ZIP's

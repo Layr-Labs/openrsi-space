@@ -1,6 +1,6 @@
 # Verifier endpoint
 
-The dedicated Catalyst VM serves **https://3.21.93.126** with a trusted
+The dedicated OpenRSI VM serves **https://3.21.93.126** with a trusted
 Let's Encrypt IP certificate and automatic renewal. No third-party hostname
 or SSH tunnel is required.
 

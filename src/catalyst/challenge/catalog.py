@@ -34,7 +34,7 @@ def get_problem(identity: str, *, release=None) -> dict:
     for problem in initial_problems(release=release):
         if problem["id"] == identity:
             return problem
-    raise CatalystError("Unknown initial problem; run catalyst problem list.")
+    raise CatalystError("Unknown initial problem; run openrsi-space problem list.")
 
 
 def problem_statement(identity: str) -> str:

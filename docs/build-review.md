@@ -5,9 +5,9 @@ both expanded submitted source and its ZIP must fit 8 MiB. Large text packages u
 bounded batch reviews followed by a cross-file review; Docker image size is separate.
 
 The revised two-stage review supports normal Dockerfiles and online dependency
-installation inside Catalyst's isolated builder. Use ordinary apt, pip/uv, npm,
+installation inside OpenRSI's isolated builder. Use ordinary apt, pip/uv, npm,
 Cargo and Git workflows on hosts permitted by the existing build network policy.
-Multi-stage Dockerfiles and compiled dependencies are supported. No Catalyst-specific
+Multi-stage Dockerfiles and compiled dependencies are supported. No OpenRSI-specific
 download manifest, offline packaging or per-binary approval is required.
 
 Pin image digests and dependency versions/lockfiles for reproducible builds. A pin

@@ -2,7 +2,7 @@
 
 Test locally with Dungeness before recommending a remote submission. It is the
 public execution backend that coordinates the harness, model gateway, problem
-service and evaluator in Docker. Catalyst prepares and starts these components.
+service and evaluator in Docker. OpenRSI prepares and starts these components.
 See [the architecture](architecture.md) for how local tests, official evaluations
 and Yukon publication fit together.
 
@@ -17,9 +17,9 @@ Neither local scores nor successful tests guarantee a receipt.
 ## Check a candidate circuit
 
 ```sh
-uv run catalyst problem clone ecdsa.fail .catalyst/ecdsa-workspace
-uv run catalyst problem setup ecdsa.fail --workspace .catalyst/ecdsa-workspace
-uv run catalyst problem check ecdsa.fail --workspace .catalyst/ecdsa-workspace
+uv run openrsi-space problem clone ecdsa.fail .catalyst/ecdsa-workspace
+uv run openrsi-space problem setup ecdsa.fail --workspace .catalyst/ecdsa-workspace
+uv run openrsi-space problem check ecdsa.fail --workspace .catalyst/ecdsa-workspace
 ```
 
 The clone is pinned. Edit only the allowed candidate paths. These commands use
@@ -35,9 +35,9 @@ the actual default starting workspace, including a candidate using
 ## Check harness packaging and its entrypoint
 
 ```sh
-uv run catalyst harness create my-agent --executable --output .catalyst/my-agent
-uv run catalyst harness build .catalyst/my-agent
-uv run catalyst harness smoke BUILD_ID --workspace .catalyst/ecdsa-workspace --problem ecdsa.fail
+uv run openrsi-space harness create my-agent --executable --output .catalyst/my-agent
+uv run openrsi-space harness build .catalyst/my-agent
+uv run openrsi-space harness smoke BUILD_ID --workspace .catalyst/ecdsa-workspace --problem ecdsa.fail
 ```
 
 Replace `BUILD_ID` with the build command's returned `id`. The smoke test runs
@@ -57,18 +57,18 @@ git clone https://github.com/Layr-Labs/dungeness.git /absolute/path/to/dungeness
 For a known-compatible pin and instructions for an older runtime, see
 [deployment compatibility](deployment-compatibility.md#local-runtime-compatibility).
 
-From your Catalyst checkout, discover the current problem release and prepare:
+From your OpenRSI checkout, discover the current problem release and prepare:
 
 ```sh
-uv run catalyst problem current
-uv run catalyst local run .catalyst/my-agent \
+uv run openrsi-space problem current
+uv run openrsi-space local run .catalyst/my-agent \
   --dungeness /absolute/path/to/dungeness \
   --problem-release TAG --provider PROVIDER --model MODEL_ID \
   --budget LOCAL_CAP --max-seconds LOCAL_SECONDS --prepare-only
 ```
 
 Replace the path and uppercase placeholders. Use the release returned by
-`problem current`; update Catalyst if that release is not installed. The runtime
+`problem current`; update OpenRSI if that release is not installed. The runtime
 checkout must be clean. These commands build and prepare without reading model
 credentials or executing the research loop.
 
@@ -82,10 +82,10 @@ A local login file alone is not permission for an agent to consume model allowan
 A model-enabled local run **uses your model account**. Track cumulative usage across
 retries; it is separate from remote-run authorization. In-flight responses can
 exceed the normalized-credit cap. No Yukon login or private verifier repository
-is required, and local execution does not submit to Catalyst's hosted API.
+is required, and local execution does not submit to OpenRSI's hosted API.
 The separate `problem current` discovery command reads the official API.
 
-Catalyst builds your harness, snapshots the current public problem package, prepares
+OpenRSI builds your harness, snapshots the current public problem package, prepares
 a private copy of the chosen Dungeness revision, and starts the agent, model gateway,
 problem service and evaluator. **You do not need to start a server or expose a port.**
 The problem service is a local container on an internal Docker network. The launcher
@@ -103,7 +103,7 @@ budget and token/time settings can come from it instead of command-line override
 For example, after authorizing API-key model use:
 
 ```sh
-uv run catalyst local run .catalyst/my-agent \
+uv run openrsi-space local run .catalyst/my-agent \
   --dungeness /absolute/path/to/dungeness --provider openai --model gpt-5.6-sol \
   --budget 1 --provider-token-env OPENAI_API_KEY
 ```
@@ -114,7 +114,7 @@ For ensembles, use `evaluation.json` with its models list and
 Temporary access is placed outside the retained run and removed on completion or
 interruption. ChatGPT refresh credentials stay in your original local login.
 
-Prices default to Catalyst's pinned schedule. `--pricing PATH` accepts a trusted
+Prices default to OpenRSI's pinned schedule. `--pricing PATH` accepts a trusted
 local pricing JSON with `entries` for additional models; the selected schedule is
 saved in the generated runtime. Local pricing does not change official rates.
 
@@ -126,7 +126,7 @@ contains Dungeness's records, usage events, traces and candidate artifacts. Ctrl
 asks Dungeness to stop its containers before temporary access is removed.
 
 The public CLI and remote service share task and harness assembly, so neither needs
-a second handwritten copy of Catalyst's problem configuration. The remote service
+a second handwritten copy of OpenRSI's problem configuration. The remote service
 additionally performs admission, source screening, isolated verification and receipt
 issuance. Local runs do not apply private anti-cheat policy or issue official receipts.
 Use the service's pinned runtime and prices when comparing development results.
@@ -153,13 +153,13 @@ must match; the official remote run starts fresh, without your local candidates
 or notes. A valid local circuit is not required.
 
 Local testing still uses your authorized model account. Check
-`catalyst remote funding-policy` **before** choosing the local provider/model.
+`openrsi-space remote funding-policy` **before** choosing the local provider/model.
 Only an operator exemption can bypass funded evidence requirements. See
 [the funded guide](platform-funded-inference.md) for allowances and admission.
 
 ### User-funded remote runs
 
-`catalyst remote submit` automatically reuses matching records under the selected
+`openrsi-space remote submit` automatically reuses matching records under the selected
 `--state` directory's `local/`, or the harness's `.catalyst/local/`. No duplicate
 test, automatic local spending, or trace upload occurs. The record must show a
 completed command-harness run, no runtime trial errors, settled accounting, and
@@ -176,10 +176,10 @@ If the records are elsewhere, supply the local run directory, its `run.json`, or
 Dungeness's `record.json` with adjacent `usage/events.jsonl`:
 
 ```sh
-uv run catalyst remote submit ./my-harness --local-run /path/to/local-run
+uv run openrsi-space remote submit ./my-harness --local-run /path/to/local-run
 ```
 
-A directly launched Dungeness run must retain the Catalyst harness-source and
+A directly launched Dungeness run must retain the OpenRSI harness-source and
 problem identities and the `local-development` label to match. Keep the run's
 artifact folder intact. If local testing is blocked or intentionally omitted,
 report the untested steps and add `--skip-local-check` to your submission command.

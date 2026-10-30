@@ -21,11 +21,11 @@ and attribution notices still apply.
 ## Download harness source or publish historical source
 
 ```sh
-catalyst remote download EVALUATION_ID --kind harness --output harness.zip
+openrsi-space remote download EVALUATION_ID --kind harness --output harness.zip
 # Inspect every file in harness.zip before confirming:
-catalyst remote publish EVALUATION_ID --harness --confirm-source-reviewed
+openrsi-space remote publish EVALUATION_ID --harness --confirm-source-reviewed
 
-catalyst remote sharing EVALUATION_ID
+openrsi-space remote sharing EVALUATION_ID
 ```
 
 Publication does not require a license. Add `--license MIT` (or another supported
@@ -45,7 +45,7 @@ Remove proprietary or otherwise private material before submitting a new harness
 The publication command releases the original evaluated bytes; it cannot silently
 remove a file from an already evaluated harness.
 
-Catalyst separately screens source publication for possible credentials. A review
+OpenRSI separately screens source publication for possible credentials. A review
 confirmation does not waive credential checks or authorize releasing a model
 access token. Model access is supplied outside the source package; runtime auth
 files and provider grants are excluded from exports. Detected credentials block
@@ -64,7 +64,7 @@ isolated environment. Verification and credential screening do not guarantee
 safe code. A SHA-256 checksum confirms that a download matches the published
 file; it does not certify safety.
 
-The Catalyst challenge UI's **Harness source** disclosure reads this public
+The OpenRSI challenge UI's **Harness source** disclosure reads this public
 manifest on demand and binds it to the evaluation ID and source hash in Yukon's
 official score metrics. The UI code is maintained in Yukon's
 `apps/challenges-ui/challenges/catalyst`; see [UI setup and hosting](challenge-ui.md). Publishing artifacts

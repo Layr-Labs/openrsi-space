@@ -25,7 +25,7 @@ class CommandSubmissionTests(unittest.TestCase):
                 self.assertNotEqual(main(["harness", "build", str(root)]), 0)
             for field in ("execution", "schema_version", "kind", "id", "title"):
                 self.assertIn(field, error.getvalue())
-            self.assertIn("catalyst harness create", error.getvalue())
+            self.assertIn("openrsi-space harness create", error.getvalue())
 
     def test_starter_and_derived_harness_keep_the_executable_contract(self):
         with tempfile.TemporaryDirectory() as directory:

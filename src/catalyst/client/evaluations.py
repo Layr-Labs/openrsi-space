@@ -92,7 +92,7 @@ class RemoteClient:
     def submit(self, submission: Path, *, judge=None, model_token=None, evaluation_overrides=None,
                execution=None, publication=None, problem_release=None, local_check=None, _quote_retry=False):
         if os.environ.get("GITHUB_ACTIONS") == "true":
-            raise CatalystError("GitHub Actions must retrieve an existing result through catalyst yukon-run.")
+            raise CatalystError("GitHub Actions must retrieve an existing result through openrsi-space yukon-run.")
         submission = submission.resolve()
         body = request_body(submission, self.base, judge=judge, evaluation_overrides=evaluation_overrides,
                             check_pricing=False, execution=execution, publication=publication,
@@ -270,7 +270,7 @@ class RemoteClient:
                 if result["status"] == "awaiting_credentials":
                     raise CatalystError(
                         f"Temporary access expired or was lost on restart. Renew with "
-                        f"catalyst remote renew-access {identity}, then resume remote wait.")
+                        f"openrsi-space remote renew-access {identity}, then resume remote wait.")
                 if result["status"] in TERMINAL:
                     for line in diagnostic_lines(result):
                         print(line, file=sys.stderr, flush=True)

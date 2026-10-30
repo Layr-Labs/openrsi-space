@@ -181,7 +181,7 @@ def prepare(state, package, source, evaluation, *, problem_id='ecdsa.fail', prob
     write_yaml(spec_path, spec)
     git(runtime, 'add', *assigned['added_paths'], *agent_paths,
         'services/gateway/pricing.yaml', str(spec_path.relative_to(runtime)))
-    git(runtime, '-c', 'commit.gpgsign=false', '-c', 'user.name=Catalyst local',
+    git(runtime, '-c', 'commit.gpgsign=false', '-c', 'user.name=OpenRSI local',
         '-c', 'user.email=local@localhost', 'commit', '-qm', 'Prepared local research inputs')
     record = runtime / 'runs/projects/catalyst' / run_id / 'record.json'
     metadata = {
@@ -234,7 +234,7 @@ def run(args, state):
         print(f"LOCAL MODEL ACCESS: This run uses YOUR model account on this machine, with a "
               f"{evaluation['max_model_credits']:g} normalized-credit cap. Calls consume your API credits "
               'or subscription allowance; an in-flight response can exceed the cap. '
-              'No credentials are sent to Catalyst or Yukon.', file=sys.stderr, flush=True)
+              'No credentials are sent to OpenRSI or Yukon.', file=sys.stderr, flush=True)
     try:
         metadata = prepare(state, Path(args.package), Path(args.dungeness), evaluation,
                            problem_id=args.problem, problem_release=args.problem_release,

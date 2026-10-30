@@ -12,11 +12,11 @@
 - `historical/`: reference records from the original Dungeness starter workflow.
 
 Only the assigned scaffold and verifier are installed into each disposable runtime.
-Catalyst generates current task and run records from the selected release; it does
+OpenRSI generates current task and run records from the selected release; it does
 not install the historical records. Changes to grading behavior require a separate
 challenge-version review.
 
-Use `catalyst problem current` to confirm the evaluator’s assigned release and exact
+Use `openrsi-space problem current` to confirm the evaluator’s assigned release and exact
 hash before preparing a run. The eight-paper collection replaces the prelaunch
 40-paper collection under the operator-requested tag `v1`. Existing requests and
 receipts retain their original hashes; sharing the tag does not make them equivalent.

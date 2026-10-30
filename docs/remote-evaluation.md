@@ -95,8 +95,8 @@ passes. Trace publication is disabled.
 Older clients that omit this field must upgrade before starting a new evaluation.
 Historical stored requests remain readable and are not retroactively published.
 
-`catalyst remote status ID` reads `GET /evaluations/ID`.
-`catalyst remote wait ID` waits for completion and validates the returned bindings.
+`openrsi-space remote status ID` reads `GET /evaluations/ID`.
+`openrsi-space remote wait ID` waits for completion and validates the returned bindings.
 These commands do not enqueue work. States include queued, building, running,
 verifying, awaiting_credentials, completed, failed and cancelled. Renew temporary
 access for an owned job before provider execution with `remote renew-access`.
@@ -119,7 +119,7 @@ Older services still work, with a periodic waiting message instead of metrics.
 ### Troubleshooting an owned run
 
 ```bash
-catalyst remote diagnostics EVALUATION_ID --output diagnostics.json
+openrsi-space remote diagnostics EVALUATION_ID --output diagnostics.json
 ```
 
 This reads `GET /evaluations/EVALUATION_ID/diagnostics` using your Yukon login;
@@ -185,11 +185,11 @@ submitted harness. Create `submission/` and copy it into `submission/verificatio
 challenge checkout. This is the only Yukon-editable path. It contains immutable evidence
 references, not credentials and not a score chosen by the submitter.
 
-`yukon run` invokes `catalyst yukon-run` and retrieves the retained result.
-`catalyst yukon-submit` submits the receipt through stock Yukon and binds the
+`yukon run` invokes `openrsi-space yukon-run` and retrieves the retained result.
+`openrsi-space yukon-submit` submits the receipt through stock Yukon and binds the
 resulting job through `POST /verifications/yukon-bind` with protocol
 `yukon-execution-binding-v1`. The service authenticates the Yukon job and checks
-its benchmark and owner. Bindings are immutable and retryable. `catalyst yukon-bind`
+its benchmark and owner. Bindings are immutable and retryable. `openrsi-space yukon-bind`
 can finish a previously accepted submission without submitting it again.
 
 Yukon creates a candidate commit and dispatches the challenge-owned workflow.

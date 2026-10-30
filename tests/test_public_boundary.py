@@ -29,9 +29,14 @@ class PublicBoundaryTests(unittest.TestCase):
         with redirect_stdout(io.StringIO()) as output, self.assertRaises(SystemExit) as result:
             main(["--version"])
         self.assertEqual(result.exception.code, 0)
-        self.assertEqual(output.getvalue().strip(), f"catalyst {catalyst.__version__}")
+        self.assertEqual(output.getvalue().strip(), f"openrsi-space {catalyst.__version__}")
         project = Path(__file__).resolve().parents[1] / "pyproject.toml"
-        self.assertEqual(catalyst.__version__, tomllib.loads(project.read_text())["project"]["version"])
+        metadata = tomllib.loads(project.read_text())["project"]
+        self.assertEqual(catalyst.__version__, metadata["version"])
+        self.assertEqual(metadata["scripts"], {"openrsi-space": "catalyst.cli:main"})
+        benchmark = json.loads((project.parent / "benchmark.json").read_text())
+        for field in ("setupCommand", "benchmarkCommand"):
+            self.assertEqual(benchmark[field][3], "openrsi-space")
 
     def test_public_package_has_no_private_runtime_or_imports(self):
         root = Path(catalyst.__file__).parent

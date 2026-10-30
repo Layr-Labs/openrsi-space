@@ -30,7 +30,7 @@ def require_capabilities(root: Path, *required: str) -> None:
                 or type(document.get("schema_version")) is not int
                 or document["schema_version"] != 1
                 or document.get("runtime") != "dungeness"):
-            raise CatalystError("Unsupported Dungeness runtime contract; update Catalyst or repin the runtime.")
+            raise CatalystError("Unsupported Dungeness runtime contract; update OpenRSI or repin the runtime.")
         capabilities = document.get("capabilities")
         if (not isinstance(capabilities, list)
                 or any(not isinstance(name, str) or not name for name in capabilities)

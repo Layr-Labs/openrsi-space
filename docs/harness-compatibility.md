@@ -13,10 +13,10 @@ Use this process when creating or reusing a harness:
    Responses, Chat Completions, or another API. Check the
    [hosted provider permissions](live-models.md#implemented-providers-and-hosted-permission).
    The selected Dungeness runtime reports its trusted provider IDs through
-   `dungeness providers`. Catalyst uses that registry for both pricing quotes and
+   `dungeness providers`. OpenRSI uses that registry for both pricing quotes and
    submission admission. Solvers cannot supply upstream URLs or provider profiles.
    A provider absent from the runtime needs operator integration. For platform
-   funding, also check `catalyst remote funding-policy`: select a funded API
+   funding, also check `openrsi-space remote funding-policy`: select a funded API
    provider and your exact model, with service-validated pricing. The local trace
    must match the provider, model and reasoning settings of the remote request.
 2. Route all model requests through the endpoints and model identities assigned
@@ -32,7 +32,7 @@ Use this process when creating or reusing a harness:
 4. Run the packaging/entrypoint smoke checks and exercise the adapter against a
    strict mock of the selected API, including auxiliary requests and a complete
    tool-call round trip. A mock should reject malformed fields rather than return
-   success for any JSON. `catalyst harness smoke` alone does not test live provider
+   success for any JSON. `openrsi-space harness smoke` alone does not test live provider
    compatibility. Complete a [local Dungeness run](local-evaluation.md) before
    remote submission; the CLI reuses a matching local record, with an explicit
    `--skip-local-check` override for user-funded runs. Funded admission requires
