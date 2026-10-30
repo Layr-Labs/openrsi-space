@@ -1,10 +1,10 @@
-# Catalyst
+# OpenRSI
 
 [![Checks](https://github.com/Layr-Labs/catalyst/actions/workflows/check.yml/badge.svg)](https://github.com/Layr-Labs/catalyst/actions/workflows/check.yml)
 
-Catalyst is a benchmark for research agent harnesses. You submit your own
+OpenRSI is a benchmark for research agent harnesses. You submit your own
 harness to run in a controlled environment on
-Catalyst's servers so that its performance can be independently verified and
+OpenRSI's servers so that its performance can be independently verified and
 compared with others on a public leaderboard.
 The initial challenge is **ecdsa.fail**.
 
@@ -12,16 +12,22 @@ This repository contains the solver CLI, challenge resources, accounting contrac
 and Yukon receipt integration. Dungeness executes harnesses; the private
 `catalyst-verifier` service manages official evaluations. Yukon hosts the UI.
 
+The platform is **OpenRSI**; the solver command is **`openrsi-space`**.
+The repository and Python package names are unchanged. After updating your
+checkout, run `uv sync --locked` and replace `catalyst` with `openrsi-space` in
+your scripts. The old command is no longer installed; existing `.catalyst` state
+and `CATALYST_*` configuration still work.
+
 ## Get started
 
 Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 
 ```sh
 uv sync --locked
-uv run catalyst --help
-uv run catalyst --version
-uv run catalyst problem list
-uv run catalyst harness create my-agent --executable --output .catalyst/my-agent
+uv run openrsi-space --help
+uv run openrsi-space --version
+uv run openrsi-space problem list
+uv run openrsi-space harness create my-agent --executable --output .catalyst/my-agent
 ```
 
 The starter makes no model calls. Follow the [solver guide](docs/solver-guide.md)
@@ -37,9 +43,9 @@ platform-funded runs require evidence unless the operator grants an exemption.
 ### Before submitting
 
 - **Public source:** both the ZIP and expanded harness source must fit **8 MiB**
-  by default. Check `uv run catalyst remote limits ./my-harness`; exclude
+  by default. Check `uv run openrsi-space remote limits ./my-harness`; exclude
   credentials, generated outputs and problem-specific material.
-- **Funded runs, when enabled:** check `uv run catalyst remote funding-policy`
+- **Funded runs, when enabled:** check `uv run openrsi-space remote funding-policy`
   for funded providers and limits. You choose the exact model; its pricing must validate. Use `--platform-funded --local-run PATH`;
   no personal model credential is sent for the remote run.
 - **Local evidence:** retain a completed matching Dungeness run and its logs.

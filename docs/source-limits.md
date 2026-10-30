@@ -14,8 +14,8 @@ see [funded submission requirements](platform-funded-inference.md).
 Check the deployed service rather than assuming a client update changed it:
 
 ```sh
-uv run catalyst remote limits
-uv run catalyst remote limits ./my-harness
+uv run openrsi-space remote limits
+uv run openrsi-space remote limits ./my-harness
 ```
 
 The first command reads `GET /public/submission-policy` from the configured

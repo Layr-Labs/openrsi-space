@@ -5,14 +5,14 @@ runs. You supply no personal model credential. Yukon authentication still
 identifies your account, and platform allowances determine admission.
 
 ```sh
-catalyst remote funding-policy
-catalyst remote submit ./my-harness --platform-funded \
-  --provider openai --model EXACT_MODEL_ID --budget 3 --local-run /path/to/local/run.json
-catalyst remote funding
+openrsi-space remote funding-policy
+openrsi-space remote submit ./my-harness --platform-funded \
+  --provider openrouter --model EXACT_AUTHOR/MODEL_ID --budget 3 --local-run /path/to/local/run.json
+openrsi-space remote funding
 ```
 
 Before preparing either run, check that `funding-policy` reports funding enabled.
-Check source size with `catalyst remote limits ./my-harness`: both the public ZIP
+Check source size with `openrsi-space remote limits ./my-harness`: both the public ZIP
 and expanded source default to **8 MiB**. The private evidence limit below is
 separate and does not increase the source limit.
 

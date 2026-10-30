@@ -1,4 +1,4 @@
-"""Thin Yukon adapter over the shared Catalyst verification-service client."""
+"""Thin Yukon adapter over the shared OpenRSI verification-service client."""
 from __future__ import annotations
 
 import json

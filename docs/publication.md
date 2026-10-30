@@ -1,6 +1,6 @@
 # Public source boundary
 
-Catalyst contains the solver CLI, challenge statement and contract, receipt-only
+OpenRSI contains the solver CLI, challenge statement and contract, receipt-only
 Yukon workflow, and public tests and documentation. The verification API, workers,
 anti-cheat implementation, artifact storage and deployment tooling belong in the
 private `catalyst-verifier` repository. The challenge UI belongs in Yukon.

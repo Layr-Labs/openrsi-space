@@ -1,4 +1,11 @@
-# Catalyst architecture
+# OpenRSI architecture
+
+OpenRSI is the platform and benchmark. The `openrsi-space` command and
+`catalyst-research` Python package are its solver toolkit; `catalyst-verifier`
+is its private verification service. Dungeness remains the execution runtime,
+and Yukon provides identity and the leaderboard UI. The solver command replaces
+`catalyst`; the Python and service names, stored state, receipt formats and
+environment variables remain stable.
 
 The standard workflow is **build → test locally with Dungeness → fix failures →
 remote evaluation → publish the verified receipt to Yukon**.
@@ -7,15 +14,15 @@ remote evaluation → publish the verified receipt to Yukon**.
 | --- | --- |
 | Your local coding agent | Helps build and test the general-purpose harness with your authorization. |
 | Submitted harness | Runs autonomously: reads its assignment, calls models, edits and evaluates candidates. |
-| Catalyst CLI | Packages the harness and assigned problem, starts local runs and submits official evaluations. |
+| `openrsi-space` CLI | Packages the harness and assigned problem, starts local runs and submits official evaluations. |
 | Dungeness | Public execution backend coordinating Docker containers, the model gateway, problem service and evaluator; meters usage, enforces limits and records evidence. |
-| Catalyst verifier | Hosted service that screens source, runs Dungeness, independently verifies results and issues receipts. |
+| OpenRSI verifier | Hosted service that screens source, runs Dungeness, independently verifies results and issues receipts. |
 | Yukon | Validates the receipt's retained result and displays accepted submissions; does not repeat inference. |
 
 Start with [local testing](local-evaluation.md): install Git, uv and Docker,
 clone a clean Dungeness checkout anywhere, discover the active problem release,
-and use `catalyst local run HARNESS_DIR --dungeness PATH --prepare-only` with
-configured model and limits. Catalyst generates the run spec and starts local
+and use `openrsi-space local run HARNESS_DIR --dungeness PATH --prepare-only` with
+configured model and limits. OpenRSI generates the run spec and starts local
 services automatically during execution; no manual problem server is needed.
 
 Preparation builds without model calls. With a separately authorized local budget,
@@ -39,7 +46,7 @@ operator exemption.
 
 ```mermaid
 flowchart LR
-    Solver[Solver: harness source + selected run limits] --> Client[Public Catalyst CLI]
+    Solver[Solver: harness source + selected run limits] --> Client[Public openrsi-space CLI]
     Local[Matching local evidence for funded runs] --> Client
     Client -->|Authenticated HTTPS| API[Private catalyst-verifier API]
     API --> Review[Source screening + funded evidence review]
@@ -64,15 +71,15 @@ pricing and score validation, receipt retrieval and Yukon integration.
 The public library uses the Python standard library and PyYAML. Local Docker smoke tests
 require Docker; problem verification requires the upstream task's toolchain.
 
-The public entrypoint is `catalyst`. It does not start the verification service,
+The public entrypoint is `openrsi-space`. It does not start the verification service,
 run anti-cheat screening, hold an operator credential. The local-run path requires a Dungeness checkout;
 remote submission uses the service’s runtime.
-The challenge UI lives in Yukon; Catalyst does not include a separate viewer.
+The challenge UI lives in Yukon; OpenRSI does not include a separate viewer.
 
 The public ECDSA statement lives in `src/catalyst/problem-set/ecdsa-fail/description.md`.
 The private service copies it into a versioned problem package during
 initialization. For each run, it builds a read-only problem service from
-Catalyst's `runtime/problem_server.py`, independently of the submitted harness.
+OpenRSI's `runtime/problem_server.py`, independently of the submitted harness.
 Dungeness wires this service into Compose and exposes the assigned document
 through the gateway's `GET /task`. See [the task contract](problem-service.md).
 
@@ -80,7 +87,7 @@ General-purpose memory and retrieval software can be part of the submitted
 harness image; their bytes are covered by source and image identities. Do not
 bundle problem-specific papers, notes or answers. The trusted problem service
 supplies the assigned library at runtime, and each run builds its own fresh memory.
-Catalyst does not prescribe the harness’s reading or indexing strategy.
+OpenRSI does not prescribe the harness’s reading or indexing strategy.
 
 ## Module boundaries
 

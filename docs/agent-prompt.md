@@ -1,11 +1,11 @@
-# Catalyst: instructions for a coding agent
+# OpenRSI: instructions for a coding agent
 
 ## Select the current problem release
 
-Before preparing a new evaluation, run `uv run catalyst problem current`. This
+Before preparing a new evaluation, run `uv run openrsi-space problem current`. This
 queries the official evaluator without credentials and reports its active release
 and exact problem digest. If the installed package does not match, update your
-Catalyst checkout/package and rerun the command. Do not assume a remembered tag or
+OpenRSI checkout/package and rerun the command. Do not assume a remembered tag or
 a repository default is the deployed version. Use the returned tag explicitly as
 `--problem-release TAG` for both `local run` and `remote submit`, and recheck it
 before submission. Include the tag and digest in the readiness report.
@@ -21,7 +21,7 @@ for provider availability. Test the harness locally with Dungeness before
 recommending remote submission; report blockers or explicitly declined tests in
 the readiness report. Never put model credentials in the harness.
 
-Before submission, run `uv run catalyst remote limits ./my-harness` and include
+Before submission, run `uv run openrsi-space remote limits ./my-harness` and include
 the reported expanded-source and ZIP sizes in the readiness report. Both default
 to 8 MiB; use the service's advertised limits. Remove unused assets/examples/tests,
 not required runtime code or license notices. See [source limits](source-limits.md).
@@ -32,7 +32,7 @@ both verified circuit performance (`avg_toffoli × peak_qubits`, lower is better
 and the normalized model credits used to achieve it.
 
 **Workflow:** build the harness → test locally with Dungeness and fix failures → let the human review
-readiness and authorize model use → submit source to Catalyst's remote Dungeness
+readiness and authorize model use → submit source to OpenRSI's remote Dungeness
 service → inspect the verified result and receipt → publish the receipt to Yukon.
 Yukon retrieves the service's recorded scores; it does not launch a second agent run.
 
@@ -45,7 +45,7 @@ Never ask for model secrets in a chat prompt.
 
 ## Funded submission checklist
 
-Before proposing platform funding, run `catalyst remote funding-policy`; do not
+Before proposing platform funding, run `openrsi-space remote funding-policy`; do not
 assume it is enabled. Choose an exact model on a funded provider, obtain validated pricing, and pass
 `--platform-funded`, with no personal model credential flag. Obtain authorization
 for the remote cap and public source publication.
@@ -70,56 +70,39 @@ The default funded allowance is **20 model credits (USD equivalent) per Yukon ac
 rolling 24 hours**, subject to operator overrides and available platform funds.
 Each account may have one funded evaluation running at a time. The daily allowance
 can fund multiple sequential runs; unused reserved funds return after settlement. Check
-`catalyst remote funding` for reservations and usage. New keys do not reset quotas.
+`openrsi-space remote funding` for reservations and usage. New keys do not reset quotas.
 `--skip-local-check` cannot bypass the server gate. See
 [platform-funded inference](platform-funded-inference.md) for the full procedure.
 
-## Required authorization when supplying your own remote model access
+## Authorization for local tests and hosted runs
 
-Explain this to the solver before any credential handoff or model-consuming run:
+Obtain authorization for local model use and spending before reading the selected
+local credential or starting paid calls. A local login file does not itself grant
+permission. Keep secrets out of chat, harness source and public notes.
 
-> Catalyst is a benchmark for research agent harnesses. You submit your own
-> harness to run in a controlled environment on
-> Catalyst's servers so that its performance can be independently verified and
-> compared with others on a public leaderboard.
->
-> You start each run, choose its spending and time limits, and can monitor its
-> progress or request cancellation through the CLI at any time while it is
-> active.
->
-> Hosted runs use platform-funded API access and receive no personal model
-> credentials. Remote subscription-token handoffs have been removed. Personal
-> API-key handoff is implemented but disabled. Local testing uses your own
-> authorized model access on your machine.
->
-> You are responsible for ensuring your use complies with your model
-> provider's terms.
+For a hosted run, obtain authorization for the remote spending/time limits,
+public source publication, and private local-evidence upload and review. Reuse
+explicit authorization already given in the session. OpenRSI supplies remote
+model access through platform-funded OpenRouter; do not request or send a solver's
+model key, access token, or login file. Never use personal credentials as a fallback
+if funding or evidence admission is unavailable.
 
-Obtain the user's authorization to send the selected model credential to the
-configured remote service and use their model account for the chosen run and
-finite spending cap. Reuse explicit authorization already given in the session;
-do not ask again unnecessarily. Installation, cloning, choosing a model, or the
-presence of a local login file is not authorization to transmit credentials
-or consume allowance.
+Local testing uses the solver's authorized model access on their machine. The
+solver remains responsible for their provider's terms and local usage charges.
+Normalized benchmark credits may differ from cash charges, and an in-flight
+response may exceed the configured cap. Monitor or cancel hosted runs through
+the CLI. Retrieving or publishing a receipt does not start another research run.
 
-Until authorized, prepare the harness and commands without reading model secrets,
-sending them, or launching remote inference. Use the CLI's hidden prompt, stdin,
-or an explicitly selected credential file outside the source package; never
-ask the solver to paste a secret into chat. Remote subscription-token submission
-has been removed; never read a login file for a remote handoff. Hosted runs use
-platform funding; personal API-key submission is currently disabled.
-
-Explain that the service keeps model access temporarily for execution and
-excludes it from retained jobs/results/artifacts. Normalized credits may differ
-from cash charges, and an in-flight response can exceed the configured cap.
-Receipt verification/publication does not grant new model access or run inference.
+Personal API-key submission remains an optional implementation for separately
+configured deployments; it is disabled on the hosted service. Remote subscription
+handoffs are removed. See [model access](live-models.md) for those boundaries.
 
 ## Public source is required
 
 Before building, discover reusable general-purpose agents with
-`uv run catalyst harness search --max-credits CAP`. Inspect selected source with
-`uv run catalyst harness inspect SOURCE_SHA256`, then download only selected
-harnesses with `uv run catalyst harness download EVALUATION_ID --output harness.zip`.
+`uv run openrsi-space harness search --max-credits CAP`. Inspect selected source with
+`uv run openrsi-space harness inspect SOURCE_SHA256`, then download only selected
+harnesses with `uv run openrsi-space harness download EVALUATION_ID --output harness.zip`.
 No login is required. Compare the same problem, pricing and policy hashes, inspect
 licenses, and declare material dependencies. Never import generated circuits or
 task-specific solution knowledge. See [the catalog guide](harness-catalog.md).
@@ -159,7 +142,7 @@ Submit only a general-purpose harness, without ECDSA-specific papers, notes,
 strategies or prewritten candidates. The assigned task provides a pinned library
 of eight bundled papers through `CATALYST_KNOWLEDGE_BASE_URL`. The agent chooses what to
 read and develops its candidate during the metered run.
-Catalyst measures what the submitted source achieves inside its controlled
+OpenRSI measures what the submitted source achieves inside its controlled
 Dungeness run. An interactively improved solution on the solver's laptop is
 not a substitute for executing the harness remotely.
 
@@ -189,9 +172,9 @@ placeholders such as "my-agent", "Submitted agent" or "HARNESS NAME" as the
 public display name.
 
 Use that exact name in `harness.json.title`, the submission note and
-`catalyst yukon-submit --harness`. The manifest `id` is a machine-readable slug
+`openrsi-space yukon-submit --harness`. The manifest `id` is a machine-readable slug
 and may differ from the display name. Set the title with
-`catalyst harness create ID --title "YOUR CHOSEN NAME"` or edit the manifest
+`openrsi-space harness create ID --title "YOUR CHOSEN NAME"` or edit the manifest
 before evaluation. Direct Dockerfile/`--entrypoint` submissions generate a generic
 internal title; to name the source catalog entry too, supply a `harness.json`
 with the title and execution configuration and omit the `--entrypoint` override.
@@ -215,12 +198,12 @@ readiness report; all inference must use assigned gateway endpoints.
 1. Read `benchmark.json`, `docs/solver-guide.md`,
    `docs/generic-harnesses.md`, and the chosen framework's documentation.
    If available, read the installed `yukon-cli` skill for current command and
-   note requirements. Catalyst's receipt helper is an additional required step.
+   note requirements. OpenRSI's receipt helper is an additional required step.
 2. Use the current evaluator and Yukon environment in the solver guide.
    Reuse the solver's Yukon login. Do not print, log, package or publish keys.
 3. If needed, clone with `yukon clone layr-labs/catalyst` and enter the printed
    benchmark directory. Run `uv sync --frozen` and `yukon setup`.
-4. Create a starter with `uv run catalyst harness create my-agent --title "YOUR CHOSEN NAME" --output .catalyst/my-harness`,
+4. Create a starter with `uv run openrsi-space harness create my-agent --title "YOUR CHOSEN NAME" --output .catalyst/my-harness`,
    or adapt the requested framework without forcing it into Codex. Source can
    use a Dockerfile plus `--entrypoint`, or the existing `harness.json`
    interface. Pin general-purpose build dependencies. The
@@ -258,16 +241,16 @@ records automatically. Use `--local-run PATH` for a run stored elsewhere.
 Read [the architecture](architecture.md) and [local workflow](local-evaluation.md).
 Dungeness is the public execution backend: it coordinates the harness, model
 gateway, problem service and evaluator in Docker, meters usage and records results.
-Catalyst prepares and starts these services; do not ask the solver to write a
+OpenRSI prepares and starts these services; do not ask the solver to write a
 run spec or manually start the problem server. No private repository is needed.
 
 1. Install Git, uv and Docker; start Docker. Clone the public Dungeness repository
    to any location and keep it clean. Use an absolute `--dungeness PATH`.
-2. Discover the active problem with `catalyst problem current`, update Catalyst
+2. Discover the active problem with `openrsi-space problem current`, update OpenRSI
    if needed, and pass the reported `--problem-release TAG` to local and remote runs.
 3. Test packaging, tool behavior and recovery with synthetic fixtures, including
    interrupted attempts and failures before an attempt record is saved.
-4. Use `catalyst local run HARNESS_DIR --dungeness PATH` with the selected model,
+4. Use `openrsi-space local run HARNESS_DIR --dungeness PATH` with the selected model,
    budget and time settings and `--prepare-only`. This builds and prepares the
    runtime without reading credentials or executing the agent; it is not a full test.
 5. Obtain authorization for local model use, exact provider/model, time limits
@@ -306,10 +289,10 @@ to run unless the human has already explicitly authorized execution once ready.
 Approval to build or explore the harness alone is not approval to launch it.
 
 For platform funding, first check availability and model eligibility with
-`uv run catalyst remote funding-policy`. With a qualifying local record, submit:
+`uv run openrsi-space remote funding-policy`. With a qualifying local record, submit:
 
 ```sh
-uv run catalyst remote submit HARNESS_DIR \
+uv run openrsi-space remote submit HARNESS_DIR \
   --platform-funded --local-run LOCAL_RUN_PATH \
   --problem-release TAG --provider PROVIDER --model EXACT_MODEL --budget APPROVED_CAP \
   --no-token-limit --max-seconds TIME_CAP --wait
@@ -319,7 +302,7 @@ The following API-key interface is retained but currently disabled on the hosted
 service. Use it only if an operator explicitly enables personal API keys later:
 
 ```sh
-uv run catalyst remote submit HARNESS_DIR \
+uv run openrsi-space remote submit HARNESS_DIR \
   --provider PROVIDER --model EXACT_MODEL --budget APPROVED_CAP \
   --no-token-limit --max-seconds TIME_CAP \
   --prompt-model-token --wait
@@ -347,8 +330,8 @@ Record the returned evaluation ID. If the connection or waiting process stops,
 retrieve that same run:
 
 ```sh
-uv run catalyst remote status EVALUATION_ID
-uv run catalyst remote wait EVALUATION_ID
+uv run openrsi-space remote status EVALUATION_ID
+uv run openrsi-space remote wait EVALUATION_ID
 ```
 
 Do not resubmit to recover a wait. Inspect failure reasons and evidence before
@@ -362,7 +345,7 @@ progress, and do not call a live score an accepted or final result.
 
 ## Verify and publish
 
-After a valid result, use the exact receipt path printed by Catalyst:
+After a valid result, use the exact receipt path printed by OpenRSI:
 
 ```sh
 mkdir -p submission
@@ -382,7 +365,7 @@ earlier submissions, including the solver's own.
 When Yukon publication is authorized:
 
 ```sh
-uv run catalyst yukon-submit --note-file submission-note.md \
+uv run openrsi-space yukon-submit --note-file submission-note.md \
   --model "EXACT MODEL" --harness "ACTUAL HARNESS" --no-dependencies
 yukon submissions --all --json
 ```
@@ -398,7 +381,7 @@ Wait for Yukon verification before claiming acceptance.
 
 ## Rules and reporting
 
-- Catalyst evaluates autonomous research. Do not fetch, search for, bundle,
+- OpenRSI evaluates autonomous research. Do not fetch, search for, bundle,
   recall or reconstruct an existing ECDSA GitHub/leaderboard submission as the
   answer. Do not instruct the remote agent to reproduce a memorized solution,
   put it in prompts/knowledge files, or disguise it as a dependency or cache.
@@ -428,8 +411,8 @@ Wait for Yukon verification before claiming acceptance.
   from hypotheses and infrastructure checks.
 
 To download the evaluated harness source, use
-`uv run catalyst remote download EVALUATION_ID --kind harness --output harness.zip`.
+`uv run openrsi-space remote download EVALUATION_ID --kind harness --output harness.zip`.
 Remote traces and complete evidence bundles are not downloadable.
 
-Build dependencies: run `uv run catalyst remote build-policy` before choosing hosted
+Build dependencies: run `uv run openrsi-space remote build-policy` before choosing hosted
 package sources; see [build dependency policy](build-dependencies.md).

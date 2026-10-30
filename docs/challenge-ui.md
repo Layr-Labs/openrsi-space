@@ -3,7 +3,7 @@
 The hosted board lives in `Layr-Labs/yukon` under
 `apps/challenges-ui/challenges/openrsi`, with routes at
 `apps/challenges-ui/app/(challenge)/openrsi`. The public solver command remains
-`catalyst`. Older `/catalyst` website links redirect to `/openrsi`.
+`openrsi-space`. Older `/catalyst` website links redirect to `/openrsi`.
 UI development and deployment belong in Yukon; this package has no separate viewer.
 
 ## Local preview
@@ -60,6 +60,6 @@ source is obtained from the verifier's screened artifact endpoint; local evidenc
 private traces and generated circuits are not public downloads.
 
 The Yukon directory README is authoritative for current UI environment variables,
-preview setup, app checks and release procedures. Publish corresponding Catalyst
+preview setup, app checks and release procedures. Publish corresponding OpenRSI
 guides before enabling links to them in a hosted UI. Legal pages require separately
 approved terms and privacy text; a code deployment does not constitute legal review.

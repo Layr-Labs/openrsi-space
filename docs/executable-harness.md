@@ -1,7 +1,7 @@
 # Executable harness development
 
 Create your agent in its own directory, using the starter generator or your own
-repository. Catalyst packages that source for the remote verification service.
+repository. OpenRSI packages that source for the remote verification service.
 After a successful evaluation, copy the returned receipt to the challenge
 checkout's generated `submission/verification.json`; `yukon run` checks that retained result.
 See [the solver guide](solver-guide.md) for authentication and publication.
@@ -13,10 +13,10 @@ pin; they cannot issue an official receipt.
 ## Develop against a problem
 
 ```sh
-uv run catalyst problem list
-uv run catalyst problem clone ecdsa.fail ./work/ecdsa
-uv run catalyst problem setup ecdsa.fail --workspace ./work/ecdsa
-uv run catalyst problem check ecdsa.fail --workspace ./work/ecdsa
+uv run openrsi-space problem list
+uv run openrsi-space problem clone ecdsa.fail ./work/ecdsa
+uv run openrsi-space problem setup ecdsa.fail --workspace ./work/ecdsa
+uv run openrsi-space problem check ecdsa.fail --workspace ./work/ecdsa
 ```
 
 Edit `src/point_add`. Checks reuse the existing workspace and build caches;
@@ -28,14 +28,14 @@ intensive and is separate from the lightweight local contract tests.
 ## Package and smoke-test a harness
 
 ```sh
-uv run catalyst harness create my-solver --output .catalyst/my-solver
-uv run catalyst harness build .catalyst/my-solver
+uv run openrsi-space harness create my-solver --output .catalyst/my-solver
+uv run openrsi-space harness build .catalyst/my-solver
 ```
 
 The build prints its `id`. Use it to run the complete entrypoint:
 
 ```sh
-uv run catalyst harness smoke BUILD_ID \
+uv run openrsi-space harness smoke BUILD_ID \
   --workspace ./work/ecdsa --problem ecdsa.fail
 ```
 
@@ -77,7 +77,7 @@ runtime and check ownership/modes if creation fails, especially if your wrapper
 drops privileges. The generated image wrapper sets `USER root`; smoke still drops
 all capabilities and enables `no-new-privileges`.
 
-Catalyst replaces the image's `ENTRYPOINT`/`CMD` with its launcher and invokes the
+OpenRSI replaces the image's `ENTRYPOINT`/`CMD` with its launcher and invokes the
 manifest's entrypoint as an argument list in `/workspace/repo`, without a login
 shell. Dockerfile `ENV` values, including `PATH`, are inherited; the launcher adds
 the task variables but does not reset `PATH` or source shell profiles. Install
@@ -94,7 +94,7 @@ prompts and helper modules travel with the agent. Use the
 to choose provider, model and budget separately from those source files.
 
 A complete `harness.json` is shown below. The `execution` object is a field of
-this document, not a standalone manifest. `catalyst harness create` generates
+this document, not a standalone manifest. `openrsi-space harness create` generates
 the manifest, Dockerfile and starter entrypoint together.
 
 ```json

@@ -23,14 +23,14 @@ Create a private JSON file outside the harness directory, with permissions 0600:
 ```
 
 Use an access token obtained through your own authorized Claude login and its
-actual expiry. Do not supply a refresh token or copy an entire login file. Catalyst
+actual expiry. Do not supply a refresh token or copy an entire login file. OpenRSI
 does not search for Claude credentials or refresh them on the server. Extra fields,
 expired tokens and timestamps without a timezone are rejected. The gateway checks
 expiry before every inference request, without falling back to an API key.
 
 Select `claude-subscription` and the exact Claude model in the run configuration.
 Pass the file using `--provider-access-file /absolute/private/access.json` to
-`catalyst local run` only.
+`openrsi-space local run` only.
 For local testing, supply a pricing snapshot with `--pricing`; it must contain a
 `claude-subscription` entry for the selected model. Subscription pricing snapshots for local runs must come from the local runtime;
 the hosted evaluator no longer issues subscription quotes.

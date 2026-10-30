@@ -1,6 +1,6 @@
 # Per-run problem service
 
-Catalyst owns the public problem statement. The verification service assigns a
+OpenRSI owns the public problem statement. The verification service assigns a
 specific, immutable problem package before executing a submitted harness.
 Dungeness supplies generic Compose wiring and model accounting.
 
@@ -47,7 +47,7 @@ The document digest covers the complete response, including the run ID.
 It uses UTF-8 JSON with sorted keys, compact separators, non-ASCII characters
 preserved, and non-finite numbers rejected.
 
-The Catalyst launcher fetches this document before starting the harness. It
+The OpenRSI launcher fetches this document before starting the harness. It
 checks the digest, problem identity and candidate paths, prepends the trusted
 statement to the run instructions, and writes the resolved `CATALYST_TASK`.
 `problem_document` contains the response; `CATALYST_PROBLEM_URL` allows subsequent
@@ -67,7 +67,7 @@ The problem's `execution.knowledge_base` pins the canonical SHA-256 of
 [the paper catalog](../src/catalyst/problem-set/ecdsa-fail/knowledge-base/v1.json).
 Release v1 contains eight content-pinned research papers about quantum elliptic-curve
 arithmetic, reversible circuits, synthesis, uncomputation and resource reduction.
-All eight unmodified PDFs ship inside the Catalyst package, with author attribution,
+All eight unmodified PDFs ship inside the OpenRSI package, with author attribution,
 original source links, recorded Creative Commons licenses and SHA-256 checksums.
 The required paper is André Schrottenloher's arXiv:2606.02235v1. Preparation verifies
 all bundled bytes and needs no external paper downloads. Existing requests and receipts keep their exact original identities.
@@ -105,13 +105,13 @@ Solvers must not bundle problem-specific material in their harnesses.
 
 ## Versions and rollout
 
-Service initialization reads Catalyst's packaged statement, not Dungeness's
+Service initialization reads OpenRSI's packaged statement, not Dungeness's
 historical task text. Each run retains its problem snapshot and generated service
 document, with the document digest in its run metadata.
 
 The public ECDSA source commit, scoring rules and receipt protocol are unchanged.
 The updated execution configuration changes the problem-package version.
-Catalyst also owns the ECDSA execution configuration in `problem-set/ecdsa-fail/releases/v1.json`:
+OpenRSI also owns the ECDSA execution configuration in `problem-set/ecdsa-fail/releases/v1.json`:
 source commit, candidate paths, interface, initialization, resource limits and
 verifier selection. The worker generates a task and checkpoint in its private
 per-run runtime; it does not look up Dungeness task, problem or checkpoint
@@ -139,9 +139,9 @@ keep their original problem-set identity.
 
 ## Local development
 
-`catalyst local run` uses the same public task assembly and harness adapter as the
+`openrsi-space local run` uses the same public task assembly and harness adapter as the
 remote worker. Docker Compose starts the problem service automatically. Solvers
-need the public Catalyst package and Dungeness, not `catalyst-verifier`.
+need the public OpenRSI package and Dungeness, not `catalyst-verifier`.
 `--prepare-only` materializes the inputs without model access.
 The remote worker adds private operator policies after public preparation; local
 results are development evidence. See [local runs](local-evaluation.md).

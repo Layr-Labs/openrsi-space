@@ -4,7 +4,7 @@ Before submitting, inspect the hosted builder's current policy without uploading
 source or credentials:
 
 ```sh
-uv run catalyst remote build-policy
+uv run openrsi-space remote build-policy
 ```
 
 The result lists the enabled profiles and allowed hosts, with a version and digest.

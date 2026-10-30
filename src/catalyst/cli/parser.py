@@ -6,9 +6,9 @@ from catalyst.challenge.catalog import PROBLEM_RELEASES
 from pathlib import Path
 
 def build_parser():
-    parser = argparse.ArgumentParser(description="Prepare harnesses, use local checks, and submit verified research to Yukon.")
-    parser.add_argument("--version", action="version", version=f"catalyst {__version__}",
-                        help="Show the installed Catalyst package version and exit.")
+    parser = argparse.ArgumentParser(prog="openrsi-space", description="OpenRSI solver toolkit: prepare harnesses, test locally with Dungeness, and submit verified research to Yukon.")
+    parser.add_argument("--version", action="version", version=f"openrsi-space {__version__}",
+                        help="Show the installed OpenRSI solver toolkit version and exit.")
     parser.add_argument("--state", default=os.environ.get("CATALYST_STATE", ".catalyst"),
                         help="Local state directory (default: .catalyst).")
     commands = parser.add_subparsers(dest="command", required=True)
@@ -77,7 +77,7 @@ def build_parser():
     local_run_tokens.add_argument("--max-tokens", type=int)
     local_run_tokens.add_argument("--no-token-limit", action="store_true", help="Disable a token ceiling; retain the credit and time limits.")
     local_run.add_argument("--max-seconds", type=int, help="Override wall time; new evaluations default to 10800 seconds (3 hours).")
-    local_run.add_argument("--pricing", help="Optional trusted local pricing JSON; defaults to Catalyst's pinned schedule.")
+    local_run.add_argument("--pricing", help="Optional trusted local pricing JSON; defaults to OpenRSI's pinned schedule.")
     local_run.add_argument("--prepare-only", action="store_true", help="Build and prepare the run without reading credentials or calling models.")
     local_access = local_run.add_mutually_exclusive_group()
     local_access.add_argument("--codex-auth-file", nargs="?", const=str(Path.home() / ".codex/auth.json"),

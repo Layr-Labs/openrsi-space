@@ -66,7 +66,7 @@ def diagnostic_lines(result):
     if lines:
         identity = report.get("evaluation_id")
         if isinstance(identity, str) and re.fullmatch(r"[0-9a-f]{8}(?:-[0-9a-f]{4}){3}-[0-9a-f]{12}", identity):
-            lines.append(f"Read the owner report with catalyst remote diagnostics {identity}.")
+            lines.append(f"Read the owner report with openrsi-space remote diagnostics {identity}.")
     return lines
 
 

@@ -1,4 +1,4 @@
-# Catalyst package
+# OpenRSI solver package (`catalyst`)
 
 See [architecture](../../docs/architecture.md) for ownership and dependency direction.
 `cli/` exposes commands, `contracts/` defines shared rules, `client/` speaks HTTP,

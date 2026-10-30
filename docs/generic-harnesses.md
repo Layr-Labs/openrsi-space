@@ -25,12 +25,12 @@ check `remote limits HARNESS_DIR` before uploading.
 Submit an existing repository containing the general-purpose harness, prompts,
 configuration, helper programs and dependencies, with its existing directory
 layout. The harness can run its own workers, search loop or framework.
-Provide a Dockerfile and launch command; no Catalyst-specific manifest or
+Provide a Dockerfile and launch command; no OpenRSI-specific manifest or
 `instructions.md` is required. Replace `PROVIDER` and `MODEL_ID` below with an enabled provider and its exact
 model ID, matching the client implemented by your harness:
 
 ```sh
-uv run catalyst remote submit /path/to/your-agent \
+uv run openrsi-space remote submit /path/to/your-agent \
   --entrypoint "python3 /app/main.py" \
   --provider PROVIDER --model MODEL_ID --budget 3 \
   --platform-funded --local-run /path/to/completed-local-run --wait
@@ -48,7 +48,7 @@ do not combine it with `--entrypoint`.
 An optional editable starter is also available:
 
 ```sh
-uv run catalyst harness create my-agent --output .catalyst/my-agent
+uv run openrsi-space harness create my-agent --output .catalyst/my-agent
 ```
 
 Replace `.catalyst/my-agent/agent.py` and install generic dependencies in its
@@ -64,7 +64,7 @@ An existing framework can use its own entrypoint instead.
 
 Executable submissions are the supported workflow. Dungeness no longer bundles
 Codex, Claude Code, Pi or Prime Agent launchers. Install your preferred agent and
-configure its CLI inside the submitted image. Catalyst's `catalyst-exec-v1`
+configure its CLI inside the submitted image. OpenRSI's `catalyst-exec-v1`
 contract is unchanged: it installs the generic Dungeness command adapter.
 Legacy `harness create --agent` and non-executable harness preparation are
 rejected with migration instructions. Historical artifacts remain readable.
@@ -72,7 +72,7 @@ rejected with migration instructions. Historical artifacts remain readable.
 Submit the same source with a model choice and spending cap:
 
 ```sh
-uv run catalyst remote submit .catalyst/my-agent \
+uv run openrsi-space remote submit .catalyst/my-agent \
   --provider PROVIDER --model MODEL_ID --budget 3 \
   --platform-funded --local-run /path/to/completed-local-run --wait
 ```
@@ -84,7 +84,7 @@ The harness's model client must implement the chosen provider's supported
 protocol and use the gateway endpoint supplied in `CATALYST_TASK`.
 The gateway substitutes trusted credentials using configured authentication
 headers; it does not adapt the coding agent to the model. The harness owns
-context-window settings and reasoning preferences. Catalyst does not assign
+context-window settings and reasoning preferences. OpenRSI does not assign
 one fixed context window or capability list to every ChatGPT model.
 The provider's protocol must be available and enabled by the operator.
 Check [hosted provider permissions](live-models.md#implemented-providers-and-hosted-permission):
@@ -199,7 +199,7 @@ pinned pricing identity. The compiler gives the harness a `DUNGENESS_TASK`
 JSON file containing the problem instruction, writable workspace, model
 endpoints and execution configuration. Real credentials are not in this file.
 Research strategy and feedback loops belong to the harness. The cleaned
-Dungeness runtime deployed by Catalyst has removed the experimental research-state
+Dungeness runtime deployed by OpenRSI has removed the experimental research-state
 controller and its prompt interventions. Check the runtime revision when comparing
 a public checkout with the deployed service.
 
@@ -211,7 +211,7 @@ An optional `execution.resume_entrypoint` supports explicit exit-code-75
 continuations under `runtime.continuation` limits. It reuses the same sandbox;
 this is not durable recovery after host failure.
 
-Catalyst's existing `catalyst-exec-v1` source interface remains available.
+OpenRSI's existing `catalyst-exec-v1` source interface remains available.
 Its wrapper now uses the Dungeness command adapter. `CATALYST_TASK` also
 contains `models`, and `CATALYST_MODELS` exposes that list as JSON.
 The old Codex identity and Dockerfile marker workaround are removed.
@@ -282,14 +282,14 @@ available. The service never accepts solver-authored prices or upstream URLs.
 
 For local OpenRouter runs, disable default plugins and hosted server tools in the
 workspace owning your key, then set `TESTBED_OPENROUTER_INFERENCE_ONLY=1` in the
-environment of `catalyst local run`. This explicitly confirms that configuration;
+environment of `openrsi-space local run`. This explicitly confirms that configuration;
 it does not change your OpenRouter settings. The local CLI forwards the assertion
 to the trusted gateway. Normal harness-executed function calls still work, including
 shell commands and file edits inside Dungeness. Hosted evaluations use the
 operator's confirmation for the platform account.
 
 The worker installs the frozen snapshot in its trusted Dungeness runtime.
-The gateway uses it for admission/accounting; Catalyst uses the same snapshot
+The gateway uses it for admission/accounting; OpenRSI uses the same snapshot
 to verify the complete usage ledger, intermediate scores and final receipt.
 Raw counts remain available for later comparison under another reference schedule.
 No Yukon backend change is needed.
@@ -322,13 +322,13 @@ errors with an `invalid_request_error` body settle at zero tokens. The rejection
 basis is retained in the ledger. HTTP 422 responses are not automatically free.
 Successful responses without usage,
 interrupted streams, and ambiguous errors still block further inference.
-Catalyst prices each settled receipt using that receipt's authorized model,
+OpenRSI prices each settled receipt using that receipt's authorized model,
 then checks the terminal total.
 
 Reservations limit concurrent admission; they are **not a hard provider billing
 cap**. Actual usage can exceed an allowance, especially with subscription
 protocols that lack enforceable per-call cost limits. The gateway then blocks
-new calls. Under validity policy v3, Catalyst accepts in-flight overshoot only
+new calls. Under validity policy v3, OpenRSI accepts in-flight overshoot only
 with trusted evidence that every charged request started below the cap. No cost is
 clipped to make a result eligible. Use provider-side spending limits where
 available. Strict pre-call cost guarantees remain future work.
@@ -366,11 +366,11 @@ and the mock-provider end-to-end flow live in `catalyst-verifier`.
 
 New runs default to credit and time limits without a token ceiling. In
 `evaluation.json`, omit `limits.max_model_tokens` or set it to `null`.
-Use `--no-token-limit` with `catalyst remote submit` or `catalyst local run`
+Use `--no-token-limit` with `openrsi-space remote submit` or `openrsi-space local run`
 to remove a ceiling from an existing manifest. A positive `--max-tokens N`
 still enables an explicit ceiling. Token usage is recorded in all cases.
 An operator who explicitly requires a finite token ceiling can reject uncapped
-requests; the hosted Catalyst service does not impose one by default.
+requests; the hosted OpenRSI service does not impose one by default.
 
-Build dependencies: run `uv run catalyst remote build-policy` before choosing hosted
+Build dependencies: run `uv run openrsi-space remote build-policy` before choosing hosted
 package sources; see [build dependency policy](build-dependencies.md).

@@ -44,7 +44,7 @@ harnesses need a later per-request model/authorization extension; do not accept
 unmetered secondary model calls. A pricing entry is not a claim that its provider
 authentication adapter has already been implemented.
 
-Dungeness owns admission, metering and the usage ledger. Catalyst recomputes
+Dungeness owns admission, metering and the usage ledger. OpenRSI recomputes
 credits from its settled receipts using the pinned schedule. Unknown consumption,
 unsettled requests and token-limit overruns prevent a valid score. Under validity
 policy `ecdsa-trusted-checkpoints-v3`, final in-flight responses may exceed the
@@ -77,7 +77,7 @@ contradictory canonical records fail closed.
 The worker also freezes the terminal candidate and independently reruns the
 pinned ECDSA verifier with no network. That final point remains in the curve at
 full run cost, even when an earlier evaluator result is better. The two digest
-formats are labeled: Dungeness hashes module-relative contents; Catalyst hashes
+formats are labeled: Dungeness hashes module-relative contents; OpenRSI hashes
 its canonical file map. They are not interchangeable identifiers.
 
 For budget B, select minimum performance among observations at cumulative
@@ -112,7 +112,7 @@ cumulative model credits at that candidate's capture. Authorized maximum credits
 and final total usage remain separate. Missing $10/$20/$50/$100 observations stay in
 metadata; they do not prevent a valid best-achieved score.
 
-Yukon's generic Pareto frontier describes the best result/cost pair. The Catalyst
+Yukon's generic Pareto frontier describes the best result/cost pair. The OpenRSI
 board ranks the selected view by performance: $10, $20, $50, $100, or Best achieved. A
 later candidate can improve Best achieved without improving an earlier
 budget view. Compare exact problem, pricing, model and execution conditions.

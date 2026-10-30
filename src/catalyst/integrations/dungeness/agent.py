@@ -1,4 +1,4 @@
-"""Public Dungeness command adapter and model selection for Catalyst harnesses."""
+"""Public Dungeness command adapter and model selection for OpenRSI harnesses."""
 from pathlib import Path
 from catalyst.common import CatalystError
 from catalyst.harnesses.executable import INTERFACE

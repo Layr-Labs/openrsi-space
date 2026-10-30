@@ -105,7 +105,7 @@ def validate_execution(source, problem_path, document):
     if 'task' in execution or isinstance(execution.get('checkpoint'), str):
         raise CatalystError(
             "Legacy runtime task/checkpoint references are no longer supported. "
-            "Initialize a new service problem package from Catalyst's current challenge contract; "
+            "Initialize a new service problem package from OpenRSI's current challenge contract; "
             "retain the old package and receipts for historical runs.")
     repository = execution.get('repository', {})
     if not str(repository.get('url', '')).startswith('https://'):

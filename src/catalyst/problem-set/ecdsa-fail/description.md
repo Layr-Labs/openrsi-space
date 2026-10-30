@@ -54,7 +54,7 @@ builder, evaluator, dependencies or benchmark scripts, or forge their outputs.
 
 Use `evaluate` for feedback during a research run and retain your best verified
 candidate after the first successful check. For an equivalent local starting
-workspace, use `catalyst local run` with the pinned Dungeness runtime.
+workspace, use `openrsi-space local run` with the pinned Dungeness runtime.
 Papers, general methods and the pinned baseline are permitted. Importing or
 replaying existing ECDSA GitHub/leaderboard solutions, including answers embedded
 in harness instructions or knowledge files, is prohibited.

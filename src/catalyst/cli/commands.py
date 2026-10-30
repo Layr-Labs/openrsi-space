@@ -84,7 +84,7 @@ def model_access_notice(args, client, evaluation=None):
               if evaluation is not None else " The existing run's limits still apply.")
     print(
         f"REMOTE MODEL ACCESS: You are sending your model credential to {client.base}. "
-        "Catalyst runs your agent on its remote server using YOUR model account; "
+        "OpenRSI runs your agent on its remote server using YOUR model account; "
         "calls consume YOUR API credits. Subscription login handoffs are not supported. "
         "Use this credential option only if you authorize that remote use."
         + budget + " Normalized credits are not a guaranteed cash-billing limit. "
@@ -236,7 +236,7 @@ def remote_command(args, state):
             artifact = client.wait(identity)
         except KeyboardInterrupt:
             raise CatalystError(
-                f"Stopped waiting; the remote job continues. Resume with catalyst remote wait {identity} "
+                f"Stopped waiting; the remote job continues. Resume with openrsi-space remote wait {identity} "
                 "using the same --state directory."
             ) from None
         reference = client.export_reference(identity)
@@ -259,7 +259,7 @@ def dispatch(args):
                 current = PublicCatalog().current_problem()
                 print(json.dumps(current, indent=2))
                 if not current["installed"]:
-                    raise CatalystError("Update the Catalyst checkout/package to match the active evaluator release before preparing or submitting a new run.")
+                    raise CatalystError("Update the OpenRSI checkout/package to match the active evaluator release before preparing or submitting a new run.")
             elif args.operation == "list":
                 print(json.dumps(initial_problems(), indent=2))
             elif args.operation == "show":
@@ -314,7 +314,7 @@ def dispatch(args):
             remote_command(args, state)
         return 0
     except (CatalystError, OSError, KeyError, ValueError) as error:
-        print(f"catalyst: {error}", file=sys.stderr)
+        print(f"openrsi-space: {error}", file=sys.stderr)
         return 1
 
 

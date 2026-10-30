@@ -85,7 +85,7 @@ def read_receipt(path):
     except FileNotFoundError:
         raise CatalystError(
             f"Missing {path.name}. Submit your harness with "
-            "catalyst remote submit HARNESS_DIR --wait, then copy its receipt here.") from None
+            "openrsi-space remote submit HARNESS_DIR --wait, then copy its receipt here.") from None
     if not isinstance(reference, dict):
         raise CatalystError("Verification receipt must be a JSON object.")
     return reference

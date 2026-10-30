@@ -20,7 +20,7 @@ def judge_input(value: str | None) -> dict:
     document = json.loads(value) if value else default
     supported = [default["policies"], {"scoring": SCORING, "validity": LEGACY_VALIDITY}]
     if not isinstance(document, dict) or document.get("policies") not in supported:
-        raise CatalystError("Unsupported Catalyst evaluation policies.")
+        raise CatalystError("Unsupported OpenRSI evaluation policies.")
     fields = document.get("fields")
     if (not isinstance(fields, dict) or set(fields) != {"scores", "validity"}
             or any(type(item) is not bool for item in fields.values())

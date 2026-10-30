@@ -16,7 +16,7 @@ from catalyst.protocol import YUKON_BINDING_PROTOCOL as PROTOCOL
 def bind_job(root, job_id, benchmark_id, *, reference=None):
     key = solver_token()
     if not key.startswith("ykn_"):
-        raise CatalystError("Execution binding requires your Yukon API key, not a Catalyst session token.")
+        raise CatalystError("Execution binding requires your Yukon API key, not a OpenRSI session token.")
     reference = reference if reference is not None else read_receipt(root / RECEIPT_PATH)
     body = {"protocol": PROTOCOL, "job_id": identity(job_id),
             "benchmark_id": identity(benchmark_id), "reference": reference}
@@ -44,7 +44,7 @@ def submit(root: Path, *, note_file, model, harness, dependencies_file=None,
             if saved.get("phase") != "binding":
                 raise CatalystError(
                     "The previous Yukon submission outcome is unknown. Inspect yukon submissions "
-                    "before retrying; use catalyst yukon-bind for an existing job.")
+                    "before retrying; use openrsi-space yukon-bind for an existing job.")
             if (saved["endpoint"] != endpoint()
                     or saved["reference"] != read_receipt(root / RECEIPT_PATH)):
                 raise CatalystError("Restore the pending submission's endpoint and receipt before resuming.")
