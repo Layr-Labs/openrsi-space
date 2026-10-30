@@ -38,5 +38,5 @@ an apparent false positive. Do not modify a harness simply to evade detection.
 
 Screening is not a proof that all cheating will be detected. Independent circuit
 verification remains required for every scored result. Screening implementation,
-corpus operations and reviewer configuration live in the private `catalyst-verifier`
+corpus operations and reviewer configuration live in the private `openrsi-space-verifier`
 repository; the public policy applies regardless of implementation details.

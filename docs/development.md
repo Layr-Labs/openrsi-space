@@ -47,7 +47,7 @@ remains at stable package paths. See [architecture](architecture.md).
 
 ## Integration checks
 
-The private `catalyst-verifier` repository owns service and cross-repository tests.
+The private `openrsi-space-verifier` repository owns service and cross-repository tests.
 Run them against this working tree before deploying a package-layout change:
 
 ```sh

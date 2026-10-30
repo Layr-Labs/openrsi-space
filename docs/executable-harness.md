@@ -139,7 +139,7 @@ source or images.
 
 ## Official evaluation
 
-Submit the harness source using the [solver guide](solver-guide.md). The remote service builds and runs it with metered model access and independent verification. Operator Dungeness tooling lives in `catalyst-verifier`; it is not required locally.
+Submit the harness source using the [solver guide](solver-guide.md). The remote service builds and runs it with metered model access and independent verification. Operator Dungeness tooling lives in `openrsi-space-verifier`; it is not required locally.
 
 ## Build review
 

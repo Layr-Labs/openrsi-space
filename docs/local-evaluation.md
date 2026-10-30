@@ -201,4 +201,4 @@ temporary model access to the remote service. After receiving the receipt,
 `yukon run` retrieves and validates that retained result without starting another run.
 
 Operator tests involving the API, Dungeness, gateway or a mock model provider live
-in `catalyst-verifier`. Solvers do not need that private checkout.
+in `openrsi-space-verifier`. Solvers do not need that private checkout.

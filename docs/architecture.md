@@ -1,7 +1,7 @@
 # OpenRSI architecture
 
 OpenRSI is the platform and benchmark. The `openrsi-space` command and
-`catalyst-research` Python package are its solver toolkit; `catalyst-verifier`
+`catalyst-research` Python package are its solver toolkit; `openrsi-space-verifier`
 is its private verification service. Dungeness remains the execution runtime,
 and Yukon provides identity and the leaderboard UI. The solver command replaces
 `catalyst`; the Python and service names, stored state, receipt formats and
@@ -47,7 +47,7 @@ operator exemption.
 flowchart LR
     Solver[Solver: harness source + selected run limits] --> Client[Public openrsi-space CLI]
     Local[Matching local evidence for funded runs] --> Client
-    Client -->|Authenticated HTTPS| API[Private catalyst-verifier API]
+    Client -->|Authenticated HTTPS| API[Private OpenRSI verifier API]
     API --> Review[Source screening + funded evidence review]
     Review --> Worker[Private worker + Dungeness]
     Access[Platform API access or authorized solver access] --> Worker
@@ -115,7 +115,7 @@ content stay stable when preparation code moves. Pricing remains in `pricing/`.
 
 ## Private service
 
-`catalyst-verifier` provides its own Python package (`catalyst_verifier`) and
+The `openrsi-space-verifier` repository provides its own Python package (`catalyst_verifier`) and
 operator entrypoint (`catalyst-verifier`). It depends on an exact public package
 version. Its source includes the API, job store, worker lifecycle, Dungeness
 integration, anti-cheat screening, provider staging, artifact storage and deployment

@@ -15,7 +15,7 @@ claim. Update the public package before submitting against the new digest.
 
 The evaluator's configured problem, worker package and receipt authorization must
 be switched together. A repository update alone does not deploy the service.
-Deployment procedures and current rollout evidence belong in catalyst-verifier.
+Deployment procedures and current rollout evidence belong in openrsi-space-verifier.
 
 ## CLI rename and assigned statement
 
