@@ -82,6 +82,8 @@ def build_parser():
     local_access = local_run.add_mutually_exclusive_group()
     local_access.add_argument("--codex-auth-file", nargs="?", const=str(Path.home() / ".codex/auth.json"),
                               help="Use temporary access from your local Codex login; refresh credentials stay outside the run.")
+    local_access.add_argument("--grok-auth-file", nargs="?", const=str(Path.home() / ".grok/auth.json"),
+                              help="Use an unexpired local Grok login; only access token and expiry enter the local gateway.")
     local_access.add_argument("--provider-token-env", metavar="NAME",
                               help="Read an API token from this environment variable; never pass the token as an argument.")
     local_access.add_argument("--provider-access-file", help="Private provider credential map, including session access and expiry.")

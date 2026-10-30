@@ -18,10 +18,13 @@ MAX_TOKEN_BYTES = 8192
 # Provider availability is discovered from the selected Dungeness runtime.
 PROVIDER_ENV = {"openai": "TESTBED_OPENAI_API_KEY", "anthropic": "TESTBED_ANTHROPIC_API_KEY",
                 "openrouter": "TESTBED_OPENROUTER_API_KEY"}
-PROVIDERS = frozenset(PROVIDER_ENV) | {"openai-chatgpt", "claude-subscription"}
-SUBSCRIPTION_PROVIDERS = frozenset({"openai-chatgpt", "claude-subscription"})
+LOCAL_PLAN_KEYS = {"minimax-subscription": "TESTBED_MINIMAX_CODING_PLAN_KEY"}
+LOCAL_SESSION_ENV = {"claude-subscription": "TESTBED_CLAUDE_ACCESS_TOKEN",
+                     "grok-subscription": "TESTBED_GROK_SUBSCRIPTION_TOKEN"}
+PROVIDERS = frozenset(PROVIDER_ENV) | LOCAL_PLAN_KEYS.keys() | LOCAL_SESSION_ENV.keys() | {"openai-chatgpt"}
+SUBSCRIPTION_PROVIDERS = frozenset(LOCAL_SESSION_ENV) | LOCAL_PLAN_KEYS.keys() | {"openai-chatgpt"}
 # Read historical configurations without re-enabling their credentials or execution.
-RETIRED_PROVIDERS = frozenset({"kimi-code", "moonshot", "xai", "grok-subscription"})
+RETIRED_PROVIDERS = frozenset({"kimi-code", "moonshot", "xai"})
 
 def require_active_models(models):
     for model in models:
@@ -130,7 +133,7 @@ def decode_remote_access(evaluation, token):
 def validate_session_access(value):
     # Exact fields deliberately exclude refresh tokens and entire login files.
     if not isinstance(value, dict) or set(value) != {"access_token", "expires_at"}:
-        raise CatalystError("Claude access requires only access_token and expires_at; refresh credentials stay local.")
+        raise CatalystError("Session access requires only access_token and expires_at; refresh credentials stay local.")
     validate_token(value["access_token"])
     if any(c in value["access_token"] for c in "'\"\\$`#"):
         raise CatalystError("Access token contains unsupported environment-file characters.")
@@ -142,15 +145,34 @@ def validate_session_access(value):
         if expiry.tzinfo is None or expiry <= datetime.now(timezone.utc):
             raise ValueError
     except (AttributeError, ValueError, TypeError, OverflowError):
-        raise CatalystError("Claude access requires a future expires_at timestamp with a timezone.") from None
+        raise CatalystError("Session access requires a future expires_at timestamp with a timezone.") from None
+
+
+def grok_access(path):
+    """Read an explicitly selected first-party login; never export refresh data."""
+    try:
+        document = json.loads(Path(path).expanduser().read_text())
+        entries = [entry for key, entry in document.items()
+                   if key.startswith('https://auth.x.ai::') and isinstance(entry, dict)
+                   and entry.get('auth_mode') == 'oidc'
+                   and entry.get('oidc_issuer') == 'https://auth.x.ai']
+        if len(entries) != 1:
+            raise ValueError
+        access = {'access_token': entries[0]['key'], 'expires_at': entries[0]['expires_at']}
+        validate_session_access(access)
+        return access
+    except (OSError, ValueError, KeyError, TypeError, AttributeError):
+        raise CatalystError('Cannot read one unexpired first-party Grok login. Run `grok login --device-auth` locally.') from None
 
 
 def provider_environment(provider, value):
     """Shared local/remote credential staging; values go only to private tmpfs."""
-    if provider == "claude-subscription":
+    if provider in LOCAL_SESSION_ENV:
         validate_session_access(value)
-        return {"TESTBED_CLAUDE_ACCESS_TOKEN": value["access_token"],
-                "TESTBED_CLAUDE_ACCESS_TOKEN_EXPIRES_AT": value["expires_at"]}
+        name = LOCAL_SESSION_ENV[provider]
+        return {name: value["access_token"], name + "_EXPIRES_AT": value["expires_at"]}
+    if provider in LOCAL_PLAN_KEYS:
+        return {LOCAL_PLAN_KEYS[provider]: value}
     if provider in PROVIDER_ENV:
         return {PROVIDER_ENV[provider]: value}
     return {}
@@ -162,7 +184,7 @@ def validate_provider_access(document):
     for provider, value in document.items():
         if provider == "openai-chatgpt":
             validate_access(value)
-        elif provider == "claude-subscription":
+        elif provider in LOCAL_SESSION_ENV:
             validate_session_access(value)
         else:
             validate_token(value)
