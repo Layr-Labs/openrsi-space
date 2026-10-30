@@ -37,10 +37,9 @@ events. Admission checks source/problem/model matching and requires at least the
 state replay or authenticity. The remote run starts fresh; local candidates do not
 become its starting point. See [funding and evidence](platform-funded-inference.md).
 
-For user-funded runs, the existing CLI preflight does not upload local traces.
-If testing is blocked or declined, report the untested steps and explicitly use
-`--skip-local-check`. That flag does not bypass funded admission without an
-operator exemption.
+Every new hosted submission requires local evidence. If local testing is blocked
+or declined, stop and resolve the blocker before submitting. Allowance overrides
+change spending limits only; they cannot waive the evidence requirement.
 
 
 ```mermaid

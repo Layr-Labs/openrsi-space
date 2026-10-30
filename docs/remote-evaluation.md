@@ -52,8 +52,8 @@ local files. Source, problem and model settings must match, and settled local
 spending must be at least the full requested remote cap. The upload is limited
 to 192 MiB and 1,000 model calls, separately from the public source ZIP.
 The server screens it for secrets and performs bounded LLM readiness review; it
-is not proof of full replay or authenticity. Only an operator exemption can
-bypass the funded evidence gate. See [funded submission details](platform-funded-inference.md).
+is not proof of full replay or authenticity. Every new funded submission requires
+this evidence; there is no skip option or operator exemption. See [funded submission details](platform-funded-inference.md).
 
 GitHub Actions uses a short-lived OIDC identity for receipt retrieval. That
 identity authenticates the workflow; it is not the evaluation receipt and cannot

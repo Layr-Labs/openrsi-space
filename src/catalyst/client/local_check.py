@@ -86,11 +86,9 @@ def validate_record(path, body):
             'models': record_models(models)}
 
 
-def check_submission(state, package, body, base, *, local_run=None, skip=False):
+def check_submission(state, package, body, base, *, local_run=None):
     identity = request_identity(body)
     decision = {'request_identity': identity}
-    if skip:
-        return {**decision, 'status': 'skipped'}
     # Existing operation keys must remain usable even if local logs were moved
     # or removed. This resumes the same request, never creates an exemption for
     # changed source, model, limits, problem, publication choices or endpoint.
@@ -122,6 +120,6 @@ def check_submission(state, package, body, base, *, local_run=None, skip=False):
         f'Local Dungeness check required: {reason}. Run openrsi-space local run '
         f'{shlex.quote(str(package))} --dungeness /path/to/dungeness with the same model and problem '
         'and an authorized local budget. Existing records are reused automatically under '
-        f'{state / "local"}; use --local-run PATH for another location, or '
-        '--skip-local-check to explicitly submit without this check. '
+        f'{state / "local"}; use --local-run PATH for another location. '
+        'A completed matching local run is required; the check cannot be skipped. '
         'A valid circuit is not required. No remote evaluation was submitted.')

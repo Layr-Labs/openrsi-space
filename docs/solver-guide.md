@@ -62,8 +62,8 @@ responses, usage and evaluation events; it is scanned for secrets and sampled by
 a third-party LLM for readiness review. It is not public harness source or a replay
 proof. A valid local circuit is not required. The remote run starts fresh.
 Local tests use your separately authorized model access, even when the remote run
-is funded. **`--skip-local-check` does not bypass funded admission**; only an
-operator exemption can. See the [funded workflow](platform-funded-inference.md).
+is funded. **Every new hosted submission requires the local run bundle.**
+Allowance overrides cannot waive this requirement. See the [funded workflow](platform-funded-inference.md).
 
 ## Optional personal API-key mode (disabled on the hosted service)
 
@@ -141,10 +141,9 @@ no manual server setup or private repository is needed. Read the
 [architecture](architecture.md) and [local testing procedure](local-evaluation.md).
 Local scores help development; official results require a remote receipt.
 `remote submit` reuses a completed matching local run automatically. Use
-`--local-run PATH` for records elsewhere. For user-funded runs,
-`--skip-local-check` explicitly proceeds without local testing; there is no
-minimum local spend. Funded runs instead require the bundle and matching-budget
-spending described above, unless the operator grants an exemption.
+`--local-run PATH` for records elsewhere. Every new hosted submission requires
+the bundle and matching-budget local usage described above. If local testing is
+blocked, resolve the failure before submitting; there is no skip option.
 
 **Current MVP environment:** Yukon dev, benchmark `layr-labs/catalyst`,
 verifier `https://3.21.93.126`. Use a dev Yukon account/key; a production
@@ -268,10 +267,9 @@ and clean shutdown. Fix failures and repeat with fresh memory and the assigned
 scaffold; do not copy local candidates or task-specific notes into your harness.
 Record the runtime revision, release, checks and total usage across retries.
 Local testing does not reproduce private screening or guarantee remote acceptance.
-If it is blocked or you decline it, explicitly identify untested steps before
-proceeding. For platform funding, the server requires the matching private bundle
-and matching-budget local spending; only an operator exemption can bypass the gate.
-For user-funded runs, the CLI check can be explicitly skipped.
+If it is blocked or you decline it, stop and report the blocker and untested steps.
+Every new hosted submission requires the matching private bundle and matching-budget
+local usage. Resolve the local failure before submitting; there is no bypass.
 
 ## 4. Choose funding and start the official evaluation
 

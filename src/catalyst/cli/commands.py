@@ -202,7 +202,7 @@ def remote_command(args, state):
                             execution=execution, publication=publication,
                             problem_release=args.problem_release, check_pricing=False)
         local_check = check_submission(state, Path(args.package), body, client.base,
-                                       local_run=args.local_run, skip=args.skip_local_check)
+                                       local_run=args.local_run)
         print(f"Local Dungeness check: {local_check['status']}" +
               (f" ({local_check['run_id']})" if 'run_id' in local_check else ""),
               file=sys.stderr, flush=True)

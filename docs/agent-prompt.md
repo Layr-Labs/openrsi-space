@@ -62,8 +62,7 @@ assume it is enabled. Choose an exact model on a funded provider, obtain validat
 `--platform-funded`, with no personal model credential flag. Obtain authorization
 for the remote cap and public source publication.
 
-A completed matching local run is mandatory unless the operator grants an
-exemption. Retain its run directory and use `--local-run PATH`; the CLI exports
+A completed matching local run is mandatory for every new hosted submission. Retain its run directory and use `--local-run PATH`; the CLI exports
 recorded requests, responses, settled accounting and evaluation events as a
 separate private bundle (**192 MiB**, **1,000 model calls** maximum). Explain its
 private upload and third-party LLM readiness review before submission. Never put
@@ -84,7 +83,7 @@ rolling 24 hours**, subject to operator overrides and available platform funds.
 Each account may have one funded evaluation running at a time. The daily allowance
 can fund multiple sequential runs; unused reserved funds return after settlement. Check
 `openrsi-space remote funding` for reservations and usage. New keys do not reset quotas.
-`--skip-local-check` cannot bypass the server gate. See
+There is no skip option or operator evidence exemption. See
 [platform-funded inference](platform-funded-inference.md) for the full procedure.
 
 ## Authorization for local tests and hosted runs
@@ -280,15 +279,13 @@ run spec or manually start the problem server. No private repository is needed.
    model response alone does not establish that the complete harness works.
 
 If the environment cannot run Docker or lacks authorized model access, or the
-human declines local testing, report the blocker and untested steps before
-requesting remote execution. Do not silently skip preflight or bypass it merely
-to clear a CLI error. When the human authorizes proceeding without local testing,
-use `--skip-local-check` only for a user-funded run. That path is a CLI check,
-not an API admission requirement. Funded runs require private evidence and the
-matching-budget local spend described above unless the operator grants an exemption.
-Matching requires unchanged source, provider/model/reasoning settings and problem,
+human declines local testing, stop and report the blocker and untested steps.
+Do not request remote execution without qualifying local evidence. Every new
+hosted submission requires the private bundle and matching-budget local usage
+described above. Matching requires unchanged source, model or supported provider
+equivalent, reasoning settings and problem,
 completed execution and successful accounted model calls; it does not require a
-valid circuit. User-funded preflight has no minimum spend. Local results cannot mint receipts,
+valid circuit. Local results cannot mint receipts,
 reproduce private source screening or guarantee remote acceptance. Match the
 service's pinned task/runtime for comparisons; report any differences. Remote
 execution requires its own authorization, independent of local testing.

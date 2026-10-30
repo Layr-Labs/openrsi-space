@@ -154,7 +154,7 @@ or notes. A valid local circuit is not required.
 
 Local testing still uses your authorized model account. Check
 `openrsi-space remote funding-policy` **before** choosing the local provider/model.
-Only an operator exemption can bypass funded evidence requirements. See
+Every new funded submission requires local evidence; there is no exemption. See
 [the funded guide](platform-funded-inference.md) for allowances and admission.
 
 ### User-funded remote runs
@@ -182,9 +182,8 @@ uv run openrsi-space remote submit ./my-harness --local-run /path/to/local-run
 A directly launched Dungeness run must retain the OpenRSI harness-source and
 problem identities and the `local-development` label to match. Keep the run's
 artifact folder intact. If local testing is blocked or intentionally omitted,
-report the untested steps and add `--skip-local-check` to your submission command.
-This flag does not authorize spending or credential transfer by itself. The choice
-is recorded in the local remote-session metadata; local traces stay on your machine.
+stop and report the blocker. A new hosted submission requires a completed matching
+local run and its bundle; the requirement cannot be skipped.
 Unchanged saved submission retries remain usable without rerunning local tests.
 Status, wait, cancellation and receipt publication never require this check.
 
