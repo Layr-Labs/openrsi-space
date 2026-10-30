@@ -211,6 +211,22 @@ def smoke(state: Path, identity: str, workspace: Path, *, problem=None, timeout=
     # Host symlinks must not be followed through the container bind.
     if any(item.is_symlink() for item in (folder / "workspace").rglob("*")):
         raise CatalystError("Smoke workspaces must not contain symlinks.")
+    protected = []
+    if problem and problem.get('dungeness', {}).get('scaffold'):
+        from catalyst.challenge.assets import asset_path
+        from catalyst.challenge.preparation import yaml_file
+        manifest = asset_path(folder, problem['dungeness']['scaffold'])
+        for source, target in yaml_file(manifest).get('trusted_files', {}).items():
+            safe_relative(source)
+            safe_relative(target)
+            original = manifest.parent / source
+            if original.is_symlink() or not original.resolve().is_relative_to(manifest.parent.resolve()):
+                raise CatalystError('Trusted scaffold file escapes its manifest.')
+            copied = folder / 'workspace' / target
+            copied.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(original, copied)
+            copied.chmod(0o444)
+            protected.append((copied, target))
     input_dir = folder / "input"
     input_dir.mkdir()
     problem_ref = ({"id": problem["id"], "version": hashlib.sha256(canonical(problem)).hexdigest()}
@@ -219,7 +235,8 @@ def smoke(state: Path, identity: str, workspace: Path, *, problem=None, timeout=
             "workspace": "/workspace/repo",
             "candidate_paths": problem["candidate_paths"] if problem else [],
             "instruction": problem["title"] if problem else "",
-            "gateway": None, "model": None, "evidence": "smoke"}
+            "gateway": None, "model": None, "evidence": "smoke",
+            "remaining_seconds": timeout, "readonly_workspace_paths": [target for _, target in protected]}
     write_json(input_dir / "task.json", task)
     container = "catalyst-" + attempt
     command = [
@@ -228,6 +245,8 @@ def smoke(state: Path, identity: str, workspace: Path, *, problem=None, timeout=
         "--pids-limit", "256", "--mount",
         f"type=bind,source={folder / 'workspace'},target=/workspace/repo",
         "--mount", f"type=bind,source={input_dir},target=/opt/catalyst/input,readonly",
+        *[arg for copied, target in protected for arg in
+          ('--mount', f'type=bind,source={copied},target=/workspace/repo/{target},readonly')],
         "--entrypoint", "python3", metadata["image_id"],
         "/opt/catalyst/launch.py", "/opt/catalyst/input/task.json",
     ]

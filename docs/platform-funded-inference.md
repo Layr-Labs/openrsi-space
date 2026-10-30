@@ -111,3 +111,11 @@ credit ceiling as an additional conservative limit. Other providers retain their
 existing normalized accounting. Neither cap can prevent an already in-flight
 request from exceeding its reservation; unresolved charges retain their hold. Platform funding may require account enrollment. If it is disabled,
 submitting this mode returns an actionable error without starting a run.
+
+`remote funding` includes `allowance` in USD equivalent: the account limit,
+usage plus active reservations, remaining allowance and the next settled charge
+expiry. This is a rolling 24-hour window, not a midnight reset; unresolved holds
+do not expire automatically. Global capacity and enrollment still apply.
+
+The default evaluator is `https://3.21.93.126`; set `CATALYST_EVALUATOR_URL` to
+use another trusted deployment. Public policy commands require no login.

@@ -61,7 +61,7 @@ Without `--problem`, the complete smoke task JSON is:
 }
 ```
 
-With `--problem`, only `problem`, `candidate_paths` and `instruction` change:
+With `--problem`, `problem`, `candidate_paths` and `instruction` change:
 they contain the selected problem's ID and manifest hash, candidate paths, and
 title. There is no `problem_service`, research statement, library endpoint, model
 budget or `models` list. Check `evidence` before initializing model clients;
@@ -69,7 +69,13 @@ smoke mode should exercise packaging with synthetic fixtures. Use a
 [local Dungeness run](local-evaluation.md#full-local-agent-run-with-dungeness)
 to test the live task and model integration.
 
-The copied workspace is mounted read/write; the original is untouched. Copying
+The copied workspace is mounted read/write; the original is untouched. With
+`--problem`, trusted scaffold files are copied from the installed problem and
+overlaid read-only, as in a real run. The task lists `readonly_workspace_paths`.
+For the current ECDSA scaffold these are `POINT_ADD_SDK.md` and
+`src/point_add_sdk.rs`. Do not recursively chown or modify them. Smoke includes
+`remaining_seconds` and a deadline for child processes, but no live model or
+problem service. Copying
 excludes `.git`, `.env*`, `.catalyst`, `.venv`, `__pycache__` and `.DS_Store`, and
 symlinks are rejected. Directory modes are preserved, so a read/write mount alone
 does not guarantee that every process can write. Create needed directories at

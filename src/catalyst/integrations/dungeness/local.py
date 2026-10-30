@@ -192,6 +192,8 @@ def prepare(state, package, source, evaluation, *, problem_id='ecdsa.fail', prob
         'id': run_id, 'status': 'prepared', 'created_at': now(), 'evidence': 'local-development',
         'official': False, 'dungeness_commit': source_commit,
         'problem_set_digest': problem_set_digest,
+        'problem_identity': {'release': selected['release'], 'release_manifest_sha256': problem_set_digest,
+                             'assembled_package_sha256': problem['version']},
         'execution_commit': git(runtime, 'rev-parse', 'HEAD'), 'runtime': str(runtime),
         'spec_path': str(spec_path), 'record_path': str(record), 'artifacts': str(folder),
         'evaluation': evaluation, 'build_id': built['id'],
@@ -205,7 +207,19 @@ def prepare(state, package, source, evaluation, *, problem_id='ecdsa.fail', prob
 def execute_process(command, runtime, environment):
     process = subprocess.Popen(command, cwd=runtime, env=environment, start_new_session=True)
     try:
-        return process.wait()
+        while True:
+            try:
+                return process.wait(timeout=15)
+            except subprocess.TimeoutExpired:
+                from .diagnostics import document
+                run_id = command[command.index('--run-id') + 1]
+                path = Path(runtime)/'runs/projects/catalyst'/run_id/'usage/summary.json'
+                usage = document(path).get('usage', {})
+                count = usage.get('model_requests', 0)
+                spend = usage.get('model_cost_usd', usage.get('normalized_usd'))
+                print(f'Local run: {count if type(count) is int else 0} model requests; '
+                      f'usage USD equivalent: {spend if type(spend) in (int, float) else "pending"}. '
+                      f'Live accounting: {path}', file=sys.stderr, flush=True)
     except KeyboardInterrupt:
         # Let Dungeness stop its containers before temporary access disappears.
         for sig, timeout in ((signal.SIGINT, 60), (signal.SIGTERM, 15), (signal.SIGKILL, 5)):
@@ -269,10 +283,18 @@ def run(args, state):
             write_json(output, metadata)
         record = Path(metadata['record_path'])
         if record.is_file():
-            data = read_json(record).get('data', {})
-            metadata['usage'] = data.get('usage', {})
-            metadata['metrics'] = data.get('metrics', {})
-            write_json(output, metadata)
+            from .diagnostics import summarize
+            diagnostic = summarize(record)
+            record_status = diagnostic.pop('record_status')
+            metadata.update(diagnostic)
+            if code == 0 and record_status != 'completed':
+                metadata.update(status='failed', exit_code=1)
+                code = 1
+        elif code == 0:
+            metadata.update(status='failed', exit_code=1, local_evidence_precheck_passed=False,
+                            diagnostics=[{'code': 'missing_run_record', 'message': 'Dungeness did not retain a run record.'}])
+            code = 1
+        write_json(output, metadata)
         print(json.dumps(metadata, indent=2))
         return code
     finally:

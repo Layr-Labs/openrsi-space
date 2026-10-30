@@ -303,12 +303,13 @@ def solver_fetch(base, route, bearer, *, document=None, limit=4 * 1024 * 1024, m
 
 
 def endpoint() -> str:
-    value = os.environ.get("CATALYST_EVALUATOR_URL", "").rstrip("/")
+    value = os.environ.get("CATALYST_EVALUATOR_URL", "https://3.21.93.126").rstrip("/")
     parts = urllib.parse.urlsplit(value)
     if (not parts.hostname or parts.username or parts.password or parts.query or parts.fragment
             or (parts.scheme != "https"
                 and not (parts.scheme == "http" and parts.hostname in {"127.0.0.1", "localhost", "::1"}))):
-        raise CatalystError("Configure CATALYST_EVALUATOR_URL as the trusted HTTPS evaluator endpoint.")
+        raise CatalystError("Configure CATALYST_EVALUATOR_URL as a trusted HTTPS evaluator endpoint; "
+                            "the current OpenRSI evaluator is https://3.21.93.126.")
     return value
 
 

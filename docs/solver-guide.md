@@ -499,3 +499,5 @@ the indicated interval and rerun the same submission command using the same
 do not delete pending state or generate a new ID to retry. You do not need to
 repeat local testing to resume the same unchanged request. Successful source reviews are reused when source, policy,
 reviewer configuration and problem identity match.
+
+For password-protected development previews, see [dev UI access](dev-ui-access.md).

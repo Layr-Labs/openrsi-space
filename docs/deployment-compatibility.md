@@ -36,7 +36,7 @@ capabilities. The earlier gateway-hardening pin `11e3f4c` does not provide provi
 discovery. Upgrade and deploy the runtime together with the updated client.
 
 If preparation reports a missing capability, create a fresh checkout at an unused
-path; leave existing runs and working changes intact. The hosted runtime pin verified on 2026-10-29 is `46e1d6793bbaef26c6c06c7c80895a0ea915d0e6`:
+path; leave existing runs and working changes intact. The historical hosted runtime pin verified on 2026-10-29 was `46e1d6793bbaef26c6c06c7c80895a0ea915d0e6`:
 
 ```sh
 git clone https://github.com/Layr-Labs/dungeness.git /absolute/path/to/dungeness-compatible
@@ -55,3 +55,8 @@ For a bug report, include `openrsi-space --version` and the Dungeness revision f
 also include `git -C /absolute/path/to/catalyst rev-parse HEAD` and whether it has
 local changes: the package version alone does not distinguish development commits.
 See the [changelog](../CHANGELOG.md) for unreleased client changes.
+
+The historical pin above does not include subsequent local diagnostics fixes.
+Use a clean checkout of current Dungeness `main` for local development after
+those fixes are released, and record its commit. A historical hosted pin is not
+a statement of the latest deployed controller or runtime version.

@@ -201,3 +201,24 @@ temporary model access to the remote service. After receiving the receipt,
 
 Operator tests involving the API, Dungeness, gateway or a mock model provider live
 in `openrsi-space-verifier`. Solvers do not need that private checkout.
+
+## Local outcomes and diagnostics
+
+A completed Harbor command is not necessarily a successful harness trial. The
+client checks the retained trial outcome, returns nonzero for failure, and
+prints structured diagnostics and the agent exit code when available. A run with
+no accounted model requests is explicitly ineligible as local evidence; it may
+still be a successful model-free mechanics test. No valid circuit is required
+for readiness evidence.
+
+During execution the CLI prints model-request and spending progress every 15
+seconds from `usage/summary.json`. Harbor's captured stdout may arrive only at
+trial completion; use the live usage file for progress. The final summary points
+to local exception/output files without echoing arbitrary log bodies or secrets.
+`run-status` reads the agent deadline set at launch; remaining research time
+excludes image building and service startup.
+
+`problem_identity.release_manifest_sha256` matches `problem current`'s version.
+`problem_identity.assembled_package_sha256` identifies the generated task package
+(the older `problem.version` field). They name different objects and need not
+be equal. Do not edit either hash in retained evidence.
