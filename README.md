@@ -20,6 +20,18 @@ and `CATALYST_*` configuration still work.
 
 ## Get started
 
+Local development can use your existing Codex/ChatGPT or Claude subscription, or
+a supported model API. Official remote runs use **Eigen Labs-funded OpenRouter**;
+you authenticate with a Yukon key and send no personal model credential.
+**Subscription local runs do not qualify for that funding gate without an operator
+evidence exemption.** Normally, use matching local OpenRouter evidence with actual
+settled charges at least equal to the requested remote cap. Check
+[eligibility and the separate local/remote budgets](docs/platform-funded-inference.md#local-access-and-remote-eligibility)
+before spending. Publishing the verified receipt makes no new model calls.
+
+This repository is currently internal. Sign in to GitHub with organization access;
+if the link returns 404, request access. Repository access is not model access.
+
 Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 
 ```sh
@@ -52,8 +64,8 @@ platform-funded runs require evidence unless the operator grants an exemption.
   no personal model credential is sent for the remote run.
 - **Local evidence:** retain a completed matching Dungeness run and its logs.
   The CLI uploads a separate private bundle, up to **192 MiB / 1,000 model calls**.
-  Settled local spending must reach **100% of the remote cap**: 20 local credits
-  for a 20-credit remote run. Local testing uses your authorized model access.
+  Actual settled local OpenRouter charges must reach **100% of the remote cap**:
+  $20 locally for a $20 remote run. Local testing uses your authorized model access.
 - **Allowance:** the default is **20 model credits (USD equivalent) per Yukon account per
   rolling 24 hours**, with operator overrides. Each account may have one funded
   evaluation running at a time. Split the allowance across multiple sequential
