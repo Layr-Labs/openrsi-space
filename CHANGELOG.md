@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+- Funded remote caps must now be covered in full by settled matching local usage.
+  Spending 10 credits locally qualifies for at most a 10-credit remote cap.
+
 - Name the platform OpenRSI in current solver documentation and CLI help.
   Rename the solver command to `openrsi-space` (replacing `catalyst`).
   Python package names, local state, environment variables, protocol identifiers

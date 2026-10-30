@@ -64,7 +64,7 @@ ADMISSION_MESSAGES = {
     "funding_not_enrolled": "Your account is not enrolled for platform-funded inference.",
     "funding_identity_required": "Log in to Yukon and retry with your Yukon API key.",
     "funding_identity_conflict": "Account identity binding conflicts; contact the operator.",
-    "local_evidence_insufficient_spend": "Recorded local spending must be at least half of the requested remote budget. Lower the budget or provide a larger matching local run.",
+    "local_evidence_insufficient_spend": "Recorded local spending must be at least the full requested remote budget. Lower the budget or provide a larger matching local run.",
     "local_evidence_required": "Provide --local-run PATH to a completed matching local Dungeness run. Only the operator can exempt a funded run.",
     "local_evidence_invalid": "Local evidence is incomplete or invalid. Run a completed local readiness test with the current client.",
     "local_evidence_mismatch": "Local evidence must match the submitted source, problem, provider, model and reasoning settings.",

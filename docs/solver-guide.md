@@ -46,7 +46,7 @@ include ECDSA-specific papers, strategies, notes or prewritten answers in source
 | Public harness source | ZIP and expanded source each **8 MiB** by default. Run `openrsi-space remote limits ./my-harness` for the live limits. |
 | Funded model access | Run `openrsi-space remote funding-policy`. If enabled, choose an exact model on a funded provider, with validated pricing and use `--platform-funded`; supply no personal remote model credential. |
 | Local run bundle for funding | A completed matching Dungeness run, with retained logs. The CLI uploads a separate **private** bundle, at most **192 MiB / 1,000 model calls**. |
-| Local spending for funding | Settled normalized credits must be **at least half the remote cap**: 10 locally for a 20-credit remote run. A cap alone is not proof of actual spending. |
+| Local spending for funding | Settled normalized credits must be **at least the full remote cap**: 20 locally for a 20-credit remote run. A cap alone is not proof of actual spending. |
 | Matching | Unchanged harness source, problem digest, provider, model and reasoning settings. Do not combine unrelated runs or copy local solutions into source. |
 | Funded allowance | Default **20 credits/account/rolling 24 hours**. Each account may have one funded evaluation running at a time. The daily allowance can fund multiple sequential runs; unused reserved funds return after settlement. The authenticated Yukon account ID binds the allowance; operator overrides may apply. |
 
@@ -137,7 +137,7 @@ Local scores help development; official results require a remote receipt.
 `remote submit` reuses a completed matching local run automatically. Use
 `--local-run PATH` for records elsewhere. For user-funded runs,
 `--skip-local-check` explicitly proceeds without local testing; there is no
-minimum local spend. Funded runs instead require the bundle and half-budget
+minimum local spend. Funded runs instead require the bundle and matching-budget
 spending described above, unless the operator grants an exemption.
 
 **Current MVP environment:** Yukon dev, benchmark `layr-labs/catalyst`,
@@ -264,7 +264,7 @@ Record the runtime revision, release, checks and total usage across retries.
 Local testing does not reproduce private screening or guarantee remote acceptance.
 If it is blocked or you decline it, explicitly identify untested steps before
 proceeding. For platform funding, the server requires the matching private bundle
-and half-budget local spending; only an operator exemption can bypass the gate.
+and matching-budget local spending; only an operator exemption can bypass the gate.
 For user-funded runs, the CLI check can be explicitly skipped.
 
 ## 4. Choose funding and start the official evaluation

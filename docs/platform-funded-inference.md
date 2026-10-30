@@ -38,8 +38,8 @@ scanned for possible secrets before third-party LLM review.
 Use an existing matching record with `--local-run PATH`; the client can also find
 records under its state directory automatically. Source, problem, provider, model
 and reasoning settings must match. A valid circuit is not required. Recorded settled local spending must be at least
-half of the requested remote budget: a 20-credit remote run requires at least
-10 credits in the matching local run.
+the full requested remote budget: a 20-credit remote run requires at least
+20 credits in the matching local run.
 The exported bundle allows at most 1,000 model calls and 192 MiB.
 A configured local spending cap is not enough: only settled actual usage counts.
 If the record falls short, lower the remote cap or authorize further local testing;

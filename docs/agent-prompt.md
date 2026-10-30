@@ -57,8 +57,8 @@ separate private bundle (**192 MiB**, **1,000 model calls** maximum). Explain it
 private upload and third-party LLM readiness review before submission. Never put
 this bundle, login files, generated circuits or research notes in public source.
 
-Settled local spending must be **at least 50% of the requested remote cap**
-(10 credits locally for 20 remotely). Setting a local cap of 10 is not enough if
+Settled local spending must be **at least 100% of the requested remote cap**
+(20 credits locally for 20 remotely). Setting a local cap of 20 is not enough if
 only 2 credits were used. Reuse a qualifying run; do not spend automatically to
 meet the gate. Ask for additional local authorization or propose a lower remote
 cap if needed. Source, problem, provider/model and reasoning settings must match.
@@ -272,7 +272,7 @@ requesting remote execution. Do not silently skip preflight or bypass it merely
 to clear a CLI error. When the human authorizes proceeding without local testing,
 use `--skip-local-check` only for a user-funded run. That path is a CLI check,
 not an API admission requirement. Funded runs require private evidence and the
-half-budget local spend described above unless the operator grants an exemption.
+matching-budget local spend described above unless the operator grants an exemption.
 Matching requires unchanged source, provider/model/reasoning settings and problem,
 completed execution and successful accounted model calls; it does not require a
 valid circuit. User-funded preflight has no minimum spend. Local results cannot mint receipts,

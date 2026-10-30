@@ -36,7 +36,7 @@ Use this process when creating or reusing a harness:
    compatibility. Complete a [local Dungeness run](local-evaluation.md) before
    remote submission; the CLI reuses a matching local record, with an explicit
    `--skip-local-check` override for user-funded runs. Funded admission requires
-   a matching private local bundle and half the remote cap in settled local usage;
+   a matching private local bundle and the full remote cap in settled local usage;
    the flag cannot bypass that gate without an operator exemption.
 5. Report the tested framework version, provider/model/access method, supported
    API operations and any untested boundary in the readiness report. A live
