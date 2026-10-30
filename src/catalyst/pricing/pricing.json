@@ -1,12 +1,51 @@
 {
   "schema_version": 1,
-  "id": "catalyst-model-credits-v1",
+  "id": "openrsi-reference-20261030",
   "unit": "normalized_model_usd",
   "description": "Pinned reference credits, not a claim about current prices or cash billing. Input counts include cache read/write tokens; output includes reasoning tokens. No live price lookup.",
   "source": {
     "repository": "dungeness",
     "commit": "506890937d75b659db714d3e02ea3d3cec3a1451",
-    "path": "services/gateway/pricing.yaml"
+    "path": "services/gateway/pricing.yaml",
+    "additions": {
+      "retrieved_at": "2026-10-30",
+      "url": "https://openrouter.ai/api/v1/models",
+      "note": "Existing reference rates retained; missing identities added. Grok/MiniMax retain the 20261030 local reference snapshot. Text inference only; provider tools disabled.",
+      "models": [
+        {
+          "id": "openai/gpt-6-sol",
+          "pricing": {
+            "prompt": "0.000002",
+            "completion": "0.00001",
+            "web_search": "0.01",
+            "input_cache_read": "0.0000002",
+            "input_cache_write": "0.0000025",
+            "overrides": [
+              {
+                "min_prompt_tokens": 272000,
+                "prompt": "0.000004",
+                "completion": "0.000015",
+                "input_cache_read": "0.0000004",
+                "input_cache_write": "0.000005"
+              }
+            ]
+          },
+          "context_length": 1050000
+        },
+        {
+          "id": "anthropic/claude-opus-5.5",
+          "pricing": {
+            "prompt": "0.000004",
+            "completion": "0.00002",
+            "web_search": "0.01",
+            "input_cache_read": "0.0000002",
+            "input_cache_write": "0.000005",
+            "input_cache_write_1h": "0.000008"
+          },
+          "context_length": 1000000
+        }
+      ]
+    }
   },
   "entries": [
     {
@@ -147,6 +186,210 @@
       "cached_read_per_mtok": 0.25,
       "output_per_mtok": 50.0,
       "note": "OpenRouter Claude Fable 5.1; flat token pricing"
+    },
+    {
+      "provider": "openrouter",
+      "upstream_id": "openai/gpt-6-astra",
+      "request_models": [
+        "openai/gpt-6-astra"
+      ],
+      "input_per_mtok": 10.0,
+      "cached_read_per_mtok": 1.0,
+      "cache_write_per_mtok": 12.5,
+      "output_per_mtok": 50.0,
+      "long_context": {
+        "threshold_input_tokens": 272000,
+        "input_per_mtok": 20.0,
+        "cached_read_per_mtok": 2.0,
+        "cache_write_per_mtok": 25.0,
+        "output_per_mtok": 75.0
+      },
+      "note": "OpenAI GPT-6 Astra; cache writes and long-context tier modeled exactly"
+    },
+    {
+      "upstream_id": "openai/gpt-6-sol",
+      "input_per_mtok": 2.0,
+      "output_per_mtok": 10.0,
+      "cached_read_per_mtok": 0.2,
+      "cache_write_per_mtok": 2.5,
+      "text_only": true,
+      "long_context": {
+        "threshold_input_tokens": 272000,
+        "input_per_mtok": 4.0,
+        "output_per_mtok": 15.0,
+        "cached_read_per_mtok": 0.39999999999999997,
+        "cache_write_per_mtok": 5.0
+      },
+      "provider": "openrouter",
+      "request_models": [
+        "openai/gpt-6-sol"
+      ]
+    },
+    {
+      "upstream_id": "openai/gpt-6-sol",
+      "input_per_mtok": 2.0,
+      "output_per_mtok": 10.0,
+      "cached_read_per_mtok": 0.2,
+      "cache_write_per_mtok": 2.5,
+      "text_only": true,
+      "long_context": {
+        "threshold_input_tokens": 272000,
+        "input_per_mtok": 4.0,
+        "output_per_mtok": 15.0,
+        "cached_read_per_mtok": 0.39999999999999997,
+        "cache_write_per_mtok": 5.0
+      },
+      "provider": "openai-chatgpt",
+      "request_models": [
+        "gpt-6-sol"
+      ]
+    },
+    {
+      "upstream_id": "openai/gpt-6-sol",
+      "input_per_mtok": 2.0,
+      "output_per_mtok": 10.0,
+      "cached_read_per_mtok": 0.2,
+      "cache_write_per_mtok": 2.5,
+      "text_only": true,
+      "long_context": {
+        "threshold_input_tokens": 272000,
+        "input_per_mtok": 4.0,
+        "output_per_mtok": 15.0,
+        "cached_read_per_mtok": 0.39999999999999997,
+        "cache_write_per_mtok": 5.0
+      },
+      "provider": "openai",
+      "request_models": [
+        "gpt-6-sol"
+      ]
+    },
+    {
+      "provider": "claude-subscription",
+      "upstream_id": "anthropic/claude-opus-5",
+      "request_models": [
+        "claude-opus-5"
+      ],
+      "input_per_mtok": 5.0,
+      "cached_read_per_mtok": 0.5,
+      "output_per_mtok": 25.0,
+      "note": "flat token pricing"
+    },
+    {
+      "upstream_id": "anthropic/claude-opus-5.5",
+      "input_per_mtok": 4.0,
+      "output_per_mtok": 20.0,
+      "cached_read_per_mtok": 0.2,
+      "cache_write_per_mtok": 5.0,
+      "cache_write_1h_per_mtok": 8.0,
+      "text_only": true,
+      "provider": "openrouter",
+      "request_models": [
+        "anthropic/claude-opus-5.5"
+      ]
+    },
+    {
+      "upstream_id": "anthropic/claude-opus-5.5",
+      "input_per_mtok": 4.0,
+      "output_per_mtok": 20.0,
+      "cached_read_per_mtok": 0.2,
+      "cache_write_per_mtok": 5.0,
+      "cache_write_1h_per_mtok": 8.0,
+      "text_only": true,
+      "provider": "claude-subscription",
+      "request_models": [
+        "claude-opus-5-5"
+      ]
+    },
+    {
+      "upstream_id": "anthropic/claude-opus-5.5",
+      "input_per_mtok": 4.0,
+      "output_per_mtok": 20.0,
+      "cached_read_per_mtok": 0.2,
+      "cache_write_per_mtok": 5.0,
+      "cache_write_1h_per_mtok": 8.0,
+      "text_only": true,
+      "provider": "anthropic",
+      "request_models": [
+        "claude-opus-5-5"
+      ]
+    },
+    {
+      "provider": "openrouter",
+      "upstream_id": "x-ai/grok-4.7",
+      "request_models": [
+        "x-ai/grok-4.7"
+      ],
+      "input_per_mtok": 2.0,
+      "cached_read_per_mtok": 0.5,
+      "output_per_mtok": 6.0,
+      "long_context": {
+        "threshold_input_tokens": 200000,
+        "input_per_mtok": 4.0,
+        "cached_read_per_mtok": 1.0,
+        "output_per_mtok": 12.0
+      },
+      "text_only": true
+    },
+    {
+      "provider": "grok-subscription",
+      "upstream_id": "x-ai/grok-4.7",
+      "request_models": [
+        "grok-4.7"
+      ],
+      "input_per_mtok": 2.0,
+      "cached_read_per_mtok": 0.5,
+      "output_per_mtok": 6.0,
+      "long_context": {
+        "threshold_input_tokens": 200000,
+        "input_per_mtok": 4.0,
+        "cached_read_per_mtok": 1.0,
+        "output_per_mtok": 12.0
+      },
+      "text_only": true
+    },
+    {
+      "provider": "openrouter",
+      "upstream_id": "minimax/minimax-m3",
+      "request_models": [
+        "minimax/minimax-m3"
+      ],
+      "input_per_mtok": 0.3,
+      "cached_read_per_mtok": 0.06,
+      "output_per_mtok": 1.2,
+      "text_only": true
+    },
+    {
+      "provider": "minimax-subscription",
+      "upstream_id": "minimax/minimax-m3",
+      "request_models": [
+        "MiniMax-M3"
+      ],
+      "input_per_mtok": 0.3,
+      "cached_read_per_mtok": 0.06,
+      "output_per_mtok": 1.2,
+      "text_only": true
+    },
+    {
+      "provider": "openrouter",
+      "upstream_id": "minimax/minimax-m3.1-flash",
+      "request_models": [
+        "minimax/minimax-m3.1-flash"
+      ],
+      "input_per_mtok": 0.15,
+      "cached_read_per_mtok": 0.015,
+      "output_per_mtok": 0.6,
+      "text_only": true
+    },
+    {
+      "provider": "minimax-subscription",
+      "upstream_id": "minimax/minimax-m3.1-flash",
+      "request_models": [
+        "MiniMax-M3.1-Flash"
+      ],
+      "input_per_mtok": 0.15,
+      "cached_read_per_mtok": 0.015,
+      "output_per_mtok": 0.6,
+      "text_only": true
     }
   ]
 }

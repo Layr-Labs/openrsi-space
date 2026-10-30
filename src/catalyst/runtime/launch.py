@@ -6,6 +6,7 @@ from pathlib import Path
 import re
 import subprocess
 import sys
+import time
 from urllib.request import HTTPRedirectHandler, ProxyHandler, Request, build_opener
 
 
@@ -69,6 +70,12 @@ def launch(task_file, execution_file="/opt/catalyst/execution.json"):
         task_file = str(resolved)
     execution = json.loads(Path(execution_file).read_text())
     environment = dict(os.environ)
+    # Smoke uses this launcher directly; Dungeness supplies an absolute deadline
+    # on real runs, which must not be extended here.
+    if "remaining_seconds" in task and "DUNGENESS_AGENT_DEADLINE_EPOCH" not in environment:
+        remaining = max(0, float(task["remaining_seconds"]))
+        environment["DUNGENESS_AGENT_DEADLINE_EPOCH"] = str(time.time() + remaining)
+        environment["DUNGENESS_AGENT_TIMEOUT_SEC"] = str(int(remaining))
     environment.update(
         CATALYST_TASK=task_file,
         CATALYST_WORKSPACE=task["workspace"],

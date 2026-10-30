@@ -162,7 +162,7 @@ class LocalRunTests(unittest.TestCase):
             self.assertEqual(command[-1], '60')
             metadata = self.metadata()
             write_json(Path(metadata['record_path']), {'data': {
-                'usage': {'normalized_usd': 0.25}, 'metrics': {'ecdsafail_score': 12345}}})
+                'status': 'completed', 'usage': {'normalized_usd': 0.25}, 'metrics': {'ecdsafail_score': 12345}}})
             return 0
         with patch.dict(os.environ, {'USER_TEST_KEY': 'synthetic-model-access'}), \
                 patch('catalyst.local.execute_process', side_effect=execute):
@@ -173,6 +173,19 @@ class LocalRunTests(unittest.TestCase):
         self.assertEqual(metadata['metrics']['ecdsafail_score'], 12345)
         self.assertEqual(metadata['status'], 'completed')
         self.assertNotIn('synthetic-model-access', self.out.getvalue() + self.err.getvalue())
+
+    def test_harbor_failure_is_not_hidden_by_zero_runtime_exit(self):
+        def execute(command, runtime, environment):
+            write_json(Path(self.metadata()['record_path']), {'data': {
+                'status': 'failed', 'usage': {'model_requests': 0}}})
+            return 0
+        with patch.dict(os.environ, {'USER_TEST_KEY': 'synthetic-model-access'}), \
+                patch('catalyst.local.execute_process', side_effect=execute):
+            self.assertEqual(self.cli('--provider-token-env', 'USER_TEST_KEY'), 1)
+        metadata = self.metadata()
+        self.assertEqual(metadata['status'], 'failed')
+        self.assertEqual(metadata['exit_code'], 1)
+        self.assertFalse(metadata['local_evidence_precheck_passed'])
         for path in self.state.rglob('*'):
             if path.is_file():
                 self.assertNotIn(b'synthetic-model-access', path.read_bytes(), path)
@@ -240,6 +253,7 @@ class LocalRunTests(unittest.TestCase):
             contents = Path(command[command.index('--env-file') + 1]).read_text()
             self.assertIn('TESTBED_OPENAI_API_KEY=synthetic-openai-key\n', contents)
             self.assertIn('TESTBED_ANTHROPIC_API_KEY=synthetic-anthropic-key\n', contents)
+            write_json(Path(self.metadata()['record_path']), {'data': {'status': 'completed'}})
             return 0
         with patch('catalyst.local.execute_process', side_effect=execute), \
                 redirect_stdout(self.out), redirect_stderr(self.err):

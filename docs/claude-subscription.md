@@ -31,9 +31,11 @@ expiry before every inference request, without falling back to an API key.
 Select `claude-subscription` and the exact Claude model in the run configuration.
 Pass the file using `--provider-access-file /absolute/private/access.json` to
 `openrsi-space local run` only.
-For local testing, supply a pricing snapshot with `--pricing`; it must contain a
-`claude-subscription` entry for the selected model. Subscription pricing snapshots for local runs must come from the local runtime;
-the hosted evaluator no longer issues subscription quotes.
+The client includes pinned local reference prices for every advertised evidence
+equivalence, including `claude-opus-5-5`. Update the client if that entry is missing;
+you do not need a custom `--pricing` file. The hosted evaluator does not issue
+subscription credential quotes. Local subscription usage is measured in USD
+equivalent, not cash charges; it can qualify for the corresponding funded model.
 
 ## Pair the harness and route
 
@@ -44,7 +46,9 @@ the existing bounded inference operations, not OAuth refresh or account APIs.
 
 For a harness containing unmodified Claude Code, configure its `ANTHROPIC_BASE_URL`
 from that assigned URL and use `CLAUDE_CODE_OAUTH_TOKEN=testbed` as its placeholder.
-Set `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1` so the CLI uses its supported
+Set `CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000` (the gateway default maximum is
+65,536 per request). Oversized explicit limits are rejected before generation,
+not silently reduced. Also set `CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1` so the CLI uses its supported
 gateway-compatible request format. This disables experimental tool-search and
 related beta schema features; it does not rewrite the client or loosen gateway
 policy. Unset `ANTHROPIC_API_KEY` and `ANTHROPIC_AUTH_TOKEN` in the child process so they do
@@ -68,3 +72,40 @@ Checked 2026-10-27:
 - [Claude Code environment variables](https://code.claude.com/docs/en/env-vars).
 
 The provider determines account eligibility, applicable limits and terms.
+
+## Claude Code recipe and checked versions
+
+Keep this configuration in the harness entrypoint so local and remote source is
+unchanged. Read the assigned provider, request model and base URL from the task.
+Set `ANTHROPIC_BASE_URL` to that base URL **without appending `/v1/messages`**;
+Claude Code appends the Messages path. Use the assigned model with `--model`
+and the selected effort with `--effort high` when high was authorized.
+
+| Route | Placeholder inside harness | Model |
+| --- | --- | --- |
+| Local `claude-subscription` | `CLAUDE_CODE_OAUTH_TOKEN=testbed`; unset other Anthropic auth variables | `claude-opus-5-5` |
+| Funded `openrouter` | `ANTHROPIC_AUTH_TOKEN=testbed`; unset `CLAUDE_CODE_OAUTH_TOKEN` and `ANTHROPIC_API_KEY` | `anthropic/claude-opus-5.5` |
+
+Both routes use `CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000` and
+`CLAUDE_CODE_DISABLE_EXPERIMENTAL_BETAS=1`. Never put real credentials in this
+entrypoint. OpenRouter's gateway route supports `/v1/messages`, including
+Anthropic version/beta headers; `api: openai-completions` is its default API
+label, not an exclusive list of supported operations. Provider/model selection
+does not translate a client's request format.
+
+| Claude Code | Evidence | Compatibility notes |
+| --- | --- | --- |
+| 2.1.311 | Previous model-free request/stream check | Explicit output cap required by bounded gateway policy |
+| 2.1.312 | Solver-reported local call after workarounds | Not independently live-validated by the platform |
+| 2.1.314 | Reported available by solver | Not platform-tested |
+
+Pin the CLI in the Dockerfile. Do not recursively `chown` the workspace:
+`POINT_ADD_SDK.md` and `src/point_add_sdk.rs` are trusted read-only mounts for
+this scaffold. Prepare ownership only for writable directories before dropping
+privileges. See [executable harnesses](executable-harness.md).
+
+Prices checked against [Anthropic pricing](https://platform.claude.com/docs/en/about-claude/pricing)
+and the [OpenRouter catalog](https://openrouter.ai/api/v1/models) on 2026-10-30:
+Opus 5.5 reference rates per million tokens are input $4, output $20, cache read
+$0.20, five-minute cache write $5 and one-hour cache write $8. Retained runs keep
+their recorded schedule. See [Claude Code environment variables](https://code.claude.com/docs/en/env-vars).
