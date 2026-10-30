@@ -50,12 +50,12 @@ class RuntimeProviderTests(unittest.TestCase):
             self.assertEqual(registry.read_bytes(), original)
             self.assertNotIn("services/gateway/providers.json", paths)
 
-    def test_retired_grok_flags_and_credentials_are_unavailable(self):
+    def test_grok_login_is_local_only_and_raw_session_keys_are_rejected(self):
         parser, _ = build_parser()
         self.assertNotIn("--grok-auth-file", parser.format_help())
         from contextlib import redirect_stderr
         import io
-        for command in (["remote", "submit", "fixture"], ["local", "run", "fixture", "--dungeness", "."],
+        for command in (["remote", "submit", "fixture"],
                         ["remote", "renew-access", "fixture"]):
             with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as raised:
                 parser.parse_args(command + ["--grok-auth-file"])
@@ -63,3 +63,5 @@ class RuntimeProviderTests(unittest.TestCase):
         for provider in ("xai", "grok-subscription"):
             with self.assertRaises(CatalystError):
                 validate_provider_access({provider: "synthetic-token"})
+        args = parser.parse_args(['local', 'run', 'fixture', '--dungeness', '.', '--grok-auth-file'])
+        self.assertTrue(args.grok_auth_file.endswith('/.grok/auth.json'))

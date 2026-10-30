@@ -6,8 +6,8 @@ and submit with `--platform-funded --local-run PATH`. Do not send a personal
 model credential. Matching local evidence must show at least the full requested
 remote cap in settled usage. See [platform-funded inference](platform-funded-inference.md).
 
-Remote subscription-token submission has been removed. `openai-chatgpt` and
-`claude-subscription` cannot be selected for remote submission, quoting or
+Remote subscription-token submission has been removed. Subscription routes
+cannot be selected for remote submission, quoting or
 credential renewal. Remote commands no longer accept `--codex-auth-file`.
 Personal API-key handoff remains implemented but is disabled on the hosted service.
 Do not use an old subscription example or change provider labels to bypass this policy.
@@ -26,6 +26,8 @@ provider. Pricing quotes and submissions enforce the same remote restrictions.
 | `anthropic` | Your API key | Personal API-key support retained but disabled |
 | `openai-chatgpt` | Existing local Codex login, if authorized | Not supported |
 | `claude-subscription` | Authorized local login access | Not supported |
+| `grok-subscription` | [Authorized local Grok login](grok.md) | Not supported |
+| `minimax-subscription` | [MiniMax Coding/Token Plan key](minimax.md) | Not supported |
 
 Select the exact model advertised by the funded provider. The submitted harness
 must construct compatible requests and tool definitions and use its assigned
@@ -33,7 +35,7 @@ gateway with placeholder credentials. The trusted gateway holds the platform key
 A successful pricing quote is not proof that the harness/provider pairing works.
 Test locally first with matching provider, model and reasoning settings.
 
-Direct xAI, Grok subscription, Kimi Code and Moonshot routes remain retired.
+Direct xAI, Kimi Code and Moonshot routes remain retired.
 Historical receipts and results remain readable; reading them does not permit a new run.
 
 ## First-time login

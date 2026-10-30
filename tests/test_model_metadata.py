@@ -36,7 +36,7 @@ class ModelMetadataTests(unittest.TestCase):
         self.assertNotIn("supported_reasoning_efforts", profile)
 
     def test_retired_providers_cannot_create_execution_profiles(self):
-        for provider in ("moonshot", "kimi-code", "xai", "grok-subscription"):
+        for provider in ("moonshot", "kimi-code", "xai"):
             with self.subTest(provider=provider):
                 pricing = {"entries": [{
                     "provider": provider, "upstream_id": provider + "/example",
@@ -54,13 +54,13 @@ class ModelMetadataTests(unittest.TestCase):
                 with self.assertRaisesRegex(CatalystError, "supported providers"):
                     validate_provider_access({provider: "offline-test-credential"})
 
-    def test_retired_xai_and_grok_history_uses_its_retained_prices(self):
+    def test_xai_and_grok_history_uses_retained_prices_but_cannot_run_remotely(self):
         from catalyst.remote import validate_model
-        from catalyst.credentials import require_active_models
+        from catalyst.credentials import require_remote_models
         for provider in ("xai", "grok-subscription"):
             model = {"provider": provider, "name": "historical-model"}
             pricing = {"entries": [{"provider": provider, "request_models": [model["name"]],
                                     "input_per_mtok": 2, "output_per_mtok": 6}]}
             validate_model(model, pricing=pricing)
-            with self.assertRaisesRegex(CatalystError, "retired"):
-                require_active_models([model])
+            with self.assertRaises(CatalystError):
+                require_remote_models([model])

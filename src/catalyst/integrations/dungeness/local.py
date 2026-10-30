@@ -29,25 +29,28 @@ def git(root, *args):
 
 def validate_credential_locations(args):
     package = Path(args.package).resolve()
-    for name in ('codex_auth_file', 'provider_access_file'):
+    for name in ('codex_auth_file', 'grok_auth_file', 'provider_access_file'):
         path = getattr(args, name, None)
         if path and Path(path).expanduser().resolve().is_relative_to(package):
             raise CatalystError('Keep model credential files outside the harness source directory.')
 
 
 def credential_input(args, providers):
-    from catalyst.credentials import decode_codex_access, encode_codex_access, validate_provider_access
+    from catalyst.credentials import (decode_codex_access, encode_codex_access, validate_provider_access,
+                                      grok_access, LOCAL_SESSION_ENV)
     validate_credential_locations(args)
     if args.codex_auth_file:
         access = {'openai-chatgpt': decode_codex_access(encode_codex_access(args.codex_auth_file))}
+    elif getattr(args, 'grok_auth_file', None):
+        access = {'grok-subscription': grok_access(args.grok_auth_file)}
     elif args.provider_access_file:
         access = read_json(Path(args.provider_access_file).expanduser())
     elif args.provider_token_env:
-        if len(providers) != 1 or providers & {'openai-chatgpt', 'claude-subscription'}:
+        if len(providers) != 1 or providers & (set(LOCAL_SESSION_ENV) | {'openai-chatgpt'}):
             raise CatalystError('--provider-token-env requires one API-key provider; use --provider-access-file for ensembles.')
         access = {next(iter(providers)): os.environ.get(args.provider_token_env)}
     else:
-        raise CatalystError('Select --codex-auth-file, --provider-token-env NAME, or --provider-access-file PATH; '
+        raise CatalystError('Select --codex-auth-file, --grok-auth-file, --provider-token-env NAME, or --provider-access-file PATH; '
                             'use --prepare-only to prepare without model access.')
     validate_provider_access(access)
     if set(access) != providers:
