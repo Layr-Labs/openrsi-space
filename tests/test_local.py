@@ -122,6 +122,8 @@ class LocalRunTests(unittest.TestCase):
         self.assertEqual(spec['budget']['max_usd'], 1)
         self.assertEqual(spec['labels']['catalyst_problem_set_digest'], metadata['problem_set_digest'])
         self.assertEqual(spec['model_access']['models'][0]['request_model'], 'gpt-5.6-sol')
+        self.assertTrue(spec['model_access']['bounded_requests'])
+        self.assertEqual(spec['model_access']['max_output_tokens'], 65536)
         self.assertEqual(local.git(runtime, 'status', '--porcelain'), '')
         self.assertTrue((task_path.parent / 'problem-service/server.py').is_file())
         self.assertFalse((runtime / 'tasks/users').exists())

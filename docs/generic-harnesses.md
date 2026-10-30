@@ -317,6 +317,13 @@ The gateway authorizes provider/model pairs before contacting the provider.
 All admitted requests share one ledger and a bounded number of active slots.
 Credits are reserved until the upstream response has drained and settled;
 client disconnection does not release the reservation prematurely.
+Local and remote runs use the same conservative request reservation policy.
+An omitted output limit defaults to at most 16,384 tokens and is reduced to fit
+remaining credits. Explicit output limits are honored or rejected. Large
+histories can still require more reserved credits than their eventual cached
+bill. A reservation rejection reports available and required credits and means
+that request did not reach the provider. Shorten history or lower an explicit
+output limit before retrying.
 Missing usage blocks further admissions. Explicit HTTP 400 input-validation
 errors with an `invalid_request_error` body settle at zero tokens. The rejection
 basis is retained in the ledger. HTTP 422 responses are not automatically free.
