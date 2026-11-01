@@ -3,8 +3,7 @@
 Before setup: local Codex/ChatGPT or Claude subscription access is separate from
 Yukon authentication and remote funding. **Codex/ChatGPT and Claude subscription local runs qualify for supported equivalent
 OpenRouter models**, with the same reasoning settings, harness source and problem.
-The local run bundle must record at least the requested remote cap in USD-equivalent
-usage. No personal OpenRouter key is required. See [local access, budgets and remote eligibility](platform-funded-inference.md#local-access-and-remote-eligibility).
+Local testing and remote budgets are independent. A completed matching local run bundle is required. No personal OpenRouter key is required. See [local access, budgets and remote eligibility](platform-funded-inference.md#local-access-and-remote-eligibility).
 
 Do not declare local model access unavailable merely because there is no
 OpenRouter API key. With the user's authorization, check their selected local
@@ -68,11 +67,10 @@ separate private bundle (**192 MiB**, **1,000 model calls** maximum). Explain it
 private upload and third-party LLM readiness review before submission. Never put
 this bundle, login files, generated circuits or research notes in public source.
 
-Settled local spending must be **at least 100% of the requested remote cap**
-(20 credits locally for 20 remotely). Setting a local cap of 20 is not enough if
-only 2 credits were used. Reuse a qualifying run; do not spend automatically to
-meet the gate. Ask for additional local authorization or propose a lower remote
-cap if needed. Source, problem, model (or supported provider equivalent) and reasoning settings must match.
+A completed matching local run is required, but its spending does not limit the remote cap.
+Choose the remote budget within the published per-run and account allowance. Do not start
+extra local inference solely to match a remote budget. Source, problem, model (or supported
+provider equivalent) and reasoning settings must match.
 A local ChatGPT or Claude subscription run qualifies through the explicit model
 equivalences in `remote funding-policy`; its recorded normalized USD usage counts.
 Do not ask for a personal OpenRouter key for that local subscription workflow. A valid circuit is not required; local evidence proves neither

@@ -25,12 +25,11 @@ supported providers and policy, then `openrsi-space remote funding` for your
 reservations and settled usage. Neither command starts inference. Account-specific allowance overrides can be confirmed with the operator;
 allowance changes do not waive required local evidence.
 
-Agree on separate local and remote budgets. A **$4 remote cap needs at least $4
-in recorded local usage (USD equivalent)**, not merely a configured $4 limit.
-Subscription tests consume plan allowance; their settled normalized usage qualifies
-without a cash charge. Local OpenRouter runs use provider-reported charges. Leaderboard credits use reference
-prices and can differ from actual charges. Do not spend extra to meet the gate
-without authorization.
+Agree on separate local and remote budgets. A completed matching local run is required,
+but no minimum local spending amount is tied to the remote cap. Choose the remote cap
+within the published per-run and account allowance. Subscription testing consumes plan
+allowance; API testing uses your provider account. Local OpenRouter accounting uses
+provider-reported charges; leaderboard credits can differ from actual charges.
 
 Repository access is separate from both Yukon authentication and model access.
 The current repository is `https://github.com/Layr-Labs/openrsi-space` and is
@@ -75,13 +74,9 @@ scanned for possible secrets before third-party LLM review.
 
 Use an existing matching record with `--local-run PATH`; the client can also find
 records under its state directory automatically. Source, problem, model (or supported provider equivalent)
-and reasoning settings must match. A valid circuit is not required. Recorded settled local spending must be at least
-the full requested remote budget: a 20-credit remote run requires at least
-20 credits in the matching local run.
-The exported bundle allows at most 1,000 model calls and 192 MiB.
-A configured local spending cap is not enough: only settled actual usage counts.
-If the record falls short, lower the remote cap or authorize further local testing;
-the CLI never starts additional paid calls to satisfy the requirement. Every new
+and reasoning settings must match. A valid circuit is not required. Local spending
+and the remote cap are independent. The exported bundle allows at most 1,000 model
+calls and 192 MiB, with complete settled usage. Every new
 funded submission requires the bundle; neither solver flags nor operator allowance
 overrides can waive it.
 

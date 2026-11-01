@@ -30,8 +30,7 @@ class EvidenceExportTests(LocalCheckTests):
                                                'reasoning_effort': 'high'}])
         self.assertEqual(exported['events'][0]['data']['provider'], 'openai-chatgpt')
         self.body['evaluation']['max_model_credits'] = 10.000001
-        with self.assertRaisesRegex(CatalystError, 'at least'):
-            bundle(self.path, self.body)
+        self.assertEqual(bundle(self.path, self.body)['models'], exported['models'])
         self.body['evaluation']['model']['reasoning_effort'] = 'medium'
         with self.assertRaisesRegex(ValueError, 'reasoning'):
             bundle(self.path, self.body)
@@ -53,7 +52,7 @@ class EvidenceExportTests(LocalCheckTests):
         self.save();self.body['source']['digest']='b'*64
         with self.assertRaises(ValueError):bundle(self.path,self.body)
 
-    def test_openrouter_matching_budget_uses_actual_charge_not_reference_estimate(self):
+    def test_openrouter_export_preserves_charge_without_matching_remote_budget(self):
         model = {'provider': 'openrouter', 'name': 'example/model'}
         self.body['evaluation'].update(model=model, max_model_credits=20)
         self.record['data']['model'] = {'provider': 'openrouter', 'request_model': model['name']}
@@ -62,8 +61,8 @@ class EvidenceExportTests(LocalCheckTests):
         self.event['data'].update(provider='openrouter', model=model['name'], normalized_usd=100,
                                   billed_usd=19.999999, billing_source='openrouter_usage', upstream_request_id='gen-one')
         self.save()
-        with self.assertRaisesRegex(CatalystError, 'at least 20'):
-            bundle(self.path, self.body)
+        exported = bundle(self.path, self.body)
+        self.assertEqual(exported['events'][0]['data']['billed_usd'], 19.999999)
         self.event['data']['billed_usd'] = 20
         self.save()
         exported = bundle(self.path, self.body)
