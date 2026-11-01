@@ -1,11 +1,14 @@
 from __future__ import annotations
 
 import importlib.util
+import io
 import json
 import sys
 import tempfile
 import types
+import tarfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 
@@ -28,6 +31,50 @@ def load_server(path: Path, name: str) -> object:
 
 
 class EvaluatorUsageEventTests(unittest.TestCase):
+    def test_invalid_score_response_exposes_bounded_stdout_and_stderr(self) -> None:
+        grade = types.ModuleType('grade')
+        with patch.dict(sys.modules, {'grade': grade}):
+            for index, path in enumerate(SERVERS):
+                module = load_server(path, f'diagnostic_server_{index}')
+                source = b'// synthetic candidate'
+                if path.parent.name == 'benchmark-sh':
+                    archive = io.BytesIO()
+                    with tarfile.open(fileobj=archive, mode='w') as tar:
+                        member = tarfile.TarInfo('mod.rs')
+                        member.size = len(source)
+                        tar.addfile(member, io.BytesIO(source))
+                    source = archive.getvalue()
+                for stdout, stderr in (
+                    ('!! correctness FAILED: CLASSICAL MISMATCH', ''),
+                    ('!! correctness FAILED: PHASE GARBAGE', 'compiler warning'),
+                    ('', 'error: failed to compile'),
+                    ('x' * 5000 + 'CLASSICAL MISMATCH', 'y' * 5000 + 'compiler error'),
+                    ('', ''),
+                ):
+                    with self.subTest(path=path, stdout=stdout[-60:], stderr=stderr[-60:]):
+                        grade.score_candidate = lambda _: {
+                            'status': 'invalid', 'score': 1e18,
+                            'avg_toffoli': None, 'peak_qubits': None,
+                            'stdout_tail': stdout, 'stderr_tail': stderr}
+                        handler = object.__new__(module.Handler)
+                        handler.path = '/score'
+                        handler.headers = {'content-length': str(len(source))}
+                        handler.rfile = io.BytesIO(source)
+                        replies = []
+                        handler._reply = lambda code, body: replies.append((code, body))
+                        with patch.object(module, '_record'):
+                            handler.do_POST()
+                        code, body = replies.pop()
+                        self.assertEqual(code, 200)
+                        self.assertEqual(body['status'], 'invalid')
+                        self.assertEqual(body['score'], 1e18)
+                        self.assertTrue(body['detail'])
+                        self.assertLessEqual(len(body['detail']), 2020)
+                        if stdout:
+                            self.assertIn(stdout[-1000:], body['detail'])
+                        if stderr:
+                            self.assertIn(stderr[-1000:], body['detail'])
+
     def test_fallback_writes_one_canonical_evaluation_event(self) -> None:
         original_grade = sys.modules.get("grade")
         sys.modules["grade"] = types.ModuleType("grade")

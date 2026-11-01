@@ -308,7 +308,13 @@ class Handler(BaseHTTPRequestHandler):
             "candidate_sha256": candidate_digest,
         }
         if status != "ok":
-            payload["detail"] = (details.get("stderr_tail") or "")[-2000:]
+            # The trusted correctness checker reports failures on stdout; the
+            # compiler usually uses stderr. Return both, with a bounded payload.
+            payload["detail"] = "\n".join(
+                f"{stream}:\n{details[key][-1000:]}"
+                for stream, key in (("stdout", "stdout_tail"), ("stderr", "stderr_tail"))
+                if details.get(key)
+            ) or "Candidate evaluation failed without diagnostic output."
         self._reply(200, payload)
 
     def log_message(self, *args) -> None:  # silence request logging

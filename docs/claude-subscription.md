@@ -93,6 +93,14 @@ Anthropic version/beta headers; `api: openai-completions` is its default API
 label, not an exclusive list of supported operations. Provider/model selection
 does not translate a client's request format.
 
+The 64,000-token output limit above is an example, not a required minimum.
+The gateway reserves for the requested maximum plus a conservative input bound.
+If it reports `model_reservation_exceeds_remaining_budget` with `retryable: false`,
+waiting or repeating the identical request will not help. Reduce the context or
+explicit output limit, preserving enough output for the selected reasoning mode,
+or save progress and stop. A wrapper that starts fresh sessions should checkpoint
+notes before failures and stop when another session cannot make useful progress.
+
 | Claude Code | Evidence | Compatibility notes |
 | --- | --- | --- |
 | 2.1.311 | Previous model-free request/stream check | Explicit output cap required by bounded gateway policy |

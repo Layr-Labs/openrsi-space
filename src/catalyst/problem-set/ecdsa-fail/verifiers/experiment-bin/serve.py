@@ -281,7 +281,12 @@ class Handler(BaseHTTPRequestHandler):
         # compiler/harness output: it is the agent's OWN code failing, and the
         # benchmark leaks no answers, so this is legitimate debugging feedback.
         if status != "ok":
-            payload["detail"] = (details.get("stderr_tail") or "")[-2000:]
+            # Correctness failures use stdout; compilation failures use stderr.
+            payload["detail"] = "\n".join(
+                f"{stream}:\n{details[key][-1000:]}"
+                for stream, key in (("stdout", "stdout_tail"), ("stderr", "stderr_tail"))
+                if details.get(key)
+            ) or "Candidate evaluation failed without diagnostic output."
         self._reply(200, payload)
 
     def log_message(self, *args) -> None:  # silence request logging
