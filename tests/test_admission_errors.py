@@ -7,6 +7,29 @@ from catalyst.remote import fetch, HTTPFailure
 
 
 class EvidenceDiagnosticTests(unittest.TestCase):
+    def test_evidence_upload_uses_longer_timeout_without_changing_polling(self):
+        from catalyst.client import transport
+        with patch.object(transport,'fetch',return_value=b'{}') as request:
+            transport.solver_fetch('https://example.invalid','/local-evidence','synthetic-session',document={})
+            self.assertEqual(request.call_args.kwargs['timeout'],180)
+            transport.solver_fetch('https://example.invalid','/evaluations/id','synthetic-session')
+            self.assertNotIn('timeout',request.call_args.kwargs)
+
+    def test_upload_findings_are_safe_and_scanner_outage_remains_retryable(self):
+        error = HTTPFailure(400,{'code':'local_evidence_not_private','evidence_findings':[
+            {'event_index':7,'rule':'embedded-credential','line':1,'value':'private'},
+            {'event_index':True,'rule':'embedded-credential','line':1},
+            {'event_index':8,'rule':'private','line':1}]})
+        self.assertEqual(error.details['evidence_findings'],
+                         [{'event_index':7,'rule':'embedded-credential','line':1}])
+        self.assertNotIn('private',str(error).replace('local_evidence_not_private',''))
+        self.assertNotIn('preserved',str(error))
+        error.before_evaluation = True
+        self.assertIn('before evaluation submission',str(error))
+        unavailable = HTTPFailure(503,{'code':'credential_scanner_unavailable','retry_after_seconds':30})
+        self.assertEqual(unavailable.details['retry_after_seconds'],30)
+        self.assertIn('unchanged',str(unavailable))
+
     def test_evidence_field_survives_sanitization(self):
         details = {'code': 'local_evidence_required', 'stage': 'creation', 'field': 'local_evidence'}
         self.assertEqual(HTTPFailure(403, details).details['field'], 'local_evidence')
@@ -35,6 +58,8 @@ class AdmissionErrorTests(unittest.TestCase):
             with self.assertRaises(HTTPFailure) as raised: fetch('https://example.invalid/evaluations', 'private-token')
         self.assertIn('daily_quota', str(raised.exception))
         self.assertIn('retry_after_seconds=420', str(raised.exception))
+        self.assertNotIn('saved request', str(raised.exception))
+        raised.exception.saved_request_id = 'ec0dd72e-f01d-4d43-8007-747575cf550f'
         self.assertIn('same saved request ID', str(raised.exception))
         self.assertNotIn('private-token', str(raised.exception))
         self.assertEqual(raised.exception.details['limit'], 10)

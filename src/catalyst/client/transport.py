@@ -64,17 +64,18 @@ ADMISSION_MESSAGES = {
     "funding_not_enrolled": "Your account is not enrolled for platform-funded inference.",
     "funding_identity_required": "Log in to Yukon and retry with your Yukon API key.",
     "funding_identity_conflict": "Account identity binding conflicts; contact the operator.",
-    "local_evidence_insufficient_spend": "Recorded local spending must be at least the full requested remote budget. Lower the budget or provide a larger matching local run.",
-    "local_evidence_required": "Provide --local-run PATH to a completed matching local Dungeness run. Only the operator can exempt a funded run.",
+    "local_evidence_insufficient_spend": "Recorded local spending is below the operator's evidence threshold; check remote funding-policy before spending more.",
+    "local_evidence_required": "Provide --local-run PATH to a completed matching local Dungeness run.",
     "local_evidence_invalid": "Local evidence is incomplete or invalid. Run a completed local readiness test with the current client.",
-    "local_evidence_mismatch": "Local evidence must match the submitted source, problem, provider, model and reasoning settings.",
-    "local_evidence_not_private": "Local evidence contains possible secrets or opaque content. Remove secrets from harness logs and repeat the test.",
+    "local_evidence_mismatch": "Local evidence must match the submitted source, problem, model and reasoning settings, using a supported provider equivalence.",
+    "local_evidence_not_private": "Local evidence contains a recognized credential or uninspectable content. Check the reported event and rule before changing source or repeating a local run.",
     "local_evidence_capacity": "Private evidence storage is full; contact the operator or wait for upload expiry.",
     "local_evidence_rate_limit": "Too many evidence uploads; retry in an hour.",
     "local_evidence_too_large": "Local evidence exceeds 192 MiB; run a shorter readiness test.",
     "funding_run_limit": "Reduce the run budget to the limit in /public/funding-policy.",
     'source_not_publishable': 'The source did not pass the publication safety checks.',
     'screening_unavailable': 'Submission screening is temporarily unavailable.',
+    'credential_scanner_unavailable': 'Credential screening is temporarily unavailable; retry with unchanged source and local evidence.',
     'builder_unavailable': 'The isolated builder is temporarily unavailable.',
     'source_package_too_large': 'Expanded harness source exceeds the review limit. Remove unused bundled files; retain runtime code and licenses. ZIP compression does not change the limit.',
     **{'submission_' + stage + '_rejected': 'Submission rejected during ' + stage + '.'
@@ -121,6 +122,8 @@ class HTTPFailure(CatalystError):
         self.status = status
         self.diagnostic_path = None
         self.diagnostic_write_failed = False
+        self.saved_request_id = None
+        self.before_evaluation = False
         self.details = {}
         if isinstance(details, dict):
             edge_id = details.get('edge_id')
@@ -140,6 +143,17 @@ class HTTPFailure(CatalystError):
                             and type(item.get('line')) is int and 1 <= item['line'] <= 64 * 1024 * 1024]
                 if findings:
                     self.details['source_findings'] = findings
+            if code == 'local_evidence_not_private' and isinstance(details.get('evidence_findings'), list):
+                rules = {'source-screening-size-limit', 'source-screening-complexity-limit',
+                         'private-credential-or-service-file', 'nested-archive-not-reviewable',
+                         'opaque-source-not-reviewable', 'embedded-credential'}
+                findings = [{k: item[k] for k in ('event_index', 'rule', 'line')}
+                    for item in details['evidence_findings'][:10] if isinstance(item, dict)
+                    and type(item.get('event_index')) is int and 0 <= item['event_index'] < 6000
+                    and isinstance(item.get('rule'), str) and item['rule'] in rules
+                    and type(item.get('line')) is int and 1 <= item['line'] <= 64 * 1024 * 1024]
+                if findings:
+                    self.details['evidence_findings'] = findings
             stage, field = details.get('stage'), details.get('field')
             if isinstance(stage, str) and stage in ADMISSION_FIELDS:
                 self.details['stage'] = stage
@@ -176,6 +190,10 @@ class HTTPFailure(CatalystError):
                     value = details.get(name)
                     if type(value) is int and 0 <= value <= 2**40:
                         self.details[name] = value
+            if isinstance(code, str) and code in ADMISSION_MESSAGES:
+                value = details.get('retry_after_seconds')
+                if type(value) is int and 0 <= value <= 2**53:
+                    self.details['retry_after_seconds'] = value
         message = f"Evaluator returned HTTP {status}"
         code = self.details.get('code')
         if code:
@@ -184,14 +202,16 @@ class HTTPFailure(CatalystError):
             message += ' (' + ', '.join(f'{k}={v}' for k, v in self.details.items()) + ')'
         if 'source_findings' in self.details:
             message += '; file_index is zero-based in the saved source files sorted by relative path; line is one-based'
-        if status in (400, 413, 415, 422):
-            message += '; saved request preserved. Diagnose the rejection before retrying.'
-        else:
-            message += '; request remains resumable. Retry the same saved request ID.'
         super().__init__(message)
 
     def __str__(self):
         message = super().__str__()
+        if self.before_evaluation:
+            message += '; evidence upload failed before evaluation submission. Keep the harness and local run while diagnosing this error.'
+        elif safe_uuid(self.saved_request_id):
+            message += f'; saved request {self.saved_request_id} preserved.'
+            message += (' Diagnose the rejection before retrying.' if self.status in (400, 413, 415, 422)
+                        else ' Retry the same saved request ID; do not create a duplicate run.')
         if self.diagnostic_path is not None:
             message += f' Sanitized admission diagnostics: {self.diagnostic_path}'
         elif self.diagnostic_write_failed:
@@ -267,7 +287,7 @@ def fetch(url: str, token: str, *, document=None, limit=4 * 1024 * 1024, timeout
                 "Check the evaluator URL, certificate and client trust store; do not disable TLS verification. "
                 "The request remains resumable."
             ) from None
-        raise CatalystError("Evaluator is unreachable; request remains resumable.") from None
+        raise CatalystError("Evaluator is unreachable; retry with unchanged inputs.") from None
     if len(content) > limit:
         raise CatalystError("Evaluator response exceeds the allowed size.")
     return content
@@ -278,6 +298,10 @@ def solver_fetch(base, route, bearer, *, document=None, limit=4 * 1024 * 1024, m
     if bearer or model_token is not None:
         credential_url(base + route, model_access=model_token is not None)
     private = {"model_token": model_token} if model_token is not None else {}
+    if route == '/local-evidence':
+        # A bounded 192 MiB upload includes server-side credential scanning.
+        # It must not inherit a short polling/discovery request timeout.
+        private['timeout'] = 180
     if output is not None:
         private.update(output=output, expected_sha256=expected_sha256, expected_size=expected_size)
     if not bearer.startswith("ykn_"):

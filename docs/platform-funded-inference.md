@@ -98,6 +98,19 @@ failures before inference release the reservation. Completed OpenRouter runs set
 remains held until the operator reconciles it. Check `remote funding` for status;
 amounts there are microcredits (1,000,000 = one USD of OpenRouter funding).
 
+The run cap is a maximum, not a spending target. Before each model call, the
+gateway reserves a conservative allowance for its input and output. A long
+context or large explicit output limit can therefore stop a run with credits
+remaining. A reservation rejection is not a provider charge. Shorten context or
+lower the harness's explicit output-token limit, and check the reported available
+and required amounts with `openrsi-space remote diagnostics EVALUATION_ID`.
+Increasing a run's cap is not required to diagnose the issue.
+
+`completed` means execution and verification finished; check `valid` and the
+verified score separately. A completed run with no valid candidate has no
+leaderboard score. CLI progress distinguishes these outcomes and reports actual
+provider charges separately from provisional live measurements.
+
 For OpenRouter, local evidence spending and funded settlement use the provider's
 reported request charges (`billed_usd`), not the pinned-price estimate. The same
 Dungeness gateway accounting is used locally and remotely. The gateway records

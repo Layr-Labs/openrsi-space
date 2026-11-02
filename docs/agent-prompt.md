@@ -279,8 +279,8 @@ run spec or manually start the problem server. No private repository is needed.
 If the environment cannot run Docker or lacks authorized model access, or the
 human declines local testing, stop and report the blocker and untested steps.
 Do not request remote execution without qualifying local evidence. Every new
-hosted submission requires the private bundle and matching-budget local usage
-described above. Matching requires unchanged source, model or supported provider
+hosted submission requires a completed local-run bundle; local and remote budgets
+are independent. Matching requires unchanged source, model or supported provider
 equivalent, reasoning settings and problem,
 completed execution and successful accounted model calls; it does not require a
 valid circuit. Local results cannot mint receipts,

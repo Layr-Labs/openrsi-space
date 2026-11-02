@@ -3,6 +3,8 @@
 This is a solver-authored claim. It is not an attestation or a replay proof.
 """
 import json
+import sys
+import uuid
 from pathlib import Path
 from catalyst.common import CatalystError, canonical
 from catalyst.contracts.results import digest
@@ -79,9 +81,26 @@ def attach(client, body, local_check):
     if not local_check.get('record_path'):
         raise CatalystError('The saved request has no local evidence. Supply --local-run PATH; no new run was submitted.')
     from . import transport
+    print('Preparing local-run evidence; no remote inference has started.',file=sys.stderr,flush=True)
     document = bundle(local_check['record_path'], body)
-    reply = json.loads(transport.solver_fetch(client.base, '/local-evidence', client.bearer, document=document))
+    print(f'Uploading local-run evidence ({len(canonical(document))/1048576:.1f} MiB)...',
+          file=sys.stderr,flush=True)
+    try:
+        reply = json.loads(transport.solver_fetch(client.base, '/local-evidence', client.bearer, document=document))
+    except transport.HTTPFailure as error:
+        from .state import private_json
+        from catalyst.common import now
+        error.before_evaluation = True
+        diagnostic = client.state / 'remote/diagnostics' / ('upload-' + str(uuid.uuid4()) + '.json')
+        try:
+            private_json(diagnostic, {'schema_version':1, 'at':now(), 'operation':'local_evidence_upload',
+                'request_id':None, 'http_status':error.status, 'details':error.details})
+            error.diagnostic_path = diagnostic
+        except OSError:
+            error.diagnostic_write_failed = True
+        raise
     expected = digest(document)
     if reply != {'protocol':'catalyst-local-evidence-v1','digest':expected,'private':True}:
         raise CatalystError('Local evidence upload returned an invalid binding.')
     body['local_evidence'] = expected
+    print('Local-run evidence uploaded; submission screening has not started yet.',file=sys.stderr,flush=True)

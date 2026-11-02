@@ -6,7 +6,7 @@ import unittest
 from unittest.mock import patch
 
 from catalyst.common import CatalystError
-from catalyst.progress import progress_line
+from catalyst.progress import progress_line, diagnostic_lines
 from catalyst.remote import RemoteClient
 
 
@@ -26,11 +26,48 @@ class ProgressTests(unittest.TestCase):
             "snapshot_age_seconds": 45, "message": "secret\x1b[31m",
         }}
         line = progress_line(result)
-        for text in ("elapsed 8m 07s", "$1.807234 / $3 credits", "25 model requests",
+        for text in ("elapsed 8m 07s", "model budget: $1.807234 / $3", "25 model requests",
                      "4 evaluations", "best 10,704,574,395 (provisional)", "last metrics 0m 45s ago"):
             self.assertIn(text, line)
         self.assertNotIn("secret", line)
         self.assertNotIn("\x1b", line)
+
+    def test_setup_phases_use_fixed_labels_and_do_not_imply_inference_started(self):
+        result = {'status':'building','progress':{'schema_version':1,'phase':'image_review',
+                  'phase_elapsed_seconds':67,'usage':None}}
+        line = progress_line(result)
+        self.assertIn('reviewing built image',line)
+        self.assertIn('phase 1m 07s',line)
+        self.assertIn('research model calls not started',line)
+        result['progress']['phase'] = 'private\x1b[31m'
+        self.assertNotIn('private',progress_line(result))
+        result['progress']['phase'] = []
+        self.assertNotIn('reviewing',progress_line(result))
+
+    def test_terminal_completion_distinguishes_score_and_actual_billing(self):
+        result = {'status':'completed','valid':False,
+                  'provider_billing':{'complete':True,'total_usd':0.159655}}
+        line = progress_line(result,600)
+        self.assertIn('no verified score',line)
+        self.assertIn('provider billed $0.159655',line)
+        self.assertNotIn('waiting',line)
+        result['valid'] = True
+        self.assertIn('verified result',progress_line(result))
+        result['provider_billing'] = {'complete':False,'total_usd':0}
+        self.assertIn('total unknown',progress_line(result))
+        self.assertNotIn('billed $0',progress_line(result))
+
+    def test_request_reservation_is_explained_without_echoing_remote_strings(self):
+        event = {'code':'MODEL_RESERVATION_EXCEEDS_REMAINING_BUDGET',
+                 'available_usd':0.840345,'required_reservation_usd':0.99545,
+                 'upstream_request_sent':False,'message':'private\x1b[31m'}
+        result = {'diagnostics':{'protocol':'catalyst-diagnostics-v1','model_failures':{'events':[event]}}}
+        text = '\n'.join(diagnostic_lines(result))
+        for value in ('$0.840345','$0.995450','no model charge','output-token limit'):
+            self.assertIn(value,text)
+        self.assertNotIn('private',text)
+        event.update(available_usd=float('nan'),required_reservation_usd='private')
+        self.assertNotIn('nan','\n'.join(diagnostic_lines(result)))
 
     def test_missing_and_invalid_metrics_are_not_zero_scores_or_terminal_text(self):
         self.assertIn("no live metrics available", progress_line({"status": "running"}, 31))

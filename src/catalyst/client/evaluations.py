@@ -143,6 +143,7 @@ class RemoteClient:
                 accepted = json.loads(transport.solver_fetch(self.base, "/evaluations", self.bearer,
                                                    document=request, **private))
             except transport.HTTPFailure as error:
+                error.saved_request_id = transport.safe_uuid(request.get('request_id'))
                 # Keep only the transport's allowlisted diagnostic projection, not
                 # the raw response, source envelope, headers or model credential.
                 local_id = transport.safe_uuid(request.get("request_id"))

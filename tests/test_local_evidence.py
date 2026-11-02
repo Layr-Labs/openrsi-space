@@ -7,6 +7,25 @@ from catalyst.common import CatalystError
 
 
 class EvidenceExportTests(LocalCheckTests):
+    def test_failed_upload_retains_safe_diagnostics_without_claiming_a_saved_request(self):
+        from unittest.mock import Mock
+        from catalyst.client.local_evidence import attach
+        from catalyst.client.transport import HTTPFailure
+        client=Mock(state=self.state,base='https://example.invalid',bearer='private-token')
+        failure=HTTPFailure(400,{'code':'local_evidence_not_private',
+            'evidence_findings':[{'event_index':0,'line':1,'rule':'embedded-credential','value':'private-token'}]})
+        with patch('catalyst.client.local_evidence.bundle',return_value={}), \
+                patch('catalyst.client.transport.solver_fetch',side_effect=failure):
+            with self.assertRaises(HTTPFailure) as error:
+                attach(client,self.body,{'record_path':str(self.path)})
+        self.assertIn('before evaluation submission',str(error.exception))
+        self.assertNotIn('saved request',str(error.exception))
+        saved=json.loads(error.exception.diagnostic_path.read_text())
+        self.assertEqual(saved['operation'],'local_evidence_upload')
+        self.assertIsNone(saved['request_id'])
+        self.assertNotIn('private-token',json.dumps(saved))
+        self.assertFalse((self.state/'remote/pending').exists())
+
     def test_old_skipped_decision_cannot_omit_evidence_upload(self):
         from catalyst.client.local_evidence import attach
         from unittest.mock import Mock
