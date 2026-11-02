@@ -68,8 +68,10 @@ def validate_record(path, body):
     if _models(models, runtime=True) != _models(evaluation_models(body['evaluation'])):
         raise ValueError('the model or reasoning settings differ, or the provider pair has no supported equivalence')
     usage = data['usage']
-    if usage.get('model_accounting_state') != 'settled' or usage.get('model_requests', 0) < 1:
-        raise ValueError('model usage is missing or unsettled')
+    if usage.get('model_requests', 0) < 1:
+        raise ValueError('no model requests were accounted; inspect the local run diagnostics for gateway rejections')
+    if usage.get('model_accounting_state') != 'settled':
+        raise ValueError('model accounting is incomplete; an interrupted call may have unknown usage; retain the local run diagnostics')
     successful = set()
     with (path.parent / 'usage/events.jsonl').open() as events:
         for line in events:

@@ -40,6 +40,31 @@ class LocalDiagnosticsTests(unittest.TestCase):
             self.assertFalse(report['local_evidence_precheck_passed'])
             self.assertIn('output_token_limit', [d['code'] for d in report['diagnostics']])
 
+    def test_budget_rejection_reports_safe_amounts_and_does_not_echo_reason(self):
+        for retryable in (True, False):
+            with self.subTest(retryable=retryable), tempfile.TemporaryDirectory() as tmp:
+                root=Path(tmp); (root/'usage').mkdir()
+                write_json(root/'record.json', {'data':{'status':'completed', 'usage':{'model_requests':0}}})
+                event={'kind':'gateway.budget_rejected','data':{
+                    'code':'model_reservation_exceeds_remaining_budget','upstream_request_sent':False,
+                    'retryable':retryable,'available_usd':0.5,'required_reservation_usd':2.74,
+                    'reason':'private-synthetic-marker'}}
+                (root/'usage/events.jsonl').write_text(json.dumps(event)+'\n')
+                report=summarize(root/'record.json'); finding=report['diagnostics'][0]
+                self.assertEqual(finding['required_reservation_usd'],2.74)
+                self.assertEqual(finding['retryable'],retryable)
+                self.assertFalse(report['local_evidence_precheck_passed'])
+                self.assertNotIn('private-synthetic-marker',json.dumps(report))
+
+    def test_completed_run_with_pending_usage_has_actionable_diagnostic(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root=Path(tmp)
+            write_json(root/'record.json', {'data':{'status':'completed',
+                'usage':{'model_requests':4,'model_accounting_state':'pending'}}})
+            report=summarize(root/'record.json')
+            self.assertFalse(report['local_evidence_precheck_passed'])
+            self.assertIn('model_accounting_unsettled',[d['code'] for d in report['diagnostics']])
+
     def test_every_advertised_pair_has_unique_pinned_prices(self):
         schedule = pricing_schedule()
         for remote, pairs in GROUPS:

@@ -1,5 +1,6 @@
 """Bounded local diagnostics: summarize outcomes, never echo model/log bodies."""
 import json
+import math
 from pathlib import Path
 import re
 
@@ -77,10 +78,25 @@ def summarize(record_path):
                     while line and not line.endswith(b'\n'):
                         line = stream.readline(65537)
                     continue
-                if b'gateway.model_request_rejected' not in line:
+                if b'gateway.model_request_rejected' not in line and b'gateway.budget_rejected' not in line:
                     continue
                 event = json.loads(line)
-                reason = event.get('data', {}).get('code')
+                details = event.get('data', {})
+                reason = details.get('code')
+                if (event.get('kind') == 'gateway.budget_rejected'
+                        and reason == 'model_reservation_exceeds_remaining_budget'
+                        and details.get('upstream_request_sent') is False):
+                    transient = details.get('retryable') is True
+                    finding = {'code': reason, 'upstream_request_sent': False,
+                        'retryable': transient, 'path': str(event_path),
+                        'message': ('Request was not sent to the provider. Wait for active calls to settle before retrying.'
+                            if transient else 'Request was not sent to the provider. Reduce input or the per-request output limit, or choose a sufficient run budget.')}
+                    for field in ('available_usd', 'required_reservation_usd'):
+                        value = details.get(field)
+                        if type(value) in (int, float) and math.isfinite(value) and 0 <= value <= 1e9:
+                            finding[field] = value
+                    result['diagnostics'].append(finding)
+                    break
                 if reason in {'output_token_limit', 'request_policy_rejected'}:
                     maximum = event.get('data', {}).get('maximum', 65536)
                     maximum = maximum if type(maximum) is int and 1 <= maximum <= 1048576 else 65536
@@ -98,6 +114,10 @@ def summarize(record_path):
     result['local_evidence_precheck_passed'] = (result['record_status'] == 'completed'
         and usage.get('model_requests', 0) > 0 and usage.get('model_accounting_state') == 'settled')
     result['local_evidence_note'] = ('Precheck only: complete exchanges, matching source/problem/model, sufficient spending and hosted review are also required.')
+    if usage.get('model_requests', 0) and usage.get('model_accounting_state') != 'settled':
+        result['diagnostics'].append({'code': 'model_accounting_unsettled',
+            'message': 'Model accounting is incomplete, often after an interrupted call. Unknown usage is not zero. This run cannot qualify as local evidence; retain its logs for diagnosis.',
+            'path': str(event_path)})
     if not usage.get('model_requests', 0):
         result['diagnostics'].append({'code': 'no_accounted_model_requests',
             'message': 'No accounted model requests. This run cannot qualify as local evidence.'})
