@@ -1,0 +1,11 @@
+{
+  "schema_version": 2,
+  "evaluation_id": "b22dd638-ef8d-41b5-b3ac-061638f6aaf6",
+  "source_digest": "44c380fed51e239bcd43f68289742cf4b473abf83a1672edbd9a2f49b1ecd22d",
+  "evaluation_config_digest": "2097d6400361359e92616073e9feb8e3a7aadd54a0b2ffb7bf8a04fd6acd03ea",
+  "problem_set_digest": "f225a401aebee96e742a6836bb0fd4b55fccbf3e597847c34b1a6d2df0b1addd",
+  "policies_digest": "5acec503ab32d045e43615a18349f9ce0127372fd8abfcf90298f55a710f5e89",
+  "pricing_digest": "b0b1e3d079ee07135c611a5f1ea434775bddd2ff4fa6ed6e15c5706b693a3fe9",
+  "image_digest": "sha256:f421f97eeb95ef10ddc1dd53a0f2997a26d506004a141edb75859d553f0c0ab0",
+  "evidence_mode": "remote"
+}
