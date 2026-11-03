@@ -3,8 +3,8 @@
 Before setup: local Codex/ChatGPT or Claude subscription access is separate from
 Yukon authentication and remote funding. **Codex/ChatGPT and Claude subscription local runs qualify for supported equivalent
 OpenRouter models**, with the same reasoning settings, harness source and problem.
-The local run bundle must record at least the requested remote cap in USD-equivalent
-usage. No personal OpenRouter key is required. See [local access, budgets and remote eligibility](platform-funded-inference.md#local-access-and-remote-eligibility).
+The local run bundle must record a budget cap at least as large as the requested
+remote budget. Actual local spending may be lower. No personal OpenRouter key is required. See [local access, budgets and remote eligibility](platform-funded-inference.md#local-access-and-remote-eligibility).
 
 ## Select the current problem release
 
@@ -52,7 +52,7 @@ include ECDSA-specific papers, strategies, notes or prewritten answers in source
 | Public harness source | ZIP and expanded source each **8 MiB** by default. Run `openrsi-space remote limits ./my-harness` for the live limits. |
 | Funded model access | Run `openrsi-space remote funding-policy`. If enabled, choose an exact model on a funded provider, with validated pricing and use `--platform-funded`; supply no personal remote model credential. |
 | Local run bundle for funding | A completed matching Dungeness run, with retained logs. The CLI uploads a separate **private** bundle, at most **192 MiB / 1,000 model calls**. |
-| Local spending for funding | Recorded local usage in USD equivalent must be **at least the full remote cap**: $20 locally for a $20 remote run. A cap alone is not proof of actual spending. |
+| Local budget cap for funding | The recorded local cap must be **at least the remote cap**. A $2 cap with $1.73 spent qualifies for a $2 remote request. This is solver-authored evidence, not proof of spending. |
 | Matching | Unchanged harness source, problem digest, provider, model and reasoning settings. Do not combine unrelated runs or copy local solutions into source. |
 | Funded allowance | Default **20 credits/account/rolling 24 hours**. Each account may have one funded evaluation running at a time. The daily allowance can fund multiple sequential runs; unused reserved funds return after settlement. The authenticated Yukon account ID binds the allowance; operator overrides may apply. |
 
@@ -269,8 +269,8 @@ scaffold; do not copy local candidates or task-specific notes into your harness.
 Record the runtime revision, release, checks and total usage across retries.
 Local testing does not reproduce private screening or guarantee remote acceptance.
 If it is blocked or you decline it, stop and report the blocker and untested steps.
-Every new hosted submission requires the matching private bundle and matching-budget
-local usage. Resolve the local failure before submitting; there is no bypass.
+Every new hosted submission requires the matching private bundle and a recorded local cap
+at least as large as the remote cap. Actual spending may be lower. Resolve the local failure before submitting; there is no bypass.
 
 ## 4. Choose funding and start the official evaluation
 

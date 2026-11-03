@@ -48,8 +48,9 @@ For a funded submission, `POST /local-evidence` uploads the private
 `catalyst-local-evidence-v1` JSON bundle and returns its digest. Include that digest
 as top-level `local_evidence` in the evaluation request. The bundle contains
 recorded model exchanges, settled accounting and evaluation events, not arbitrary
-local files. Source, problem and model settings must match, and settled local
-spending must be at least the full requested remote cap. The upload is limited
+local files. Source, problem and model settings must match. The numeric
+`local_budget_cap_usd` field must come from the recorded local configuration and
+be at least the requested remote cap; actual spending may be lower. The upload is limited
 to 192 MiB and 1,000 model calls, separately from the public source ZIP.
 The server screens it for secrets and performs bounded LLM readiness review; it
 is not proof of full replay or authenticity. Every new funded submission requires

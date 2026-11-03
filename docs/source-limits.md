@@ -8,7 +8,7 @@ the expanded-source count.
 
 For platform-funded runs, the required local-run evidence is a **separate private
 upload**, capped at **192 MiB and 1,000 model calls**. Do not include it in the
-public harness ZIP. Its settled local spending must reach the full remote cap;
+public harness ZIP. Its recorded local budget cap must cover the remote cap; actual spending may be lower;
 see [funded submission requirements](platform-funded-inference.md).
 
 Check the deployed service rather than assuming a client update changed it:

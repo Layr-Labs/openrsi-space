@@ -33,7 +33,7 @@ Local results do not replace private screening, independent verification or rece
 The CLI reuses a matching completed local run before submission; `--local-run PATH`
 selects records elsewhere. For platform-funded submissions, the CLI uploads a
 separate private bundle of recorded model exchanges, settled usage and evaluation
-events. Admission checks source/problem/model matching and requires at least the full remote cap spent locally. A bounded LLM review checks readiness, not complete
+events. Admission checks source/problem/model matching and requires the recorded local budget cap to cover the remote cap; actual spending may be lower. A bounded LLM review checks readiness, not complete
 state replay or authenticity. The remote run starts fresh; local candidates do not
 become its starting point. See [funding and evidence](platform-funded-inference.md).
 

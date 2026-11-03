@@ -35,8 +35,8 @@ Use this process when creating or reusing a harness:
    success for any JSON. `openrsi-space harness smoke` alone does not test live provider
    compatibility. Complete a [local Dungeness run](local-evaluation.md) before
    remote submission; the CLI reuses a matching local record. Every new hosted
-   submission requires its private local bundle and the full remote cap in recorded
-   local usage (USD equivalent). There is no skip option or evidence exemption.
+   submission requires its private local bundle and a recorded local budget cap
+   at least as large as the remote cap. Actual spending may be lower. There is no skip option or evidence exemption.
 5. Report the tested framework version, provider/model/access method, supported
    API operations and any untested boundary in the readiness report. A live
    compatibility run consumes model allowance and needs the user's authorization

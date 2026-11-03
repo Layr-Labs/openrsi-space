@@ -64,8 +64,8 @@ local run bundle; there is no skip option or evidence exemption.
   no personal model credential is sent for the remote run.
 - **Local evidence:** retain a completed matching Dungeness run and its logs.
   The CLI uploads a separate private bundle, up to **192 MiB / 1,000 model calls**.
-  Recorded local usage in USD equivalent must reach **100% of the remote cap**:
-  $20 locally for a $20 remote run. Local testing uses your authorized model access.
+  The recorded local budget cap must be **at least the remote cap**. Actual
+  spending may be lower; no minimum-spend percentage applies. Local testing uses your authorized model access.
 - **Allowance:** the default is **20 model credits (USD equivalent) per Yukon account per
   rolling 24 hours**, with operator overrides. Each account may have one funded
   evaluation running at a time. Split the allowance across multiple sequential

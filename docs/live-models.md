@@ -3,8 +3,8 @@
 Hosted evaluations currently use platform-funded API access. Check
 `openrsi-space remote funding-policy`, choose an advertised provider and exact model,
 and submit with `--platform-funded --local-run PATH`. Do not send a personal
-model credential. Matching local evidence must show at least the full requested
-remote cap in settled usage. See [platform-funded inference](platform-funded-inference.md).
+model credential. Matching local evidence must record a budget cap at least as large as the
+requested remote budget. Actual local spending may be lower. See [platform-funded inference](platform-funded-inference.md).
 
 Remote subscription-token submission has been removed. Subscription routes
 cannot be selected for remote submission, quoting or

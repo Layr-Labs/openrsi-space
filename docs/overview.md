@@ -71,7 +71,8 @@ Your Yukon key identifies your account and its allowance; it is not model credit
 
 Both the public ZIP and expanded source default to **8 MiB**. Funded runs also
 require a separate **private** local-run bundle (up to **192 MiB / 1,000 model calls**)
-with matching source/problem/models and settled local spending of at least the full remote cap. A 20-credit remote run needs 20 local credits. Reuse a qualifying
+with matching source/problem/models and a recorded local budget cap at least as
+large as the remote cap. Actual local spending may be lower. Reuse a qualifying
 run; its result is not an official score. See [funded submission requirements](platform-funded-inference.md).
 
 **Autonomous research only.** Replaying or reproducing existing ECDSA

@@ -67,9 +67,11 @@ separate private bundle (**192 MiB**, **1,000 model calls** maximum). Explain it
 private upload and third-party LLM readiness review before submission. Never put
 this bundle, login files, generated circuits or research notes in public source.
 
-A completed matching local run is required, but its spending does not limit the remote cap.
+A completed matching local run with a recorded cap at least as large as the remote
+cap is required; actual spending may be lower.
 Choose the remote budget within the published per-run and account allowance. Do not start
-extra local inference solely to match a remote budget. Source, problem, model (or supported
+extra local inference solely to match a spending amount. If the recorded cap is
+insufficient, lower the remote request or obtain authorization for a new local test. Source, problem, model (or supported
 provider equivalent) and reasoning settings must match.
 A local ChatGPT or Claude subscription run qualifies through the explicit model
 equivalences in `remote funding-policy`; its recorded normalized USD usage counts.
