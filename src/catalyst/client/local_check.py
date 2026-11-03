@@ -4,14 +4,13 @@ from pathlib import Path
 import shlex
 
 from catalyst.common import CatalystError, digest_files, read_json
-from catalyst.contracts.accounting import evaluation_models
+from catalyst.contracts.accounting import evaluation_models, credit_limit
 from catalyst.contracts.results import digest
 from catalyst.contracts.model_equivalence import model_binding
 
 
 def request_identity(body):
-    # Prices may be quoted later. Limits are included here for retry identity,
-    # but are deliberately not compared with the local test's limits.
+    # Prices may be quoted later. Limits remain part of retry identity.
     return digest({key: body[key] for key in
                    ('source', 'evaluation', 'problem_set', 'publication', 'evidence_mode', 'judge', 'context')})
 
@@ -67,6 +66,19 @@ def validate_record(path, body):
     models = agent.get('model_access', {}).get('models') or [data['model']]
     if _models(models, runtime=True) != _models(evaluation_models(body['evaluation'])):
         raise ValueError('the model or reasoning settings differ, or the provider pair has no supported equivalence')
+    # Use the effective configuration retained by Dungeness, never the new
+    # remote request or the current (possibly edited) harness evaluation.json.
+    cap = data['configuration'].get('resolved', {}).get('limits', {}).get('max_usd')
+    try:
+        local_cap = credit_limit(cap)
+    except CatalystError:
+        raise ValueError('the local record lacks a valid positive finite budget cap; '
+                         'select an original Dungeness record containing its recorded cap') from None
+    if local_cap < credit_limit(body['evaluation']['max_model_credits']):
+        raise ValueError(f'the recorded local budget cap (${local_cap}) is below the requested '
+                         f"remote budget (${body['evaluation']['max_model_credits']}); lower the remote "
+                         'budget or select a matching local run with a sufficient cap; '
+                         'actual local spending may be lower')
     usage = data['usage']
     if usage.get('model_requests', 0) < 1:
         raise ValueError('no model requests were accounted; inspect the local run diagnostics for gateway rejections')
@@ -85,7 +97,7 @@ def validate_record(path, body):
     if not required <= successful:
         raise ValueError('not every declared model has a successful accounted response')
     return {'status': 'passed', 'run_id': data['run_id'], 'record_path': str(path),
-            'models': record_models(models)}
+            'models': record_models(models), 'local_budget_cap_usd': cap}
 
 
 def check_submission(state, package, body, base, *, local_run=None):

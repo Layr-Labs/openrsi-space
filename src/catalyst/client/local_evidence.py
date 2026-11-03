@@ -44,7 +44,7 @@ def bundle(path, body):
     document = {'protocol':'catalyst-local-evidence-v1', 'source_digest':body['source']['digest'],
                 'problem_digest':digest(body['problem_set']), 'models':check['models'],
                 'run_id':check['run_id'], 'runtime_revision':record['data']['configuration']['repository'].get('commit') or 'unknown',
-                'status':'completed', 'events':events}
+                'status':'completed', 'events':events, 'local_budget_cap_usd':check['local_budget_cap_usd']}
     from decimal import Decimal, InvalidOperation
     try:
         amounts = []

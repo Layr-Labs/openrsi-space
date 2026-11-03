@@ -38,7 +38,7 @@ class LocalCheckTests(unittest.TestCase):
                                       'version': self.body['source']['digest']}},
                 'problem': {'id': 'catalyst-' + digest_files(problem_files(self.body['problem_set'][0]))},
                 'model': {'provider': 'openai', 'request_model': 'gpt-5.6-sol'},
-                'configuration': {'sources': {'agent': {'document': {
+                'configuration': {'resolved': {'limits': {'max_usd': 50}}, 'sources': {'agent': {'document': {
                     'execution': {'interface': 'dungeness-command-v1'}}}}},
                 'execution': {'stats': {'n_completed_trials': 1, 'n_errored_trials': 0}},
                 'usage': {'model_requests': 1, 'model_accounting_state': 'settled'},
@@ -66,11 +66,40 @@ class LocalCheckTests(unittest.TestCase):
         self.assertEqual(result['run_id'], 'local-test')
         self.assertNotIn('score', result)
 
-    def test_remote_limits_can_differ_from_local_test(self):
+    def test_remote_time_limit_can_differ_and_budget_can_equal_local_cap(self):
         self.save()
         self.body['evaluation']['max_model_credits'] = 50
         self.body['evaluation']['limits'] = {'max_seconds': 10800, 'max_model_tokens': None}
         self.assertEqual(self.check()['status'], 'passed')
+
+    def test_recorded_cap_not_actual_spend_or_remote_config_controls_eligibility(self):
+        self.record['data']['configuration']['resolved']['limits']['max_usd'] = 2
+        self.event['data']['normalized_usd'] = 1.73
+        self.body['evaluation']['max_model_credits'] = 2
+        self.save()
+        self.assertEqual(self.check()['local_budget_cap_usd'], 2)
+        self.body['evaluation']['max_model_credits'] = 2.0000001
+        with self.assertRaisesRegex(CatalystError, 'below the requested remote budget'):
+            self.check(local_run=self.path)
+        self.record['data']['configuration']['resolved']['limits']['max_usd'] = 1
+        self.body['evaluation']['max_model_credits'] = 2
+        self.save()
+        with self.assertRaisesRegex(CatalystError, 'below the requested remote budget'):
+            self.check(local_run=self.path)
+
+    def test_missing_or_invalid_recorded_budget_cap_is_actionable(self):
+        for cap in [None, True, False, 0, -1, '2', float('nan'), float('inf'), -float('inf'), {}, []]:
+            with self.subTest(cap=cap):
+                self.record['data']['configuration']['resolved']['limits']['max_usd'] = 50
+                self.save()
+                self.record['data']['configuration']['resolved']['limits']['max_usd'] = cap
+                self.path.write_text(json.dumps(self.record))
+                with self.assertRaisesRegex(CatalystError, 'valid positive finite budget cap'):
+                    self.check(local_run=self.path)
+        del self.record['data']['configuration']['resolved']
+        self.save()
+        with self.assertRaisesRegex(CatalystError, 'recorded cap'):
+            self.check(local_run=self.path)
 
     def test_raw_record_and_older_run_without_new_label_are_supported(self):
         self.record['labels'].pop('catalyst_problem_set_digest')

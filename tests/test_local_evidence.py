@@ -7,6 +7,14 @@ from catalyst.common import CatalystError
 
 
 class EvidenceExportTests(LocalCheckTests):
+    def test_export_preserves_recorded_cap_even_when_spending_and_remote_cap_are_lower(self):
+        self.record['data']['configuration']['resolved']['limits']['max_usd'] = 2
+        self.record['data']['configuration']['repository'] = {'commit': '1'*40}
+        self.event['data']['normalized_usd'] = 1.73
+        self.body['evaluation']['max_model_credits'] = 1.9
+        self.save()
+        self.assertEqual(bundle(self.path, self.body)['local_budget_cap_usd'], 2)
+
     def test_failed_upload_retains_safe_diagnostics_without_claiming_a_saved_request(self):
         from unittest.mock import Mock
         from catalyst.client.local_evidence import attach

@@ -142,7 +142,8 @@ no manual server setup or private repository is needed. Read the
 Local scores help development; official results require a remote receipt.
 `remote submit` reuses a completed matching local run automatically. Use
 `--local-run PATH` for records elsewhere. Every new hosted submission requires
-the bundle and matching-budget local usage described above. If local testing is
+the bundle and a recorded local budget cap at least as large as the remote cap;
+actual local spending may be lower. If local testing is
 blocked, resolve the failure before submitting; there is no skip option.
 
 **Current MVP environment:** Yukon dev, benchmark `layr-labs/catalyst`,

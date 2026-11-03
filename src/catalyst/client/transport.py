@@ -67,6 +67,9 @@ ADMISSION_MESSAGES = {
     "local_evidence_insufficient_spend": "Recorded local spending is below the operator's evidence threshold; check remote funding-policy before spending more.",
     "local_evidence_required": "Provide --local-run PATH to a completed matching local Dungeness run.",
     "local_evidence_invalid": "Local evidence is incomplete or invalid. Run a completed local readiness test with the current client.",
+    "local_evidence_budget_cap_missing": "Update the OpenRSI client and re-export with --local-run PATH from the original local record containing its budget cap; a new run is not needed if that record has a sufficient cap.",
+    "local_evidence_budget_cap_invalid": "The recorded local budget cap must be a positive finite number. Use an original valid local record; do not infer the cap from spending.",
+    "local_evidence_budget_cap_insufficient": "Lower the remote budget or select a matching local run whose recorded cap covers it; actual spending may be lower. No minimum-spend percentage applies.",
     "local_evidence_mismatch": "Local evidence must match the submitted source, problem, model and reasoning settings, using a supported provider equivalence.",
     "local_evidence_not_private": "Local evidence contains a recognized credential or uninspectable content. Check the reported event and rule before changing source or repeating a local run.",
     "local_evidence_capacity": "Private evidence storage is full; contact the operator or wait for upload expiry.",
@@ -83,7 +86,8 @@ ADMISSION_MESSAGES = {
 }
 
 
-ADMISSION_EXPECTATIONS = {'request_shape': 'The documented evaluation request envelope.',
+ADMISSION_EXPECTATIONS = {**{code: ADMISSION_MESSAGES[code] for code in (
+ 'local_evidence_budget_cap_missing', 'local_evidence_budget_cap_invalid', 'local_evidence_budget_cap_insufficient')}, 'request_shape': 'The documented evaluation request envelope.',
  'source_package_too_large': 'Expanded source within the advertised byte limit; retain runtime code and licenses.',
  'protocol_mismatch': 'Match server_policy.protocol.',
  'evidence_mode_mismatch': 'Match server_policy.evidence_mode.',

@@ -25,8 +25,10 @@ supported providers and policy, then `openrsi-space remote funding` for your
 reservations and settled usage. Neither command starts inference. Account-specific allowance overrides can be confirmed with the operator;
 allowance changes do not waive required local evidence.
 
-Agree on separate local and remote budgets. A completed matching local run is required,
-but no minimum local spending amount is tied to the remote cap. Choose the remote cap
+Authorize local testing and remote execution separately. The local run’s recorded
+budget cap must be at least the requested remote budget. Actual local spending may
+be lower: a $2 local cap with $1.73 spent qualifies for a $2 remote request; a $1
+local cap does not. There is no minimum-spend percentage. Choose the remote cap
 within the published per-run and account allowance. Subscription testing consumes plan
 allowance; API testing uses your provider account. Local OpenRouter accounting uses
 provider-reported charges; leaderboard credits can differ from actual charges.
@@ -74,11 +76,18 @@ scanned for possible secrets before third-party LLM review.
 
 Use an existing matching record with `--local-run PATH`; the client can also find
 records under its state directory automatically. Source, problem, model (or supported provider equivalent)
-and reasoning settings must match. A valid circuit is not required. Local spending
-and the remote cap are independent. The exported bundle allows at most 1,000 model
+and reasoning settings must match. A valid circuit is not required. The recorded
+local cap must cover the remote cap; actual local spending may be lower. The exported bundle allows at most 1,000 model
 calls and 192 MiB, with complete settled usage. Every new
 funded submission requires the bundle; neither solver flags nor operator allowance
 overrides can waive it.
+
+Older evidence uploads without a recorded cap must be exported again with the
+updated client and `--local-run PATH`. An original Dungeness record with a
+sufficient cap can be reused without rerunning inference. If the original record
+has no valid cap, select another matching run or authorize a new local test; never
+edit the cap to manufacture eligibility. This is a consistency check on
+solver-authored evidence, not cryptographic proof of the local configuration.
 
 The default allowance is 20 model credits (USD equivalent) per authenticated Yukon account
 per rolling 24 hours. Changing Yukon keys does not reset it. The operator may

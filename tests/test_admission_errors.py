@@ -7,6 +7,18 @@ from catalyst.remote import fetch, HTTPFailure
 
 
 class EvidenceDiagnosticTests(unittest.TestCase):
+    def test_budget_cap_errors_are_actionable_and_preserve_no_untrusted_text(self):
+        for suffix in ('missing', 'invalid', 'insufficient'):
+            code = 'local_evidence_budget_cap_' + suffix
+            error = HTTPFailure(409, {'code': code, 'reason': code,
+                                     'stage': 'creation', 'field': 'local_evidence',
+                                     'expected': 'DO-NOT-RETAIN', 'error': 'DO-NOT-RETAIN'})
+            self.assertEqual(error.details['code'], code)
+            self.assertEqual(error.details['field'], 'local_evidence')
+            self.assertIn('cap', error.details['expected'])
+            self.assertNotIn('DO-NOT-RETAIN', str(error))
+            self.assertNotIn('DO-NOT-RETAIN', str(error.details))
+
     def test_evidence_upload_uses_longer_timeout_without_changing_polling(self):
         from catalyst.client import transport
         with patch.object(transport,'fetch',return_value=b'{}') as request:

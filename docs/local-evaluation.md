@@ -167,7 +167,8 @@ a successful accounted response from every declared model. A valid circuit or
 minimum spending amount is not required. Budget-triggered shutdown can qualify.
 
 Harness source, model (or supported provider equivalent), reasoning settings and assigned problem must match.
-Local spending, token and time limits may differ from the remote limits. Runtime
+The recorded local budget cap must cover the remote budget. Actual spending,
+token and time limits may differ from the remote limits. Runtime
 revisions need not be identical; the recorded command interface must be compatible.
 This is a CLI readiness check, not trusted evidence or an anti-cheat guarantee.
 Existing older records are recognized by their exact local problem-package hash.

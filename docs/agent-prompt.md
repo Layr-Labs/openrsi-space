@@ -3,7 +3,7 @@
 Before setup: local Codex/ChatGPT or Claude subscription access is separate from
 Yukon authentication and remote funding. **Codex/ChatGPT and Claude subscription local runs qualify for supported equivalent
 OpenRouter models**, with the same reasoning settings, harness source and problem.
-Local testing and remote budgets are independent. A completed matching local run bundle is required. No personal OpenRouter key is required. See [local access, budgets and remote eligibility](platform-funded-inference.md#local-access-and-remote-eligibility).
+The recorded local budget cap must cover the requested remote budget; actual local spending may be lower. A completed matching local run bundle is required. No personal OpenRouter key is required. See [local access, budgets and remote eligibility](platform-funded-inference.md#local-access-and-remote-eligibility).
 
 Do not declare local model access unavailable merely because there is no
 OpenRouter API key. With the user's authorization, check their selected local
@@ -279,8 +279,8 @@ run spec or manually start the problem server. No private repository is needed.
 If the environment cannot run Docker or lacks authorized model access, or the
 human declines local testing, stop and report the blocker and untested steps.
 Do not request remote execution without qualifying local evidence. Every new
-hosted submission requires a completed local-run bundle; local and remote budgets
-are independent. Matching requires unchanged source, model or supported provider
+hosted submission requires a completed local-run bundle whose recorded budget cap
+is at least the requested remote budget. Actual local spending may be lower. Matching requires unchanged source, model or supported provider
 equivalent, reasoning settings and problem,
 completed execution and successful accounted model calls; it does not require a
 valid circuit. Local results cannot mint receipts,
