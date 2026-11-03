@@ -44,9 +44,9 @@ class LocalCheckTests(unittest.TestCase):
                 'usage': {'model_requests': 1, 'model_accounting_state': 'settled'},
             },
         }
-        self.event = {'run_id': 'local-test', 'kind': 'model.accounting', 'data': {
+        self.event = {'run_id': 'local-test', 'kind': 'model.accounting', 'request_id': 'req-1', 'sequence': 3, 'data': {
             'provider': 'openai', 'model': 'gpt-5.6-sol', 'status': 'success',
-            'accounting_method': 'gateway', 'total_tokens': 12}}
+            'accounting_method': 'gateway', 'total_tokens': 12, 'normalized_usd': 1.73}}
 
     def save(self):
         write_json(self.path, self.record)
@@ -54,7 +54,16 @@ class LocalCheckTests(unittest.TestCase):
             'id': 'local-test', 'status': 'completed', 'exit_code': 0,
             'record_path': str(self.path)})
         (self.path.parent / 'usage').mkdir(exist_ok=True)
-        (self.path.parent / 'usage/events.jsonl').write_text(json.dumps(self.event) + '\n')
+        (self.path.parent / 'usage/events.jsonl').write_text(''.join(json.dumps(e)+'\n' for e in self.exchanges(self.event)))
+
+    def exchanges(self, accounting):
+        base = {k: accounting[k] for k in ('run_id', 'request_id')}
+        pair = {k: accounting['data'][k] for k in ('provider', 'model')}
+        return [{**base, 'kind': 'model.request', 'sequence': accounting['sequence'] - 2,
+                 'data': {**pair, 'request': {'messages': [{'role': 'user', 'content': 'Read the assigned task.'}]}}},
+                {**base, 'kind': 'model.response', 'sequence': accounting['sequence'] - 1,
+                 'data': {**pair, 'status': 200, 'response': {'content': 'I will inspect the assigned files.'}}},
+                accounting]
 
     def check(self, **kwargs):
         return check_submission(self.state, self.harness, self.body, self.base, **kwargs)
@@ -129,7 +138,7 @@ class LocalCheckTests(unittest.TestCase):
             self.check()
         self.save()
         original = deepcopy(self.record)
-        for status in ['prepared', 'running', 'failed', 'cancelled']:
+        for status in ['prepared', 'running']:
             self.record = deepcopy(original)
             self.record['data']['status'] = status
             self.save()
@@ -142,6 +151,73 @@ class LocalCheckTests(unittest.TestCase):
             self.save()
             with self.subTest(usage=usage), self.assertRaises(CatalystError):
                 self.check()
+
+    def test_failed_save_preserves_failure_but_complete_evidence_qualifies(self):
+        self.record['data']['status'] = 'failed'
+        self.record['data']['execution']['stats']['n_errored_trials'] = 1
+        self.record['data']['configuration']['repository'] = {'commit': '1'*40}
+        self.save()
+        metadata = self.path.parent/'run.json'
+        doc = json.loads(metadata.read_text())
+        doc.update(status='failed', exit_code=1)
+        write_json(metadata, doc)
+        original = {p: p.read_bytes() for p in (metadata, self.path, self.path.parent/'usage/events.jsonl')}
+        decision = self.check(local_run=metadata)
+        self.assertEqual(decision['local_run_status'], 'failed')
+        self.assertEqual(decision['local_run_path'], str(metadata))
+        from catalyst.client.local_evidence import bundle
+        self.assertEqual(bundle(metadata, self.body)['status'], 'failed')
+        from catalyst.integrations.dungeness.diagnostics import summarize
+        diagnostic = summarize(self.path)
+        self.assertEqual(diagnostic['record_status'], 'failed')
+        self.assertTrue(diagnostic['local_evidence_precheck_passed'])
+        self.assertIn('failed_run_evidence_available', [d['code'] for d in diagnostic['diagnostics']])
+        self.assertEqual(original, {p: p.read_bytes() for p in original})
+
+    def test_outer_save_failure_is_preserved_through_upload(self):
+        from catalyst.client.local_evidence import attach
+        from unittest.mock import Mock
+        self.record['data']['configuration']['repository'] = {'commit': '1'*40}
+        self.save()
+        metadata = self.path.parent/'run.json'
+        doc = json.loads(metadata.read_text()); doc.update(status='failed', exit_code=1)
+        write_json(metadata, doc)
+        check = self.check(local_run=metadata)
+        def upload(*args, document, **kwargs):
+            self.assertEqual(document['status'], 'failed')
+            return json.dumps({'protocol':document['protocol'], 'digest':digest(document),'private':True})
+        with patch('catalyst.client.transport.solver_fetch', side_effect=upload):
+            attach(Mock(), self.body, check)
+
+    def test_partial_duplicate_missing_or_mismatched_exchanges_block_before_upload(self):
+        self.record['data']['status'] = 'failed'
+        for kind in ('missing_response', 'missing_accounting', 'duplicate', 'truncated', 'count', 'wrong_model'):
+            self.save()
+            events = self.exchanges(self.event)
+            if kind == 'missing_response': events.pop(1)
+            if kind == 'missing_accounting': events.pop()
+            if kind == 'duplicate': events.append(deepcopy(events[-1]))
+            if kind == 'wrong_model': events[1]['data']['model'] = 'wrong-model'
+            if kind == 'count':
+                self.record['data']['usage']['model_requests'] = 2
+                write_json(self.path, self.record)
+                self.record['data']['usage']['model_requests'] = 1
+            text = ''.join(json.dumps(e)+'\n' for e in events)
+            if kind == 'truncated': text += '{'
+            (self.path.parent/'usage/events.jsonl').write_text(text)
+            with self.subTest(kind=kind), self.assertRaises(CatalystError):
+                self.check(local_run=self.path)
+
+    def test_cancelled_ended_run_can_qualify_but_live_trial_cannot(self):
+        self.record['data']['status'] = 'cancelled'
+        self.record['data']['execution']['stats'].update(n_completed_trials=0,n_cancelled_trials=1)
+        self.save()
+        self.assertEqual(self.check()['local_run_status'], 'cancelled')
+        for field in ('n_running_trials', 'n_pending_trials'):
+            self.record['data']['execution']['stats'][field] = 1
+            self.save()
+            with self.assertRaises(CatalystError): self.check(local_run=self.path)
+            self.record['data']['execution']['stats'][field] = 0
 
     def test_provider_errors_and_missing_events_do_not_count_as_model_success(self):
         self.event['data']['status'] = 'provider_error'
@@ -163,8 +239,11 @@ class LocalCheckTests(unittest.TestCase):
             self.check()
         event = deepcopy(self.event)
         event['data'].update(provider='anthropic', model='claude-opus-5')
+        event.update(request_id='req-2', sequence=6)
+        self.record['data']['usage']['model_requests'] = 2
+        self.save()
         with (self.path.parent / 'usage/events.jsonl').open('a') as f:
-            f.write(json.dumps(event) + '\n')
+            f.write(''.join(json.dumps(e)+'\n' for e in self.exchanges(event)))
         self.assertEqual(self.check()['status'], 'passed')
 
     def test_broken_records_are_ignored_and_explicit_bad_path_is_actionable(self):

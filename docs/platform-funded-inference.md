@@ -66,7 +66,7 @@ also report a `models` list; respect it when present. Keep using the assigned ga
 credentials. Do not include personal model keys or login files in this flow.
 `--platform-funded` cannot be combined with credential input flags.
 
-A matching completed local Dungeness test is required for funded runs. Local tests
+An ended matching local Dungeness test is required for funded runs. Local tests
 use your explicitly supplied model access; platform funding applies to admitted
 remote runs only. The client uploads recorded model requests/responses/accounting
 and evaluation events privately for readiness review. This is separate from public
@@ -81,6 +81,14 @@ local cap must cover the remote cap; actual local spending may be lower. The exp
 calls and 192 MiB, with complete settled usage. Every new
 funded submission requires the bundle; neither solver flags nor operator allowance
 overrides can waive it.
+
+A run that ended as `failed` or `cancelled` can qualify if every recorded model
+request has its response and settled accounting, and all matching checks pass.
+The failure status is preserved; eligibility is not a claim that the harness
+finished successfully. Prepared, running, zero-call or incomplete-accounting runs
+do not qualify. A later candidate-save failure does not erase complete evidence.
+If you fix the harness, its source digest changes and it needs matching local
+evidence for the new source. Never edit an old record to mark it successful.
 
 Older evidence uploads without a recorded cap must be exported again with the
 updated client and `--local-run PATH`. An original Dungeness record with a

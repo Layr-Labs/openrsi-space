@@ -30,7 +30,7 @@ remove `--prepare-only` and supply model access to test the full research loop.
 Inspect failures and fix the harness before remote submission. Keep each evaluation
 fresh; do not carry local solutions or task-specific notes into the harness.
 Local results do not replace private screening, independent verification or receipts.
-The CLI reuses a matching completed local run before submission; `--local-run PATH`
+The CLI reuses a matching ended local run before submission; `--local-run PATH`
 selects records elsewhere. For platform-funded submissions, the CLI uploads a
 separate private bundle of recorded model exchanges, settled usage and evaluation
 events. Admission checks source/problem/model matching and requires the recorded local budget cap to cover the remote cap; actual spending may be lower. A bounded LLM review checks readiness, not complete

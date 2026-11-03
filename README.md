@@ -24,7 +24,7 @@ Local development can use your existing Codex/ChatGPT or Claude subscription, or
 a supported model API. Official remote runs use **Eigen Labs-funded OpenRouter**;
 you authenticate with a Yukon key and send no personal model credential.
 **Codex/ChatGPT and Claude subscription runs qualify for supported equivalent models.**
-The recorded local budget cap must cover the requested remote budget; actual local spending may be lower. A completed matching local run is required.
+The recorded local budget cap must cover the requested remote budget; actual local spending may be lower. An ended matching local run is required.
 No personal OpenRouter key is required. Check
 [eligibility and the separate local/remote budgets](docs/platform-funded-inference.md#local-access-and-remote-eligibility)
 before spending. Publishing the verified receipt makes no new model calls.
@@ -50,7 +50,7 @@ then submit it for an official evaluation. Docker is needed for local integratio
 harness source; review files before uploading. You authorize each paid run and
 are responsible for complying with your model provider's terms.
 
-`remote submit` reuses a matching completed local run. Use `--local-run PATH`
+`remote submit` reuses a matching ended local run. Use `--local-run PATH`
 for records elsewhere. Every new hosted submission requires a matching completed
 local run bundle; there is no skip option or evidence exemption.
 

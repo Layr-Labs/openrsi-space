@@ -35,7 +35,8 @@ class LocalDiagnosticsTests(unittest.TestCase):
             self.assertEqual(report['candidate_evaluations']['status'], 'valid_observed')
             self.assertEqual(report['candidate_evaluations']['evaluations'], 2)
             self.assertEqual(report['metrics']['circuit_score'], 1234)
-            self.assertTrue(report['local_evidence_precheck_passed'])
+            # A usage total alone is not a retained request/response transcript.
+            self.assertFalse(report['local_evidence_precheck_passed'])
             self.assertIn('Actual local spending may be lower', report['local_evidence_note'])
             self.assertNotIn('secret-canary', json.dumps(report))
 

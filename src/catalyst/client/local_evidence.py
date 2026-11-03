@@ -44,28 +44,9 @@ def bundle(path, body):
     document = {'protocol':'catalyst-local-evidence-v1', 'source_digest':body['source']['digest'],
                 'problem_digest':digest(body['problem_set']), 'models':check['models'],
                 'run_id':check['run_id'], 'runtime_revision':record['data']['configuration']['repository'].get('commit') or 'unknown',
-                'status':'completed', 'events':events, 'local_budget_cap_usd':check['local_budget_cap_usd']}
-    from decimal import Decimal, InvalidOperation
-    try:
-        amounts = []
-        for event in events:
-            if event['kind'] != 'model.accounting':
-                continue
-            data = event['data']
-            if data.get('provider') == 'openrouter':
-                if data.get('billing_source') not in {'openrouter_usage', 'openrouter_generation'}:
-                    raise CatalystError('OpenRouter local evidence requires provider-reported cost. Update Dungeness and use a run with complete provider accounting.')
-                amounts.append(data.get('billed_usd'))
-            else:
-                amounts.append(data.get('normalized_usd'))
-        if not amounts or any(isinstance(n,bool) or not isinstance(n,(int,float)) for n in amounts):
-            raise ValueError
-        if any(not Decimal(str(n)).is_finite() or n<0 for n in amounts):
-            raise ValueError
-    except CatalystError:
-        raise
-    except (ValueError, InvalidOperation):
-        raise CatalystError('Local evidence needs settled spending for every model request (provider-reported cost for OpenRouter).') from None
+                'status':check['local_run_status'], 'events':events, 'local_budget_cap_usd':check['local_budget_cap_usd']}
+    from catalyst.contracts.local_evidence import validate_exchanges
+    validate_exchanges(events, check['models'])
     if len(canonical(document)) > MAX_BYTES:
         raise CatalystError('Private local evidence exceeds 192 MiB. Use a shorter local readiness run.')
     return document
@@ -82,7 +63,7 @@ def attach(client, body, local_check):
         raise CatalystError('The saved request has no local evidence. Supply --local-run PATH; no new run was submitted.')
     from . import transport
     print('Preparing local-run evidence; no remote inference has started.',file=sys.stderr,flush=True)
-    document = bundle(local_check['record_path'], body)
+    document = bundle(local_check.get('local_run_path') or local_check['record_path'], body)
     print(f'Uploading local-run evidence ({len(canonical(document))/1048576:.1f} MiB)...',
           file=sys.stderr,flush=True)
     try:

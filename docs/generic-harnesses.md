@@ -16,7 +16,7 @@ For login, credential setup, receipt retrieval and Yukon publication, use the
 [solver guide](solver-guide.md). [Agent instructions](agent-prompt.md) cover the
 same flow for coding agents. Hosted runs use platform funding; personal API-key
 handoff is retained but disabled, and subscription-token handoff is removed.
-Use `--platform-funded --local-run PATH` with a matching completed local run
+Use `--platform-funded --local-run PATH` with a matching ended local run
 whose recorded budget cap covers the remote cap; actual spending may be lower. See
 [the funded workflow](platform-funded-inference.md).
 The source ZIP and expanded source must each fit the advertised 8 MiB default;

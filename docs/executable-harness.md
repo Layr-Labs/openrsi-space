@@ -69,7 +69,11 @@ smoke mode should exercise packaging with synthetic fixtures. Use a
 [local Dungeness run](local-evaluation.md#full-local-agent-run-with-dungeness)
 to test the live task and model integration.
 
-The copied workspace is mounted read/write; the original is untouched. With
+The copied workspace is mounted read/write; the original is untouched. Candidate
+paths can themselves be bind mounts: update files inside a candidate directory
+rather than renaming or replacing its root. For a single-file mount, write through
+the existing file. Renaming a mount can fail with `EXDEV` or `EBUSY` even when its
+contents are writable. With
 `--problem`, trusted scaffold files are copied from the installed problem and
 overlaid read-only, as in a real run. The task lists `readonly_workspace_paths`.
 For the current ECDSA scaffold these are `POINT_ADD_SDK.md` and

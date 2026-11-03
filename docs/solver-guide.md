@@ -140,7 +140,7 @@ in containers. OpenRSI prepares and starts them with `openrsi-space local run`;
 no manual server setup or private repository is needed. Read the
 [architecture](architecture.md) and [local testing procedure](local-evaluation.md).
 Local scores help development; official results require a remote receipt.
-`remote submit` reuses a completed matching local run automatically. Use
+`remote submit` reuses an ended matching local run automatically. Use
 `--local-run PATH` for records elsewhere. Every new hosted submission requires
 the bundle and a recorded local budget cap at least as large as the remote cap;
 actual local spending may be lower. If local testing is
@@ -282,7 +282,7 @@ execution once ready. You decide when the harness is ready for remote evaluation
 ### Platform-funded run, when enabled
 
 Check `uv run openrsi-space remote funding-policy` before choosing your local model.
-Choose an exact model on a funded API provider and a completed local run with
+Choose an exact model on a funded API provider and an ended local run with
 the same model (or supported provider equivalent) and reasoning settings. The service validates its price.
 For this 3-credit example, the local record needs at least **3 settled credits (USD equivalent)**.
 The CLI uploads its private evidence separately from source; it reads and sends no

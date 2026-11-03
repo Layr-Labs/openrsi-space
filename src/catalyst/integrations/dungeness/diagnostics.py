@@ -172,8 +172,24 @@ def summarize(record_path):
         result['diagnostics'].append({'code': 'runtime_trial_failed',
             'message': 'Dungeness recorded an unsuccessful trial. Inspect the retained run record and Harbor logs.',
             'path': str(record_path)})
-    result['local_evidence_precheck_passed'] = (result['record_status'] == 'completed'
-        and usage.get('model_requests', 0) > 0 and usage.get('model_accounting_state') == 'settled')
+    # A failed final save does not erase complete local model exchanges. Keep
+    # the failed execution status, and report evidence readiness separately.
+    from catalyst.client.local_check import check_recorded_calls, record_models
+    from catalyst.contracts.local_evidence import TERMINAL_STATUSES
+    result['local_evidence_precheck_passed'] = False
+    if data.get('status') in TERMINAL_STATUSES:
+        try:
+            agent = data['configuration']['sources']['agent']['document']
+            models = agent.get('model_access', {}).get('models') or [data['model']]
+            check_recorded_calls(record_path, data, record_models(models))
+            result['local_evidence_precheck_passed'] = True
+        except (OSError, ValueError, KeyError, TypeError, AttributeError):
+            pass
+    if result['local_evidence_precheck_passed'] and result['record_status'] != 'completed':
+        result['diagnostics'].append({'code': 'failed_run_evidence_available',
+            'message': 'The run failed, but retained model exchanges are complete and accounting is settled. '
+                       'The original unchanged harness may still qualify for submission; source, problem, '
+                       'model, budget-cap matching and hosted review remain required.'})
     result['local_evidence_note'] = ('Precheck only: complete exchanges, matching source/problem/model/reasoning, '
         'a recorded local budget cap covering the remote request, and hosted review are also required. '
         'Actual local spending may be lower. Agent-reported outcomes are diagnostic, not independent verification.')

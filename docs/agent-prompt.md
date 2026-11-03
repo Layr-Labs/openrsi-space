@@ -3,7 +3,7 @@
 Before setup: local Codex/ChatGPT or Claude subscription access is separate from
 Yukon authentication and remote funding. **Codex/ChatGPT and Claude subscription local runs qualify for supported equivalent
 OpenRouter models**, with the same reasoning settings, harness source and problem.
-The recorded local budget cap must cover the requested remote budget; actual local spending may be lower. A completed matching local run bundle is required. No personal OpenRouter key is required. See [local access, budgets and remote eligibility](platform-funded-inference.md#local-access-and-remote-eligibility).
+The recorded local budget cap must cover the requested remote budget; actual local spending may be lower. An ended matching local run bundle is required. No personal OpenRouter key is required. See [local access, budgets and remote eligibility](platform-funded-inference.md#local-access-and-remote-eligibility).
 
 Do not declare local model access unavailable merely because there is no
 OpenRouter API key. With the user's authorization, check their selected local
@@ -61,13 +61,13 @@ assume it is enabled. Choose an exact model on a funded provider, obtain validat
 `--platform-funded`, with no personal model credential flag. Obtain authorization
 for the remote cap and public source publication.
 
-A completed matching local run is mandatory for every new hosted submission. Retain its run directory and use `--local-run PATH`; the CLI exports
+An ended matching local run is mandatory for every new hosted submission. Retain its run directory and use `--local-run PATH`; the CLI exports
 recorded requests, responses, settled accounting and evaluation events as a
 separate private bundle (**192 MiB**, **1,000 model calls** maximum). Explain its
 private upload and third-party LLM readiness review before submission. Never put
 this bundle, login files, generated circuits or research notes in public source.
 
-A completed matching local run with a recorded cap at least as large as the remote
+An ended matching local run with a recorded cap at least as large as the remote
 cap is required; actual spending may be lower.
 Choose the remote budget within the published per-run and account allowance. Do not start
 extra local inference solely to match a spending amount. If the recorded cap is
@@ -248,7 +248,7 @@ readiness report; all inference must use assigned gateway endpoints.
 ## Local Dungeness preflight
 
 Use an existing matching local Dungeness run before remote submission; do not
-repeat testing just to satisfy the CLI check. `remote submit` finds completed
+repeat testing just to satisfy the CLI check. `remote submit` finds ended
 records automatically. Use `--local-run PATH` for a run stored elsewhere.
 Read [the architecture](architecture.md) and [local workflow](local-evaluation.md).
 Dungeness is the public execution backend: it coordinates the harness, model
@@ -281,10 +281,10 @@ run spec or manually start the problem server. No private repository is needed.
 If the environment cannot run Docker or lacks authorized model access, or the
 human declines local testing, stop and report the blocker and untested steps.
 Do not request remote execution without qualifying local evidence. Every new
-hosted submission requires a completed local-run bundle whose recorded budget cap
+hosted submission requires an ended local-run bundle whose recorded budget cap
 is at least the requested remote budget. Actual local spending may be lower. Matching requires unchanged source, model or supported provider
 equivalent, reasoning settings and problem,
-completed execution and successful accounted model calls; it does not require a
+ended execution and complete, settled model exchanges; it does not require a
 valid circuit. Local results cannot mint receipts,
 reproduce private source screening or guarantee remote acceptance. Match the
 service's pinned task/runtime for comparisons; report any differences. Remote

@@ -138,8 +138,8 @@ and the agent, in addition to Docker overhead.
 
 ### Platform-funded remote runs
 
-When funding is enabled, the CLI must upload a private evidence bundle from a
-completed matching local run. Keep its `run.json`, Dungeness records and usage
+When funding is enabled, the CLI must upload a private evidence bundle from an
+ended matching local run. Keep its `run.json`, Dungeness records and usage
 logs together; pass `--platform-funded --local-run PATH`. Existing qualifying
 runs can be reused. The CLI does not spend automatically.
 
@@ -224,8 +224,9 @@ The final JSON separates these outcomes:
   its best score and evaluation count when recorded. This does not establish
   that the final saved candidate is valid. `metrics` includes available evaluator
   summary metrics, never scores inferred from harness stdout.
-- `local_evidence_precheck_passed`: completed execution with accounted model
-  calls and settled usage. This is a preliminary check, not hosted acceptance.
+- `local_evidence_precheck_passed`: ended execution with complete, settled model
+  exchanges, including an ended failed or cancelled run. This is a preliminary
+  check, not hosted acceptance; it does not change the execution outcome.
   Source, problem, model/reasoning, complete exchanges and the recorded local
   budget cap must still match. Actual spending need not reach that cap.
 

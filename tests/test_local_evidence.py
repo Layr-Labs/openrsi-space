@@ -66,14 +66,14 @@ class EvidenceExportTests(LocalCheckTests):
         self.record['data']['configuration']['repository']={'commit':'1'*40}
         self.event['data']['normalized_usd']=100
         self.save()
-        events=[{**self.event,'sequence':3,'request_id':'req-1'},
+        events=[*self.exchanges(self.event),
                 {**self.event,'run_id':'other-run','sequence':4},
                 {'run_id':'local-test','kind':'private.env','data':{'value':'DO-NOT-UPLOAD'},'sequence':5}]
         (self.path.parent/'usage/events.jsonl').write_text(''.join(json.dumps(e)+'\n' for e in events))
         result=bundle(self.path,self.body)
-        self.assertEqual(len(result['events']),1)
+        self.assertEqual(len(result['events']),3)
         self.assertNotIn('DO-NOT-UPLOAD',json.dumps(result))
-        self.assertEqual(result['events'][0]['sequence'],3)
+        self.assertEqual(result['events'][2]['sequence'],3)
 
     def test_changed_source_cannot_export_as_matching_readiness(self):
         self.save();self.body['source']['digest']='b'*64
@@ -89,11 +89,11 @@ class EvidenceExportTests(LocalCheckTests):
                                   billed_usd=19.999999, billing_source='openrouter_usage', upstream_request_id='gen-one')
         self.save()
         exported = bundle(self.path, self.body)
-        self.assertEqual(exported['events'][0]['data']['billed_usd'], 19.999999)
+        self.assertEqual(exported['events'][2]['data']['billed_usd'], 19.999999)
         self.event['data']['billed_usd'] = 20
         self.save()
         exported = bundle(self.path, self.body)
-        self.assertEqual(exported['events'][0]['data']['billed_usd'], 20)
+        self.assertEqual(exported['events'][2]['data']['billed_usd'], 20)
         del self.event['data']['billing_source']
         self.save()
         with self.assertRaisesRegex(CatalystError, 'provider-reported cost'):
