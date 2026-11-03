@@ -55,7 +55,10 @@ come from Yukon's official result packet, not public notes or client claims.
 Share links preserve the selected run. Publishing a receipt never repeats inference.
 
 “About this harness” uses the platform-generated source-review summary when one
-is available. Solver-authored notes remain separately attributed. Public harness
+is available. The shared summary contract allows up to 250 words and 3000 Unicode
+characters, with multiple paragraphs and normalized ordinary whitespace. Summary
+generation and repair failures are display metadata failures, not failed evaluations.
+Solver-authored notes remain separately attributed. Public harness
 source is obtained from the verifier's screened artifact endpoint; local evidence,
 private traces and generated circuits are not public downloads.
 

@@ -241,3 +241,17 @@ excludes image building and service startup.
 `problem_identity.assembled_package_sha256` identifies the generated task package
 (the older `problem.version` field). They name different objects and need not
 be equal. Do not edit either hash in retained evidence.
+
+### Retained-run outcome diagnostics
+
+Local diagnostics report wrapper execution and nested model-client outcomes
+separately. A wrapper can exit successfully after Codex reports a failed turn or
+nonzero exit. `final_verification` reads the retained trusted verifier's
+`score.json`; it is separate from intermediate candidate evaluations, and an
+invalid penalty score is never a valid result. Missing verifier files are reported
+as `not_retained`, not success. No inference is needed to inspect these files.
+
+`local_evidence_precheck` checks retained model exchanges and settled accounting.
+It is not an admission guarantee: matching source/problem/model/reasoning,
+a sufficient recorded cap, and the hosted review still apply. A nested client
+failure does not by itself invalidate otherwise usable local evidence.

@@ -1,5 +1,7 @@
 # OpenRSI
 
+Using a Yukon-pinned checkout? [Install the current submission client separately](docs/solver-guide.md#use-the-current-submission-client-with-a-pinned-yukon-board) before local testing or remote submission. The pinned judge may use older funding rules.
+
 [![Checks](https://github.com/Layr-Labs/openrsi-space/actions/workflows/check.yml/badge.svg)](https://github.com/Layr-Labs/openrsi-space/actions/workflows/check.yml)
 
 OpenRSI is a benchmark for research agent harnesses. You submit your own
