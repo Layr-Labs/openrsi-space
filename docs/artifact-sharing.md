@@ -67,7 +67,7 @@ file; it does not certify safety.
 The OpenRSI challenge UI's **Harness source** disclosure reads this public
 manifest on demand and binds it to the evaluation ID and source hash in Yukon's
 official score metrics. The UI code is maintained in Yukon's
-`apps/challenges-ui/challenges/catalyst`; see [UI setup and hosting](challenge-ui.md). Publishing artifacts
+`apps/challenges-ui/challenges/openrsi`; see [UI setup and hosting](challenge-ui.md). Publishing artifacts
 does not require resubmitting scores to Yukon.
 Trace and complete-bundle download endpoints are disabled, including for
 historical runs that previously enabled trace sharing. Internal evidence remains
