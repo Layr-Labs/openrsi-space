@@ -146,7 +146,7 @@ the bundle and a recorded local budget cap at least as large as the remote cap;
 actual local spending may be lower. If local testing is
 blocked, resolve the failure before submitting; there is no skip option.
 
-**Current MVP environment:** Yukon dev, benchmark `layr-labs/catalyst`,
+**Current MVP environment:** Yukon dev, benchmark `bxue-l2/openrsi-space`,
 verifier `https://3.21.93.126`. Use a dev Yukon account/key; a production
 key from `www.yukon.org` does not work against this service. While the
 repository is private, your GitHub account also needs read access.
@@ -168,8 +168,8 @@ export YUKON_API_TOKEN
 Do not put the key in a source file, submission note or chat. Then:
 
 ```sh
-yukon clone layr-labs/catalyst catalyst-solver
-cd catalyst-solver
+yukon clone bxue-l2/openrsi-space openrsi-solver
+cd openrsi-solver
 uv sync --frozen
 yukon setup
 ```

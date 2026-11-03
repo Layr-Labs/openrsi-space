@@ -213,7 +213,7 @@ readiness report; all inference must use assigned gateway endpoints.
    note requirements. OpenRSI's receipt helper is an additional required step.
 2. Use the current evaluator and Yukon environment in the solver guide.
    Reuse the solver's Yukon login. Do not print, log, package or publish keys.
-3. If needed, clone with `yukon clone layr-labs/catalyst` and enter the printed
+3. If needed, clone with `yukon clone bxue-l2/openrsi-space` and enter the printed
    benchmark directory. Run `uv sync --frozen` and `yukon setup`.
 4. Create a starter with `uv run openrsi-space harness create my-agent --title "YOUR CHOSEN NAME" --output .catalyst/my-harness`,
    or adapt the requested framework without forcing it into Codex. Source can

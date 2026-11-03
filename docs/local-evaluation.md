@@ -212,6 +212,23 @@ no accounted model requests is explicitly ineligible as local evidence; it may
 still be a successful model-free mechanics test. No valid circuit is required
 for readiness evidence.
 
+The final JSON separates these outcomes:
+
+- `runtime_exit_code` and `runtime_record_status`: runtime completion, before
+  the client checks nested trial failures.
+- `agent_exit_code`: the harness process exit code, when retained. Recognized
+  structured client results also appear in `agent_reported_outcome`, including
+  the last session's stop reason and HTTP status. These are agent-reported
+  diagnostics; a recovered session error is not automatically a failed run.
+- `candidate_evaluations`: whether the local evaluator observed a valid candidate,
+  its best score and evaluation count when recorded. This does not establish
+  that the final saved candidate is valid. `metrics` includes available evaluator
+  summary metrics, never scores inferred from harness stdout.
+- `local_evidence_precheck_passed`: completed execution with accounted model
+  calls and settled usage. This is a preliminary check, not hosted acceptance.
+  Source, problem, model/reasoning, complete exchanges and the recorded local
+  budget cap must still match. Actual spending need not reach that cap.
+
 During execution the CLI prints model-request and spending progress every 15
 seconds from `usage/summary.json`. Harbor's captured stdout may arrive only at
 trial completion; use the live usage file for progress. The final summary points
