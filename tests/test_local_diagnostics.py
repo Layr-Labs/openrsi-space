@@ -13,6 +13,43 @@ from catalyst.harnesses import executable
 
 
 class LocalDiagnosticsTests(unittest.TestCase):
+    def test_codex_failure_and_final_verification_are_independent_of_wrapper_exit(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_json(root/'record.json', {'data': {'status': 'completed',
+                'metric': {'name': 'ecdsafail_score'}, 'metrics': {},
+                'usage': {'model_requests': 8, 'model_accounting_state': 'settled'}}})
+            trial = root/'harbor/run/trial'
+            write_json(trial/'agent/harness-outcome.json', {'exit_code': 0})
+            (trial/'agent/harness-output-0.txt').write_text('\n'.join(map(json.dumps, [
+                {'type': 'turn.failed', 'error': {'message': 'private-canary'}},
+                {'event': 'codex_finished', 'exit_code': 1}])))
+            write_json(trial/'verifier/score.json', {'status': 'ok', 'score': 37731269540,
+                'avg_toffoli': 11313724, 'peak_qubits': 3335, 'stdout_tail': 'private-canary'})
+            result = summarize(root/'record.json')
+            self.assertEqual(result['agent_execution']['wrapper_exit_code'], 0)
+            self.assertEqual(result['agent_execution']['last_client_status'], 'failed')
+            self.assertEqual(result['final_verification']['status'], 'valid')
+            self.assertEqual(result['metrics']['ecdsafail_score'], 37731269540)
+            self.assertFalse(result['local_evidence_precheck_passed'])
+            self.assertNotIn('private-canary', json.dumps(result))
+
+    def test_invalid_terminal_score_is_not_a_valid_final_result(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_json(root/'record.json', {'data': {'status': 'completed', 'metric': {'name': 'ecdsafail_score'}}})
+            write_json(root/'harbor/run/trial/verifier/score.json', {'status': 'invalid', 'score': 1e18})
+            result = summarize(root/'record.json')
+            self.assertEqual(result['final_verification']['status'], 'invalid')
+            self.assertEqual(result['metrics'], {})
+
+    def test_codex_turn_recovery_and_malformed_events(self):
+        from catalyst.integrations.dungeness.diagnostics import reported_agent_outcome
+        events = [{'type': {}}, {'type': 'turn.failed', 'error': 'private-canary'}, {'type': 'turn.completed'}]
+        result = reported_agent_outcome('\n'.join(map(json.dumps, events)))
+        self.assertEqual(result['last_client_status'], 'completed')
+        self.assertNotIn('private-canary', json.dumps(result))
+
     def test_nested_failure_is_visible_without_losing_saved_candidate_or_settled_usage(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

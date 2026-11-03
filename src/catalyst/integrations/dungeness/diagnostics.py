@@ -51,6 +51,16 @@ def reported_agent_outcome(text):
             continue
         if not isinstance(event, dict):
             continue
+        if event.get('type') in ('turn.failed', 'turn.completed'):
+            result.update(last_client_status='failed' if event['type'] == 'turn.failed' else 'completed',
+                          last_client_stop_reason='api_error' if event['type'] == 'turn.failed' else 'completed')
+            result.pop('last_client_http_status', None)
+            result.pop('last_client_exit_code', None)
+        if event.get('event') == 'codex_finished' and type(event.get('exit_code')) is int:
+            code = event['exit_code']
+            result.update(last_client_status='failed' if code else 'completed',
+                          last_client_exit_code=code,
+                          last_client_stop_reason='nonzero_exit' if code else 'completed')
         if event.get('type') == 'result' and type(event.get('is_error')) is bool:
             result['last_client_status'] = 'failed' if event['is_error'] else 'completed'
             reason = event.get('terminal_reason')
@@ -63,6 +73,27 @@ def reported_agent_outcome(text):
             reason = event.get('reason')
             result['harness_stop_reason'] = reason if isinstance(reason, str) and reason in reasons else 'unspecified'
     return result
+
+
+def final_verification(harbor):
+    """Read trusted verifier outputs, never infer validity from reward sentinels."""
+    trials = []
+    for path in sorted(harbor.glob('*/*/verifier/score.json'))[:32]:
+        data = document(path)
+        score = data.get('score')
+        status = data.get('status')
+        valid = status == 'ok' and type(score) in (int, float) and math.isfinite(score) and score >= 0
+        item = {'status': 'valid' if valid else 'invalid' if status == 'invalid' else 'unknown',
+                'path': str(path)}
+        if valid:
+            item['score'] = score
+            for key in ('avg_toffoli', 'peak_qubits'):
+                value = data.get(key)
+                if type(value) in (int, float) and math.isfinite(value) and value >= 0:
+                    item[key] = value
+        trials.append(item)
+    return ({**trials[0], 'trials': trials} if len(trials) == 1 else
+            {'status': 'multiple_trials' if trials else 'not_retained', 'trials': trials})
 
 
 def summarize(record_path):
@@ -80,6 +111,9 @@ def summarize(record_path):
         result['metrics'].setdefault(metric, result['candidate_evaluations']['best_score'])
     paths = []
     harbor = root/'harbor'
+    result['final_verification'] = final_verification(harbor)
+    if isinstance(metric, str) and result['final_verification']['status'] == 'valid':
+        result['metrics'].setdefault(metric, result['final_verification']['score'])
     if harbor.is_dir():
         paths = sorted(harbor.glob('*/*/agent/harness-outcome.json'))[:32]
         for path in paths:
@@ -182,12 +216,15 @@ def summarize(record_path):
     from catalyst.client.local_check import check_recorded_calls, record_models
     from catalyst.contracts.local_evidence import TERMINAL_STATUSES
     result['local_evidence_precheck_passed'] = False
+    result['local_evidence_precheck'] = {'status': 'not_ready', 'reason': 'run_not_ended'}
     if data.get('status') in TERMINAL_STATUSES:
+        result['local_evidence_precheck']['reason'] = 'missing_or_incomplete_model_exchanges'
         try:
             agent = data['configuration']['sources']['agent']['document']
             models = agent.get('model_access', {}).get('models') or [data['model']]
             check_recorded_calls(record_path, data, record_models(models))
             result['local_evidence_precheck_passed'] = True
+            result['local_evidence_precheck'] = {'status': 'passed', 'reason': 'complete_settled_model_exchanges'}
         except (OSError, ValueError, KeyError, TypeError, AttributeError):
             pass
     if result['local_evidence_precheck_passed'] and result['record_status'] != 'completed':
@@ -210,4 +247,9 @@ def summarize(record_path):
     if not usage.get('model_requests', 0):
         result['diagnostics'].append({'code': 'no_accounted_model_requests',
             'message': 'No accounted model requests. This run cannot qualify as local evidence.'})
+    result['agent_execution'] = {
+        'wrapper_status': result['record_status'],
+        'wrapper_exit_code': result.get('agent_exit_code'),
+        'last_client_status': result.get('agent_reported_outcome', {}).get('last_client_status', 'unknown'),
+    }
     return result

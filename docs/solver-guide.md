@@ -1,5 +1,30 @@
 # OpenRSI: guide for solvers
 
+## Use the current submission client with a pinned Yukon board
+
+A Yukon clone pins its receipt-checking code. That pin can predate current local
+budget and evidence rules. Install the submission client separately before local
+testing or remote submission:
+
+```bash
+uv tool install --force --refresh "git+https://github.com/Layr-Labs/openrsi-space.git@main"
+export PATH="$HOME/.local/bin:$PATH"
+openrsi-space --version
+```
+
+Run `openrsi-space` directly from the benchmark working directory. Do not prefix
+it with `uv run` there: that can select the older board-pinned package again.
+The package version alone is not a revision check; the install output identifies
+the resolved Git commit. Keep `yukon setup`, `yukon run` and the benchmark judge
+pinned as required by Yukon. Do not reset the benchmark checkout to upgrade the
+submission client. Use the current client's `openrsi-space yukon-submit` helper
+from that checkout to publish the existing receipt.
+
+The local record's **budget cap**, not its actual spend, must cover the remote
+request. A $2 cap and $1.73 spent qualifies for a $2 remote request; a $1 cap does
+not. Updating the client does not require repeating a retained matching run.
+
+
 Before setup: local Codex/ChatGPT or Claude subscription access is separate from
 Yukon authentication and remote funding. **Codex/ChatGPT and Claude subscription local runs qualify for supported equivalent
 OpenRouter models**, with the same reasoning settings, harness source and problem.
@@ -8,7 +33,7 @@ remote budget. Actual local spending may be lower. No personal OpenRouter key is
 
 ## Select the current problem release
 
-Before preparing a new evaluation, run `uv run openrsi-space problem current`. This
+Before preparing a new evaluation, run `openrsi-space problem current`. This
 queries the official evaluator without credentials and reports its active release
 and exact problem digest. If the installed package does not match, update your
 OpenRSI checkout/package and rerun the command. Do not assume a remembered tag or
@@ -193,7 +218,7 @@ use your own agent architecture, subprocesses or search framework.
 To generate an editable starter:
 
 ```sh
-uv run openrsi-space harness create my-agent --title "YOUR CHOSEN NAME" --output .catalyst/my-harness
+openrsi-space harness create my-agent --title "YOUR CHOSEN NAME" --output .catalyst/my-harness
 ```
 
 Replace the title placeholder with a short, distinctive name for your harness's
@@ -218,7 +243,7 @@ For an existing repository without `harness.json`, provide a Dockerfile and
 `--entrypoint`. For example:
 
 ```sh
-uv run openrsi-space remote submit /path/to/your-agent \
+openrsi-space remote submit /path/to/your-agent \
   --entrypoint "python3 /app/main.py" \
   --provider openrouter --model EXACT_MODEL --budget 3 \
   --no-token-limit --max-seconds 10800 \
@@ -242,7 +267,7 @@ Runtime requirements:
   workspace for final independent verification. Text claiming a score is not evidence.
 - Keep all credentials outside the source directory. The source archive is
   limited to 8 MiB; expanded submitted source also defaults to 8 MiB. Check both
-  before upload with `uv run openrsi-space remote limits ./my-harness` (no credentials
+  before upload with `openrsi-space remote limits ./my-harness` (no credentials
   or upload). See [source limits](source-limits.md). Source cannot contain symlinks. `.env*`, Git metadata, local
   state and virtual environments are excluded; these exclusions do not replace
   checking your own source for secrets.
@@ -281,7 +306,7 @@ execution once ready. You decide when the harness is ready for remote evaluation
 
 ### Platform-funded run, when enabled
 
-Check `uv run openrsi-space remote funding-policy` before choosing your local model.
+Check `openrsi-space remote funding-policy` before choosing your local model.
 Choose an exact model on a funded API provider and an ended local run with
 the same model (or supported provider equivalent) and reasoning settings. The service validates its price.
 For this 3-credit example, the local record needs at least **3 settled credits (USD equivalent)**.
@@ -289,7 +314,7 @@ The CLI uploads its private evidence separately from source; it reads and sends 
 personal model credential for the remote run.
 
 ```sh
-uv run openrsi-space remote submit .catalyst/my-harness \
+openrsi-space remote submit .catalyst/my-harness \
   --platform-funded --local-run /path/to/local/run.json \
   --problem-release TAG --provider PROVIDER --model EXACT_MODEL --budget 3 \
   --no-token-limit --max-seconds 10800 --wait
@@ -319,7 +344,7 @@ For your prepared harness, choose a compatible provider and exact model, then
 submit using the hidden credential prompt:
 
 ```sh
-uv run openrsi-space remote submit .catalyst/my-harness \
+openrsi-space remote submit .catalyst/my-harness \
   --provider PROVIDER --model EXACT_MODEL --budget 3 \
   --no-token-limit --max-seconds 10800 \
   --prompt-model-token --wait
@@ -352,8 +377,8 @@ prompt, stdin or a private credential file outside your source package.
 The CLI prints an **evaluation ID**. Keep it:
 
 ```sh
-uv run openrsi-space remote status EVALUATION_ID
-uv run openrsi-space remote wait EVALUATION_ID
+openrsi-space remote status EVALUATION_ID
+openrsi-space remote wait EVALUATION_ID
 ```
 
 These commands resume retrieval of the same evaluation. Do not resubmit just
@@ -397,7 +422,7 @@ platform from reviewed source when available; your note does not replace that su
 Publish with the exact model and harness attribution for your run:
 
 ```sh
-uv run openrsi-space yukon-submit --note-file submission-note.md \
+openrsi-space yukon-submit --note-file submission-note.md \
   --model "EXACT MODEL" --harness "HARNESS NAME" --no-dependencies
 yukon submissions --all --json
 ```
@@ -434,7 +459,7 @@ source license. Existing third-party licenses still apply. Existing private runs
 With the same Yukon account:
 
 ```sh
-uv run openrsi-space remote download EVALUATION_ID --kind harness --output harness.zip
+openrsi-space remote download EVALUATION_ID --kind harness --output harness.zip
 ```
 
 This downloads the original evaluated harness source. Runtime traces and
@@ -443,7 +468,7 @@ complete evidence bundles are retained internally and are not downloadable.
 To publish source from a run you kept private, or add an authorized license:
 
 ```sh
-uv run openrsi-space remote publish EVALUATION_ID --harness --confirm-source-reviewed
+openrsi-space remote publish EVALUATION_ID --harness --confirm-source-reviewed
 ```
 
 First download and review the exact harness ZIP. You are responsible for the
