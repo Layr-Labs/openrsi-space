@@ -419,8 +419,9 @@ recorded without merging solution code.** The submission ID in Yukon differs
 from the remote evaluation ID.
 
 The matrix reads official scores from Yukon. It does not trust scores in
-your note or enumerate GitHub branches. The `/catalyst` UI is implemented
-locally and awaits hosting; until then, inspect results with the CLI.
+your note or enumerate GitHub branches. The OpenRSI board is served at `/openrsi`
+by Yukon's challenge UI; see [UI setup and hosting](challenge-ui.md). You can
+also inspect publication status with `yukon submissions --all --json`.
 
 ## Download or share your work
 
