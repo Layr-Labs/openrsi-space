@@ -429,3 +429,13 @@ Remote traces and complete evidence bundles are not downloadable.
 
 Build dependencies: run `uv run openrsi-space remote build-policy` before choosing hosted
 package sources; see [build dependency policy](build-dependencies.md).
+
+### Candidate files and compilation
+
+Keep only UTF-8 Rust (`.rs`) source inside `src/point_add/`, including its
+subdirectories. Keep research notes outside that directory. On a screening
+rejection, inspect `screening_findings` for the file and rule, correct it, and
+evaluate again. The trusted evaluator supplies its compiler; compiling in the
+agent container additionally requires the pinned Rust toolchain and dependencies
+in the harness image. Check `local_toolchain` in the assigned task. Runtime
+downloads are unavailable.

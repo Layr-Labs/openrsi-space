@@ -160,6 +160,25 @@ def _candidate_digest(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _candidate_format_findings(root: Path) -> list[dict]:
+    """Apply the same public candidate file contract to local and remote checks."""
+    findings = []
+    for path in sorted(root.rglob("*")):
+        if not path.is_file():
+            continue
+        rule = None
+        if path.suffix != ".rs":
+            rule = "candidate-not-rust"
+        else:
+            try:
+                path.read_bytes().decode("utf-8")
+            except UnicodeDecodeError:
+                rule = "candidate-not-utf8"
+        if rule:
+            findings.append({"path": path.relative_to(root).as_posix(), "rule": rule, "line": 1})
+    return findings
+
+
 def _record(event: dict) -> None:
     payload = dict(event)
     # Display names belong to this challenge; retain flat fields for old readers.
@@ -261,7 +280,17 @@ class Handler(BaseHTTPRequestHandler):
                     module.mkdir()
                     _safe_extract_tar(source, module)
                     candidate_digest = _candidate_digest(module)
-                    details = grade.score_candidate(module)
+                    findings = _candidate_format_findings(module)
+                    if findings:
+                        details = {"status": "screen_rejected", "score": grade.INVALID_SCORE,
+                                   "avg_toffoli": None, "peak_qubits": None,
+                                   "screening_findings": findings[:20],
+                                   "screening_findings_truncated": len(findings) > 20,
+                                   "stderr_tail": "Only UTF-8 .rs files belong in src/point_add/. "
+                                       "Move notes and other non-Rust files outside it and evaluate again.\n"
+                                       + json.dumps(findings[:5], ensure_ascii=True)[:700]}
+                    else:
+                        details = grade.score_candidate(module)
             except ValueError as error:
                 _submissions -= 1  # malformed input: refund, nothing was run
                 self._reply(400, {"error": str(error)})
@@ -293,6 +322,9 @@ class Handler(BaseHTTPRequestHandler):
                 "duration_ms": round((time.monotonic() - started) * 1000),
                 "source_sha256": digest,
                 "candidate_sha256": candidate_digest,
+                **({"screening_findings": details["screening_findings"],
+                    "screening_findings_truncated": details.get("screening_findings_truncated", False)}
+                   if details.get("screening_findings") else {}),
             })
 
         payload = {
@@ -307,6 +339,9 @@ class Handler(BaseHTTPRequestHandler):
             "note": NOTE,
             "candidate_sha256": candidate_digest,
         }
+        if details.get("screening_findings"):
+            payload["screening_findings"] = details["screening_findings"]
+            payload["screening_findings_truncated"] = details.get("screening_findings_truncated", False)
         if status != "ok":
             # The trusted correctness checker reports failures on stdout; the
             # compiler usually uses stderr. Return both, with a bounded payload.

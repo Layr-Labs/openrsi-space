@@ -59,10 +59,61 @@ def hydrate_problem(task):
             "problem_document": document}
 
 
+def check_local_toolchain(task):
+    """Report agent-side Rust availability without installing or requiring it.
+
+    This is startup feedback, not trusted evidence: the solver owns the image.
+    The authoritative evaluator has its own toolchain.
+    """
+    workspace = Path(task["workspace"])
+    pin = next((workspace / name for name in ("rust-toolchain.toml", "rust-toolchain")
+                if (workspace / name).is_file()), None)
+    if pin is None:
+        return task
+    try:
+        with pin.open("rb") as stream:
+            text = stream.read(4097).decode("utf-8").strip()
+        if len(text) > 4096:
+            return task
+        if text.startswith("["):
+            channel = re.search(r'''(?m)^\s*channel\s*=\s*["']([0-9]+\.[0-9]+\.[0-9]+)["']\s*(?:#.*)?$''', text)
+            expected = channel[1] if channel else None
+        else:
+            expected = text
+        if not isinstance(expected, str) or not re.fullmatch(r"[0-9]+\.[0-9]+\.[0-9]+", expected):
+            return task
+    except (OSError, UnicodeError, ValueError, KeyError, TypeError):
+        return task
+    observed = None
+    try:
+        result = subprocess.run(
+            ["rustc", "--version"], cwd=workspace, capture_output=True, text=True,
+            timeout=10, env={**os.environ, "RUSTUP_AUTO_INSTALL": "0", "RUSTUP_TOOLCHAIN": expected},
+        )
+        match = re.match(r"rustc (\d+\.\d+\.\d+)\b", result.stdout or "")
+        if result.returncode == 0 and match:
+            observed = match[1]
+    except (OSError, subprocess.TimeoutExpired):
+        pass
+    available = observed == expected
+    report = {"tool": "rustc", "required_version": expected, "observed_version": observed,
+              "status": "available" if available else "unavailable"}
+    message = (f"Agent toolchain check: Rust {expected} is available. Dependencies may still be missing."
+               if available else
+               f"Agent toolchain check: required Rust {expected} is unavailable in this container. "
+               "Use evaluate for compilation and scoring. For local compilation, install the pinned "
+               "toolchain and dependencies in the harness image before running; runtime downloads "
+               "are unavailable.")
+    print(json.dumps({"event": "local_toolchain_check", **report, "message": message}), flush=True)
+    return {**task, "local_toolchain": report,
+            "instruction": task.get("instruction", "") + "\n\n" + message}
+
+
 def launch(task_file, execution_file="/opt/catalyst/execution.json"):
     task_file = str(Path(task_file).resolve())
     task = hydrate_problem(json.loads(Path(task_file).read_text()))
-    if task.get("problem_service"):
+    task = check_local_toolchain(task)
+    if task.get("problem_service") or task.get("local_toolchain"):
         # This is only the agent's local input. The server retains its immutable
         # document separately and never trusts this copy as scoring evidence.
         resolved = Path(task_file).with_name("catalyst-task.json")

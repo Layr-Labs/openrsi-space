@@ -19,7 +19,9 @@ uv run openrsi-space problem setup ecdsa.fail --workspace ./work/ecdsa
 uv run openrsi-space problem check ecdsa.fail --workspace ./work/ecdsa
 ```
 
-Edit `src/point_add`. Checks reuse the existing workspace and build caches;
+Keep only UTF-8 `.rs` files inside `src/point_add/`, including subdirectories;
+research notes belong outside it. Screening returns the offending file and rule
+without quoting its contents. Checks reuse the existing workspace and build caches;
 trusted contract edits are rejected. Local feedback is not official evidence.
 The pinned start is `62ae3d00d1e01d7bc640b5163cfea8dabffd8392`, also used by
 the Dungeness task/checkpoint binding. Full circuit simulation is memory
@@ -98,6 +100,13 @@ inside the built image; success in a host shell does not establish image behavio
 Replace `agent.py` with your solver. Install runtime dependencies and problem
 toolchains in its Dockerfile. Python 3 and Bash are required for the platform
 launcher and Dungeness clients; the solver can use any language.
+For agent-side ECDSA compilation, install the workspace's pinned Rust version
+(currently 1.93.0) and dependencies during the image build. Rust in the trusted
+evaluator is separate from Rust in your image. The launcher checks availability
+before starting your harness and adds `local_toolchain` and guidance to its task.
+A missing or mismatched compiler does not prevent using `evaluate`; runtime
+internet downloads are unavailable. This check does not certify dependencies or
+prove that a candidate compiles.
 The starter copies the whole bundle into `/opt/harness/`, so general-purpose
 prompts and helper modules travel with the agent. Use the
 [general remote submission flow](generic-harnesses.md#submit-your-own-agent)
