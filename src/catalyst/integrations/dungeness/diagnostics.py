@@ -15,14 +15,69 @@ def document(path):
         return {}
 
 
+def candidate_summary(data, usage_summary):
+    """Report evaluator observations, not scores printed by an agent."""
+    evaluation = data.get('evaluation') or usage_summary.get('evaluation', {})
+    if not isinstance(evaluation, dict):
+        evaluation = {}
+    count = evaluation.get('submissions_used')
+    score = evaluation.get('best_score')
+    valid_score = type(score) in (int, float) and math.isfinite(score) and score >= 0
+    result = {'status': 'valid_observed' if valid_score else 'unknown',
+              'scope': 'best local evaluator observation; not final-candidate verification'}
+    if type(count) is int and count >= 0:
+        result['evaluations'] = count
+        if not valid_score:
+            result['status'] = 'no_valid_observed' if count else 'not_evaluated'
+    if valid_score:
+        result['best_score'] = score
+    return result
+
+
+def reported_agent_outcome(text):
+    """Recognize bounded structured terminal events, without exposing log text.
+
+    Nested client failures do not override the harness exit code: a harness can
+    recover, or stop normally after saving a candidate. Keep that distinction.
+    """
+    result = {}
+    reasons = {'api_error', 'success', 'completed', 'budget_exhausted',
+               'max_turns', 'max_tokens', 'timeout', 'cancelled',
+               'sessions made no metered progress'}
+    for line in text.splitlines():
+        try:
+            event = json.loads(line)
+        except ValueError:
+            continue
+        if not isinstance(event, dict):
+            continue
+        if event.get('type') == 'result' and type(event.get('is_error')) is bool:
+            result['last_client_status'] = 'failed' if event['is_error'] else 'completed'
+            reason = event.get('terminal_reason')
+            result['last_client_stop_reason'] = reason if isinstance(reason, str) and reason in reasons else 'unspecified'
+            result.pop('last_client_http_status', None)
+            status = event.get('api_error_status')
+            if type(status) is int and 100 <= status <= 599:
+                result['last_client_http_status'] = status
+        if event.get('event') == 'stop':
+            reason = event.get('reason')
+            result['harness_stop_reason'] = reason if isinstance(reason, str) and reason in reasons else 'unspecified'
+    return result
+
+
 def summarize(record_path):
     record_path = Path(record_path)
     root = record_path.parent
     data = document(record_path).get('data', {})
-    result = {'record_status': data.get('status'), 'diagnostics': []}
-    usage = data.get('usage') or document(root/'usage/summary.json').get('usage', {})
+    result = {'record_status': data.get('status'), 'runtime_record_status': data.get('status'), 'diagnostics': []}
+    usage_summary = document(root/'usage/summary.json')
+    usage = data.get('usage') or usage_summary.get('usage', {})
     result['usage'] = usage
-    result['metrics'] = data.get('metrics', {})
+    result['metrics'] = dict(data.get('metrics') or {})
+    result['candidate_evaluations'] = candidate_summary(data, usage_summary)
+    metric = data.get('metric', {}).get('name')
+    if isinstance(metric, str) and 'best_score' in result['candidate_evaluations']:
+        result['metrics'].setdefault(metric, result['candidate_evaluations']['best_score'])
     paths = []
     harbor = root/'harbor'
     if harbor.is_dir():
@@ -39,7 +94,9 @@ def summarize(record_path):
         # Older runtimes lack structured outcomes. Inspect only bounded tails,
         # returning fixed messages and paths, never arbitrary submitted text.
         logs = sorted(harbor.glob('*/*/exception.txt'))[:16]
-        logs += sorted(harbor.glob('*/*/agent/harness-output-*.txt'))[:16]
+        logs += sorted(harbor.glob('*/*/agent/harness-output-*.txt'),
+                       key=lambda p: (str(p.parent), int(p.stem.rsplit('-', 1)[-1])
+                                      if p.stem.rsplit('-', 1)[-1].isdigit() else -1))[-16:]
         for path in logs:
             try:
                 with path.open('rb') as stream:
@@ -47,6 +104,10 @@ def summarize(record_path):
                     text = stream.read(65536).decode('utf-8', errors='replace')
             except OSError:
                 continue
+            if path.name.startswith('harness-output-'):
+                reported = reported_agent_outcome(text)
+                if reported:
+                    result['agent_reported_outcome'] = {**reported, 'path': str(path)}
             match = re.search(r'Harness exited with status (-?\d{1,5})', text)
             if match:
                 result['agent_exit_code'] = int(match[1])
@@ -113,7 +174,14 @@ def summarize(record_path):
             'path': str(record_path)})
     result['local_evidence_precheck_passed'] = (result['record_status'] == 'completed'
         and usage.get('model_requests', 0) > 0 and usage.get('model_accounting_state') == 'settled')
-    result['local_evidence_note'] = ('Precheck only: complete exchanges, matching source/problem/model, sufficient spending and hosted review are also required.')
+    result['local_evidence_note'] = ('Precheck only: complete exchanges, matching source/problem/model/reasoning, '
+        'a recorded local budget cap covering the remote request, and hosted review are also required. '
+        'Actual local spending may be lower. Agent-reported outcomes are diagnostic, not independent verification.')
+    if result.get('agent_reported_outcome', {}).get('last_client_status') == 'failed':
+        result['diagnostics'].append({'code': 'nested_agent_failure',
+            'message': 'The last reported model-client session failed. Check its stop reason and gateway diagnostics; '
+                       'the harness exit code, retained candidate and evidence precheck are reported separately.',
+            'path': result['agent_reported_outcome']['path']})
     if usage.get('model_requests', 0) and usage.get('model_accounting_state') != 'settled':
         result['diagnostics'].append({'code': 'model_accounting_unsettled',
             'message': 'Model accounting is incomplete, often after an interrupted call. Unknown usage is not zero. This run cannot qualify as local evidence; retain its logs for diagnosis.',

@@ -185,6 +185,8 @@ class LocalRunTests(unittest.TestCase):
         metadata = self.metadata()
         self.assertEqual(metadata['status'], 'failed')
         self.assertEqual(metadata['exit_code'], 1)
+        self.assertEqual(metadata['runtime_exit_code'], 0)
+        self.assertEqual(metadata['runtime_record_status'], 'failed')
         self.assertFalse(metadata['local_evidence_precheck_passed'])
         for path in self.state.rglob('*'):
             if path.is_file():

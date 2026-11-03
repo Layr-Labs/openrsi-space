@@ -12,7 +12,7 @@ From a Yukon checkout, follow its repository instructions and run:
 
 ```sh
 NEXT_PUBLIC_API_URL=https://api-dev.yukon.org \
-NEXT_PUBLIC_OPENRSI_BENCHMARK_REF=8d3a2daa-afab-4685-b93a-7443c83049d2 \
+NEXT_PUBLIC_OPENRSI_BENCHMARK_REF=bd33c240-a4b3-4671-ad88-84b847859293 \
 NEXT_PUBLIC_LIVE_CHALLENGES=openrsi \
 OPENRSI_EVALUATOR_URL=https://3.21.93.126 \
 bun run dev:challenges

@@ -92,7 +92,7 @@ See [the screening policy](cheat-filter.md).
 - **Before choosing an agent/model pair:** [Harness compatibility](harness-compatibility.md) —
   match API formats, helper calls and credentials, then check the adapter.
 
-The current MVP uses **Yukon dev**, benchmark `layr-labs/catalyst`, and the
+The current MVP uses **Yukon dev**, benchmark `bxue-l2/openrsi-space`, and the
 HTTPS verifier at `https://3.21.93.126`. Use a dev Yukon login; production
 Yukon keys do not authenticate to this deployment. No separate OpenRSI
 password is needed. See [provider availability and rollout status](live-models.md#implemented-providers-and-hosted-permission).

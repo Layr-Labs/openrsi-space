@@ -13,6 +13,63 @@ from catalyst.harnesses import executable
 
 
 class LocalDiagnosticsTests(unittest.TestCase):
+    def test_nested_failure_is_visible_without_losing_saved_candidate_or_settled_usage(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_json(root/'record.json', {'data': {'status': 'completed',
+                'metric': {'name': 'circuit_score'},
+                'usage': {'model_requests': 3, 'model_accounting_state': 'settled'}}})
+            write_json(root/'usage/summary.json', {'evaluation': {'submissions_used': 2, 'best_score': 1234}})
+            log = root/'harbor/run/trial/agent/harness-output-0.txt'
+            log.parent.mkdir(parents=True)
+            write_json(log.parent/'harness-outcome.json', {'exit_code': 0})
+            log.write_text(json.dumps({'type': 'result', 'is_error': True,
+                'terminal_reason': 'api_error', 'api_error_status': 429,
+                'error': 'secret-canary'})+'\n'+json.dumps({
+                'event': 'stop', 'reason': 'sessions made no metered progress'}))
+            report = summarize(root/'record.json')
+            self.assertEqual(report['record_status'], 'completed')
+            self.assertEqual(report['agent_exit_code'], 0)
+            self.assertEqual(report['agent_reported_outcome']['last_client_http_status'], 429)
+            self.assertIn('nested_agent_failure', [d['code'] for d in report['diagnostics']])
+            self.assertEqual(report['candidate_evaluations']['status'], 'valid_observed')
+            self.assertEqual(report['candidate_evaluations']['evaluations'], 2)
+            self.assertEqual(report['metrics']['circuit_score'], 1234)
+            self.assertTrue(report['local_evidence_precheck_passed'])
+            self.assertIn('Actual local spending may be lower', report['local_evidence_note'])
+            self.assertNotIn('secret-canary', json.dumps(report))
+
+    def test_recovered_nested_failure_uses_last_result_and_numeric_attempt_order(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_json(root/'record.json', {'data': {'status': 'completed'}})
+            agent = root/'harbor/run/trial/agent'
+            agent.mkdir(parents=True)
+            (agent/'harness-output-9.txt').write_text(json.dumps({'type': 'result',
+                'is_error': True, 'api_error_status': 429}))
+            (agent/'harness-output-10.txt').write_text(json.dumps({'type': 'result',
+                'is_error': False, 'terminal_reason': ['untrusted-value']}))
+            report = summarize(root/'record.json')
+            self.assertEqual(report['agent_reported_outcome']['last_client_status'], 'completed')
+            self.assertEqual(report['agent_reported_outcome']['last_client_stop_reason'], 'unspecified')
+            self.assertNotIn('last_client_http_status', report['agent_reported_outcome'])
+            self.assertNotIn('nested_agent_failure', [d['code'] for d in report['diagnostics']])
+            self.assertEqual(report['candidate_evaluations']['status'], 'unknown')
+
+    def test_candidate_validity_does_not_follow_wrapper_success_or_stdout_claims(self):
+        for count, expected in [(0, 'not_evaluated'), (2, 'no_valid_observed')]:
+            with self.subTest(count=count), tempfile.TemporaryDirectory() as tmp:
+                root = Path(tmp)
+                write_json(root/'record.json', {'data': {'status': 'completed',
+                    'evaluation': {'submissions_used': count, 'best_score': None}}})
+                log = root/'harbor/run/trial/agent/harness-output-0.txt'
+                log.parent.mkdir(parents=True)
+                log.write_text('{"score": 1, "valid": true}')
+                report = summarize(root/'record.json')
+                self.assertEqual(report['candidate_evaluations']['status'], expected)
+                self.assertEqual(report['metrics'], {})
+                self.assertFalse(report['local_evidence_precheck_passed'])
+
     def test_legacy_success_does_not_hide_harness_crash_or_secret_logs(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
@@ -23,6 +80,7 @@ class LocalDiagnosticsTests(unittest.TestCase):
             log.write_text('secret-synthetic-value\nRuntimeError: Harness exited with status 1.\nRead-only file system')
             report = summarize(record)
             self.assertEqual(report['record_status'], 'failed')
+            self.assertEqual(report['runtime_record_status'], 'completed')
             self.assertEqual(report['agent_exit_code'], 1)
             self.assertFalse(report['local_evidence_precheck_passed'])
             self.assertIn('readonly_workspace', [d['code'] for d in report['diagnostics']])

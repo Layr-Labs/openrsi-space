@@ -271,7 +271,8 @@ def run(args, state):
                            '--env-file', str(env_file), '--keep-render', '--keep-images',
                            '--agent-timeout-sec', str(evaluation['limits']['max_seconds'])]
                 code = execute_process(command, metadata['runtime'], environment)
-            metadata.update(status='completed' if code == 0 else 'failed', exit_code=code)
+            metadata.update(status='completed' if code == 0 else 'failed', exit_code=code,
+                            runtime_exit_code=code)
         except KeyboardInterrupt:
             metadata['status'] = 'cancelled'
             code = 130

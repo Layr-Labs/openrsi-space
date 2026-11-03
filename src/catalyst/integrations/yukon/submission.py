@@ -12,6 +12,26 @@ from catalyst.client.transport import endpoint, fetch, solver_token
 from catalyst.client.state import request_lock
 from catalyst.protocol import YUKON_BINDING_PROTOCOL as PROTOCOL
 
+LEGACY_BENCHMARKS = {"layr-labs/catalyst", "8d3a2daa-afab-4685-b93a-7443c83049d2"}
+
+
+def local_benchmark(root):
+    for key in ('yukon.benchmark-id', 'hilbert.benchmark-id'):
+        result = subprocess.run(['git', 'config', '--get', key], cwd=root,
+                                capture_output=True, text=True)
+        if result.returncode == 0:
+            return result.stdout.strip()
+    return None
+
+
+def require_current_board(benchmark):
+    if benchmark in LEGACY_BENCHMARKS:
+        raise CatalystError(
+            'This checkout or pending publication targets the historical layr-labs/catalyst board. '
+            'Keep its receipt, note and pending record unchanged. Clone the current board into a new directory '
+            'with yukon clone bxue-l2/openrsi-space, copy the existing verification.json to submission/verification.json, '
+            'and publish from there using the same solver account. No new local or paid remote run is needed.')
+
 
 def bind_job(root, job_id, benchmark_id, *, reference=None):
     key = solver_token()
@@ -36,11 +56,14 @@ def submit(root: Path, *, note_file, model, harness, dependencies_file=None,
     manifest = read_json(root / "benchmark.json")
     if manifest.get("editablePaths") != [RECEIPT_PATH.as_posix()]:
         raise CatalystError("This helper requires a receipt-only benchmark checkout.")
+    selected_benchmark = benchmark or local_benchmark(root)
+    require_current_board(selected_benchmark)
     pending = root / ".catalyst/yukon/pending-submission.json"
     pending.parent.mkdir(parents=True, exist_ok=True)
     with request_lock(pending):
         if pending.exists():
             saved = read_json(pending)
+            require_current_board(saved.get("benchmark_id"))
             if saved.get("phase") != "binding":
                 raise CatalystError(
                     "The previous Yukon submission outcome is unknown. Inspect yukon submissions "
@@ -85,6 +108,16 @@ def submit(root: Path, *, note_file, model, harness, dependencies_file=None,
                          benchmark_id=benchmark_id, submission_id=submission_id)
             write_json(pending, saved)
             pending.chmod(0o600)
+        require_current_board(saved["benchmark_id"])
+        # Names are resolved by Yukon; compare UUID destinations when the local
+        # checkout supplies one. Retain any created job so retry cannot upload twice.
+        try:
+            selected_id = identity(selected_benchmark)
+        except (CatalystError, ValueError, TypeError):
+            selected_id = None
+        if selected_id and selected_id != saved["benchmark_id"]:
+            raise CatalystError('Yukon returned a different benchmark than this checkout requested. '
+                                'The job is retained in the pending record; do not repeat the upload.')
         result = bind_job(root, saved["job_id"], saved["benchmark_id"], reference=saved["reference"])
         if result["submission_id"] != saved["submission_id"]:
             raise CatalystError("The service bound a different Yukon submission.")
