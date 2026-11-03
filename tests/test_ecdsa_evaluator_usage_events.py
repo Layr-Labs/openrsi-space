@@ -31,6 +31,51 @@ def load_server(path: Path, name: str) -> object:
 
 
 class EvaluatorUsageEventTests(unittest.TestCase):
+    def test_notes_rejected_with_location_then_rust_candidate_can_be_scored(self):
+        from unittest.mock import Mock
+        grade = types.ModuleType('grade')
+        grade.INVALID_SCORE = 1e18
+        grade.score_candidate = Mock(return_value={
+            'status': 'ok', 'score': 42, 'avg_toffoli': 21, 'peak_qubits': 2})
+        with patch.dict(sys.modules, {'grade': grade}):
+            module = load_server(SERVERS[0], 'candidate_format_server')
+        for name, content, expected in (
+            ('memory/notes.md', b'private note text', 'candidate-not-rust'),
+            ('bad.rs', b'\xff', 'candidate-not-utf8'),
+            (None, None, None),
+        ):
+            archive = io.BytesIO()
+            files = {'mod.rs': b'fn build() {}'}
+            if name:
+                files[name] = content
+            with tarfile.open(fileobj=archive, mode='w') as tar:
+                for filename, raw in files.items():
+                    member = tarfile.TarInfo(filename)
+                    member.size = len(raw)
+                    tar.addfile(member, io.BytesIO(raw))
+            source = archive.getvalue()
+            handler = object.__new__(module.Handler)
+            handler.path = '/score'
+            handler.headers = {'content-length': str(len(source))}
+            handler.rfile = io.BytesIO(source)
+            replies = []
+            handler._reply = lambda code, body: replies.append((code, body))
+            with patch.object(module, '_record') as record:
+                handler.do_POST()
+            code, body = replies.pop()
+            self.assertEqual(code, 200)
+            if expected:
+                finding = {'path': name, 'rule': expected, 'line': 1}
+                self.assertEqual(body['status'], 'screen_rejected')
+                self.assertEqual(body['screening_findings'], [finding])
+                self.assertEqual(record.call_args.args[0]['screening_findings'], [finding])
+                self.assertIn('outside', body['detail'])
+                self.assertNotIn('private note text', json.dumps(body))
+                grade.score_candidate.assert_not_called()
+            else:
+                self.assertEqual(body['status'], 'ok')
+                grade.score_candidate.assert_called_once()
+
     def test_invalid_score_response_exposes_bounded_stdout_and_stderr(self) -> None:
         grade = types.ModuleType('grade')
         with patch.dict(sys.modules, {'grade': grade}):

@@ -48,9 +48,18 @@ trusted neutral helpers for declaring registers, allocating wires and emitting
 gates. It contains no point-addition or arithmetic implementation.
 
 You may replace the stub, add files under `src/point_add/`, or emit operations
-directly from `build()`. Only
-`src/point_add/` is collected as the candidate. Do not modify the trusted
+directly from `build()`. Every file under `src/point_add/` must be UTF-8 Rust
+source (`.rs`), including files in subdirectories. Keep research notes and other
+non-Rust files outside `src/point_add/`. Only that directory is collected as
+the candidate. Do not modify the trusted
 builder, evaluator, dependencies or benchmark scripts, or forge their outputs.
+
+Run `evaluate` to submit your candidate to the trusted evaluator, which compiles
+and checks it using its own pinned Rust toolchain and dependencies. You can edit
+Rust source and use `evaluate` without installing Rust in the agent container.
+For optional compilation or tests inside that container, install the toolchain
+named in `rust-toolchain` (currently Rust 1.93.0) and the required dependencies
+in your harness Dockerfile. Runtime internet downloads are unavailable.
 
 Use `evaluate` for feedback during a research run and retain your best verified
 candidate after the first successful check. For an equivalent local starting

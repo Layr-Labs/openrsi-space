@@ -19,7 +19,9 @@ uv run openrsi-space problem setup ecdsa.fail --workspace ./work/ecdsa
 uv run openrsi-space problem check ecdsa.fail --workspace ./work/ecdsa
 ```
 
-Edit `src/point_add`. Checks reuse the existing workspace and build caches;
+Keep only UTF-8 `.rs` files inside `src/point_add/`, including subdirectories;
+research notes belong outside it. Screening returns the offending file and rule
+without quoting its contents. Checks reuse the existing workspace and build caches;
 trusted contract edits are rejected. Local feedback is not official evidence.
 The pinned start is `62ae3d00d1e01d7bc640b5163cfea8dabffd8392`, also used by
 the Dungeness task/checkpoint binding. Full circuit simulation is memory
@@ -95,9 +97,22 @@ tools with an explicit Dockerfile `ENV PATH=...`, or use an absolute executable
 path. For a missing command, inspect `PATH`, the executable and its interpreter
 inside the built image; success in a host shell does not establish image behavior.
 
-Replace `agent.py` with your solver. Install runtime dependencies and problem
-toolchains in its Dockerfile. Python 3 and Bash are required for the platform
+Replace `agent.py` with your solver. Install its runtime dependencies in the
+Dockerfile. Python 3 and Bash are required for the platform
 launcher and Dungeness clients; the solver can use any language.
+
+Use `evaluate` to send the candidate to the trusted evaluator for compilation,
+correctness checks and scoring. That service has its own pinned Rust toolchain
+and dependencies. Your agent can edit Rust source and call `evaluate` without
+Rust installed in its own container, in both local Dungeness and hosted runs.
+For optional compilation or additional tests inside the agent container, install
+the workspace's pinned Rust version (currently 1.93.0) and dependencies during
+the Docker build. Runtime internet downloads are unavailable.
+
+The launcher reports agent-side compiler availability in `local_toolchain` and
+the task instructions before starting your harness. A missing or mismatched
+compiler does not block `evaluate`. This check does not certify dependencies or
+prove that a candidate compiles.
 The starter copies the whole bundle into `/opt/harness/`, so general-purpose
 prompts and helper modules travel with the agent. Use the
 [general remote submission flow](generic-harnesses.md#submit-your-own-agent)
