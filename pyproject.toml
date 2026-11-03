@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "catalyst-research"
+version = "0.2.0"
+description = "Public OpenRSI solver tools, challenge contract, and Yukon receipt integration."
+requires-python = ">=3.11"
+dependencies = ["PyYAML>=6.0.3", "python-dotenv==1.2.4"]
+
+[project.scripts]
+openrsi-space = "catalyst.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+"*" = ["README.md"]
+catalyst = ["runtime/*.py", "problem-set/*.md", "problem-set/ecdsa-fail/**/*", "pricing/*.json"]
+
+[tool.setuptools.exclude-package-data]
+"*" = ["**/__pycache__/*", "**/*.pyc", "**/*.pyo"]

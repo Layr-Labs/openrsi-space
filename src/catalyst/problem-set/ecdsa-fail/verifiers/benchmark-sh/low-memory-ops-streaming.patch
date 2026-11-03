@@ -1,0 +1,147 @@
+--- a/src/bin/build_circuit.rs
++++ b/src/bin/build_circuit.rs
+@@ -8,7 +8,8 @@
+ 
+ use quantum_ecc::circuit::Op;
+ use quantum_ecc::point_add;
+-use std::fs;
++use std::fs::{self, File};
++use std::io::{BufWriter, Write};
+ use std::path::Path;
+ 
+ const OPS_PATH: &str = "ops.bin";
+@@ -25,21 +26,24 @@
+ const OP_BYTES: usize = 56;
+ 
+ fn write_ops(ops: &[Op], path: &Path) -> std::io::Result<()> {
+-    let mut buf = Vec::with_capacity(MAGIC.len() + 8 + ops.len() * OP_BYTES);
+-    buf.extend_from_slice(MAGIC);
+-    buf.extend_from_slice(&(ops.len() as u64).to_le_bytes());
++    let tmp = path.with_extension("bin.tmp");
++    let mut writer = BufWriter::new(File::create(&tmp)?);
++    writer.write_all(MAGIC)?;
++    writer.write_all(&(ops.len() as u64).to_le_bytes())?;
++    let mut record = [0u8; OP_BYTES];
+     for op in ops {
+-        buf.extend_from_slice(&(op.kind as u32).to_le_bytes());
+-        buf.extend_from_slice(&[0u8; 4]); // pad
+-        buf.extend_from_slice(&op.q_control2.0.to_le_bytes());
+-        buf.extend_from_slice(&op.q_control1.0.to_le_bytes());
+-        buf.extend_from_slice(&op.q_target.0.to_le_bytes());
+-        buf.extend_from_slice(&op.c_target.0.to_le_bytes());
+-        buf.extend_from_slice(&op.c_condition.0.to_le_bytes());
+-        buf.extend_from_slice(&op.r_target.0.to_le_bytes());
++        record[0..4].copy_from_slice(&(op.kind as u32).to_le_bytes());
++        record[4..8].fill(0); // pad
++        record[8..16].copy_from_slice(&op.q_control2.0.to_le_bytes());
++        record[16..24].copy_from_slice(&op.q_control1.0.to_le_bytes());
++        record[24..32].copy_from_slice(&op.q_target.0.to_le_bytes());
++        record[32..40].copy_from_slice(&op.c_target.0.to_le_bytes());
++        record[40..48].copy_from_slice(&op.c_condition.0.to_le_bytes());
++        record[48..56].copy_from_slice(&op.r_target.0.to_le_bytes());
++        writer.write_all(&record)?;
+     }
+-    let tmp = path.with_extension("bin.tmp");
+-    fs::write(&tmp, &buf)?;
++    writer.flush()?;
++    drop(writer);
+     fs::rename(&tmp, path)?;
+     Ok(())
+ }
+--- a/src/bin/eval_circuit.rs
++++ b/src/bin/eval_circuit.rs
+@@ -20,8 +20,8 @@
+     digest::{ExtendableOutput, Update, XofReader},
+     Shake256,
+ };
+-use std::fs::{self, OpenOptions};
+-use std::io::Write;
++use std::fs::{File, OpenOptions};
++use std::io::{BufReader, Read, Write};
+ use std::process::Command;
+ use std::time::{SystemTime, UNIX_EPOCH};
+ 
+@@ -87,38 +87,46 @@
+ }
+ 
+ fn load_ops(path: &str) -> Result<Vec<Op>, String> {
+-    let bytes = fs::read(path).map_err(|e| format!("read {path}: {e}"))?;
+-    if bytes.len() < MAGIC.len() + 8 {
+-        return Err(format!("{path}: too short ({} bytes)", bytes.len()));
+-    }
+-    if &bytes[..MAGIC.len()] != MAGIC {
++    let file = File::open(path).map_err(|e| format!("open {path}: {e}"))?;
++    let file_len = file
++        .metadata()
++        .map_err(|e| format!("stat {path}: {e}"))?
++        .len();
++    let mut reader = BufReader::new(file);
++    let mut header = [0u8; MAGIC.len() + 8];
++    reader
++        .read_exact(&mut header)
++        .map_err(|e| format!("{path}: too short to read header: {e}"))?;
++    if &header[..MAGIC.len()] != MAGIC {
+         return Err(format!("{path}: bad magic"));
+     }
+-    let n = u64::from_le_bytes(bytes[MAGIC.len()..MAGIC.len() + 8].try_into().unwrap());
++    let n = u64::from_le_bytes(header[MAGIC.len()..].try_into().unwrap());
+     if n > MAX_OPS {
+         return Err(format!("{path}: op count {n} exceeds cap {MAX_OPS}"));
+     }
+     let n = n as usize;
+     let need = MAGIC.len() + 8 + n.saturating_mul(OP_BYTES);
+-    if bytes.len() != need {
++    if file_len != need as u64 {
+         return Err(format!(
+-            "{path}: length mismatch: got {} expected {need} for {n} ops",
+-            bytes.len()
++            "{path}: length mismatch: got {file_len} expected {need} for {n} ops"
+         ));
+     }
+     let mut ops = Vec::with_capacity(n);
+-    let mut off = MAGIC.len() + 8;
++    let mut record = [0u8; OP_BYTES];
+     for i in 0..n {
+-        let kind_raw = u32::from_le_bytes(bytes[off..off + 4].try_into().unwrap());
++        reader
++            .read_exact(&mut record)
++            .map_err(|e| format!("op {i}: short read: {e}"))?;
++        let kind_raw = u32::from_le_bytes(record[0..4].try_into().unwrap());
+         let kind = op_kind_from_u32(kind_raw)
+             .ok_or_else(|| format!("op {i}: unknown kind {kind_raw}"))?;
+-        // bytes[off+4..off+8] are reserved padding for 8-byte alignment.
+-        let q_control2 = QubitId(read_u64(&bytes, off + 8));
+-        let q_control1 = QubitId(read_u64(&bytes, off + 16));
+-        let q_target = QubitId(read_u64(&bytes, off + 24));
+-        let c_target = BitId(read_u64(&bytes, off + 32));
+-        let c_condition = BitId(read_u64(&bytes, off + 40));
+-        let r_target = RegisterId(read_u64(&bytes, off + 48));
++        // record[4..8] is reserved padding for 8-byte alignment.
++        let q_control2 = QubitId(read_u64(&record, 8));
++        let q_control1 = QubitId(read_u64(&record, 16));
++        let q_target = QubitId(read_u64(&record, 24));
++        let c_target = BitId(read_u64(&record, 32));
++        let c_condition = BitId(read_u64(&record, 40));
++        let r_target = RegisterId(read_u64(&record, 48));
+ 
+         let op = Op {
+             kind,
+@@ -141,7 +149,6 @@
+             return Err(format!("op {i}: {msg}"));
+         }
+         ops.push(op);
+-        off += OP_BYTES;
+     }
+     Ok(ops)
+ }
+@@ -226,8 +233,8 @@
+     let mut expected = Vec::with_capacity(target_shots);
+     for _ in 0..target_shots {
+         let mut rb = [[0u8; 32]; 2];
+-        xof.read(&mut rb[0]);
+-        xof.read(&mut rb[1]);
++        XofReader::read(&mut xof, &mut rb[0]);
++        XofReader::read(&mut xof, &mut rb[1]);
+         let k1 = U256::from_le_bytes(rb[0]);
+         let k2 = U256::from_le_bytes(rb[1]);
+         let t = curve.mul(curve.gx, curve.gy, k1);

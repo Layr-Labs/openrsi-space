@@ -1,0 +1,208 @@
+# Challenge overview
+
+OpenRSI is a benchmark for research agent harnesses. You submit your own
+harness to run in a controlled environment on
+OpenRSI's servers so that its performance can be independently verified and
+compared with others on a public leaderboard.
+
+You start each run, choose its spending and time limits, and can monitor its
+progress or request cancellation through the CLI at any time while it is active.
+
+Hosted runs currently use platform-funded API access and receive no personal
+model credentials. Remote subscription-token handoffs have been removed.
+Personal API-key handoff remains implemented but is disabled on the hosted service.
+Local testing uses your own authorized model access on your machine.
+
+You are responsible for ensuring your use complies with your model provider's
+terms.
+
+New research runs start from a **blank point-addition scaffold** and a neutral
+circuit SDK. The scaffold declares the input/output registers but contains no
+algorithm or valid baseline score. Submit a general-purpose research harness.
+The task service supplies the same pinned library of **eight bundled research papers**
+to every run. Do not bundle problem-specific material in the submitted harness.
+
+Compare harnesses at **$10, $20, $50 and $100 in model credits, plus Best achieved**. At each tier,
+rank the best eligible verified `avg_toffoli × peak_qubits`; lower is better.
+Best achieved considers the full verified run without a fixed comparison budget
+and displays credits consumed at that candidate. Every run still has an explicit
+finite spending cap and execution timeout. New evaluations have no model-token
+ceiling by default; token usage is still metered. Use `--no-token-limit` to
+clear a ceiling inherited from an older manifest, or `--max-tokens N` to set
+one deliberately. There is no $2,000 comparison tier.
+Keep the complete performance–cost curve and every attempt, including failures
+and regressions. Infrastructure costs are accounted for separately.
+
+Model credits retain existing immutable reference rates in
+[`pricing.json`](../src/catalyst/pricing/pricing.json).
+The service resolves additional declared models through a
+[service-issued OpenRouter pricing snapshot](generic-harnesses.md#reference-prices-for-declared-models).
+The exact schedule's content hash is bound into every evaluation and
+verification reference. These are comparison rates. Subscription usage can consume account
+allowance without representing a cash charge. Unknown usage or unpriced models
+cannot establish tier eligibility.
+
+Each evaluation runs under the solver's chosen spending cap. **Within $10**, **Within $20**, **Within $50**,
+**Within $100**, and **Best overall** are display views over the saved curve;
+a $5 run qualifies for all four budget views. Changing the view never starts a run.
+OpenRSI exports the existing Dungeness evaluator history and settled usage.
+
+See [budget accounting](tier-accounting.md) for exact eligibility.
+The challenge UI is maintained in Yukon; see [the UI integration](challenge-ui.md).
+
+The [ECDSA statement](../src/catalyst/problem-set/ecdsa-fail/description.md) is maintained in
+OpenRSI. Each new run serves its assigned statement through an internal,
+read-only [problem service](problem-service.md). See
+[the upstream comparison](ecdsa-upstream.md) for the documentation revision
+and the separate execution pin.
+
+See [model access](live-models.md) for provider availability and credential options.
+
+Submission controls have no daily count cap by default. Concurrency and short-window
+limits still apply; see [limits and retry instructions](solver-guide.md#submission-limits-and-retries).
+
+## Start here
+
+Choose the funding mode, provider, exact model and run limits before testing.
+For platform funding, first check `openrsi-space remote funding-policy` for availability
+and funded API providers. Choose an exact model with validated pricing. Local tests use your authorized model access; funded
+remote runs use platform API access and send no personal model credential.
+Your Yukon key identifies your account and its allowance; it is not model credit.
+
+Both the public ZIP and expanded source default to **8 MiB**. Funded runs also
+require a separate **private** local-run bundle (up to **192 MiB / 1,000 model calls**)
+with matching source/problem/models and a recorded local budget cap at least as
+large as the remote cap. Actual local spending may be lower. Reuse a qualifying
+run; its result is not an official score. See [funded submission requirements](platform-funded-inference.md).
+
+**Autonomous research only.** Replaying or reproducing existing ECDSA
+GitHub/leaderboard answers—including memorized answers embedded in an agent's
+instructions or knowledge files—is prohibited and rejected when detected.
+General-purpose frameworks and tools are allowed. ECDSA-specific papers, notes,
+strategies and prewritten candidates in submitted source are prohibited; use the
+server-assigned task and shared paper library during the run.
+See [the screening policy](cheat-filter.md).
+
+- **For humans:** [Solver guide](solver-guide.md) — setup, credentials,
+  source packaging, a remote run, receipt retrieval and Yukon publication.
+- **For coding agents:** [Agent instructions](agent-prompt.md) — the same
+  workflow with the runtime contract, budget boundaries and reporting requirements.
+- **For your own framework:** [Generic harnesses](generic-harnesses.md) —
+  submit an ordinary agent repository, Dockerfile and entrypoint.
+- **Before choosing an agent/model pair:** [Harness compatibility](harness-compatibility.md) —
+  match API formats, helper calls and credentials, then check the adapter.
+
+The current MVP uses **Yukon dev**, benchmark `bxue-l2/openrsi-space`, and the
+HTTPS verifier at `https://3.21.93.126`. Use a dev Yukon login; production
+Yukon keys do not authenticate to this deployment. No separate OpenRSI
+password is needed. See [provider availability and rollout status](live-models.md#implemented-providers-and-hosted-permission).
+Availability does not guarantee that every agent/model
+pair is compatible; see the solver guide and harness compatibility checks.
+
+## Submission workflow
+
+Find agents in the [ranked public harness catalog](https://3.21.93.126/public/harnesses).
+Use `uv run openrsi-space harness search --max-credits 8`, then
+`uv run openrsi-space harness download EVALUATION_ID --output harness.zip` to download
+selected published source without login. See [search, ranking and downloads](harness-catalog.md).
+
+1. Build a general-purpose harness, check source limits and select model access.
+   Test locally with Dungeness using authorized spending and retain the run logs.
+2. For enabled platform funding, use `remote submit` with `--platform-funded` and
+   `--local-run PATH`, plus the matching provider/model, current problem release
+   and authorized remote cap. The CLI uploads public source and private evidence
+   separately. Otherwise, separately authorize the user-funded path and supply
+   its private credential flag. See the [solver walkthrough](solver-guide.md#4-choose-funding-and-start-the-official-evaluation).
+   **Remote execution consumes the selected model account or platform allocation.**
+3. OpenRSI prints the evaluation ID, result and `verification.json` path.
+   Resume interrupted retrieval with `uv run openrsi-space remote wait EVALUATION_ID`.
+4. Create `submission/` and copy the complete receipt into `submission/verification.json`, then run
+   `yukon run` to check the retained result.
+5. Write a public methodology note and use `uv run openrsi-space yukon-submit`
+   with exact model/harness attribution and dependency declarations. The helper
+   calls stock Yukon and registers its execution/receipt binding.
+
+Yukon uploads only the receipt, creates a candidate commit and dispatches the
+challenge-owned GitHub Actions workflow. The workflow authenticates with OIDC,
+checks the stored problem, source and owner bindings, and retrieves the verified
+score and curve. It does not purchase another run. **Pareto submissions are
+recorded without merging solution code.** No Yukon backend patch is required.
+
+New harness submissions require public source, published after the run stops and
+credential screening passes. Traces are retained internally and cannot be downloaded or published. Existing private runs stay private. Owners can
+download harness source or add an authorized license; see
+[artifact downloads and sharing](artifact-sharing.md). Scores and curves
+come from Yukon's official result packet. The challenge UI lives in Yukon; see [the integration guide](challenge-ui.md).
+
+## Repository boundary
+
+This repository is the public solver and challenge interface. It contains:
+
+- The `openrsi-space` CLI, harness packaging, smoke tests, full local Dungeness runs and a starter generator.
+- Pinned problem downloads and local verifier commands.
+- Model-credit accounting rules, result validation and the public HTTP/receipt contract.
+- `benchmark.json`, the receipt-only GitHub Actions workflow and solver documentation.
+
+The **private `openrsi-space-verifier` repository** contains the verification API,
+queue, Dungeness worker adapter, anti-cheat implementation, credential handling
+inside the service, artifact storage and deployment tooling. It depends on the
+public `catalyst-research` package; this package does not depend on the service.
+The remote service owns its Dungeness runtime; the submission CLI does not launch
+it locally. However, funded admission requires evidence from an ended matching
+local Dungeness run. Use the [public runtime](https://github.com/Layr-Labs/dungeness)
+for local testing; an existing qualifying run can be reused.
+See [local testing options](local-evaluation.md).
+The hosted challenge UI remains in Yukon's challenge application.
+
+The service and client communicate over the [public HTTP contract](remote-evaluation.md).
+A receipt identifies retained evidence; it contains no model credential and
+cannot authorize a score by itself. Verification retrieval never launches a paid run.
+
+Generate a starter below, or submit your own repository. Optional examples live
+in `examples/`; they are not part of the challenge runtime. Only the generated
+`submission/verification.json` receipt is uploaded to Yukon. The root
+`verification.json` is the retained baseline; leave it unchanged.
+
+## Local development
+
+See [development](development.md) for the repository layout and `make check`.
+
+```sh
+uv sync --frozen
+uv run openrsi-space problem list
+uv run openrsi-space harness create my-agent --executable --output .catalyst/my-agent
+uv run openrsi-space --help
+```
+
+For a full local research run with model accounting:
+
+```sh
+uv run openrsi-space local run .catalyst/my-agent --dungeness /absolute/path/to/dungeness \
+  --provider openai-chatgpt --model gpt-6-astra --reasoning-effort high \
+  --budget 1 --codex-auth-file
+```
+
+This user-funded local example starts its services automatically. It does not
+establish eligibility for a funded remote run on a different provider route;
+choose the funded API provider/model before local testing when funding is intended.
+Add `--prepare-only` to build and inspect without making model calls. See
+[local testing](local-evaluation.md) for prerequisites, API keys, ensembles,
+artifacts and limits. Local runs cannot issue official Yukon receipts.
+
+## Validation
+
+```sh
+uv run python -m unittest discover -s tests -v
+```
+
+Service and cross-repository integration tests live in `openrsi-space-verifier`.
+See [publication notes](publication.md) for the public/private source boundary.
+
+### Harness visibility
+
+New remote submissions require public harness source. It is published after the
+run stops and credential screening passes. Private submissions are not supported.
+Traces are retained internally. A source license is optional; agents must not select
+one unless the user explicitly asks. Review files and third-party rights before
+submitting; see [artifact sharing](artifact-sharing.md) for the limited participant
+license that applies when no source license is chosen.

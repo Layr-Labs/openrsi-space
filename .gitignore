@@ -1,0 +1,19 @@
+.catalyst/
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.DS_Store
+.env
+.env.*
+/problems/
+# Generated receipt for Yukon's existing registered upload path.
+/submission/
+# Internal upstream handoffs and deployment-specific records stay private.
+integrations/yukon/*.patch
+integrations/yukon/*base-revision.txt
+integrations/yukon/base-revision.txt
+src/catalyst/runtime/*.patch
+docs/production-operations.md

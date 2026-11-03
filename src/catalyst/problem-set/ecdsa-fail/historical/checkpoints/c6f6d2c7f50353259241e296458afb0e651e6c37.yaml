@@ -1,0 +1,25 @@
+schema_version: 1
+type: checkpoint
+id: c6f6d2c7f50353259241e296458afb0e651e6c37
+namespace: public/github/layr-labs/ecdsafail-challenge
+created_at: null
+published_at: null
+
+labels:
+  role: codex-start
+  source: pinned
+
+data:
+  repository:
+    url: https://github.com/Layr-Labs/ecdsafail-challenge.git
+    commit: c6f6d2c7f50353259241e296458afb0e651e6c37
+  history:
+    anchor: c6f6d2c7f50353259241e296458afb0e651e6c37
+    distance_from_anchor: 0
+    counting_method: git-rev-list-ancestry-path-count
+  web_cutoff: "2026-04-13T23:59:59.999Z"
+  interface: point-add-file-v1
+  reference:
+    avg_toffoli: 101284162
+    peak_qubits: 3595
+    score: 364116562390

@@ -1,0 +1,185 @@
+{
+  "checked_on": "2026-10-23",
+  "catalog": "ecdsa-papers-v1",
+  "method": "Exact paper versions checked against publisher license links and local PDF notices; local PDFs verified against the supplied eight-paper manifest. Replacement PDFs freshly downloaded from arXiv and matched to existing catalog hashes. IACR metadata checked through the web tool; direct download is blocked by HTTP 403.",
+  "papers": [
+    {
+      "title": "Optimized Point Addition Circuits for Elliptic Curve Discrete Logarithms",
+      "sha256": "8744ef6db6c60b62d952a1dd24e5bd433242af970f4755c8b49b020a731584af",
+      "publisher_page": "https://arxiv.org/abs/2606.02235v1",
+      "publisher_page_sha256": "37bb834c169d6a3ea296e0653937173606ab552a084839485a777ef56cdd7d1c",
+      "license_links": [
+        "http://creativecommons.org/licenses/by/4.0/"
+      ],
+      "pages": 19,
+      "pdf_notices": [],
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "redistribution_status": "permitted_under_stated_license",
+      "license": "CC-BY-4.0",
+      "requirements": "Preserve attribution and notices, include the license link, and indicate modifications where applicable.",
+      "id": "ecdsa-core-02",
+      "file": "arxiv-2606-02235v1.pdf"
+    },
+    {
+      "title": "Windowed quantum arithmetic",
+      "sha256": "a2196cd3a0e39958865dc958cd59a565de49af01f52562911f8bc535d34120a4",
+      "publisher_page": "https://arxiv.org/abs/1905.07682v1",
+      "publisher_page_sha256": "f2bafebb1949e4d40db04bee48021a17dbb78df4c8c0e938534775d3fd382738",
+      "license_links": [
+        "https://creativecommons.org/licenses/by/4.0/"
+      ],
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "license": "CC-BY-4.0",
+      "pages": 11,
+      "pdf_notices": [],
+      "redistribution_status": "permitted_under_stated_license",
+      "requirements": "Preserve attribution and notices, include the license link, and indicate modifications where applicable.",
+      "replaces": "2410.00899v1.pdf",
+      "selection_reason": "Closely related arithmetic reference: windowed multiplication and modular arithmetic with reduced Toffoli counts.",
+      "pdf_downloaded_from": "https://arxiv.org/pdf/1905.07682v1",
+      "id": "ecdsa-core-19",
+      "file": "19-gidney-windowed-quantum-arithmetic.pdf"
+    },
+    {
+      "title": "Measurement-based uncomputation of quantum circuits for modular arithmetic",
+      "sha256": "c5b152e5dbfdbc767e49edaec45f3550e623fdefa269fdabed0ab578d7a392f0",
+      "publisher_page": "https://arxiv.org/abs/2407.20167v1",
+      "publisher_page_sha256": "e521bb8268acd81db34f61c0af4c78f657a33b8c9381687c26c204ff2debd9f4",
+      "license_links": [
+        "http://creativecommons.org/publicdomain/zero/1.0/"
+      ],
+      "pages": 45,
+      "pdf_notices": [],
+      "license_url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "redistribution_status": "permitted_under_stated_license",
+      "license": "CC0-1.0",
+      "requirements": "CC0 public-domain dedication; retain source attribution for provenance.",
+      "id": "ecdsa-core-22",
+      "file": "22-luongo-measurement-uncomputation-modular-arithmetic.pdf"
+    },
+    {
+      "title": "A Classical-Quantum Adder with Constant Workspace and Linear Gates",
+      "sha256": "31c8fb8d52329c79cd29816d8c22087d5e84aa6fee46458f1f5c0ef726adba3f",
+      "publisher_page": "https://arxiv.org/abs/2507.23079v1",
+      "publisher_page_sha256": "d92a042b4479730f3b7ba90ce682c107e075ad1837340d3ef96e8343cd00d7a7",
+      "license_links": [
+        "http://creativecommons.org/licenses/by/4.0/"
+      ],
+      "pages": 8,
+      "pdf_notices": [],
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "redistribution_status": "permitted_under_stated_license",
+      "license": "CC-BY-4.0",
+      "requirements": "Preserve attribution and notices, include the license link, and indicate modifications where applicable.",
+      "id": "ecdsa-core-17",
+      "file": "17-gidney-classical-quantum-adder.pdf"
+    },
+    {
+      "title": "Tight Bounds on the Spooky Pebble Game - Recycling Qubits with Measurements",
+      "sha256": "13ee62c1108a9a2bd9654235f6ad6cffe30660c35f524b60dd54a38af8d18997",
+      "publisher_page": "https://arxiv.org/abs/2110.08973v3",
+      "publisher_page_sha256": "0b150f8c8728c0cf880e55533ffcfd8415b608f70713cdc73a12b20883b17775",
+      "license_links": [
+        "http://creativecommons.org/licenses/by/4.0/"
+      ],
+      "pages": 25,
+      "pdf_notices": [],
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "redistribution_status": "permitted_under_stated_license",
+      "license": "CC-BY-4.0",
+      "requirements": "Preserve attribution and notices, include the license link, and indicate modifications where applicable.",
+      "id": "ecdsa-core-30",
+      "file": "30-kornerup-spooky-pebble-game.pdf"
+    },
+    {
+      "title": "Efficient Record-and-Replay Arithmetic for Quantum Elliptic-Curve Point Addition",
+      "sha256": "a82133bcf4d42fe8bb8cd0ddfd223c29a820bbe685eb2e318ce073f58e04465a",
+      "publisher_page": "https://arxiv.org/abs/2609.28882v1",
+      "publisher_page_sha256": "7dc453832934f11214dbbd0a467a2924ff9223efe7b3acf4814094eb19896d39",
+      "license_links": [
+        "https://creativecommons.org/licenses/by/4.0/"
+      ],
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "license": "CC-BY-4.0",
+      "pages": 35,
+      "pdf_notices": [],
+      "redistribution_status": "permitted_under_stated_license",
+      "requirements": "Preserve attribution and notices, include the license link, and indicate modifications where applicable.",
+      "replaces": "2607.13816v2.pdf",
+      "selection_reason": "Recent direct reference on reversible secp256k1 point addition and record-and-replay arithmetic. The paper explicitly reports remaining correctness limitations; its circuits are not accepted as verified solutions by inclusion in the library.",
+      "pdf_downloaded_from": "https://arxiv.org/pdf/2609.28882v1",
+      "id": "arxiv-2609-28882v1",
+      "file": "arxiv-2609-28882v1.pdf"
+    },
+    {
+      "title": "Verifiable Quantum Advantage via Optimized DQI Circuits",
+      "sha256": "dcbbd0034ebcc3918a31ecc211ab108ec3a11d02840a78f504f915b73a5370ca",
+      "publisher_page": "https://arxiv.org/abs/2510.10967v1",
+      "publisher_page_sha256": "272c46379de0d89b8713f3778844d0190a30c198d09eab90e9148afe137306e6",
+      "license_links": [
+        "http://creativecommons.org/licenses/by/4.0/"
+      ],
+      "pages": 52,
+      "pdf_notices": [],
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "redistribution_status": "permitted_under_stated_license",
+      "license": "CC-BY-4.0",
+      "requirements": "Preserve attribution and notices, include the license link, and indicate modifications where applicable.",
+      "id": "ecdsa-core-28",
+      "file": "28-khattar-optimized-dqi-circuits.pdf"
+    },
+    {
+      "title": "Improved quantum circuits for elliptic curve discrete logarithms",
+      "sha256": "ed7daaba41f3a6d2a42536b977a91a97e343a23a9f0d9324d3b9aaf3eb0848c2",
+      "publisher_page": "https://eprint.iacr.org/2020/077",
+      "pages": 22,
+      "pdf_notices": [
+        "4 Our code will be released under an open source license."
+      ],
+      "license_links": [
+        "https://creativecommons.org/licenses/by/4.0/"
+      ],
+      "additional_evidence": "Publisher page successfully read using web browser tool; License section links CC BY 4.0. Direct urllib request returned HTTP 403.",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "redistribution_status": "permitted_under_stated_license",
+      "license": "CC-BY-4.0",
+      "requirements": "Preserve attribution and notices, include the license link, and indicate modifications where applicable.",
+      "id": "ecdsa-core-06",
+      "file": "06-haner-improved-quantum-circuits-ecdlp.pdf"
+    }
+  ],
+  "excluded_from_supplied_collection": [
+    {
+      "path": "2410.00899v1.pdf",
+      "title": "Quantum schoolbook multiplication with fewer Toffoli gates",
+      "sha256": "5da56cc0dd20b0afe73b3d0a188ba7e0e9826960c37b9b972671520755a74713",
+      "hash_matches": true,
+      "publisher_page": "https://arxiv.org/abs/2410.00899v1",
+      "publisher_page_sha256": "8ce67abeef8266c9586a231508ac3d511369428d7e2080f2d13b7d2b43de2aa0",
+      "license_links": [
+        "http://arxiv.org/licenses/nonexclusive-distrib/1.0/"
+      ],
+      "pages": 6,
+      "pdf_notices": [],
+      "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/",
+      "redistribution_status": "permission_not_established",
+      "reason": "The stated license grants distribution rights to arXiv, not a general third-party redistribution license. No separate permission found in PDF text or sources checked."
+    },
+    {
+      "path": "2607.13816v2.pdf",
+      "title": "Quantum Algorithm for Elliptic Curve Discrete Logarithms with Space-Efficient Point Addition",
+      "sha256": "8e61e2ce2be1a9a9404c67fe2b42b1e381093e215ada2e20ce3f2de925938901",
+      "hash_matches": true,
+      "publisher_page": "https://arxiv.org/abs/2607.13816v2",
+      "publisher_page_sha256": "330337d443672606f129dcd00ddfc3a67e401621b6aa4023e9dee589e87ff678",
+      "license_links": [
+        "http://arxiv.org/licenses/nonexclusive-distrib/1.0/"
+      ],
+      "pages": 50,
+      "pdf_notices": [],
+      "license_url": "https://arxiv.org/licenses/nonexclusive-distrib/1.0/",
+      "redistribution_status": "permission_not_established",
+      "reason": "The stated license grants distribution rights to arXiv, not a general third-party redistribution license. No separate permission found in PDF text or sources checked."
+    }
+  ]
+}

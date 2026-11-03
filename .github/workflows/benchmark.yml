@@ -1,0 +1,45 @@
+name: OpenRSI Benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      yukon_evaluation:
+        description: Yukon Pareto policies and requested fields
+        required: false
+        type: string
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    env:
+      CATALYST_EVALUATOR_URL: https://3.21.93.126
+      CATALYST_RECEIPT_AUTH_WAIT_SECONDS: "60"
+    steps:
+      - name: Checkout dispatched source
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Install uv
+        uses: astral-sh/setup-uv@d0cc045d04ccac9d8b7881df0226f9e82c39688e # v6
+        with:
+          version: "0.8.22"
+          python-version: "3.12"
+      - name: Setup trusted evaluation client
+        run: uv sync --frozen
+      - name: Benchmark — retrieve verified receipt
+        env:
+          YUKON_EVALUATION: ${{ inputs.yukon_evaluation }}
+        run: uv run --frozen openrsi-space yukon-run
+      - name: Upload verified judgment
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: catalyst-score
+          path: .catalyst/yukon/score.json
+          include-hidden-files: true
+          if-no-files-found: error

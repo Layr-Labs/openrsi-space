@@ -1,0 +1,41 @@
+# Evaluator for checkpoints using the benchmark-sh interface. The trusted
+# grading harness is the upstream repo's OWN files -- we run its `benchmark.sh`
+# (untrusted build_circuit -> trusted eval_circuit -> score.json), not a
+# reimplementation. Only these files are fetched into the clean verifier; the
+# candidate `src/point_add/` is transferred separately (never from this commit,
+# so the finished solution is never leaked into the grader).
+#
+# commit: intentionally OMITTED. Each checkpoint grades against the harness at
+#   ITS OWN commit (self-consistent: the candidate at commit X was written for
+#   the harness at commit X). build.py defaults repository.commit to the
+#   checkpoint's commit when it is absent here, so this lock spans that interface.
+schema_version: 1
+
+repository:
+  url: https://github.com/Layr-Labs/ecdsafail-challenge.git
+  # commit: <defaults to the checkpoint commit>
+
+include_paths:
+  - NOTICE
+  - Cargo.lock
+  - Cargo.toml
+  - rust-toolchain
+  - benchmark.sh
+  - src/lib.rs
+  - src/circuit.rs
+  - src/sim.rs
+  - src/weierstrass_elliptic_curve.rs
+  - src/bin/build_circuit.rs
+  - src/bin/eval_circuit.rs
+
+# The challenge-start and interpolated checkpoints predate the upstream
+# streaming encoder/decoder. Their harness materializes a second full copy of
+# every operation while writing and reading ops.bin, roughly doubling peak RAM.
+# This trusted backport preserves the byte format and scoring behavior while
+# streaming those records. The later frontier checkpoint already does this
+# upstream, so the patch is pinned only to the two exact historical commits.
+patches:
+  - path: low-memory-ops-streaming.patch
+    commits:
+      - 62ae3d00d1e01d7bc640b5163cfea8dabffd8392
+      - 4b9cfbb55d002bb23ca020ae101d3e332fe275e5
