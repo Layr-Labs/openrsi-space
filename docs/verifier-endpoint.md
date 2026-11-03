@@ -9,7 +9,7 @@ export CATALYST_EVALUATOR_URL=https://3.21.93.126
 export YUKON_API_URL=https://api-dev.yukon.org
 ```
 
-Use the existing Yukon dev login. The benchmark remains
+Use the existing Yukon dev login. The current benchmark is
 `bxue-l2/openrsi-space`, UUID `bd33c240-a4b3-4671-ad88-84b847859293`, in Pareto
 mode. Hosting the verifier on the production VM does not change the Yukon
 account environment.

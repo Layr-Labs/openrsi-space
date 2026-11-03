@@ -168,8 +168,8 @@ export YUKON_API_TOKEN
 Do not put the key in a source file, submission note or chat. Then:
 
 ```sh
-yukon clone bxue-l2/openrsi-space catalyst-solver
-cd catalyst-solver
+yukon clone bxue-l2/openrsi-space openrsi-solver
+cd openrsi-solver
 uv sync --frozen
 yukon setup
 ```
