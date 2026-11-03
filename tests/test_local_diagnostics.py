@@ -87,6 +87,23 @@ class LocalDiagnosticsTests(unittest.TestCase):
             self.assertIn('readonly_workspace', [d['code'] for d in report['diagnostics']])
             self.assertNotIn('secret-synthetic-value', json.dumps(report))
 
+    def test_cross_device_failure_explains_supported_restore_without_echoing_logs(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_json(root/'record.json', {'data': {'status': 'failed'}})
+            log = root/'harbor/run/trial/exception.txt'
+            log.parent.mkdir(parents=True)
+            log.write_text("OSError: [Errno 18] Invalid cross-device link: "
+                           "'/private-synthetic-canary' -> '/other-private-canary'")
+            report = summarize(root/'record.json')
+            finding = next(d for d in report['diagnostics']
+                           if d['code'] == 'workspace_cross_device_operation')
+            self.assertIn('copy contents', finding['message'])
+            self.assertIn('do not rename the mount root', finding['message'])
+            self.assertIn('Snapshot-and-restore harnesses are supported', finding['message'])
+            self.assertEqual(report['record_status'], 'failed')
+            self.assertNotIn('private-synthetic-canary', json.dumps(report))
+
     def test_zero_call_success_and_gateway_rejection_are_visible(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

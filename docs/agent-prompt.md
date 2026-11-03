@@ -243,7 +243,10 @@ readiness report; all inference must use assigned gateway endpoints.
    at build time. The shared task library remains reachable internally. Do not silently fall back to public provider APIs.
 7. Call `evaluate --json PATH` for intermediate candidate snapshots. Retain
    the best verified candidate in the designated workspace for the final
-   independent check. Do not manufacture a score by printing it.
+   independent check. Do not manufacture a score by printing it. Candidate paths
+   may be bind mounts: checkpoint by copying contents and restore into the existing
+   root, without renaming or replacing the mount itself. Preserve trusted read-only
+   files. See the [workspace filesystem contract](executable-harness.md#workspace-filesystem-contract).
 
 ## Local Dungeness preflight
 

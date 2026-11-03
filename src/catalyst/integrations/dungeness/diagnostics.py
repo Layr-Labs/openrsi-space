@@ -117,6 +117,11 @@ def summarize(record_path):
                  'Request output limit exceeds the gateway cap. For Claude Code set CLAUDE_CODE_MAX_OUTPUT_TOKENS=64000.'),
                 ('Read-only file system', 'readonly_workspace',
                  'Trusted scaffold files are read-only. Do not recursively chown or modify protected paths.'),
+                ('Invalid cross-device link', 'workspace_cross_device_operation',
+                 'A filesystem operation crossed a mount boundary or tried to replace a mount root. '
+                 'Inspect the failed operation in the retained log. For candidate restore, copy contents '
+                 'into the existing directory, or write through a mounted file; do not rename the mount root. '
+                 'Snapshot-and-restore harnesses are supported. See docs/executable-harness.md#workspace-filesystem-contract.'),
                 ('Permission denied', 'workspace_permissions',
                  'Check writable workspace ownership for the harness user; trusted scaffold files remain read-only.'),
             ):

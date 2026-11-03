@@ -147,6 +147,35 @@ independent verifier judges the candidate; submitted stdout or claimed scores
 never establish official observations. Never put provider credentials in
 source or images.
 
+## Workspace filesystem contract
+
+Snapshotting, branching, search in parallel work directories, and restoring the
+best candidate are supported harness designs. Writable does not mean that every
+filesystem operation is supported: candidate paths may be separate Docker bind
+mounts, and trusted scaffold files are protected.
+
+| Operation | Supported approach |
+| --- | --- |
+| Edit a candidate directory | Create, update and remove ordinary files inside it. |
+| Save a checkpoint | Copy candidate contents to a separate writable work directory. |
+| Restore a checkpoint | Copy the saved contents back into the existing candidate directory; remove obsolete ordinary files and verify the restored contents. |
+| Replace the whole candidate root with a rename or directory swap | Do not rely on this: a mount root cannot be renamed or replaced. Keep the root in place. |
+| Update a candidate that is itself a file mount | Write to the existing file; replacing its inode with a temporary-file rename can fail. |
+| Atomic file replacement | Works for ordinary writable files within the same filesystem, not across mount boundaries or over a mounted file. |
+| Change trusted scaffold files | Unsupported; preserve the assigned read-only files and their ownership. |
+
+Use the task's `candidate_paths` to locate outputs. Finish restoring a candidate
+before requesting evaluation, and stop background writers while restoring it.
+A directory restore is not an atomic transaction; retain the checkpoint so it
+can be retried after interruption. Test save and restore against an actual bind
+mount as well as an ordinary temporary directory. Packaging smoke tests do not
+reproduce every live mount boundary.
+
+`EXDEV` ("Invalid cross-device link") can mean a rename crosses filesystem
+boundaries; `EBUSY` can mean the target is a mount root. Check the failed operation
+and its paths. These are filesystem compatibility errors, not cheating or
+security-policy verdicts, and do not make the harness architecture ineligible.
+
 ## Official evaluation
 
 Submit the harness source using the [solver guide](solver-guide.md). The remote service builds and runs it with metered model access and independent verification. Operator Dungeness tooling lives in `openrsi-space-verifier`; it is not required locally.
