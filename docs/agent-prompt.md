@@ -435,7 +435,9 @@ package sources; see [build dependency policy](build-dependencies.md).
 Keep only UTF-8 Rust (`.rs`) source inside `src/point_add/`, including its
 subdirectories. Keep research notes outside that directory. On a screening
 rejection, inspect `screening_findings` for the file and rule, correct it, and
-evaluate again. The trusted evaluator supplies its compiler; compiling in the
-agent container additionally requires the pinned Rust toolchain and dependencies
-in the harness image. Check `local_toolchain` in the assigned task. Runtime
-downloads are unavailable.
+evaluate again. Use `evaluate` to send the candidate to the trusted evaluator,
+which supplies its own compiler and dependencies. Editing Rust source and calling
+`evaluate` does not require Rust in your agent container. For optional compilation
+or tests inside that container, install the workspace-pinned Rust toolchain and
+dependencies during the Docker build. Check `local_toolchain` in the assigned
+task for compiler availability. Runtime downloads are unavailable.

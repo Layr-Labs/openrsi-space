@@ -97,15 +97,21 @@ tools with an explicit Dockerfile `ENV PATH=...`, or use an absolute executable
 path. For a missing command, inspect `PATH`, the executable and its interpreter
 inside the built image; success in a host shell does not establish image behavior.
 
-Replace `agent.py` with your solver. Install runtime dependencies and problem
-toolchains in its Dockerfile. Python 3 and Bash are required for the platform
+Replace `agent.py` with your solver. Install its runtime dependencies in the
+Dockerfile. Python 3 and Bash are required for the platform
 launcher and Dungeness clients; the solver can use any language.
-For agent-side ECDSA compilation, install the workspace's pinned Rust version
-(currently 1.93.0) and dependencies during the image build. Rust in the trusted
-evaluator is separate from Rust in your image. The launcher checks availability
-before starting your harness and adds `local_toolchain` and guidance to its task.
-A missing or mismatched compiler does not prevent using `evaluate`; runtime
-internet downloads are unavailable. This check does not certify dependencies or
+
+Use `evaluate` to send the candidate to the trusted evaluator for compilation,
+correctness checks and scoring. That service has its own pinned Rust toolchain
+and dependencies. Your agent can edit Rust source and call `evaluate` without
+Rust installed in its own container, in both local Dungeness and hosted runs.
+For optional compilation or additional tests inside the agent container, install
+the workspace's pinned Rust version (currently 1.93.0) and dependencies during
+the Docker build. Runtime internet downloads are unavailable.
+
+The launcher reports agent-side compiler availability in `local_toolchain` and
+the task instructions before starting your harness. A missing or mismatched
+compiler does not block `evaluate`. This check does not certify dependencies or
 prove that a candidate compiles.
 The starter copies the whole bundle into `/opt/harness/`, so general-purpose
 prompts and helper modules travel with the agent. Use the

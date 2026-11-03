@@ -53,6 +53,7 @@ class LocalToolchainTests(unittest.TestCase):
                 resolved = json.loads(Path(run.call_args.kwargs['env']['CATALYST_TASK']).read_text())
                 self.assertEqual(resolved['local_toolchain']['status'], 'unavailable')
                 self.assertIn('Use evaluate', resolved['instruction'])
+                self.assertIn('does not need Rust in the agent container', resolved['instruction'])
 
     def test_non_rust_harness_needs_no_compiler_probe(self):
         with tempfile.TemporaryDirectory() as directory, patch.object(launch.subprocess, 'run') as run:

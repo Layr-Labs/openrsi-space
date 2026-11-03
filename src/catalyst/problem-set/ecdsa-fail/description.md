@@ -54,11 +54,12 @@ non-Rust files outside `src/point_add/`. Only that directory is collected as
 the candidate. Do not modify the trusted
 builder, evaluator, dependencies or benchmark scripts, or forge their outputs.
 
-The trusted evaluator supplies the pinned Rust toolchain. Local compilation
-inside the agent container requires the harness image to include the toolchain
-named in `rust-toolchain` (currently Rust 1.93.0) and its dependencies. Runtime
-internet downloads are unavailable; `evaluate` remains available without an
-agent-side Rust installation.
+Run `evaluate` to submit your candidate to the trusted evaluator, which compiles
+and checks it using its own pinned Rust toolchain and dependencies. You can edit
+Rust source and use `evaluate` without installing Rust in the agent container.
+For optional compilation or tests inside that container, install the toolchain
+named in `rust-toolchain` (currently Rust 1.93.0) and the required dependencies
+in your harness Dockerfile. Runtime internet downloads are unavailable.
 
 Use `evaluate` for feedback during a research run and retain your best verified
 candidate after the first successful check. For an equivalent local starting

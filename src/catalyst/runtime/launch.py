@@ -100,9 +100,11 @@ def check_local_toolchain(task):
               "status": "available" if available else "unavailable"}
     message = (f"Agent toolchain check: Rust {expected} is available. Dependencies may still be missing."
                if available else
-               f"Agent toolchain check: required Rust {expected} is unavailable in this container. "
-               "Use evaluate for compilation and scoring. For local compilation, install the pinned "
-               "toolchain and dependencies in the harness image before running; runtime downloads "
+               f"Agent toolchain check: Rust {expected} is unavailable in this container. "
+               "Use evaluate for compilation and scoring through the trusted evaluator; it supplies "
+               "its own toolchain and does not need Rust in the agent container. For optional "
+               "agent-side compilation, install the pinned toolchain and dependencies in the "
+               "harness image before running; runtime downloads "
                "are unavailable.")
     print(json.dumps({"event": "local_toolchain_check", **report, "message": message}), flush=True)
     return {**task, "local_toolchain": report,
