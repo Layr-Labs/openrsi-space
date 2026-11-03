@@ -263,3 +263,21 @@ look up durable admission records without an evaluation ID. A rejection before
 job creation does not have a run to fetch. Diagnose a 400 before retrying; do not
 change the request ID to try to bypass it. Updating the CLI does not recover an
 error body discarded by an older version and does not submit anything by itself.
+
+### Diagnose an existing run
+
+`openrsi-space remote diagnostics EVALUATION_ID` includes separate execution,
+verification and publication outcomes. A publication failure does not require
+another funded evaluation: retry publication with the retained verified receipt.
+
+To download your sanitized harness stdout/stderr and its completeness report:
+
+```bash
+openrsi-space remote logs EVALUATION_ID --output run-logs.zip
+```
+
+This uses your existing Yukon authentication and never starts inference. Logs
+are private, bounded diagnostic output; the ZIP reports missing, partial or
+truncated capture. Full internal traces and raw operator logs remain unavailable.
+A server release mismatch is an operator issue; keep your existing local evidence
+and retry after the operator repairs the deployment.

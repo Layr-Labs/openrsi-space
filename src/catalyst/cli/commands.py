@@ -122,6 +122,9 @@ def remote_command(args, state):
         from catalyst.client import transport
         print(json.dumps(json.loads(transport.solver_fetch(client.base, '/funding', client.bearer)), indent=2))
         return
+    if args.operation == "logs":
+        print(json.dumps(client.logs(args.id, args.output), indent=2))
+        return
     if args.operation == "diagnostics":
         print(json.dumps(client.diagnostics(args.id, args.output), indent=2))
         return

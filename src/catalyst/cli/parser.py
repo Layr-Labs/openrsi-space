@@ -148,6 +148,9 @@ def build_parser():
     ):
         remote_action = remote_sub.add_parser(operation, help=help_text)
         remote_action.add_argument("id", help="Evaluation UUID returned by submit.")
+    logs = remote_sub.add_parser("logs", help="Download your sanitized harness stdout/stderr and coverage report.")
+    logs.add_argument("id")
+    logs.add_argument("--output", required=True, help="Private ZIP destination; raw operator logs are never downloaded.")
     diagnostic = remote_sub.add_parser("diagnostics", help="Read the owner's safe run diagnostics; never start a run.")
     diagnostic.add_argument("id", help="Evaluation UUID returned by submit.")
     diagnostic.add_argument("--output", help="Save the diagnostic JSON report with private file permissions.")

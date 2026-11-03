@@ -79,6 +79,7 @@ ADMISSION_MESSAGES = {
     'source_not_publishable': 'The source did not pass the publication safety checks.',
     'screening_unavailable': 'Submission screening is temporarily unavailable.',
     'credential_scanner_unavailable': 'Credential screening is temporarily unavailable; retry with unchanged source and local evidence.',
+    'release_configuration_mismatch': 'The deployed release configuration is inconsistent; contact the operator. Do not rerun locally.',
     'builder_unavailable': 'The isolated builder is temporarily unavailable.',
     'source_package_too_large': 'Expanded harness source exceeds the review limit. Remove unused bundled files; retain runtime code and licenses. ZIP compression does not change the limit.',
     **{'submission_' + stage + '_rejected': 'Submission rejected during ' + stage + '.'

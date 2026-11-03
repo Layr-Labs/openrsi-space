@@ -224,6 +224,36 @@ class RemoteClient:
             export_private_json(Path(output).expanduser().absolute(), result)
         return result
 
+    def logs(self, identity, output):
+        """Download sanitized owner logs; never print harness-controlled text."""
+        import io
+        import zipfile
+        identity = evaluation_id(identity)
+        data = transport.solver_fetch(self.base, f"/evaluations/{identity}/logs", self.bearer,
+                                      limit=65 * 1024**2)
+        with zipfile.ZipFile(io.BytesIO(data)) as archive:
+            info = archive.getinfo("manifest.json")
+            if info.file_size > 16384:
+                raise CatalystError("Oversized log manifest.")
+            report = json.loads(archive.read(info))
+            if (report.get("protocol") != "openrsi-harness-logs-v1"
+                    or report.get("evaluation_id") != identity or report.get("sanitized") is not True
+                    or report.get("scoring_evidence") is not False):
+                raise CatalystError("Log report does not match this evaluation.")
+        import tempfile
+        target = Path(output).expanduser().absolute()
+        target.parent.mkdir(parents=True, exist_ok=True)
+        temporary = None
+        try:
+            with tempfile.NamedTemporaryFile(dir=target.parent, delete=False) as stream:
+                temporary = Path(stream.name)
+                os.fchmod(stream.fileno(), 0o600)
+                stream.write(data)
+            temporary.replace(target)
+        finally:
+            if temporary is not None: temporary.unlink(missing_ok=True)
+        return {"evaluation_id": identity, "output": str(target), "coverage": report["coverage"]}
+
     def cancel(self, identity):
         identity = evaluation_id(identity)
         result = json.loads(transport.solver_fetch(
