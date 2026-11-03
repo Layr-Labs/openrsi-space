@@ -148,7 +148,7 @@ queue, Dungeness worker adapter, anti-cheat implementation, credential handling
 inside the service, artifact storage and deployment tooling. It depends on the
 public `catalyst-research` package; this package does not depend on the service.
 The remote service owns its Dungeness runtime; the submission CLI does not launch
-it locally. However, funded admission requires evidence from a completed matching
+it locally. However, funded admission requires evidence from an ended matching
 local Dungeness run. Use the [public runtime](https://github.com/Layr-Labs/dungeness)
 for local testing; an existing qualifying run can be reused.
 See [local testing options](local-evaluation.md).

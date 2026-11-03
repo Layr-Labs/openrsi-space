@@ -51,8 +51,10 @@ harness source; review files before uploading. You authorize each paid run and
 are responsible for complying with your model provider's terms.
 
 `remote submit` reuses a matching ended local run. Use `--local-run PATH`
-for records elsewhere. Every new hosted submission requires a matching completed
-local run bundle; there is no skip option or evidence exemption.
+for records elsewhere. Every new hosted submission requires a matching ended
+local run bundle; there is no skip option or evidence exemption. A failed or
+cancelled run can qualify when all model exchanges and accounting are complete;
+its failure status is retained. See the [evidence rules](docs/platform-funded-inference.md).
 
 ### Before submitting
 
@@ -62,7 +64,7 @@ local run bundle; there is no skip option or evidence exemption.
 - **Funded runs, when enabled:** check `uv run openrsi-space remote funding-policy`
   for funded providers and limits. You choose the exact model; its pricing must validate. Use `--platform-funded --local-run PATH`;
   no personal model credential is sent for the remote run.
-- **Local evidence:** retain a completed matching Dungeness run and its logs.
+- **Local evidence:** retain an ended matching Dungeness run and its logs.
   The CLI uploads a separate private bundle, up to **192 MiB / 1,000 model calls**.
   The recorded local budget cap must be **at least the remote cap**. Actual
   spending may be lower; no minimum-spend percentage applies. Local testing uses your authorized model access.

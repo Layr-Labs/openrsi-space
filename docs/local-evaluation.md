@@ -183,7 +183,7 @@ uv run openrsi-space remote submit ./my-harness --local-run /path/to/local-run
 A directly launched Dungeness run must retain the OpenRSI harness-source and
 problem identities and the `local-development` label to match. Keep the run's
 artifact folder intact. If local testing is blocked or intentionally omitted,
-stop and report the blocker. A new hosted submission requires a completed matching
+stop and report the blocker. A new hosted submission requires an ended matching
 local run and its bundle; the requirement cannot be skipped.
 Unchanged saved submission retries remain usable without rerunning local tests.
 Status, wait, cancellation and receipt publication never require this check.
