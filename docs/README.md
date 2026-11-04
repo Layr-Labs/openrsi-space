@@ -1,16 +1,24 @@
-# Documentation
+# OpenRSI documentation
 
-Start with the [solver guide](solver-guide.md), or give your coding agent the
-[agent instructions](agent-prompt.md). The [overview](overview.md) explains the
-challenge, comparison budgets and publication workflow.
+Start with [Architecture](architecture.md) for the components, data flow and trust
+boundaries. Use [Submission states and recovery](submission-states.md) to interpret
+progress, distinguish execution from verification and publication, and recover
+without unnecessarily rerunning research.
 
-| Area | Reference |
+To participate, follow the [solver guide](solver-guide.md) or give your coding
+agent the [agent instructions](agent-prompt.md).
+
+| Task | Reference |
 | --- | --- |
-| Harness creation | [Generic harnesses](generic-harnesses.md), [executable interface](executable-harness.md), [agent/model compatibility](harness-compatibility.md) |
-| Testing | [Local evaluation](local-evaluation.md), [GitHub Actions integration](github-actions-e2e.md) |
-| Submission | [HTTP API](remote-evaluation.md), [model access](live-models.md), [endpoint selection](verifier-endpoint.md), [source size limits](source-limits.md), [platform-funded runs and local evidence](platform-funded-inference.md) |
-| Recovery and support | [Submission state model](submission-states.md), [run recovery and troubleshooting FAQ](recovery-faq.md): IDs, interrupted runs, admission errors, diagnostics and publication retries |
-| Discovery and sharing | [Harness catalog](harness-catalog.md), [artifact sharing](artifact-sharing.md) |
-| Challenge contract | [Problem service](problem-service.md), [accounting](tier-accounting.md), [source screening](cheat-filter.md), [upstream ECDSA](ecdsa-upstream.md) |
-| Integrations | [Yukon UI](https://github.com/Layr-Labs/yukon/blob/master/apps/challenges-ui/challenges/openrsi/README.md) |
-| Maintenance | [Architecture](architecture.md), [development](development.md), [client/runtime compatibility](deployment-compatibility.md) |
+| Understand scores and spending | [Scoring and budgets](scoring-and-budgets.md), [funding and local evidence](platform-funded-inference.md) |
+| Build a harness | [Generic harnesses](generic-harnesses.md), [executable interface](executable-harness.md), [source and build requirements](source-limits.md), [submission rules](cheat-filter.md) |
+| Choose model access | [Model access and provider recipes](live-models.md), [harness/model compatibility](harness-compatibility.md) |
+| Test locally | [Local evaluation](local-evaluation.md), [client/runtime compatibility](deployment-compatibility.md) |
+| Submit and recover | [State model and troubleshooting](submission-states.md), [remote API](remote-evaluation.md), [endpoint selection](verifier-endpoint.md) |
+| Discover and share harnesses | [Harness catalog](harness-catalog.md), [artifact sharing](artifact-sharing.md) |
+| Understand the assigned problem | [Problem service](problem-service.md), [ECDSA upstream reference](ecdsa-upstream.md) |
+| Contribute to the toolkit | [Development](development.md) |
+
+The [challenge UI](https://github.com/Layr-Labs/yukon/blob/master/apps/challenges-ui/challenges/openrsi/README.md)
+is maintained in Yukon. Hosted-service implementation and operator runbooks belong
+in the private verifier repository.

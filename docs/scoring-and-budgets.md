@@ -1,4 +1,4 @@
-# Scores and model credits
+# Scoring and budgets
 
 The ECDSA objective is **average executed Toffoli gates × peak qubits**; lower is
 better. Only independently verified candidates receive scores. Compare runs with

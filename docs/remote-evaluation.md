@@ -61,12 +61,9 @@ supply model access or create a paid run.
 
 ## Submit once and resume retrieval
 
-See the [submission state model](submission-states.md) for state meanings and
-the distinction between evaluation completion and Yukon publication.
-
-For symptom-based instructions and an ID reference, see the
-[recovery and troubleshooting FAQ](recovery-faq.md). Resuming retrieval does not
-restart failed research.
+See the [submission state model and recovery guide](submission-states.md) for
+state meanings, identifiers and symptom-based recovery. Evaluation completion is
+separate from Yukon publication; resuming retrieval does not restart research.
 
 `POST /evaluations` accepts the versioned request constructed by
 [`remote.py`](../src/openrsi_space/remote.py):
@@ -205,7 +202,7 @@ workflow-only retrieval endpoint. Keep receipts unchanged and publish from the
 account and benchmark associated with the evaluation. Modified or mismatched
 receipts are rejected; publication never trusts a score supplied in a note.
 
-See [Yukon publication](github-actions-e2e.md) for the workflow and recovery rules.
+See [Yukon publication](submission-states.md#publish-a-verified-receipt) for the workflow and recovery rules.
 
 ## Scores, curves and artifacts
 
@@ -217,7 +214,7 @@ has no score tuple and includes a reason.
 Metrics retain the complete verified curve, model identities, run cap, total
 usage and provenance. The $10/$20/$50/$100/Best views select from that evidence;
 a later candidate cannot improve an earlier budget view. Missing budget results
-are explicit metadata, never invented Yukon tuple values. See [accounting](tier-accounting.md).
+are explicit metadata, never invented Yukon tuple values. See [accounting](scoring-and-budgets.md).
 
 Owners can download harness source and add an authorized source license. New
 harness source must remain public; solvers cannot make it private.

@@ -197,7 +197,7 @@ Submit the harness source using the [solver guide](solver-guide.md). The remote 
 
 ## Build review
 
-The [build review contract](build-review.md) keeps ordinary online package installation
+The [build review contract](source-limits.md#build-requirements) keeps ordinary online package installation
 and multi-stage Dockerfiles, with source review followed by bounded image review.
 No private offline dependency format is required. See the documented coverage limits;
 code availability and deployment activation are separate.

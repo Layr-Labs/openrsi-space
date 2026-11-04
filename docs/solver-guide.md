@@ -152,7 +152,7 @@ your allowance without a separate cash charge. Infrastructure costs are
 separate. Token and time limits can stop a run before its credit cap.
 An in-flight model response can overshoot the cap; OpenRSI retains actual
 usage and, under validity policy v3, accepts overshoot with trusted evidence
-that every charged request started before budget exhaustion. See [accounting details](tier-accounting.md).
+that every charged request started before budget exhaustion. See [accounting details](scoring-and-budgets.md).
 
 ## 1. Install and connect
 
