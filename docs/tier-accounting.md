@@ -1,7 +1,7 @@
 # ECDSA model-credit tiers
 
 The initial official problem is `ecdsa.fail`, pinned in
-`src/catalyst/problem-set/ecdsa-fail/releases/v1.json`. Compare harness source versions at
+`src/openrsi_space/problem-set/ecdsa-fail/releases/v1.json`. Compare harness source versions at
 **10, 20, 50 and 100 normalized model USD credits, plus Best achieved**. At each tier, minimize the
 best independently verified `avg_toffoli * peak_qubits` produced within that
 allowance. Do not average scores across tiers or replace best performance with
@@ -21,7 +21,7 @@ the best result.
 
 ## Trusted accounting
 
-`src/catalyst/pricing/pricing.json` is the pinned reference schedule, copied
+`src/openrsi_space/pricing/pricing.json` is the pinned reference schedule, copied
 from Dungeness commit `506890937d75b659db714d3e02ea3d3cec3a1451`. Its canonical
 JSON SHA-256 is included in requests, result bindings, receipts and public
 metrics. Editing prices creates a different comparison policy identity; never

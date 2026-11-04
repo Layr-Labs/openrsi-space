@@ -14,16 +14,16 @@ import unittest
 from unittest.mock import patch
 import uuid
 
-from catalyst.common import CatalystError, open_bundle, read_json, write_json
-from catalyst.yukon import authentication
-from catalyst.receipts import check_receipt, PROTOCOL as RECEIPT_PROTOCOL
+from openrsi_space.common import OpenRSIError, open_bundle, read_json, write_json
+from openrsi_space.yukon import authentication
+from openrsi_space.receipts import check_receipt, PROTOCOL as RECEIPT_PROTOCOL
 from harness_fixture import create_harness
-from catalyst.remote import (
+from openrsi_space.remote import (
     PROTOCOL, bound_result, digest, endpoint, evaluation_config,
     judge_input, judgment, request_lock, SCORING, VALIDITY, RemoteClient, verification_reference,
 )
 
-from catalyst.tiers import pricing_digest
+from openrsi_space.tiers import pricing_digest
 
 PROJECT = Path(__file__).resolve().parents[1]
 
@@ -63,7 +63,7 @@ class YukonRunnerTests(unittest.TestCase):
         self.temp = tempfile.TemporaryDirectory()
         self.root = Path(self.temp.name)
         create_harness(self.root / "submission")
-        self.state = self.root / ".catalyst"
+        self.state = self.root / ".openrsi"
         self.target = self.state / "yukon/score.json"
         self.config = read_json(self.root / "submission/evaluation.json")
         self.config["llm_access"]["grant_id"] = "grant_contract_test"
@@ -144,8 +144,8 @@ class YukonRunnerTests(unittest.TestCase):
         self.base = f"http://127.0.0.1:{self.server.server_port}"
         self.environ = patch.dict(os.environ, {
             "YUKON_API_TOKEN": "test-yukon-token", "GITHUB_ACTIONS": "",
-            "CATALYST_API_TOKEN": "", "CATALYST_LOCAL_TEST": "", "CATALYST_LOCAL_ECDSA": "",
-            "YUKON_EVALUATION": json.dumps(self.input), "CATALYST_EVALUATOR_URL": self.base,
+            "OPENRSI_API_TOKEN": "", "OPENRSI_LOCAL_TEST": "", "OPENRSI_LOCAL_ECDSA": "",
+            "YUKON_EVALUATION": json.dumps(self.input), "OPENRSI_EVALUATOR_URL": self.base,
         })
         self.environ.start()
 
@@ -158,7 +158,7 @@ class YukonRunnerTests(unittest.TestCase):
 
     def evaluate(self):
         self.target.unlink(missing_ok=True)
-        with patch("catalyst.remote.time.sleep"), redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+        with patch("openrsi_space.remote.time.sleep"), redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
             client = RemoteClient(self.state)
             identity = client.submit(self.root / "submission")["evaluation_id"]
             artifact = client.wait(identity)
@@ -220,19 +220,19 @@ class YukonRunnerTests(unittest.TestCase):
             result["observations"][0]["curve"] = []
             return result
         self.transform = late
-        with self.assertRaisesRegex(CatalystError, "no verified candidate"):
+        with self.assertRaisesRegex(OpenRSIError, "no verified candidate"):
             self.evaluate()
         self.assertFalse(self.target.exists())
 
     def test_pricing_binding_mismatch_cannot_publish_or_download_traces(self):
         self.transform = lambda result: {**result, "pricing_digest": "f" * 64}
-        with self.assertRaisesRegex(CatalystError, "does not match"):
+        with self.assertRaisesRegex(OpenRSIError, "does not match"):
             self.evaluate()
         self.assertFalse(self.target.exists())
         self.assertEqual(self.trace_gets, [])
 
     def test_v3_workflow_revalidates_v2_receipt_without_relabeling(self):
-        from catalyst.tiers import LEGACY_VALIDITY
+        from openrsi_space.tiers import LEGACY_VALIDITY
         self.evaluate()
         original, identity = next(iter(self.jobs.values()))
         original["judge"]["policies"] = {"scoring": SCORING, "validity": LEGACY_VALIDITY}
@@ -249,15 +249,15 @@ class YukonRunnerTests(unittest.TestCase):
         self.assertEqual(len(self.jobs), 1)
 
     def test_receipt_contract_rejects_policy_downgrade_and_unknown_versions(self):
-        from catalyst.receipts import receipt_contract
-        from catalyst.tiers import LEGACY_VALIDITY
+        from openrsi_space.receipts import receipt_contract
+        from openrsi_space.tiers import LEGACY_VALIDITY
         self.evaluate()
         reference = read_json(self.root / "submission/verification.json")
-        with self.assertRaisesRegex(CatalystError, "incompatible"):
+        with self.assertRaisesRegex(OpenRSIError, "incompatible"):
             receipt_contract(reference, {**self.input, "policies": {"scoring": SCORING, "validity": LEGACY_VALIDITY}})
-        with self.assertRaisesRegex(CatalystError, "incompatible"):
+        with self.assertRaisesRegex(OpenRSIError, "incompatible"):
             receipt_contract({**reference, "policies_digest": "f" * 64}, self.input)
-        with self.assertRaisesRegex(CatalystError, "invalid problem"):
+        with self.assertRaisesRegex(OpenRSIError, "invalid problem"):
             receipt_contract({**reference, "problem_set_digest": "unknown"}, self.input)
 
     def test_forged_receipt_cannot_publish_scores(self):
@@ -267,7 +267,7 @@ class YukonRunnerTests(unittest.TestCase):
         write_json(self.root / "verification.json", reference)
         write_json(self.root / "submission/verification.json",
                    {**reference, "image_digest": "sha256:" + "f" * 64})
-        with self.assertRaises(CatalystError):
+        with self.assertRaises(OpenRSIError):
             self.retrieve()
         self.assertFalse(self.target.exists())
         self.assertEqual(len(self.jobs), 1)
@@ -285,12 +285,12 @@ class YukonRunnerTests(unittest.TestCase):
         write_json(self.root / "verification.json", read_json(receipt))
         receipt.unlink()
         receipt.symlink_to(self.root / "absent.json")
-        with self.assertRaisesRegex(CatalystError, "symlinks"):
+        with self.assertRaisesRegex(OpenRSIError, "symlinks"):
             self.retrieve()
 
     def test_missing_root_receipt_removes_stale_score_without_starting_a_run(self):
         write_json(self.target, {"scores": [999]})
-        with self.assertRaisesRegex(CatalystError, "Missing verification.json"):
+        with self.assertRaisesRegex(OpenRSIError, "Missing verification.json"):
             self.retrieve()
         self.assertFalse(self.target.exists())
         self.assertEqual(self.requests, [])
@@ -298,7 +298,7 @@ class YukonRunnerTests(unittest.TestCase):
     def test_lost_acknowledgement_reuses_operation_without_duplicate_job(self):
         write_json(self.target, {"scores": [999]})
         self.fail_post_once = True
-        with self.assertRaisesRegex(CatalystError, "HTTP 503"):
+        with self.assertRaisesRegex(OpenRSIError, "HTTP 503"):
             self.evaluate()
         self.assertFalse(self.target.exists())
         self.assertEqual(len(list((self.state / "remote/pending").glob("*.json"))), 1)
@@ -309,7 +309,7 @@ class YukonRunnerTests(unittest.TestCase):
     def test_wrong_source_result_never_becomes_yukon_score(self):
         self.transform = lambda result: {**result, "source_digest": "f" * 64}
         write_json(self.target, {"scores": [999]})
-        with self.assertRaisesRegex(CatalystError, "does not match"):
+        with self.assertRaisesRegex(OpenRSIError, "does not match"):
             self.evaluate()
         self.assertFalse(self.target.exists())
         self.assertEqual(self.trace_gets, [])
@@ -324,7 +324,7 @@ class YukonRunnerTests(unittest.TestCase):
 
     def test_worker_failure_has_no_judgment_or_trace_download(self):
         self.transform = lambda result: {**result, "status": "failed"}
-        with self.assertRaisesRegex(CatalystError, "failed"):
+        with self.assertRaisesRegex(OpenRSIError, "failed"):
             self.evaluate()
         self.assertFalse(self.target.exists())
         self.assertEqual(self.trace_gets, [])
@@ -332,7 +332,7 @@ class YukonRunnerTests(unittest.TestCase):
     def test_configuration_missing_grant_or_secret_field_fails_before_network(self):
         for changes in ({"grant_id": ""}, {"grant_id": "grant_contract_test", "api_key": "secret"}):
             write_json(self.root / "submission/evaluation.json", {**self.config, "llm_access": changes})
-            with self.assertRaisesRegex(CatalystError, "grant reference"):
+            with self.assertRaisesRegex(OpenRSIError, "grant reference"):
                 self.evaluate()
         self.assertEqual(self.requests, [])
 
@@ -352,14 +352,14 @@ class YukonRunnerTests(unittest.TestCase):
         ):
             malformed = copy.deepcopy(result)
             mutation(malformed)
-            with self.assertRaises(CatalystError):
+            with self.assertRaises(OpenRSIError):
                 judgment(malformed, request)
         for bad in (
             {**self.input, "policies": {"scoring": {"version": "unknown"}, "validity": VALIDITY}},
             {**self.input, "fields": {"scores": 1, "validity": True}},
             {**self.input, "fields": {"scores": False, "validity": False}},
         ):
-            with self.assertRaises(CatalystError):
+            with self.assertRaises(OpenRSIError):
                 judge_input(json.dumps(bad))
         request["judge"]["fields"] = {"scores": False, "validity": True}
         self.assertNotIn("scores", judgment(result, request))
@@ -369,18 +369,18 @@ class YukonRunnerTests(unittest.TestCase):
     def test_concurrent_client_cannot_issue_same_paid_request(self):
         pending = self.state / "pending/request.json"
         with request_lock(pending):
-            with self.assertRaisesRegex(CatalystError, "already running"):
+            with self.assertRaisesRegex(OpenRSIError, "already running"):
                 with request_lock(pending):
                     self.fail("Concurrent paid request was allowed.")
 
     def test_redirect_refused_and_non_https_remote_endpoint_rejected(self):
         # This exercises the actual authorization transport's redirect handler.
-        from catalyst.remote import NoRedirect
-        with self.assertRaisesRegex(CatalystError, "redirects"):
+        from openrsi_space.remote import NoRedirect
+        with self.assertRaisesRegex(OpenRSIError, "redirects"):
             NoRedirect().redirect_request(None, None, 302, "", {}, "https://elsewhere.test")
         for url in ("http://remote.test", "https://token@remote.test", "https://remote.test?token=secret"):
-            with patch.dict(os.environ, {"CATALYST_EVALUATOR_URL": url}):
-                with self.assertRaises(CatalystError):
+            with patch.dict(os.environ, {"OPENRSI_EVALUATOR_URL": url}):
+                with self.assertRaises(OpenRSIError):
                     endpoint()
 
     def test_yukon_config_login_and_workflow_oidc(self):
@@ -396,7 +396,7 @@ class YukonRunnerTests(unittest.TestCase):
             "GITHUB_SHA": "c" * 40, "GITHUB_RUN_ID": "123", "GITHUB_RUN_ATTEMPT": "1",
             "ACTIONS_ID_TOKEN_REQUEST_URL": "https://actions.test/oidc?job=1",
             "ACTIONS_ID_TOKEN_REQUEST_TOKEN": "github-job-token",
-        }), patch("catalyst.yukon.fetch", return_value=b'{"value":"signed-oidc"}') as oidc:
+        }), patch("openrsi_space.yukon.fetch", return_value=b'{"value":"signed-oidc"}') as oidc:
             token, context = authentication()
             self.assertEqual(token, "signed-oidc")
             self.assertEqual(context["commit"], "c" * 40)

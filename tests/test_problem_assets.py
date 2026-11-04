@@ -5,10 +5,10 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from catalyst.common import CatalystError
-from catalyst.challenge.assets import asset_path, install_assets, registered_assets
-from catalyst.challenge.catalog import get_problem
-from catalyst.challenge.preparation import validate_execution, yaml_file
+from openrsi_space.common import OpenRSIError
+from openrsi_space.challenge.assets import asset_path, install_assets, registered_assets
+from openrsi_space.challenge.catalog import get_problem
+from openrsi_space.challenge.preparation import validate_execution, yaml_file
 
 
 class ProblemAssetsTests(unittest.TestCase):
@@ -49,7 +49,7 @@ class ProblemAssetsTests(unittest.TestCase):
             (source / 'grade.py').write_text('# trusted verifier')
             (source / '__pycache__/grade.cpython-312.pyc').write_bytes(b'local cache')
             (source / 'grade.pyc').write_bytes(b'legacy cache')
-            with patch('catalyst.challenge.assets.registered_assets',
+            with patch('openrsi_space.challenge.assets.registered_assets',
                        return_value={'verifiers/example': source}):
                 install_assets(runtime, {'verifier': 'example'})
             self.assertEqual([p.name for p in (runtime / 'verifiers/example').iterdir()], ['grade.py'])
@@ -60,7 +60,7 @@ class ProblemAssetsTests(unittest.TestCase):
             (runtime / 'runtime-contract.json').write_text(json.dumps({
                 'schema_version': 1, 'runtime': 'dungeness', 'capabilities': [],
             }))
-            with self.assertRaisesRegex(CatalystError, 'declarative-scaffolds-v2'):
+            with self.assertRaisesRegex(OpenRSIError, 'declarative-scaffolds-v2'):
                 validate_execution(runtime, runtime, {'execution': get_problem('ecdsa.fail')['dungeness']})
             self.assertFalse((runtime / 'scaffolds').exists())
 
@@ -78,6 +78,6 @@ class ProblemAssetsTests(unittest.TestCase):
             outside.mkdir()
             (outside / 'keep.txt').write_text('keep')
             (runtime / 'scaffolds').symlink_to(outside)
-            with self.assertRaisesRegex(CatalystError, 'escapes'):
+            with self.assertRaisesRegex(OpenRSIError, 'escapes'):
                 install_assets(runtime, get_problem('ecdsa.fail')['dungeness'])
             self.assertEqual((outside / 'keep.txt').read_text(), 'keep')

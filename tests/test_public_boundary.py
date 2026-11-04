@@ -11,9 +11,9 @@ import tempfile
 import tomllib
 import unittest
 
-import catalyst
-from catalyst.cli import main
-from catalyst.credentials import encode_codex_access, PREFIX
+import openrsi_space
+from openrsi_space.cli import main
+from openrsi_space.credentials import encode_codex_access, PREFIX
 
 
 PRIVATE_MODULES = {
@@ -29,36 +29,36 @@ class PublicBoundaryTests(unittest.TestCase):
         with redirect_stdout(io.StringIO()) as output, self.assertRaises(SystemExit) as result:
             main(["--version"])
         self.assertEqual(result.exception.code, 0)
-        self.assertEqual(output.getvalue().strip(), f"openrsi-space {catalyst.__version__}")
+        self.assertEqual(output.getvalue().strip(), f"openrsi-space {openrsi_space.__version__}")
         project = Path(__file__).resolve().parents[1] / "pyproject.toml"
         metadata = tomllib.loads(project.read_text())["project"]
-        self.assertEqual(catalyst.__version__, metadata["version"])
-        self.assertEqual(metadata["scripts"], {"openrsi-space": "catalyst.cli:main"})
+        self.assertEqual(openrsi_space.__version__, metadata["version"])
+        self.assertEqual(metadata["scripts"], {"openrsi-space": "openrsi_space.cli:main"})
         benchmark = json.loads((project.parent / "benchmark.json").read_text())
         for field in ("setupCommand", "benchmarkCommand"):
             self.assertEqual(benchmark[field][3], "openrsi-space")
 
     def test_public_package_has_no_private_runtime_or_imports(self):
-        root = Path(catalyst.__file__).parent
-        names = {item.name for item in pkgutil.iter_modules(catalyst.__path__)}
+        root = Path(openrsi_space.__file__).parent
+        names = {item.name for item in pkgutil.iter_modules(openrsi_space.__path__)}
         self.assertFalse(names & PRIVATE_MODULES)
         self.assertFalse((root / "local_fixture").exists())
         for name in names:
-            importlib.import_module("catalyst." + name)
+            importlib.import_module("openrsi_space." + name)
         for path in root.rglob("*.py"):
             for node in ast.walk(ast.parse(path.read_text())):
                 if isinstance(node, ast.ImportFrom):
-                    self.assertFalse((node.module or "").startswith("catalyst_verifier"), path)
+                    self.assertFalse((node.module or "").startswith("openrsi_space_verifier"), path)
                     if node.level:
-                        package = ".".join(("catalyst", *path.relative_to(root).parts[:-1]))
+                        package = ".".join(("openrsi_space", *path.relative_to(root).parts[:-1]))
                         resolved = importlib.util.resolve_name("." * node.level + (node.module or ""), package)
-                        if resolved.startswith("catalyst."):
+                        if resolved.startswith("openrsi_space."):
                             self.assertNotIn(resolved.split(".")[1], PRIVATE_MODULES, path)
                 elif isinstance(node, ast.Import):
-                    self.assertFalse(any(alias.name.startswith("catalyst_verifier") for alias in node.names), path)
+                    self.assertFalse(any(alias.name.startswith("openrsi_space_verifier") for alias in node.names), path)
 
     def test_public_cli_exposes_solver_commands_not_operator_commands(self):
-        from catalyst.cli import build_parser
+        from openrsi_space.cli import build_parser
         _, commands = build_parser()
         self.assertTrue({"remote", "yukon-run", "yukon-submit", "problem", "harness"} <= set(commands.choices))
         self.assertTrue({"worker", "evaluator-serve", "artifact-sync", "maintenance",
@@ -70,7 +70,7 @@ class PublicBoundaryTests(unittest.TestCase):
             target = Path(temporary) / "agent"
             self.assertEqual(main(["harness", "create", "agent", "--executable", "--output", str(target)]), 0)
             document = json.loads((target / "harness.json").read_text())
-            self.assertEqual(document["execution"]["interface"], "catalyst-exec-v1")
+            self.assertEqual(document["execution"]["interface"], "openrsi-exec-v1")
             self.assertTrue((target / "agent.py").is_file())
             self.assertEqual(main(["problem", "list"]), 0)
             self.assertIn("ecdsa.fail", output.getvalue())

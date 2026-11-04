@@ -6,17 +6,17 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-import catalyst
-from catalyst.client import evaluations, transport
-from catalyst.contracts import evaluation, results
+import openrsi_space
+from openrsi_space.client import evaluations, transport
+from openrsi_space.contracts import evaluation, results
 
 
 class ModuleBoundaryTests(unittest.TestCase):
     def test_contracts_have_no_client_or_execution_dependency(self):
-        root = Path(catalyst.__file__).parent
-        forbidden = ("catalyst.client", "catalyst.cli", "catalyst.integrations",
-                     "catalyst.harnesses", "catalyst.challenge", "catalyst.remote",
-                     "catalyst.executable", "catalyst.local", "subprocess", "urllib.request")
+        root = Path(openrsi_space.__file__).parent
+        forbidden = ("openrsi_space.client", "openrsi_space.cli", "openrsi_space.integrations",
+                     "openrsi_space.harnesses", "openrsi_space.challenge", "openrsi_space.remote",
+                     "openrsi_space.executable", "openrsi_space.local", "subprocess", "urllib.request")
         # Include shared helpers because importing them must not pull execution in.
         paths = list((root / "contracts").glob("*.py")) + [root / "common.py"]
         for path in paths:
@@ -39,18 +39,18 @@ class ModuleBoundaryTests(unittest.TestCase):
             "yukon_submit": "integrations.yukon.submission", "receipts": "integrations.yukon.receipts",
         }.items():
             with self.subTest(module=old):
-                self.assertIs(importlib.import_module("catalyst." + old),
-                              importlib.import_module("catalyst." + new))
-        remote = importlib.import_module("catalyst.remote")
+                self.assertIs(importlib.import_module("openrsi_space." + old),
+                              importlib.import_module("openrsi_space." + new))
+        remote = importlib.import_module("openrsi_space.remote")
         self.assertIs(remote.validate_evaluation_config, evaluation.validate_evaluation_config)
         self.assertIs(remote.judgment, results.judgment)
         self.assertIs(remote.RemoteClient, evaluations.RemoteClient)
 
     def test_existing_transport_overrides_reach_relocated_client(self):
-        remote = importlib.import_module("catalyst.remote")
+        remote = importlib.import_module("openrsi_space.remote")
         original = transport.endpoint
         with tempfile.TemporaryDirectory() as directory:
-            with patch("catalyst.remote.endpoint", return_value="http://localhost:1234") as endpoint:
+            with patch("openrsi_space.remote.endpoint", return_value="http://localhost:1234") as endpoint:
                 client = remote.RemoteClient(Path(directory), bearer="synthetic-token")
                 self.assertEqual(client.base, "http://localhost:1234")
                 endpoint.assert_called_once_with()

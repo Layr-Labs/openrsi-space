@@ -7,8 +7,8 @@ import re
 import tempfile
 import unittest
 
-from catalyst.cli import main
-from catalyst.common import make_bundle, open_bundle, validate_document
+from openrsi_space.cli import main
+from openrsi_space.common import make_bundle, open_bundle, validate_document
 
 
 class CommandSubmissionTests(unittest.TestCase):
@@ -37,7 +37,7 @@ class CommandSubmissionTests(unittest.TestCase):
                                        "--output", str(derived)]), 0)
             first = json.loads((source / "harness.json").read_text())
             second = json.loads((derived / "harness.json").read_text())
-            self.assertEqual(first["execution"]["interface"], "catalyst-exec-v1")
+            self.assertEqual(first["execution"]["interface"], "openrsi-exec-v1")
             self.assertEqual(first["execution"], second["execution"])
             self.assertEqual((source / "agent.py").read_bytes(), (derived / "agent.py").read_bytes())
             self.assertNotIn("agent", first)
@@ -67,5 +67,5 @@ class CommandSubmissionTests(unittest.TestCase):
             with redirect_stderr(error):
                 self.assertNotEqual(main(["harness", "create", "derived", "--from", str(root),
                                           "--output", str(target)]), 0)
-            self.assertIn("Migrate it to catalyst-exec-v1", error.getvalue())
+            self.assertIn("Migrate it to openrsi-exec-v1", error.getvalue())
             self.assertFalse(target.exists())

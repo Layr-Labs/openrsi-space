@@ -11,7 +11,7 @@ must review the reachable history and release archives for private implementatio
 and credentials. Any history rewrite or repository replacement is a separate
 operation that must preserve the GitHub/Yukon identity and authentication bindings.
 
-Publish only reviewed source. Exclude `.catalyst`, `.venv`, credentials, evaluation
+Publish only reviewed source. Exclude `.openrsi`, `.venv`, credentials, evaluation
 artifacts and generated build metadata. Build packages from a clean source tree;
 stale build directories can accidentally reintroduce removed modules. Inspect
 the final wheel and source archive as well as running the client and private

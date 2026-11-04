@@ -5,11 +5,11 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from catalyst.common import write_json
-from catalyst.integrations.dungeness.diagnostics import summarize
-from catalyst.contracts.accounting import pricing_schedule, model_prices
-from catalyst.contracts.model_equivalence import GROUPS
-from catalyst.harnesses import executable
+from openrsi_space.common import write_json
+from openrsi_space.integrations.dungeness.diagnostics import summarize
+from openrsi_space.contracts.accounting import pricing_schedule, model_prices
+from openrsi_space.contracts.model_equivalence import GROUPS
+from openrsi_space.harnesses import executable
 
 
 class LocalDiagnosticsTests(unittest.TestCase):
@@ -44,7 +44,7 @@ class LocalDiagnosticsTests(unittest.TestCase):
             self.assertEqual(result['metrics'], {})
 
     def test_codex_turn_recovery_and_malformed_events(self):
-        from catalyst.integrations.dungeness.diagnostics import reported_agent_outcome
+        from openrsi_space.integrations.dungeness.diagnostics import reported_agent_outcome
         events = [{'type': {}}, {'type': 'turn.failed', 'error': 'private-canary'}, {'type': 'turn.completed'}]
         result = reported_agent_outcome('\n'.join(map(json.dumps, events)))
         self.assertEqual(result['last_client_status'], 'completed')
@@ -191,13 +191,13 @@ class LocalDiagnosticsTests(unittest.TestCase):
         self.assertEqual([opus[k] for k in ('input_per_mtok', 'output_per_mtok', 'cached_read_per_mtok', 'cache_write_per_mtok', 'cache_write_1h_per_mtok')], [4, 20, .2, 5, 8])
 
     def test_problem_smoke_has_trusted_readonly_overlays_and_deadline(self):
-        from catalyst.challenge.catalog import get_problem
+        from openrsi_space.challenge.catalog import get_problem
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
             workspace = root/'repo'
             workspace.mkdir()
             with patch.object(executable, 'inspect_build', return_value={'image_id':'synthetic','source_digest':'a'*64}), \
-                 patch('catalyst.challenge.catalog.validate_workspace'), \
+                 patch('openrsi_space.challenge.catalog.validate_workspace'), \
                  patch.object(executable, 'docker_output', return_value='ok') as docker, \
                  patch.object(executable.subprocess, 'run'):
                 result = executable.smoke(root/'state', 'build', workspace, problem=get_problem('ecdsa.fail'), timeout=120)

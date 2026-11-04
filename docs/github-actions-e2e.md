@@ -29,13 +29,13 @@ updating source. A newly created GitHub repository has a different numeric ID,
 which requires coordinated OIDC authorization in the private verifier service.
 
 The workflow needs internet access to the service's HTTPS endpoint. Configure
-`CATALYST_EVALUATOR_URL` as a GitHub Actions repository variable. The URL is not a
+`OPENRSI_EVALUATOR_URL` as a GitHub Actions repository variable. The URL is not a
 secret; using a variable lets the service migrate without editing solver source.
 The workflow needs `id-token: write` to request GitHub OIDC. It does not need the
 solver's Yukon key or model credentials, and it does not use SSH to run verification.
 
 Service authorization and baseline provisioning are operator work in the private
-`catalyst-verifier` repository. The public workflow has no copy of that service
+`openrsi-space-verifier` repository. The public workflow has no copy of that service
 or its anti-cheat implementation. Receipt retrieval must fail if the service is
 unreachable or rejects the binding; there is no local-score fallback.
 

@@ -8,10 +8,10 @@ from pathlib import Path
 import unittest
 from unittest.mock import patch
 
-from catalyst.common import CatalystError
-from catalyst.credentials import decode_remote_access, encode_provider_access, require_remote_models
-from catalyst.cli import build_parser
-from catalyst.client.evaluations import RemoteClient
+from openrsi_space.common import OpenRSIError
+from openrsi_space.credentials import decode_remote_access, encode_provider_access, require_remote_models
+from openrsi_space.cli import build_parser
+from openrsi_space.client.evaluations import RemoteClient
 
 
 class RemoteApiKeysOnlyTests(unittest.TestCase):
@@ -24,7 +24,7 @@ class RemoteApiKeysOnlyTests(unittest.TestCase):
 
     def test_subscription_declared_anywhere_in_model_set_is_rejected(self):
         for provider in ('openai-chatgpt', 'claude-subscription'):
-            with self.subTest(provider=provider), self.assertRaisesRegex(CatalystError, 'removed'):
+            with self.subTest(provider=provider), self.assertRaisesRegex(OpenRSIError, 'removed'):
                 require_remote_models([{'provider': 'openai', 'name': 'api-model'},
                                        {'provider': provider, 'name': 'subscription-model'}])
 
@@ -35,7 +35,7 @@ class RemoteApiKeysOnlyTests(unittest.TestCase):
             tokens.append('providers_' + base64.urlsafe_b64encode(
                 json.dumps({provider: {'access_token': 'synthetic-token'}}).encode()).decode())
         for token in tokens:
-            with self.subTest(token=token), self.assertRaises(CatalystError):
+            with self.subTest(token=token), self.assertRaises(OpenRSIError):
                 decode_remote_access(evaluation, token)
 
     def test_remote_cli_has_no_codex_login_file_option(self):
@@ -53,14 +53,14 @@ class RemoteApiKeysOnlyTests(unittest.TestCase):
         client.base = 'https://example.invalid'
         client.state = Path('/unused')
         body = {'evaluation': {'model': {'provider': 'openai-chatgpt', 'name': 'test-model'}}}
-        with patch('catalyst.client.evaluations.request_body', return_value=body), \
-             patch('catalyst.client.evaluations.transport.solver_fetch') as fetch:
-            with self.assertRaisesRegex(CatalystError, 'removed'):
+        with patch('openrsi_space.client.evaluations.request_body', return_value=body), \
+             patch('openrsi_space.client.evaluations.transport.solver_fetch') as fetch:
+            with self.assertRaisesRegex(OpenRSIError, 'removed'):
                 client.submit(Path('/unused'))
             fetch.assert_not_called()
         with patch.object(client, 'session', return_value={'request': body}), \
              patch('pathlib.Path.is_file', return_value=True), \
-             patch('catalyst.client.evaluations.transport.solver_fetch') as fetch:
-            with self.assertRaisesRegex(CatalystError, 'removed'):
+             patch('openrsi_space.client.evaluations.transport.solver_fetch') as fetch:
+            with self.assertRaisesRegex(OpenRSIError, 'removed'):
                 client.renew_access('00000000-0000-4000-8000-000000000001', 'synthetic-token')
             fetch.assert_not_called()

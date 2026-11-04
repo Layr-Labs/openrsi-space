@@ -6,9 +6,9 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from catalyst.common import CatalystError
-from catalyst.challenge.catalog import get_problem
-from catalyst.challenge.papers import BUNDLED_PAPERS, cached_paper, load_catalog, matches
+from openrsi_space.common import OpenRSIError
+from openrsi_space.challenge.catalog import get_problem
+from openrsi_space.challenge.papers import BUNDLED_PAPERS, cached_paper, load_catalog, matches
 
 
 class LicensedLibraryTests(unittest.TestCase):
@@ -36,7 +36,7 @@ class LicensedLibraryTests(unittest.TestCase):
         grading = copy.deepcopy(get_problem("ecdsa.fail", release="v1"))
         grading.pop("release")
         grading["dungeness"].pop("knowledge_base")
-        from catalyst.common import canonical
+        from openrsi_space.common import canonical
         self.assertEqual(hashlib.sha256(canonical(grading)).hexdigest(),
                          "762f1e2cb6054e88de4d4bb04bdbc496b186c9690721f8b8d767faf43b7cf250")
         evidence = json.loads((BUNDLED_PAPERS.parent / "licenses-v1.json").read_text())
@@ -51,7 +51,7 @@ class LicensedLibraryTests(unittest.TestCase):
         selected = catalog["papers"]
         self.assertEqual(len(selected), 8)
         self.assertEqual({p.name for p in BUNDLED_PAPERS.glob("*.pdf")}, {p["file"] for p in selected})
-        with tempfile.TemporaryDirectory() as folder, patch("catalyst.challenge.papers.build_opener") as opener:
+        with tempfile.TemporaryDirectory() as folder, patch("openrsi_space.challenge.papers.build_opener") as opener:
             for paper in selected:
                 path = cached_paper(paper, Path(folder) / "absent-cache")
                 self.assertTrue(matches(path, paper))
@@ -66,26 +66,26 @@ class LicensedLibraryTests(unittest.TestCase):
             root = Path(folder)
             bundle = root / "bundle"
             bundle.mkdir()
-            with patch("catalyst.challenge.papers.BUNDLED_PAPERS", bundle), \
-                    patch("catalyst.challenge.papers.build_opener") as opener:
+            with patch("openrsi_space.challenge.papers.BUNDLED_PAPERS", bundle), \
+                    patch("openrsi_space.challenge.papers.build_opener") as opener:
                 paper = bundle / entry["file"]
                 paper.write_bytes(b"tampered")
-                with self.assertRaisesRegex(CatalystError, "Bundled task paper"):
+                with self.assertRaisesRegex(OpenRSIError, "Bundled task paper"):
                     cached_paper(entry, root / "cache")
                 paper.unlink()
                 target = root / "outside.pdf"
                 target.write_bytes(data)
                 paper.symlink_to(target)
-                with self.assertRaisesRegex(CatalystError, "Bundled task paper"):
+                with self.assertRaisesRegex(OpenRSIError, "Bundled task paper"):
                     cached_paper(entry, root / "cache")
                 opener.assert_not_called()
 
 
 class CurrentProblemTests(unittest.TestCase):
     def test_current_release_checks_exact_installed_digest(self):
-        from catalyst.client.catalog import PublicCatalog
-        from catalyst.challenge.catalog import initial_problems
-        from catalyst.contracts.results import digest
+        from openrsi_space.client.catalog import PublicCatalog
+        from openrsi_space.challenge.catalog import initial_problems
+        from openrsi_space.contracts.results import digest
         client = PublicCatalog('https://verifier.example.test')
         version = digest(initial_problems(release='v1'))
         advertised = {'problem_version': version, 'problem_versions': [
@@ -97,5 +97,5 @@ class CurrentProblemTests(unittest.TestCase):
             self.assertFalse(client.current_problem()['installed'])
         advertised['problem_versions'] = []
         with patch.object(client, 'search', return_value=advertised):
-            with self.assertRaises(CatalystError):
+            with self.assertRaises(OpenRSIError):
                 client.current_problem()

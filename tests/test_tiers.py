@@ -5,9 +5,9 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from catalyst.common import CatalystError, write_json
-from catalyst.tiers import credits, pricing_digest, project_observation, SCORING, VALIDITY
-from catalyst.remote import evaluation_config
+from openrsi_space.common import OpenRSIError, write_json
+from openrsi_space.tiers import credits, pricing_digest, project_observation, SCORING, VALIDITY
+from openrsi_space.remote import evaluation_config
 from harness_fixture import evaluation
 
 MODEL = {"provider": "openai", "name": "gpt-5.6-sol"}
@@ -142,22 +142,22 @@ class TierTests(unittest.TestCase):
         for mutation in mutations:
             record = observation()
             mutation(record)
-            with self.subTest(mutation=mutation), self.assertRaises(CatalystError):
+            with self.subTest(mutation=mutation), self.assertRaises(OpenRSIError):
                 self.project(record)
 
     def test_overrun_and_unknown_usage_never_silently_round_down(self):
         record = observation()
         record["usage"][0]["tokens"]["input_tokens"] += 1
         record["normalized_model_usd"] = 201.000005
-        with self.assertRaises(CatalystError):
+        with self.assertRaises(OpenRSIError):
             self.project(record)  # The earlier capture is now > 20 and disagrees.
-        with self.assertRaises(CatalystError):
+        with self.assertRaises(OpenRSIError):
             self.project(observation(), 200)  # 201 total credits exceeds authority.
-        with self.assertRaises(CatalystError):
+        with self.assertRaises(OpenRSIError):
             project_observation(observation(), MODEL, 500, {**LIMITS, "max_model_tokens": 10})
         record = observation()
         record["usage"][0]["tokens"].pop("output_tokens")
-        with self.assertRaises(CatalystError):
+        with self.assertRaises(OpenRSIError):
             self.project(record)
 
     def test_native_token_budget_uses_trusted_counter_without_changing_credits(self):
@@ -166,9 +166,9 @@ class TierTests(unittest.TestCase):
             event["budget_tokens"] = 100
         result = project_observation(record, MODEL, 500, {**LIMITS, "max_model_tokens": 400})
         self.assertEqual(result["normalized_model_usd"], 201)
-        with self.assertRaises(CatalystError):
+        with self.assertRaises(OpenRSIError):
             project_observation(record, MODEL, 500, {**LIMITS, "max_model_tokens": 399})
-        with self.assertRaises(CatalystError):
+        with self.assertRaises(OpenRSIError):
             project_observation(record, MODEL, 200, {**LIMITS, "max_model_tokens": 400})
 
 
@@ -183,14 +183,14 @@ class PricingTests(unittest.TestCase):
                   "cache_write_tokens": 300, "cache_write_1h_tokens": 100}
         self.assertEqual(credits(counts, model, schedule), Decimal(".00584"))
         for value in (True, -1, 301, 1.5):
-            with self.assertRaises(CatalystError):
+            with self.assertRaises(OpenRSIError):
                 credits({**counts, "cache_write_1h_tokens": value}, model, schedule)
         missing = {k: v for k, v in counts.items() if k != "cache_write_1h_tokens"}
-        with self.assertRaisesRegex(CatalystError, "duration usage is missing"):
+        with self.assertRaisesRegex(OpenRSIError, "duration usage is missing"):
             credits(missing, model, schedule)
         legacy = {"entries": [{k: v for k, v in entry.items() if k != "cache_write_1h_per_mtok"}]}
         self.assertEqual(credits(missing, model, legacy), Decimal(".00554"))
-        with self.assertRaisesRegex(CatalystError, "Unpriced"):
+        with self.assertRaisesRegex(OpenRSIError, "Unpriced"):
             credits(counts, model, legacy)
 
     def test_provider_routes_and_subscriptions_use_same_reference_credit_rates(self):
@@ -213,9 +213,9 @@ class PricingTests(unittest.TestCase):
         for override in ({"input_tokens": True}, {"output_tokens": -1},
                          {"output_tokens": 1.5}, {"cached_read_tokens": 101},
                          {"cache_write_tokens": 1}, {"extra": 1}):
-            with self.assertRaises(CatalystError):
+            with self.assertRaises(OpenRSIError):
                 credits({**base, **override}, MODEL)
-        with self.assertRaises(CatalystError):
+        with self.assertRaises(OpenRSIError):
             credits(base, {"provider": "unpriced", "name": "any"})
 
     def test_config_requires_explicit_finite_credit_cap_and_pinned_prices(self):
@@ -231,10 +231,10 @@ class PricingTests(unittest.TestCase):
                 if type(value) in (int, float) and 0 < value < float("inf"):
                     self.assertEqual(evaluation_config(path), modified)
                 else:
-                    with self.assertRaises(CatalystError):
+                    with self.assertRaises(OpenRSIError):
                         evaluation_config(path)
             write_json(path, {**config, "model": {"provider": "openai", "name": "unpriced"}})
-            with self.assertRaises(CatalystError):
+            with self.assertRaises(OpenRSIError):
                 evaluation_config(path)
         manifest = json.loads((source / "benchmark.json").read_text())
         self.assertEqual(manifest["paretoPolicies"], {"scoring": SCORING, "validity": VALIDITY})

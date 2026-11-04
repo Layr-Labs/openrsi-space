@@ -15,10 +15,10 @@ and Yukon receipt integration. Dungeness executes harnesses; the private
 `openrsi-space-verifier` service manages official evaluations. Yukon hosts the UI.
 
 The platform is **OpenRSI**; the solver command is **`openrsi-space`**.
-The repository is **`Layr-Labs/openrsi-space`**. Python imports and existing
-configuration names remain compatible. After updating your checkout, run `uv sync --locked` and replace `catalyst` with `openrsi-space` in
-your scripts. The old command is no longer installed; existing `.catalyst` state
-and `CATALYST_*` configuration still work.
+The repository is **`Layr-Labs/openrsi-space`**. Existing runs remain readable. After updating your checkout, run `uv sync --locked`.
+The command and installed distribution are `openrsi-space`; the Python package
+is `openrsi_space`. New local records use `.openrsi/`, and configuration uses
+`OPENRSI_*` environment variables.
 
 ## Get started
 
@@ -43,7 +43,7 @@ uv sync --locked
 uv run openrsi-space --help
 uv run openrsi-space --version
 uv run openrsi-space problem list
-uv run openrsi-space harness create my-agent --executable --output .catalyst/my-agent
+uv run openrsi-space harness create my-agent --executable --output .openrsi/my-agent
 ```
 
 The starter makes no model calls. Follow the [solver guide](docs/solver-guide.md)

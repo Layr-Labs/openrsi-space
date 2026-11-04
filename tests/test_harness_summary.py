@@ -1,6 +1,6 @@
 """Public summaries preserve readable prose while excluding unsafe metadata."""
 import unittest
-from catalyst.contracts.harness_summary import public_summary, summary_error
+from openrsi_space.contracts.harness_summary import public_summary, summary_error
 
 
 class HarnessSummaryTests(unittest.TestCase):

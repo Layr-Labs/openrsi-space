@@ -4,8 +4,8 @@ import json
 import unittest
 from unittest.mock import patch
 
-from catalyst.challenge import catalog
-from catalyst.challenge.paths import PROBLEM_SET
+from openrsi_space.challenge import catalog
+from openrsi_space.challenge.paths import PROBLEM_SET
 
 
 class ChallengeCompatibilityTests(unittest.TestCase):
@@ -16,13 +16,13 @@ class ChallengeCompatibilityTests(unittest.TestCase):
             "task_setup": "preparation",
         }.items():
             with self.subTest(module=old):
-                previous = importlib.import_module("catalyst." + old)
-                current = importlib.import_module("catalyst.challenge." + new)
+                previous = importlib.import_module("openrsi_space." + old)
+                current = importlib.import_module("openrsi_space.challenge." + new)
                 self.assertIs(previous, current)
-        with patch("catalyst.paper_library.CATALOGS", {}):
-            self.assertEqual(importlib.import_module("catalyst.challenge.papers").CATALOGS, {})
-        with patch("catalyst.problem_assets.registered_assets", return_value={}):
-            self.assertEqual(importlib.import_module("catalyst.challenge.assets").registered_assets(), {})
+        with patch("openrsi_space.paper_library.CATALOGS", {}):
+            self.assertEqual(importlib.import_module("openrsi_space.challenge.papers").CATALOGS, {})
+        with patch("openrsi_space.problem_assets.registered_assets", return_value={}):
+            self.assertEqual(importlib.import_module("openrsi_space.challenge.assets").registered_assets(), {})
 
     def test_relocated_loader_reads_the_original_problem_set(self):
         for release, name in catalog.PROBLEM_RELEASES.items():

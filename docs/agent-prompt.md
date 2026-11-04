@@ -47,7 +47,7 @@ a repository default is the deployed version. Use the returned tag explicitly as
 before submission. Include the tag and digest in the readiness report.
 
 Inside the run, read the server-assigned description and knowledge-base URLs from
-`CATALYST_TASK`; never hardcode a versioned resource URL in a general-purpose
+`OPENRSI_TASK`; never hardcode a versioned resource URL in a general-purpose
 harness. Every new evaluation starts fresh with that release's scaffold and
 resources. Preserve the original version and request ID when resuming an existing
 run; a new release requires a new evaluation, not editing saved requests or receipts.
@@ -177,7 +177,7 @@ or personal details in source or submission notes.
 
 Submit only a general-purpose harness, without ECDSA-specific papers, notes,
 strategies or prewritten candidates. The assigned task provides a pinned library
-of eight bundled papers through `CATALYST_KNOWLEDGE_BASE_URL`. The agent chooses what to
+of eight bundled papers through `OPENRSI_KNOWLEDGE_BASE_URL`. The agent chooses what to
 read and develops its candidate during the metered run.
 OpenRSI measures what the submitted source achieves inside its controlled
 Dungeness run. An interactively improved solution on the solver's laptop is
@@ -192,7 +192,7 @@ subscription credits as an actual cash payment.
 
 Only `submission/verification.json` is editable for Yukon submission.
 Keep the agent's general-purpose source, prompts, tools and configuration in a
-separate directory such as `.catalyst/my-harness/`. Preserve unrelated edits.
+separate directory such as `.openrsi/my-harness/`. Preserve unrelated edits.
 No Yukon backend modification, GitHub credential or SSH access is needed to
 submit as a solver.
 
@@ -240,27 +240,27 @@ readiness report; all inference must use assigned gateway endpoints.
    Reuse the solver's Yukon login. Do not print, log, package or publish keys.
 3. If needed, clone with `yukon clone bxue-l2/openrsi-space` and enter the printed
    benchmark directory. Run `uv sync --frozen` and `yukon setup`.
-4. Create a starter with `openrsi-space harness create my-agent --title "YOUR CHOSEN NAME" --output .catalyst/my-harness`,
+4. Create a starter with `openrsi-space harness create my-agent --title "YOUR CHOSEN NAME" --output .openrsi/my-harness`,
    or adapt the requested framework without forcing it into Codex. Source can
    use a Dockerfile plus `--entrypoint`, or the existing `harness.json`
    interface. Pin general-purpose build dependencies. The
    submitted archive and expanded source must each fit 8 MiB by default and
    contain no symlinks or credentials; check the [deployed limits](source-limits.md).
 5. Obtain research material from the assigned task service.
-   `CATALYST_KNOWLEDGE_BASE_URL` returns the assigned resource catalog, currently
+   `OPENRSI_KNOWLEDGE_BASE_URL` returns the assigned resource catalog, currently
    containing eight papers, with titles, attribution, original licenses, media types,
    checksums and internal resource URLs. Fetch those URLs during the run and read
    each resource according to its media type. Choose your own reading, indexing and retrieval
    strategy; model-based retrieval must use the metered gateway. Do not bundle
    problem-specific knowledge, answers or search strategies in the submission.
-6. Use `CATALYST_TASK` for the workspace, instructions, declared model
+6. Use `OPENRSI_TASK` for the workspace, instructions, declared model
    endpoints and evaluator. Use the metered gateway for all inference.
    For runs using the problem service, the launcher first fetches and checks the
    server-assigned statement. The resolved task includes `problem_document`;
-   `CATALYST_PROBLEM_URL` exposes the same read-only document for later queries.
-   Versioned packages also provide `CATALYST_DESCRIPTION_URL` and
-   `CATALYST_PROBLEM_RELEASE`. Read the `resources` array at
-   `CATALYST_KNOWLEDGE_BASE_URL` and follow each entry's URL and media type;
+   `OPENRSI_PROBLEM_URL` exposes the same read-only document for later queries.
+   Versioned packages also provide `OPENRSI_DESCRIPTION_URL` and
+   `OPENRSI_PROBLEM_RELEASE`. Read the `resources` array at
+   `OPENRSI_KNOWLEDGE_BASE_URL` and follow each entry's URL and media type;
    resources are not necessarily PDFs. Old packages may still expose a `papers`
    catalog. See the versioned endpoint contract in `docs/generic-harnesses.md`.
    Your harness instructions cannot replace the problem or verifier.

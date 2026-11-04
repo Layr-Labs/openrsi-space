@@ -24,14 +24,14 @@ uv run python -m unittest discover -s tests -p test_module_boundaries.py -v
 
 | Directory | Owns |
 | --- | --- |
-| `src/catalyst/contracts/` | Harness/evaluation schemas, accounting and result bindings |
-| `src/catalyst/client/` | HTTP, login sessions, submission state and catalog downloads |
-| `src/catalyst/cli/` | Arguments and command dispatch |
-| `src/catalyst/harnesses/` | Starter generation, Docker build and smoke checks |
-| `src/catalyst/challenge/` | Release loading, asset preparation and task assembly |
-| `src/catalyst/problem-set/` | Pinned descriptions, resource catalogs, scaffolds and verifier bundles |
-| `src/catalyst/integrations/` | Dungeness local execution and Yukon receipt submission |
-| `src/catalyst/runtime/` | Container entrypoints copied into prepared runs |
+| `src/openrsi_space/contracts/` | Harness/evaluation schemas, accounting and result bindings |
+| `src/openrsi_space/client/` | HTTP, login sessions, submission state and catalog downloads |
+| `src/openrsi_space/cli/` | Arguments and command dispatch |
+| `src/openrsi_space/harnesses/` | Starter generation, Docker build and smoke checks |
+| `src/openrsi_space/challenge/` | Release loading, asset preparation and task assembly |
+| `src/openrsi_space/problem-set/` | Pinned descriptions, resource catalogs, scaffolds and verifier bundles |
+| `src/openrsi_space/integrations/` | Dungeness local execution and Yukon receipt submission |
+| `src/openrsi_space/runtime/` | Container entrypoints copied into prepared runs |
 | `tests/` | Public contracts, synthetic fixtures and regression tests |
 | `script/` | Repository check and installed-package smoke test |
 
@@ -51,13 +51,13 @@ The private `openrsi-space-verifier` repository owns service and cross-repositor
 Run them against this working tree before deploying a package-layout change:
 
 ```sh
-# From catalyst-verifier, with its development environment installed:
-CATALYST_PUBLIC_ROOT=../catalyst \
-PYTHONPATH=src:../catalyst/src:tests:../catalyst/tests \
+# From openrsi-space-verifier, with its development environment installed:
+OPENRSI_PUBLIC_ROOT=../openrsi-space \
+PYTHONPATH=src:../openrsi-space/src:tests:../openrsi-space/tests \
   .venv/bin/python -m unittest discover -s tests
 ```
 
-Set `CATALYST_DUNGENESS` to a clean compatible Dungeness checkout to include the
+Set `OPENRSI_DUNGENESS` to a clean compatible Dungeness checkout to include the
 optional compiler integration check. The verifier's `scripts/check-local-e2e.py`
 exercises Docker execution, independent verification, receipts and Yukon with
 synthetic fixtures; consult that script's `--help` for checkout paths. These checks

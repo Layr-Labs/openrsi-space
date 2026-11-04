@@ -3,7 +3,7 @@ import json
 import unittest
 from unittest.mock import patch
 from urllib.error import HTTPError
-from catalyst.remote import fetch, HTTPFailure
+from openrsi_space.remote import fetch, HTTPFailure
 
 
 class EvidenceDiagnosticTests(unittest.TestCase):
@@ -20,7 +20,7 @@ class EvidenceDiagnosticTests(unittest.TestCase):
             self.assertNotIn('DO-NOT-RETAIN', str(error.details))
 
     def test_evidence_upload_uses_longer_timeout_without_changing_polling(self):
-        from catalyst.client import transport
+        from openrsi_space.client import transport
         with patch.object(transport,'fetch',return_value=b'{}') as request:
             transport.solver_fetch('https://example.invalid','/local-evidence','synthetic-session',document={})
             self.assertEqual(request.call_args.kwargs['timeout'],180)
@@ -65,7 +65,7 @@ class AdmissionErrorTests(unittest.TestCase):
         body = {'error': 'private-token-do-not-print', 'code': 'daily_quota', 'scope': 'account',
                 'limit': 10, 'current': 10, 'retry_after_seconds': 420, 'debug': 'private-token-do-not-print'}
         error = HTTPError('https://example.invalid/evaluations', 429, 'busy', {}, io.BytesIO(json.dumps(body).encode()))
-        with patch('catalyst.remote.urllib.request.build_opener') as opener:
+        with patch('openrsi_space.remote.urllib.request.build_opener') as opener:
             opener.return_value.open.side_effect = error
             with self.assertRaises(HTTPFailure) as raised: fetch('https://example.invalid/evaluations', 'private-token')
         self.assertIn('daily_quota', str(raised.exception))
@@ -94,7 +94,7 @@ class AdmissionErrorTests(unittest.TestCase):
                 'expected':'private-token-do-not-print','error':'private-token-do-not-print',
                 'request_id':rid,'correlation_id':cid}
         error = HTTPError('https://example.invalid/evaluations',400,'bad',{},io.BytesIO(json.dumps(body).encode()))
-        with patch('catalyst.remote.urllib.request.build_opener') as opener:
+        with patch('openrsi_space.remote.urllib.request.build_opener') as opener:
             opener.return_value.open.side_effect=error
             with self.assertRaises(HTTPFailure) as raised: fetch('https://example.invalid/evaluations','private-token')
         self.assertEqual(raised.exception.details['field'],'evaluation.limits.max_seconds')
@@ -110,7 +110,7 @@ class AdmissionErrorTests(unittest.TestCase):
                                  'request_id':'private-token','reason':'private-token'}).encode()):
             error=HTTPError('https://example.invalid/evaluations',400,'bad',
                             {'X-Catalyst-Correlation-ID':cid},io.BytesIO(body))
-            with patch('catalyst.remote.urllib.request.build_opener') as opener:
+            with patch('openrsi_space.remote.urllib.request.build_opener') as opener:
                 opener.return_value.open.side_effect=error
                 with self.assertRaises(HTTPFailure) as raised:fetch('https://example.invalid/evaluations','private-token')
             self.assertEqual(raised.exception.details,{'correlation_id':cid})
@@ -120,7 +120,7 @@ class AdmissionErrorTests(unittest.TestCase):
         eid='a'*32
         error=HTTPError('https://example.invalid/evaluations',413,'too large',
                         {'X-Catalyst-Edge-ID':eid,'Authorization':'private-token'},io.BytesIO(b'<html>private-token</html>'))
-        with patch('catalyst.remote.urllib.request.build_opener') as opener:
+        with patch('openrsi_space.remote.urllib.request.build_opener') as opener:
             opener.return_value.open.side_effect=error
             with self.assertRaises(HTTPFailure) as raised:fetch('https://example.invalid/evaluations','private-token')
         self.assertEqual(raised.exception.details,{'edge_id':eid})

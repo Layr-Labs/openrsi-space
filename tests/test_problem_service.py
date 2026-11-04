@@ -10,8 +10,8 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.request import Request, urlopen
 
-from catalyst.challenge.catalog import get_problem, problem_statement
-from catalyst.runtime import launch, problem_server
+from openrsi_space.challenge.catalog import get_problem, problem_statement
+from openrsi_space.runtime import launch, problem_server
 
 
 def fixture():
@@ -112,11 +112,11 @@ class ProblemServiceTests(unittest.TestCase):
                 run.return_value.returncode = 0
                 self.assertEqual(launch.launch(root / "input.json", root / "execution.json"), 0)
                 args = run.call_args.kwargs
-                resolved = json.loads(Path(args["env"]["CATALYST_TASK"]).read_text())
+                resolved = json.loads(Path(args["env"]["OPENRSI_TASK"]).read_text())
                 self.assertEqual(resolved["problem_document"], document)
                 self.assertTrue(resolved["instruction"].startswith(document["statement"]))
                 self.assertIn(task["instruction"], resolved["instruction"])
-                self.assertEqual(args["env"]["CATALYST_PROBLEM_URL"], "http://gateway:8080/task")
+                self.assertEqual(args["env"]["OPENRSI_PROBLEM_URL"], "http://gateway:8080/task")
 
     def test_launcher_always_uses_placeholder_for_assigned_gateway(self):
         with tempfile.TemporaryDirectory() as temp:
@@ -167,10 +167,10 @@ class ProblemServiceTests(unittest.TestCase):
                 run.return_value.returncode = 0
                 launch.launch(root / 'task.json', root / 'execution.json')
                 env = run.call_args.kwargs['env']
-                self.assertEqual(env['CATALYST_PROBLEM_RELEASE'], 'v1')
-                self.assertEqual(env['CATALYST_DESCRIPTION_URL'], document['description_url'])
-                self.assertEqual(env['CATALYST_KNOWLEDGE_BASE_URL'], document['knowledge_base']['url'])
-                hydrated = json.loads(Path(env['CATALYST_TASK']).read_text())
+                self.assertEqual(env['OPENRSI_PROBLEM_RELEASE'], 'v1')
+                self.assertEqual(env['OPENRSI_DESCRIPTION_URL'], document['description_url'])
+                self.assertEqual(env['OPENRSI_KNOWLEDGE_BASE_URL'], document['knowledge_base']['url'])
+                hydrated = json.loads(Path(env['OPENRSI_TASK']).read_text())
                 self.assertIn('2 resources', hydrated['instruction'])
                 self.assertIn('Assigned problem release: v1', hydrated['instruction'])
                 self.assertIn(document['description_url'], hydrated['instruction'])

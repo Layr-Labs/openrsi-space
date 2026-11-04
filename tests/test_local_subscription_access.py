@@ -5,11 +5,11 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from catalyst.common import CatalystError
-from catalyst.credentials import (grok_access, validate_provider_access,
+from openrsi_space.common import OpenRSIError
+from openrsi_space.credentials import (grok_access, validate_provider_access,
                                   encode_provider_access, require_remote_models)
-from catalyst.integrations.dungeness.local import temporary_environment, credential_input
-from catalyst.cli import build_parser
+from openrsi_space.integrations.dungeness.local import temporary_environment, credential_input
+from openrsi_space.cli import build_parser
 
 
 class LocalSubscriptionAccessTests(unittest.TestCase):
@@ -25,7 +25,7 @@ class LocalSubscriptionAccessTests(unittest.TestCase):
             self.assertEqual(value, {'access_token': entry['key'], 'expires_at': expiry})
             access = {'grok-subscription': value}
             validate_provider_access(access)
-            with self.assertRaises(CatalystError):
+            with self.assertRaises(OpenRSIError):
                 encode_provider_access(access)
             with temporary_environment(access) as (env_file, environment):
                 self.assertEqual(env_file.stat().st_mode & 0o777, 0o600)
@@ -36,19 +36,19 @@ class LocalSubscriptionAccessTests(unittest.TestCase):
             for change in ({'expires_at': '2000-01-01T00:00:00Z'},
                            {'auth_mode': 'api_key'}, {'oidc_issuer': 'https://other.invalid'}):
                 path.write_text(json.dumps({'https://auth.x.ai::client': {**entry, **change}}))
-                with self.subTest(change=change), self.assertRaises(CatalystError):
+                with self.subTest(change=change), self.assertRaises(OpenRSIError):
                     grok_access(path)
             path.write_text(json.dumps({'https://auth.x.ai::a': entry, 'https://auth.x.ai::b': entry}))
-            with self.assertRaises(CatalystError):
+            with self.assertRaises(OpenRSIError):
                 grok_access(path)
 
     def test_plan_key_is_local_only_despite_api_key_shape(self):
         access = {'minimax-subscription': 'synthetic-plan-key'}
         validate_provider_access(access)
-        with self.assertRaises(CatalystError):
+        with self.assertRaises(OpenRSIError):
             encode_provider_access(access)
         for provider in ('minimax-subscription', 'grok-subscription'):
-            with self.assertRaises(CatalystError):
+            with self.assertRaises(OpenRSIError):
                 require_remote_models([{'provider': provider}])
         with temporary_environment(access) as (env_file, environment):
             self.assertIn('TESTBED_MINIMAX_CODING_PLAN_KEY=', env_file.read_text())
@@ -58,5 +58,5 @@ class LocalSubscriptionAccessTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             args = build_parser()[0].parse_args(['local', 'run', folder, '--dungeness', '.',
                                                 '--grok-auth-file', folder + '/auth.json'])
-            with self.assertRaisesRegex(CatalystError, 'outside'):
+            with self.assertRaisesRegex(OpenRSIError, 'outside'):
                 credential_input(args, {'grok-subscription'})

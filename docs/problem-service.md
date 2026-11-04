@@ -5,10 +5,10 @@ specific, immutable problem package before executing a submitted harness.
 Dungeness supplies generic Compose wiring and model accounting.
 
 The public sources are
-[`problem_server.py`](../src/catalyst/runtime/problem_server.py) and
-[`description.md`](../src/catalyst/problem-set/ecdsa-fail/description.md). Keep `problem-set/`:
+[`problem_server.py`](../src/openrsi_space/runtime/problem_server.py) and
+[`description.md`](../src/openrsi_space/problem-set/ecdsa-fail/description.md). Keep `problem-set/`:
 it contains the challenge manifest, statement and resources. Reference prices
-live separately in `src/catalyst/pricing/`. The private
+live separately in `src/openrsi_space/pricing/`. The private
 verification API starts and manages the per-run service; solvers do not need
 another public endpoint or a separate server command.
 
@@ -49,9 +49,9 @@ preserved, and non-finite numbers rejected.
 
 The OpenRSI launcher fetches this document before starting the harness. It
 checks the digest, problem identity and candidate paths, prepends the trusted
-statement to the run instructions, and writes the resolved `CATALYST_TASK`.
-`problem_document` contains the response; `CATALYST_PROBLEM_URL` allows subsequent
-queries. Existing harnesses that read `CATALYST_TASK.instruction` continue working.
+statement to the run instructions, and writes the resolved `OPENRSI_TASK`.
+`problem_document` contains the response; `OPENRSI_PROBLEM_URL` allows subsequent
+queries. Existing harnesses that read `OPENRSI_TASK.instruction` continue working.
 Unavailable or mismatched task responses stop execution rather than substituting
 user-authored instructions. Old run inputs without this service field retain
 their original embedded instructions.
@@ -64,7 +64,7 @@ does not turn the model gateway into a candidate-execution process.
 ## Shared paper library
 
 The problem's `execution.knowledge_base` pins the canonical SHA-256 of
-[the paper catalog](../src/catalyst/problem-set/ecdsa-fail/knowledge-base/v1.json).
+[the paper catalog](../src/openrsi_space/problem-set/ecdsa-fail/knowledge-base/v1.json).
 Release v1 contains eight content-pinned research papers about quantum elliptic-curve
 arithmetic, reversible circuits, synthesis, uncomputation and resource reduction.
 All eight unmodified PDFs ship inside the OpenRSI package, with author attribution,
@@ -75,7 +75,7 @@ all bundled bytes and needs no external paper downloads. Existing requests and r
 Inside a run:
 
 ```sh
-curl -fsS "$CATALYST_KNOWLEDGE_BASE_URL"
+curl -fsS "$OPENRSI_KNOWLEDGE_BASE_URL"
 # Example assigned URL: http://gateway:8080/ecdsa-fail/v1/knowledge-base
 ```
 
@@ -83,12 +83,12 @@ The current JSON catalog has a `resources` array with each entry's internal
 `url`, media type, checksum and size. Fetch those URLs and interpret the declared
 media type; do not assume resources must always be PDFs. Historical packages may
 expose a `papers` array instead. The launcher supplies the assigned catalog URL in
-`CATALYST_TASK` and `CATALYST_KNOWLEDGE_BASE_URL`. Harnesses choose their own
+`OPENRSI_TASK` and `OPENRSI_KNOWLEDGE_BASE_URL`. Harnesses choose their own
 reading and retrieval strategy during execution.
 
 Normal preparation verifies the eight PDFs bundled in the installed package and
 needs no external paper downloads. It can reuse matching files from
-`~/.cache/catalyst/papers` (or `CATALYST_PAPER_CACHE`). If a bundled file is absent,
+`~/.cache/openrsi/papers` (or `OPENRSI_PAPER_CACHE`). If a bundled file is absent,
 the compatibility fallback downloads only its catalog-pinned URL and requires an
 exact checksum match. A changed or corrupt bundled file fails preparation. Update
 the package or restore the exact pinned bytes; do not substitute another edition.
@@ -141,7 +141,7 @@ keep their original problem-set identity.
 
 `openrsi-space local run` uses the same public task assembly and harness adapter as the
 remote worker. Docker Compose starts the problem service automatically. Solvers
-need the public OpenRSI package and Dungeness, not `catalyst-verifier`.
+need the public OpenRSI package and Dungeness, not `openrsi-space-verifier`.
 `--prepare-only` materializes the inputs without model access.
 The remote worker adds private operator policies after public preparation; local
 results are development evidence. See [local runs](local-evaluation.md).

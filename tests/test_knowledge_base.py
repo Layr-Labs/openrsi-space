@@ -9,10 +9,10 @@ import unittest
 from urllib.error import HTTPError
 from urllib.request import urlopen
 
-from catalyst.common import CatalystError, canonical
-from catalyst.challenge.resources import write_resource_catalog
-from catalyst.challenge.papers import prepare_library
-from catalyst.runtime.problem_server import handler_for, load_files
+from openrsi_space.common import OpenRSIError, canonical
+from openrsi_space.challenge.resources import write_resource_catalog
+from openrsi_space.challenge.papers import prepare_library
+from openrsi_space.runtime.problem_server import handler_for, load_files
 from library_fixture import install_fixture
 
 
@@ -60,7 +60,7 @@ class KnowledgeBaseTests(unittest.TestCase):
                     server.shutdown()
                     thread.join()
             (root / 'notes.md').write_bytes(b'changed')
-            with self.assertRaises(CatalystError):
+            with self.assertRaises(OpenRSIError):
                 write_resource_catalog(root, {'id': 'mixed-v1'}, resources, 'ecdsa-fail', 'v1')
 
     def test_paper_adapter_preserves_legacy_catalog_and_original_metadata(self):
@@ -86,7 +86,7 @@ class KnowledgeBaseTests(unittest.TestCase):
                     'media_type': 'text/plain', 'bytes': 5, 'sha256': hashlib.sha256(b'notes').hexdigest()}
             for changes in ({'id': '../secret'}, {'filename': '../secret'}, {'filename': 'resources.json'},
                             {'media_type': 'text/plain\r\nX-Injected: yes'}, {'sha256': 'a' * 64}):
-                with self.subTest(changes=changes), self.assertRaises(CatalystError):
+                with self.subTest(changes=changes), self.assertRaises(OpenRSIError):
                     write_resource_catalog(root, {'id': 'test'}, [{**item, **changes}], 'ecdsa-fail', 'v1')
-            with self.assertRaises(CatalystError):
+            with self.assertRaises(OpenRSIError):
                 write_resource_catalog(root, {'id': 'test'}, [item, item], 'ecdsa-fail', 'v1')

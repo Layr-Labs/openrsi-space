@@ -2,9 +2,9 @@ import copy
 from pathlib import Path
 import tempfile
 import unittest
-from catalyst.common import CatalystError
-from catalyst.remote import evaluation_config, validate_evaluation_config, limits_within
-from catalyst.tiers import project_observation
+from openrsi_space.common import OpenRSIError
+from openrsi_space.remote import evaluation_config, validate_evaluation_config, limits_within
+from openrsi_space.tiers import project_observation
 from harness_fixture import evaluation
 from test_tiers import observation, MODEL
 
@@ -16,7 +16,7 @@ class OptionalTokenTests(unittest.TestCase):
   config=evaluation();del config['limits']['max_model_tokens'];validate_evaluation_config(config)
   for value in (0,-1,True,'100',1.5):
    config=evaluation();config['limits']['max_model_tokens']=value
-   with self.assertRaises(CatalystError):validate_evaluation_config(config)
+   with self.assertRaises(OpenRSIError):validate_evaluation_config(config)
  def test_default_has_no_hidden_cap(self):
   with tempfile.TemporaryDirectory() as tmp:
    config=evaluation_config(Path(tmp)/'absent.json',{'provider':'openai','model':'gpt-5.6-sol','budget':20})
@@ -44,6 +44,6 @@ class OptionalTokenTests(unittest.TestCase):
   for limits in ({'max_seconds':900},{'max_seconds':900,'max_model_tokens':None}):
    result=project_observation(observation(),MODEL,500,limits)
    self.assertEqual(result['best']['performance'],600)
-   with self.assertRaises(CatalystError):project_observation(observation(),MODEL,20,limits)
-  with self.assertRaisesRegex(CatalystError,'token limit'):
+   with self.assertRaises(OpenRSIError):project_observation(observation(),MODEL,20,limits)
+  with self.assertRaisesRegex(OpenRSIError,'token limit'):
    project_observation(observation(),MODEL,500,{'max_seconds':900,'max_model_tokens':1000000})

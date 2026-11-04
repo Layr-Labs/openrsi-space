@@ -4,9 +4,9 @@ from pathlib import Path
 import tempfile
 import unittest
 
-from catalyst.common import CatalystError
-from catalyst.challenge.catalog import get_problem
-from catalyst.challenge.preparation import execution_initialization, validate_execution, write_yaml
+from openrsi_space.common import OpenRSIError
+from openrsi_space.challenge.catalog import get_problem
+from openrsi_space.challenge.preparation import execution_initialization, validate_execution, write_yaml
 
 
 class TaskInitializationTests(unittest.TestCase):
@@ -27,7 +27,7 @@ class TaskInitializationTests(unittest.TestCase):
             {'initialization': {'mode': 'scaffold'}, 'scaffold': 'agents/solver/scaffold.yaml'},
             {'scaffold': 'scaffolds/unused.yaml'},
         ):
-            with self.subTest(execution=execution), self.assertRaises(CatalystError):
+            with self.subTest(execution=execution), self.assertRaises(OpenRSIError):
                 execution_initialization(execution)
 
     def test_missing_wrong_and_escaping_scaffolds_fail_before_task_assembly(self):
@@ -37,14 +37,14 @@ class TaskInitializationTests(unittest.TestCase):
             execution = copy.deepcopy(get_problem('ecdsa.fail')['dungeness'])
             execution['scaffold'] = 'scaffolds/operator-example/scaffold.yaml'
             manifest = runtime / execution['scaffold']
-            with self.assertRaisesRegex(CatalystError, 'does not contain'):
+            with self.assertRaisesRegex(OpenRSIError, 'does not contain'):
                 validate_execution(runtime, root, {'execution': execution})
             write_yaml(manifest, {'schema_version': 1, 'type': 'scaffold', 'candidate_path': 'trusted'})
-            with self.assertRaisesRegex(CatalystError, 'candidate path'):
+            with self.assertRaisesRegex(OpenRSIError, 'candidate path'):
                 validate_execution(runtime, root, {'execution': execution})
             manifest.unlink()
             outside = root / 'outside.yaml'
             write_yaml(outside, {'schema_version': 1, 'type': 'scaffold', 'candidate_path': 'src/point_add'})
             manifest.symlink_to(outside)
-            with self.assertRaisesRegex(CatalystError, 'escapes'):
+            with self.assertRaisesRegex(OpenRSIError, 'escapes'):
                 validate_execution(runtime, root, {'execution': execution})

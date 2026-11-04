@@ -6,7 +6,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from catalyst.runtime import launch
+from openrsi_space.runtime import launch
 
 
 class LocalToolchainTests(unittest.TestCase):
@@ -50,7 +50,7 @@ class LocalToolchainTests(unittest.TestCase):
             with patch.object(launch.subprocess, 'run') as run, patch('builtins.print'):
                 run.side_effect = [FileNotFoundError(), SimpleNamespace(returncode=0)]
                 self.assertEqual(launch.launch(task, execution), 0)
-                resolved = json.loads(Path(run.call_args.kwargs['env']['CATALYST_TASK']).read_text())
+                resolved = json.loads(Path(run.call_args.kwargs['env']['OPENRSI_TASK']).read_text())
                 self.assertEqual(resolved['local_toolchain']['status'], 'unavailable')
                 self.assertIn('Use evaluate', resolved['instruction'])
                 self.assertIn('does not need Rust in the agent container', resolved['instruction'])

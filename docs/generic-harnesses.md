@@ -48,10 +48,10 @@ do not combine it with `--entrypoint`.
 An optional editable starter is also available:
 
 ```sh
-uv run openrsi-space harness create my-agent --output .catalyst/my-agent
+uv run openrsi-space harness create my-agent --output .openrsi/my-agent
 ```
 
-Replace `.catalyst/my-agent/agent.py` and install generic dependencies in its
+Replace `.openrsi/my-agent/agent.py` and install generic dependencies in its
 Dockerfile. The starter copies the whole source bundle into `/opt/harness/`.
 Do not package ECDSA-specific papers, notes, strategies or candidate code. Do not
 instruct the agent to focus on a predetermined task paper, including by title,
@@ -64,7 +64,7 @@ An existing framework can use its own entrypoint instead.
 
 Executable submissions are the supported workflow. Dungeness no longer bundles
 Codex, Claude Code, Pi or Prime Agent launchers. Install your preferred agent and
-configure its CLI inside the submitted image. OpenRSI's `catalyst-exec-v1`
+configure its CLI inside the submitted image. OpenRSI's `openrsi-exec-v1`
 contract is unchanged: it installs the generic Dungeness command adapter.
 Legacy `harness create --agent` and non-executable harness preparation are
 rejected with migration instructions. Historical artifacts remain readable.
@@ -72,7 +72,7 @@ rejected with migration instructions. Historical artifacts remain readable.
 Submit the same source with a model choice and spending cap:
 
 ```sh
-uv run openrsi-space remote submit .catalyst/my-agent \
+uv run openrsi-space remote submit .openrsi/my-agent \
   --provider PROVIDER --model MODEL_ID --budget 3 \
   --platform-funded --local-run /path/to/completed-local-run --wait
 ```
@@ -85,7 +85,7 @@ usage counts in normalized USD equivalent. Remote subscription provider IDs are
 rejected because the platform funds OpenRouter, not because subscription evidence
 is ineligible. See [evidence matching](platform-funded-inference.md).
 The harness's model client must implement the chosen provider's supported
-protocol and use the gateway endpoint supplied in `CATALYST_TASK`.
+protocol and use the gateway endpoint supplied in `OPENRSI_TASK`.
 The gateway substitutes trusted credentials using configured authentication
 headers; it does not adapt the coding agent to the model. The harness owns
 context-window settings and reasoning preferences. OpenRSI does not assign
@@ -116,7 +116,7 @@ only that receipt and retrieves the existing verified result.
 
 The source archive is limited to 8 MiB and cannot contain symlinks. Install
 larger generic dependencies at image build time and pin their versions. Read
-task-specific research material from `CATALYST_KNOWLEDGE_BASE_URL` during the run. Keep all credential files
+task-specific research material from `OPENRSI_KNOWLEDGE_BASE_URL` during the run. Keep all credential files
 outside the source directory; `.env*`, `.git`, local state and virtual
 environments are excluded. A selected credential file inside the source
 directory is rejected before submission.
@@ -156,8 +156,8 @@ only to this run's assigned release. They do not follow a mutable global
 "latest" release. Other releases and unknown resource IDs return 404.
 These are internal per-run endpoints, not public website URLs.
 
-Use `CATALYST_DESCRIPTION_URL`, `CATALYST_PROBLEM_RELEASE`, and
-`CATALYST_KNOWLEDGE_BASE_URL` instead of hard-coding paths. The description has
+Use `OPENRSI_DESCRIPTION_URL`, `OPENRSI_PROBLEM_RELEASE`, and
+`OPENRSI_KNOWLEDGE_BASE_URL` instead of hard-coding paths. The description has
 `problem_id`, `release`, and `content_sha256`; the latter is the immutable
 problem-package hash, covering the statement, execution configuration and pinned
 library binding. It is separate from `X-Task-SHA256`, which covers the full
@@ -215,9 +215,9 @@ An optional `execution.resume_entrypoint` supports explicit exit-code-75
 continuations under `runtime.continuation` limits. It reuses the same sandbox;
 this is not durable recovery after host failure.
 
-OpenRSI's existing `catalyst-exec-v1` source interface remains available.
-Its wrapper now uses the Dungeness command adapter. `CATALYST_TASK` also
-contains `models`, and `CATALYST_MODELS` exposes that list as JSON.
+OpenRSI's existing `openrsi-exec-v1` source interface remains available.
+Its wrapper now uses the Dungeness command adapter. `OPENRSI_TASK` also
+contains `models`, and `OPENRSI_MODELS` exposes that list as JSON.
 The old Codex identity and Dockerfile marker workaround are removed.
 
 ## Models and credentials
@@ -301,7 +301,7 @@ No Yukon backend change is needed.
 The catalog fetch uses a five-minute in-process cache and has bounded response
 size and timeout. Catalog failure never falls back to invented prices.
 If the catalog endpoint requires authentication, the operator can supply
-`CATALYST_OPENROUTER_CATALOG_TOKEN` in the service environment. This credential
+`OPENRSI_OPENROUTER_CATALOG_TOKEN` in the service environment. This credential
 is used only at that fixed catalog URL, never taken from solver model access,
 and is excluded from snapshots and worker environments. Redirects are refused.
 

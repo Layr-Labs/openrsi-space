@@ -9,7 +9,7 @@ change the existing wire protocols, evaluation IDs or receipts.
 
 ## Authentication and model access
 
-`CATALYST_EVALUATOR_URL` selects the trusted HTTPS endpoint. The client refuses
+`OPENRSI_EVALUATOR_URL` selects the trusted HTTPS endpoint. The client refuses
 redirects. Loopback HTTP is reserved for local fixtures.
 
 The official client checks the TLS certificate chain, expiration and hostname
@@ -27,7 +27,7 @@ handoff is restricted to `POST /evaluations` and the exact
 `POST /evaluations/<evaluation-id>/credentials` renewal route.
 
 Solvers use their Yukon login or `YUKON_API_TOKEN`. `POST /auth/yukon` exchanges
-that key for a temporary solver session using `catalyst-yukon-session-v1`.
+that key for a temporary solver session using the solver-session protocol.
 The service establishes ownership through its configured Yukon instance;
 clients cannot assert another owner or choose the authentication issuer.
 
@@ -39,13 +39,13 @@ but is currently disabled on the hosted service. See [model access](live-models.
 
 Platform-funded requests instead use the non-secret grant
 `evaluation.llm_access.grant_id: grant_platform_funded` and send no
-`X-Catalyst-Model-Token`. Discover availability, funded providers and any explicit model restrictions through
+`X-OpenRSI-Model-Token`. Discover availability, funded providers and any explicit model restrictions through
 `GET /public/funding-policy`. Authenticated `GET /funding` reports the account’s
 reservations and settled usage. The existing authenticated Yukon `/api/me` response supplies the account ID;
 the client cannot choose its own identity binding. No new Yukon endpoint is needed.
 
 For a funded submission, `POST /local-evidence` uploads the private
-`catalyst-local-evidence-v1` JSON bundle and returns its digest. Include that digest
+a versioned local-evidence JSON bundle and returns its digest. Include that digest
 as top-level `local_evidence` in the evaluation request. The bundle contains
 recorded model exchanges, settled accounting and evaluation events, not arbitrary
 local files. Source, problem and model settings must match. The numeric
@@ -63,10 +63,10 @@ supply model access or create a paid run.
 ## Submit once and resume retrieval
 
 `POST /evaluations` accepts the versioned request constructed by
-[`remote.py`](../src/catalyst/remote.py):
+[`remote.py`](../src/openrsi_space/remote.py):
 
 ```text
-protocol: catalyst-evaluation-v3
+protocol: <service-reported evaluation protocol>
 request_id: stable UUID
 source: {digest, archive_base64}
 local_evidence: private bundle digest for funded submissions
@@ -125,7 +125,7 @@ openrsi-space remote diagnostics EVALUATION_ID --output diagnostics.json
 
 This reads `GET /evaluations/EVALUATION_ID/diagnostics` using your Yukon login;
 it does not start a run or require model credentials. The saved file has private
-permissions. Owner status responses also include this `catalyst-diagnostics-v1`
+permissions. Owner status responses also include this versioned diagnostics
 report, and `remote wait` prints failure categories and the latest available
 candidate evaluation event to stderr.
 
@@ -163,7 +163,7 @@ Harnesses can optionally emit one compact JSON line to stdout when an error
 occurs, before cleanup that might itself fail:
 
 ```json
-{"event":"catalyst.diagnostic","schema_version":1,"stop_reason":"runtime_error","exception_type":"FileExistsError","location":{"file":"agent.py","line":81}}
+{"event":"openrsi.diagnostic","schema_version":1,"stop_reason":"runtime_error","exception_type":"FileExistsError","location":{"file":"agent.py","line":81}}
 ```
 
 Only recognized exception types and stop reasons are exposed. A location is
@@ -217,7 +217,7 @@ not build a harness, run a model or accept a caller-supplied score.
 Success returns the bound reference, problem, policy request, evaluated source
 artifact digest and authoritative judgment. The workflow validates the response
 before writing the score artifact Yukon collects. See
-[`receipts.py`](../src/catalyst/receipts.py) and
+[`receipts.py`](../src/openrsi_space/receipts.py) and
 [the GitHub integration](github-actions-e2e.md).
 
 ## Scores, curves and artifacts

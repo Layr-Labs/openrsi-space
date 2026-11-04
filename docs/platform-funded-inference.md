@@ -142,7 +142,7 @@ usage plus active reservations, remaining allowance and the next settled charge
 expiry. This is a rolling 24-hour window, not a midnight reset; unresolved holds
 do not expire automatically. Global capacity and enrollment still apply.
 
-The default evaluator is `https://3.21.93.126`; set `CATALYST_EVALUATOR_URL` to
+The default evaluator is `https://3.21.93.126`; set `OPENRSI_EVALUATOR_URL` to
 use another trusted deployment. Public policy commands require no login.
 
 ### A source-publication rejection
@@ -150,7 +150,7 @@ use another trusted deployment. Public policy commands require no login.
 `source_not_publishable` happens before an evaluation starts. New diagnostics
 include `source_findings`: the scanner rule, a one-based line number, and a
 zero-based file index. Match that index to the sorted keys of the saved source
-archive's `catalyst-snapshot.json.files` (not the generated snapshot itself).
+archive's generated source-manifest `files` field (not the generated snapshot itself).
 The response contains no matched credential values or source excerpts.
 Preserve the saved request and local evidence while diagnosing it; a server-side
 scanner correction does not require changing your harness or repeating inference.

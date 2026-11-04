@@ -12,7 +12,7 @@ from unittest.mock import patch
 from pathlib import Path
 
 
-from catalyst.challenge.assets import ROOT
+from openrsi_space.challenge.assets import ROOT
 
 REPOSITORY_ROOT = ROOT / "ecdsa-fail"
 SERVERS = (

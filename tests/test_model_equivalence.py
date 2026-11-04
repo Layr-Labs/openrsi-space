@@ -1,5 +1,5 @@
 import unittest
-from catalyst.contracts.model_equivalence import model_binding, public_policy
+from openrsi_space.contracts.model_equivalence import model_binding, public_policy
 
 
 class ModelEquivalenceTests(unittest.TestCase):
