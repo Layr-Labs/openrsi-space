@@ -9,10 +9,6 @@ class JobCancelled(OpenRSIError):
     pass
 
 
-class JobNeedsCredentials(OpenRSIError):
-    pass
-
-
 _check = ContextVar("openrsi_job_cancel_check", default=lambda: None)
 
 

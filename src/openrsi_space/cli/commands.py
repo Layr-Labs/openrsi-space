@@ -94,6 +94,14 @@ def model_access_notice(args, client, evaluation=None):
     )
 
 
+def publication_failure(value, identity):
+    if value.get('state') in {'needs_authentication', 'retryable_failure'}:
+        raise OpenRSIError(
+            f'Verification result retained; Yukon publication is incomplete. '
+            f'Inspect openrsi-space remote publication {identity}, resolve the reported issue, '
+            'then use --retry. Do not submit another research run.')
+
+
 def remote_command(args, state):
     if args.operation == 'funding-policy':
         from openrsi_space.client import transport
@@ -119,6 +127,13 @@ def remote_command(args, state):
         return
     from openrsi_space.client.evaluations import RemoteClient
     client = RemoteClient(state)
+    if args.operation == 'publication':
+        from openrsi_space.client.yukon_publication import status
+        value = status(client, args.id, retry=args.retry)
+        print(json.dumps(value, indent=2))
+        if args.retry:
+            publication_failure(value, args.id)
+        return
     if args.operation == 'funding':
         from openrsi_space.client import transport
         print(json.dumps(json.loads(transport.solver_fetch(client.base, '/funding', client.bearer)), indent=2))
@@ -131,14 +146,6 @@ def remote_command(args, state):
         return
     if args.operation == "cancel":
         print(json.dumps(client.cancel(args.id), indent=2))
-        return
-    if args.operation == "renew-access":
-        model_access_notice(args, client)
-        token = model_access_input(args)
-        try:
-            print(json.dumps(client.renew_access(args.id, token), indent=2))
-        finally:
-            token = None
         return
     if args.operation in {"artifacts", "download", "sharing", "publish"}:
         if args.operation == "artifacts":
@@ -200,6 +207,13 @@ def remote_command(args, state):
             if credential_file and Path(credential_file).expanduser().resolve().is_relative_to(
                     Path(args.package).resolve()):
                 raise OpenRSIError("Keep credential files outside the submitted source directory.")
+        from openrsi_space.client.yukon_publication import options as publication_options
+        auto_publication = publication_options(args)
+        if auto_publication is not None:
+            print('Automatic Yukon publication authorized: this CLI will wait for verification and publish the '
+                  'receipt and provided metadata using your local Yukon login. The server retains no Yukon '
+                  'key while research runs. Reconnect with remote wait if you stop this command.',
+                  file=sys.stderr, flush=True)
         from openrsi_space.client.evaluations import request_body
         from openrsi_space.client.local_check import check_submission
         body = request_body(Path(args.package), client.base, evaluation_overrides=overrides,
@@ -218,22 +232,35 @@ def remote_command(args, state):
                 **({"evaluation_overrides": overrides} if overrides else {}),
                 **({"execution": execution} if execution else {}),
                 **({"problem_release": args.problem_release} if args.problem_release else {}),
-                publication=publication, local_check=local_check)
+                publication=publication, local_check=local_check,
+                **({'auto_publication': auto_publication} if auto_publication is not None else {}))
         finally:
             model_token = None
-        if not args.wait:
+        if not args.wait and auto_publication is None:
+            accepted['next_command'] = f"openrsi-space remote wait {accepted['evaluation_id']}"
+            print('Submission accepted, not yet verified. Use the next_command to follow its outcome.',
+                  file=sys.stderr, flush=True)
             print(json.dumps(accepted, indent=2))
             return
         identity = accepted["evaluation_id"]
     else:
         identity = args.id
+    if args.operation == 'wait':
+        from openrsi_space.client.yukon_publication import options, record, prepare
+        _, session, saved = record(client, identity)
+        info = options(args, saved=saved)
+        if info is not None:
+            prepare(client, session['request'], info)
+    from openrsi_space.client.yukon_publication import summary as publication_summary
     if args.operation == "status":
         result = client.status(identity)
         # Raw service responses may include private diagnostics.
-        print(json.dumps({key: result[key] for key in (
+        visible = {key: result[key] for key in (
             "evaluation_id", "status", "source_digest", "evidence_mode", "trace_available",
             "reason", "error", "progress", "diagnostics",
-        ) if key in result}, indent=2))
+        ) if key in result}
+        visible.update(publication_summary(client, identity))
+        print(json.dumps(visible, indent=2))
     else:
         print(f"Remote evaluation {identity}", file=sys.stderr, flush=True)
         try:
@@ -243,14 +270,43 @@ def remote_command(args, state):
                 f"Stopped waiting; the remote job continues. Resume with openrsi-space remote wait {identity} "
                 "using the same --state directory."
             ) from None
-        reference = client.export_reference(identity)
+        publication = publication_summary(client, identity)
+        if artifact.get('valid') is not True:
+            print(json.dumps({'evaluation_id': identity, 'status': 'completed', 'valid': False,
+                              'reason': artifact.get('reason'),
+                              'publication': {'state': 'not_eligible'},
+                              'next_command': f'openrsi-space remote diagnostics {identity}'}, indent=2))
+            raise OpenRSIError('Verification did not produce an eligible result; nothing was published to Yukon. '
+                               'Inspect the retained diagnostics before submitting again.')
+        if publication:
+            # Publish the recorded receipt, never a changed working directory.
+            reference = client.folder(identity) / 'verification.json'
+            from openrsi_space.client.yukon_publication import publish
+            print('Verification finished; completing Yukon publication. No new inference is started.',
+                  file=sys.stderr, flush=True)
+            try:
+                publication = {'publication': publish(client, identity)}
+            except KeyboardInterrupt:
+                raise OpenRSIError(f'Verified result retained. Resume publication with openrsi-space remote wait {identity}; '
+                                    'this does not rerun research.') from None
+        else:
+            reference = client.export_reference(identity)
+            publication = {'publication': {'state': 'not_requested',
+                'next_command': f'openrsi-space remote wait {identity} --publish-to-yukon '
+                                '--benchmark BENCHMARK_UUID --publication-title "Harness title" '
+                                '--note-file submission-note.md --no-dependencies'}}
+            print('Verified result saved; not published to Yukon. To publish, use the publication next_command '
+                  'with your title, note and dependency declaration.', file=sys.stderr, flush=True)
         print(json.dumps({
             "evaluation_id": identity, "status": "completed",
             "evidence_mode": artifact["metrics"]["evidenceMode"],
             **{key: artifact[key] for key in ("scores", "valid", "reason") if key in artifact},
             "judgment": str(client.folder(identity) / "judgment.json"),
             "verification": str(reference), "artifacts": str(client.folder(identity)),
+            **publication,
         }, indent=2))
+        if publication:
+            publication_failure(publication['publication'], identity)
 
 
 def dispatch(args):

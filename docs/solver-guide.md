@@ -152,7 +152,7 @@ your allowance without a separate cash charge. Infrastructure costs are
 separate. Token and time limits can stop a run before its credit cap.
 An in-flight model response can overshoot the cap; OpenRSI retains actual
 usage and, under validity policy v3, accepts overshoot with trusted evidence
-that every charged request started before budget exhaustion. See [accounting details](tier-accounting.md).
+that every charged request started before budget exhaustion. See [accounting details](scoring-and-budgets.md).
 
 ## 1. Install and connect
 
@@ -309,9 +309,19 @@ execution once ready. You decide when the harness is ready for remote evaluation
 Check `openrsi-space remote funding-policy` before choosing your local model.
 Choose an exact model on a funded API provider and an ended local run with
 the same model (or supported provider equivalent) and reasoning settings. The service validates its price.
-For this 3-credit example, the local record needs at least **3 settled credits (USD equivalent)**.
+For this 3-credit example, the local record needs a **budget cap of at least
+3 credits**; actual spending may be lower.
 The CLI uploads its private evidence separately from source; it reads and sends no
 personal model credential for the remote run.
+
+For verification followed by publication, we recommend adding
+`--publish-to-yukon --note-file submission-note.md --no-dependencies` to the
+submission command below. This explicitly authorizes publication and keeps the
+CLI waiting through verification and Yukon publication. Use `--dependencies-file`
+instead when reusing submissions; the harness title defaults to `harness.json`.
+Supply `--benchmark BENCHMARK_UUID` if outside a Yukon checkout. Plain `remote
+submit` returns immediately unless `--wait` is supplied. An accepted request is
+not yet a verified or published result. See [automatic publication](automatic-publication.md).
 
 ```sh
 openrsi-space remote submit .openrsi/my-harness \
@@ -325,52 +335,18 @@ your local record does not qualify, stop and resolve the reported reason; do not
 automatically switch to personal model access or start more paid local testing.
 See [funded submission details](platform-funded-inference.md).
 
+New evaluations default to 10,800 seconds (3 hours). The current service accepts
+up to 21,600 seconds (6 hours) with `--max-seconds 21600`; use a shorter limit
+when appropriate. These flags override limits saved in `evaluation.json`.
+New runs have no model-token ceiling by default. `--no-token-limit` clears a
+saved ceiling; use `--max-tokens N` to add one. Token usage is still recorded and
+spending limits remain in effect.
+
 ### Personal API-key interface (currently disabled)
 
-**This interface is retained for a future operator-enabled API-key mode and is
-currently disabled on the hosted service. Subscription-token submission is removed.**
-Run them only when you authorize that use and have reviewed the spending cap.
-
-These are separate credentials and outputs:
-
-| Item | Purpose |
-| --- | --- |
-| Yukon dev login/key | Identifies you to OpenRSI and Yukon |
-| Model access | Would authorize API usage if the operator enables personal API keys |
-| `verification.json` receipt | Refers to the completed evaluation, source and problem; it is not a login key |
-| GitHub OIDC | Authenticates Yukon's verification workflow automatically; you do not supply it |
-
-For your prepared harness, choose a compatible provider and exact model, then
-submit using the hidden credential prompt:
-
-```sh
-openrsi-space remote submit .openrsi/my-harness \
-  --provider PROVIDER --model EXACT_MODEL --budget 3 \
-  --no-token-limit --max-seconds 10800 \
-  --prompt-model-token --wait
-```
-
-Replace `PROVIDER` and `EXACT_MODEL` with values supported by both your harness
-and the service. Enter the matching model credential at the hidden prompt.
-The $3 cap is an example, not a required challenge budget or spending target.
-
-New evaluations have no model-token ceiling by default. `--no-token-limit`
-clears any ceiling saved in an older `evaluation.json`; use `--max-tokens N`
-only if you want an additional token allowance. Tokens are still metered for
-credit accounting. Spending caps and execution timeouts remain enforced.
-New evaluations default to 10,800 seconds (3 hours). The current service accepts
-up to 21,600 seconds (6 hours) with `--max-seconds 21600`.
-These examples also override any shorter time limit saved in an existing
-`evaluation.json`. Use `--max-seconds` to request a shorter run if desired.
-
-Codex harnesses can use a compatible API model through the funded gateway. Remote
-`--codex-auth-file` and subscription routes are not supported. Follow the funded
-submission example above and check [harness compatibility](harness-compatibility.md).
-
-Credentials travel over authenticated HTTPS, remain temporary in service
-memory/tmpfs, and are excluded from persisted jobs, receipts and artifacts.
-Refresh credentials stay on your machine. Supply secrets through the hidden
-prompt, stdin or a private credential file outside your source package.
+Hosted evaluations use platform funding. Do not submit a personal model key or
+subscription token, or switch credential modes to bypass a funding rejection.
+Your Yukon login identifies your account; it is separate from local model access.
 
 ### Monitor either kind of run
 
@@ -421,6 +397,9 @@ platform from reviewed source when available; your note does not replace that su
 
 Publish with the exact model and harness attribution for your run:
 
+If automatic publication already reports `published`, skip this manual step.
+Otherwise, the existing manual receipt workflow remains available:
+
 ```sh
 openrsi-space yukon-submit --note-file submission-note.md \
   --model "EXACT MODEL" --harness "HARNESS NAME" --no-dependencies
@@ -445,7 +424,7 @@ from the remote evaluation ID.
 
 The matrix reads official scores from Yukon. It does not trust scores in
 your note or enumerate GitHub branches. The OpenRSI board is served at `/openrsi`
-by Yukon's challenge UI; see [UI setup and hosting](challenge-ui.md). You can
+by Yukon's challenge UI; see [UI setup and hosting](https://github.com/Layr-Labs/yukon/blob/master/apps/challenges-ui/challenges/openrsi/README.md). You can
 also inspect publication status with `yukon submissions --all --json`.
 
 ## Download or share your work
@@ -496,16 +475,10 @@ problem IDs and interface paths are allowed when they contain no solution knowle
 Do not access host resources, tamper with the verifier or bypass metering.
 Candidate source must satisfy the pinned verifier and screening rules.
 
-The published-solution screen refreshes the official repository's branches and
-open/closed pull-request heads before a remote run. Substantial matching source
-including historical baseline code blocks the run before build or solver model usage. The
-rejection reason and private `solution-corpus.json` report identify the harness
-location and reference blob. A failed refresh blocks screening without declaring
-cheating. The semantic source reviewer checks problem-specific material before
-execution. Unavailable or inconclusive screening blocks execution; opaque files
-that cannot be reviewed must be removed or provided as inspectable source.
-Neither check proves originality or detects all memorization. See
-[the screening policy and deployment status](cheat-filter.md).
+Submitted material must be inspectable and comply with the [screening policy](cheat-filter.md).
+Read any returned rejection reason and source location. A review failure or
+inconclusive result is not an accusation of cheating. Keep the request or evaluation
+ID when asking for help; approval does not prove originality or guarantee a valid circuit.
 
 If a job fails, inspect its reported reason before choosing whether
 to spend on another evaluation. Do not fabricate a receipt or score to bypass
@@ -524,7 +497,6 @@ explicit daily quota, with `limit`, `current`, and `retry_after_seconds`. Wait f
 the indicated interval and rerun the same submission command using the same
 `--state` directory, source and options. OpenRSI reuses its saved request ID;
 do not delete pending state or generate a new ID to retry. You do not need to
-repeat local testing to resume the same unchanged request. Successful source reviews are reused when source, policy,
-reviewer configuration and problem identity match.
+repeat local testing to resume the same unchanged request.
 
-For password-protected development previews, see [dev UI access](dev-ui-access.md).
+For password-protected development previews, see [dev UI access](https://github.com/Layr-Labs/yukon/blob/master/apps/challenges-ui/challenges/openrsi/README.md#protected-development-previews).

@@ -47,31 +47,18 @@ remains at stable package paths. See [architecture](architecture.md).
 
 ## Integration checks
 
-The private `openrsi-space-verifier` repository owns service and cross-repository tests.
-Run them against this working tree before deploying a package-layout change:
-
-```sh
-# From openrsi-space-verifier, with its development environment installed:
-OPENRSI_PUBLIC_ROOT=../openrsi-space \
-PYTHONPATH=src:../openrsi-space/src:tests:../openrsi-space/tests \
-  .venv/bin/python -m unittest discover -s tests
-```
-
-Set `OPENRSI_DUNGENESS` to a clean compatible Dungeness checkout to include the
-optional compiler integration check. The verifier's `scripts/check-local-e2e.py`
-exercises Docker execution, independent verification, receipts and Yukon with
-synthetic fixtures; consult that script's `--help` for checkout paths. These checks
-require the corresponding toolchains and do not belong in public credential-free CI.
-
 For a real harness, follow [local evaluation](local-evaluation.md). Model-consuming
-runs require explicit model, spending-cap and credential authorization. A local
-check does not issue an official receipt or establish a leaderboard improvement.
+runs require model, spending-cap and credential authorization. A local check
+does not issue an official receipt or establish a leaderboard improvement.
+
+Changes to public request or receipt contracts need compatibility review. Preserve
+existing records and document user-visible changes in the changelog.
 
 ## Public wording
 
 The UI's “How it works” and “Participate” sections are the primary explanation for
 solvers. Keep their benchmark description aligned with the opening of
-[the challenge overview](overview.md): solvers submit their own harness, start and
+[architecture](architecture.md): solvers submit their own harness, start and
 control each run, and compare independently verified results. Local tests use
 their authorized model access. Platform-funded remote runs, when enabled, require
 private local evidence and use platform API access without a personal model

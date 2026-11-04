@@ -8,7 +8,7 @@ from .harness import IMAGE_RE
 from .accounting import LEGACY_VALIDITY, SCORING, VALIDITY, evaluation_models, project_observation
 
 PROTOCOL = EVALUATION_PROTOCOL
-PENDING = {"queued", "awaiting_credentials", "building", "running", "verifying"}
+PENDING = {"queued", "building", "running", "verifying"}
 TERMINAL = {"completed", "failed", "cancelled"}
 
 def digest(document) -> str:

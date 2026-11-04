@@ -67,7 +67,7 @@ file; it does not certify safety.
 The OpenRSI challenge UI's **Harness source** disclosure reads this public
 manifest on demand and binds it to the evaluation ID and source hash in Yukon's
 official score metrics. The UI code is maintained in Yukon's
-`apps/challenges-ui/challenges/openrsi`; see [UI setup and hosting](challenge-ui.md). Publishing artifacts
+`apps/challenges-ui/challenges/openrsi`; see [UI setup and hosting](https://github.com/Layr-Labs/yukon/blob/master/apps/challenges-ui/challenges/openrsi/README.md). Publishing artifacts
 does not require resubmitting scores to Yukon.
 Trace and complete-bundle download endpoints are disabled, including for
 historical runs that previously enabled trace sharing. Internal evidence remains
@@ -77,7 +77,3 @@ The API rejects requests to make harness source private. Credential screening
 can still withhold unsafe source; the public-source requirement never overrides it.
 Historical private runs are not published by this policy change. Publishing one
 requires explicit authorization and the same source review and screening checks.
-
-## Storage
-
-The service retains evidence in operator-managed storage. Changing storage does not change evaluation IDs or owner permissions. Storage backends and migration tools are maintained in the private `openrsi-space-verifier` repository.

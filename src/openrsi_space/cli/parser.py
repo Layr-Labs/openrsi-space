@@ -5,6 +5,17 @@ from openrsi_space import __version__
 from openrsi_space.challenge.catalog import PROBLEM_RELEASES
 from pathlib import Path
 
+def publication_options(command):
+    command.add_argument('--publish-to-yukon', action='store_true',
+                               help='Wait for verification, then publish the receipt and supplied metadata to Yukon from this CLI using your local login.')
+    command.add_argument('--note-file', type=Path, help='Public submission note for automatic Yukon publication.')
+    command.add_argument('--publication-title', help='Public harness title; defaults to harness.json title on submit; required for first-time publication on wait.')
+    command.add_argument('--benchmark', help='Operator-enabled Yukon benchmark UUID; defaults to the current Yukon checkout.')
+    publication_dependencies = command.add_mutually_exclusive_group()
+    publication_dependencies.add_argument('--no-dependencies', action='store_true')
+    publication_dependencies.add_argument('--dependencies-file', type=Path)
+
+
 def build_parser():
     parser = argparse.ArgumentParser(prog="openrsi-space", description="OpenRSI solver toolkit: prepare harnesses, test locally with Dungeness, and submit verified research to Yukon.")
     parser.add_argument("--version", action="version", version=f"openrsi-space {__version__}",
@@ -111,6 +122,11 @@ def build_parser():
     remote_submit.add_argument("package", help="Path to your harness source directory.")
     remote_submit.add_argument("--problem-release", choices=list(PROBLEM_RELEASES),
                                help="Must match the evaluator's assigned release; default: v1.")
+    publication_options(remote_submit)
+    publication_command = remote_sub.add_parser('publication', help='Inspect Yukon publication without starting research.')
+    publication_command.add_argument('id', help='Evaluation UUID; use the original --state directory.')
+    publication_command.add_argument('--retry', action='store_true',
+                                     help='Retry the saved publication using your local Yukon login; no research rerun.')
     remote_submit.add_argument("--wait", action="store_true", help="Wait, validate the result and save its verification reference.")
     remote_submit.add_argument("--local-run", type=Path,
                                help="Use a completed local run directory, run.json or Dungeness record.json; required evidence is otherwise discovered locally.")
@@ -135,12 +151,6 @@ def build_parser():
                              help="Supply an API key at a hidden prompt if personal API-key access is enabled.")
     token_input.add_argument("--model-token-stdin", action="store_true",
                              help="Supply one private API-key line from stdin if personal API-key access is enabled.")
-    renewal = remote_sub.add_parser("renew-access", help="Replace an API key for an owned queued evaluation, when enabled.")
-    renewal.add_argument("id")
-    renewal_input = renewal.add_mutually_exclusive_group(required=True)
-    renewal_input.add_argument("--provider-access-file")
-    renewal_input.add_argument("--prompt-model-token", action="store_true")
-    renewal_input.add_argument("--model-token-stdin", action="store_true")
     for operation, help_text in (
         ("status", "Read the current status of a submitted evaluation."),
         ("wait", "Wait for an existing evaluation; never enqueue another run."),
@@ -148,6 +158,8 @@ def build_parser():
     ):
         remote_action = remote_sub.add_parser(operation, help=help_text)
         remote_action.add_argument("id", help="Evaluation UUID returned by submit.")
+        if operation == "wait":
+            publication_options(remote_action)
     logs = remote_sub.add_parser("logs", help="Download your sanitized harness stdout/stderr and coverage report.")
     logs.add_argument("id")
     logs.add_argument("--output", required=True, help="Private ZIP destination; raw operator logs are never downloaded.")
