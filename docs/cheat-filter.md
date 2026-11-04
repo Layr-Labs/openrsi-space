@@ -21,22 +21,18 @@ papers, index them, develop strategies and generate candidates during its metere
 run. Those trusted resources and newly generated candidates are outside the
 submitted-material prohibition. See [the library endpoint](problem-service.md#shared-paper-library).
 
-The remote verification service checks submitted material and resulting candidates.
-It consults the challenge's published solutions when screening for copied answers.
-Screening can reject a run before model execution or reject a produced candidate.
-A run rejected after model calls can still consume the solver's model allowance.
-Failures return a reason; a rejected run cannot issue a valid score receipt.
-The admission reviewer checks every submitted text file. Opaque files that cannot
-be reviewed, unavailable screening, and uncertain findings block admission rather
-than receive a pass. Such failures are not an accusation of cheating. A private
-`source-audit.json` report identifies the category and source location when the
-reviewer finds a violation. Keep submitted material inspectable.
+Submissions and produced candidates are checked against these rules. A rejection
+can occur before execution or after model usage; charges already incurred still
+count. A rejected candidate cannot establish a valid score.
+
+Keep submitted material inspectable. A review failure or inconclusive result is
+not an accusation of cheating. Read the returned reason and any reported source
+location, and retain the request or evaluation ID when asking for help.
 
 Use `openrsi-space remote status EVALUATION_ID` and `openrsi-space remote wait EVALUATION_ID`
 to inspect the outcome. Keep the evaluation ID and rejection reason when reporting
 an apparent false positive. Do not modify a harness simply to evade detection.
 
 Screening is not a proof that all cheating will be detected. Independent circuit
-verification remains required for every scored result. Screening implementation,
-corpus operations and reviewer configuration live in the private `openrsi-space-verifier`
-repository; the public policy applies regardless of implementation details.
+verification remains required for every scored result. The published rules apply
+to every submission.

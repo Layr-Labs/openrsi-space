@@ -45,21 +45,12 @@ change spending limits only; they cannot waive the evidence requirement.
 
 ```mermaid
 flowchart LR
-    Solver[Solver: harness source + selected run limits] --> Client[Public openrsi-space CLI]
-    Local[Matching local evidence for funded runs] --> Client
-    Client -->|Authenticated HTTPS| API[Private OpenRSI verifier API]
-    API --> Review[Source screening + funded evidence review]
-    Review --> Worker[Private worker + Dungeness]
-    Access[Platform API access or authorized solver access] --> Worker
-    Worker --> Verify[Independent ECDSA verifier]
-    Verify --> Evidence[Retained source, usage, candidates and results]
-    Evidence -->|Receipt| Client
-    Client -->|Receipt only| Yukon[Yukon]
-    Yukon --> Actions[Public challenge GitHub workflow]
-    Actions -->|OIDC + receipt + problem| API
-    API -->|Verified result and curve| Actions
-    Actions --> Yukon
-    Yukon --> UI[Challenge UI]
+    Harness[Build a general-purpose harness] --> Local[Test locally with Dungeness]
+    Local --> Submit[Submit source and matching private evidence]
+    Submit --> Remote[Fresh hosted evaluation]
+    Remote --> Verify[Independent verification]
+    Verify --> Receipt[Retrieve verified receipt]
+    Receipt --> Yukon[Publish to Yukon]
 ```
 
 ## Public repository
@@ -113,17 +104,15 @@ module paths remain compatibility aliases for existing verifier releases.
 manifests, paper catalogs, scaffolds and verifier bundles. Its paths and published
 content stay stable when preparation code moves. Pricing remains in `pricing/`.
 
-## Private service
+## Hosted evaluation
 
-The `openrsi-space-verifier` repository provides its own Python package (`openrsi_space_verifier`) and
-operator entrypoint (`openrsi-space-verifier`). It depends on an exact public package
-version. Its source includes the API, job store, worker lifecycle, Dungeness
-integration, anti-cheat screening, provider staging, artifact storage and deployment
-configuration. The packages have separate tests and distribution contents.
+The hosted OpenRSI service reviews submissions, executes fresh evaluations and
+independently verifies results. Solvers use its public API through the CLI;
+no private package or operator credential is required.
 
-Moving source does not change the deployed service, HTTPS endpoint, retained
-evaluation IDs, database schema or receipt protocol. Deploying the extracted
-service is a separate operator action after testing.
+The [remote API contract](remote-evaluation.md) describes authentication, request
+IDs, status, diagnostics and receipts. Updating a client does not update the
+hosted service or change retained evaluations.
 
 ## Trust and privacy
 

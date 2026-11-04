@@ -41,11 +41,10 @@ Platform-funded requests instead use the non-secret grant
 `evaluation.llm_access.grant_id: grant_platform_funded` and send no
 `X-OpenRSI-Model-Token`. Discover availability, funded providers and any explicit model restrictions through
 `GET /public/funding-policy`. Authenticated `GET /funding` reports the account’s
-reservations and settled usage. The existing authenticated Yukon `/api/me` response supplies the account ID;
-the client cannot choose its own identity binding. No new Yukon endpoint is needed.
+reservations and settled usage for the authenticated account.
 
-For a funded submission, `POST /local-evidence` uploads the private
-a versioned local-evidence JSON bundle and returns its digest. Include that digest
+For a funded submission, `POST /local-evidence` uploads a private
+versioned local-evidence JSON bundle and returns its digest. Include that digest
 as top-level `local_evidence` in the evaluation request. The bundle contains
 recorded model exchanges, settled accounting and evaluation events, not arbitrary
 local files. Source, problem and model settings must match. The numeric
@@ -200,32 +199,13 @@ resulting job through `POST /verifications/yukon-bind` with protocol
 its benchmark and owner. Bindings are immutable and retryable. `openrsi-space yukon-bind`
 can finish a previously accepted submission without submitting it again.
 
-Yukon creates a candidate commit and dispatches the challenge-owned workflow.
-The workflow presents its GitHub OIDC identity to `POST /verifications/retrieve`:
+The hosted Yukon workflow retrieves the retained verified result using its own
+authentication. Solvers do not need to construct workflow credentials or call the
+workflow-only retrieval endpoint. Keep receipts unchanged and publish from the
+account and benchmark associated with the evaluation. Modified or mismatched
+receipts are rejected; publication never trusts a score supplied in a note.
 
-```json
-{
-  "protocol": "remote-verification-receipt-v1",
-  "reference": {"schema_version": 2, "evaluation_id": "..."},
-  "problem": {"id": "ecdsa.fail", "version": "<pinned problem-set SHA-256>"},
-  "judge": {
-    "policies": {"scoring": {"version": "..."}, "validity": {"version": "..."}},
-    "fields": {"scores": true, "validity": true}
-  }
-}
-```
-
-This example abbreviates `reference`; always send the complete issued receipt.
-The service checks the allowed workflow/repository, dispatched commit and actual
-Yukon submission's owner/benchmark, then compares the receipt to retained evidence.
-Unknown, modified, cross-owner or wrong-problem references fail. Retrieval does
-not build a harness, run a model or accept a caller-supplied score.
-
-Success returns the bound reference, problem, policy request, evaluated source
-artifact digest and authoritative judgment. The workflow validates the response
-before writing the score artifact Yukon collects. See
-[`receipts.py`](../src/openrsi_space/receipts.py) and
-[the GitHub integration](github-actions-e2e.md).
+See [Yukon publication](github-actions-e2e.md) for the workflow and recovery rules.
 
 ## Scores, curves and artifacts
 
@@ -239,8 +219,9 @@ usage and provenance. The $10/$20/$50/$100/Best views select from that evidence;
 a later candidate cannot improve an earlier budget view. Missing budget results
 are explicit metadata, never invented Yukon tuple values. See [accounting](tier-accounting.md).
 
-Owners can download harness source and change its visibility. New harness source
-must be public. Traces are retained internally for verification and debugging;
+Owners can download harness source and add an authorized source license. New
+harness source must remain public; solvers cannot make it private.
+Traces are retained internally for verification and debugging;
 trace and complete-bundle downloads are unavailable, including to the run owner.
 See [downloads and sharing](artifact-sharing.md).
 

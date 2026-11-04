@@ -38,12 +38,11 @@ than the submitted text wrapper, but opaque bundled binaries are not automatical
 accepted as source. Local Dungeness testing checks mechanics; it does not establish
 remote screening acceptance.
 
-Larger source is reviewed in bounded batches and a final cross-file review. All
-source segments must receive a conclusive review before approval. Image review
-remains explicitly partial for imported dependencies. Fitting the size limit does
-not guarantee approval or completion within the operator's review budget and time
-limits. Review spending is separate from your research-model budget; increasing
-your run's credit cap does not increase screening capacity.
+Fitting the size limit does not guarantee approval. Source must remain inspectable
+and satisfy the submission rules; review can fail when required material cannot
+be assessed within the service's limits. Review spending is separate from your
+research-model budget, so increasing the run cap does not resolve a review-capacity
+error. Keep the reported request or evaluation ID when contacting support.
 
 An oversized new request returns `413`, code `source_package_too_large`, field
 `source.expanded_bytes`, and numeric `current`/`limit` byte counts. A later review

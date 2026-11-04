@@ -17,16 +17,12 @@ purpose. Do not embed solutions, task-specific strategies or guidance selecting 
 particular paper. Agents may discover/select resources from the assigned library
 during a fresh evaluation.
 
-Source review happens before building. A second review examines the returned image
-before execution and model credential handoff. Its approval is tied to that exact
-image. It inventories final-image layers, including files deleted by later layers,
-and semantically reviews a bounded selection of text alongside the original source.
-
-This is explicitly **partial coverage**: opaque binaries, omitted text, downloaded
-bodies, discarded stages and files created/deleted within one build step are not
-fully inspected. Their presence alone does not reject a normal package installation;
-specific suspicious evidence can still reject the harness or make review inconclusive.
-A pass is not proof of complete dependency inspection or independent research.
+Review can examine both submitted source and the built image before execution.
+Approval is specific to the reviewed submission; it does not establish that all
+third-party code is safe or that a candidate will pass independent verification.
+Review has limited coverage, especially for compiled dependencies. Ordinary
+package installation is supported, but imported material must still comply with
+the same submission rules.
 
 Use local Dungeness testing to check harness mechanics before submitting. Existing
 build-network, resource and timeout limits still apply. Keep the evaluation ID when
