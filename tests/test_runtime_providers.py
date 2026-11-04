@@ -55,8 +55,7 @@ class RuntimeProviderTests(unittest.TestCase):
         self.assertNotIn("--grok-auth-file", parser.format_help())
         from contextlib import redirect_stderr
         import io
-        for command in (["remote", "submit", "fixture"],
-                        ["remote", "renew-access", "fixture"]):
+        for command in (["remote", "submit", "fixture"],):
             with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as raised:
                 parser.parse_args(command + ["--grok-auth-file"])
             self.assertEqual(raised.exception.code, 2)

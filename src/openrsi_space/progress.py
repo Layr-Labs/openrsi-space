@@ -18,6 +18,7 @@ PHASE_LABELS = {
 }
 
 DIAGNOSTIC_MESSAGES = {
+    "MODEL_ACCESS_UNAVAILABLE": "Model access was unavailable. This attempt ended; contact the operator before authorizing a new run.",
     "MODEL_USAGE_UNAVAILABLE": "A model request has no trusted usage; total credits are incomplete. Operator investigation is needed before a verified receipt can be issued.",
     "WORKER_FAILED": "The worker failed; the available evidence does not establish the cause.",
     "upstream_read_timeout": "The gateway timed out waiting for upstream response data.",
@@ -115,7 +116,7 @@ def duration(value):
 
 def progress_line(result, waited_seconds=0):
     status = result.get("status")
-    if status not in {"queued", "awaiting_credentials", "building", "running", "verifying",
+    if status not in {"queued", "building", "running", "verifying",
                       "completed", "failed", "cancelled"}:
         status = "unknown"
     parts = [f"Remote status: {status}"]

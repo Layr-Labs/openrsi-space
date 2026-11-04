@@ -40,7 +40,7 @@ class RemoteApiKeysOnlyTests(unittest.TestCase):
 
     def test_remote_cli_has_no_codex_login_file_option(self):
         parser, _ = build_parser()
-        for command in (['remote', 'submit', '/unused'], ['remote', 'renew-access', 'unused']):
+        for command in (['remote', 'submit', '/unused'],):
             with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit):
                 parser.parse_args(command + ['--codex-auth-file', '/unused/auth.json'])
         args = parser.parse_args(['local', 'run', '/unused', '--dungeness', '/unused/runtime',
@@ -58,9 +58,9 @@ class RemoteApiKeysOnlyTests(unittest.TestCase):
             with self.assertRaisesRegex(OpenRSIError, 'removed'):
                 client.submit(Path('/unused'))
             fetch.assert_not_called()
-        with patch.object(client, 'session', return_value={'request': body}), \
-             patch('pathlib.Path.is_file', return_value=True), \
-             patch('openrsi_space.client.evaluations.transport.solver_fetch') as fetch:
-            with self.assertRaisesRegex(OpenRSIError, 'removed'):
-                client.renew_access('00000000-0000-4000-8000-000000000001', 'synthetic-token')
-            fetch.assert_not_called()
+
+    def test_remote_cli_rejects_removed_access_renewal(self):
+        parser, _ = build_parser()
+        with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as raised:
+            parser.parse_args(['remote', 'renew-access', 'unused', '--model-token-stdin'])
+        self.assertEqual(raised.exception.code, 2)

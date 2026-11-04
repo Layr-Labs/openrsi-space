@@ -147,14 +147,6 @@ def remote_command(args, state):
     if args.operation == "cancel":
         print(json.dumps(client.cancel(args.id), indent=2))
         return
-    if args.operation == "renew-access":
-        model_access_notice(args, client)
-        token = model_access_input(args)
-        try:
-            print(json.dumps(client.renew_access(args.id, token), indent=2))
-        finally:
-            token = None
-        return
     if args.operation in {"artifacts", "download", "sharing", "publish"}:
         if args.operation == "artifacts":
             result = client.artifacts(args.id)

@@ -13,7 +13,6 @@ import unittest
 from unittest.mock import patch
 
 from openrsi_space.client import transport
-from openrsi_space.client.evaluations import RemoteClient
 from openrsi_space.common import OpenRSIError
 from openrsi_space.credentials import TOKEN_HEADER
 
@@ -35,7 +34,7 @@ class CredentialURLTests(unittest.TestCase):
                         operation()
             opener.assert_not_called()
 
-    def test_model_access_is_limited_to_exact_https_submission_and_renewal_routes(self):
+    def test_model_access_is_limited_to_exact_https_submission_route(self):
         with patch.object(transport.urllib.request, "build_opener") as opener:
             urls = [
                 "http://127.0.0.1/evaluations", "http://localhost/evaluations",
@@ -44,6 +43,7 @@ class CredentialURLTests(unittest.TestCase):
                 "https://verifier.invalid/evaluations#fragment",
                 "https://user@verifier.invalid/evaluations",
                 f"https://verifier.invalid/evaluations/{EVALUATION}",
+                f"https://verifier.invalid/evaluations/{EVALUATION}/credentials",
                 f"https://verifier.invalid/evaluations/{EVALUATION}/credentials/",
                 f"https://verifier.invalid/evaluations/{EVALUATION}/credentials?next=/other",
                 "https://verifier.invalid/evaluations/not-a-uuid/credentials",
@@ -155,13 +155,12 @@ subjectAltName={host}
             self.assertEqual(requests[0]["headers"][TOKEN_HEADER], MODEL)
             self.assertEqual(json.loads(requests[0]["body"]), {"canary": BODY})
 
-    def test_bad_certificates_reject_login_submission_and_renewal_before_http(self):
+    def test_bad_certificates_reject_login_and_submission_before_http(self):
         for certificate,trust in (("expired", "ca"), ("wrong-host", "ca"), ("valid", "unrelated-ca")):
             with self.subTest(certificate=certificate, trust=trust), \
                     patch.dict(os.environ, {"SSL_CERT_FILE": str(self.root / f"{trust}.pem")}), \
                     self.server(certificate) as (url, requests):
-                for route,model in (("/auth/yukon", None), ("/evaluations", MODEL),
-                                    (f"/evaluations/{EVALUATION}/credentials", MODEL)):
+                for route,model in (("/auth/yukon", None), ("/evaluations", MODEL)):
                     with self.assertRaisesRegex(OpenRSIError, "TLS certificate verification failed") as raised:
                         transport.fetch(url + route, SOLVER, document={"canary": BODY}, model_token=model)
                     self.assertIn("do not disable TLS verification", str(raised.exception))
@@ -169,18 +168,12 @@ subjectAltName={host}
                         self.assertNotIn(secret, str(raised.exception))
                 self.assertEqual(requests, [])
 
-    def test_real_renewal_client_uses_the_https_job_credential_route(self):
-        with self.server() as (url, requests), tempfile.TemporaryDirectory() as state, \
-                patch.dict(os.environ, {"OPENRSI_EVALUATOR_URL": url}):
-            client = RemoteClient(Path(state), bearer=SOLVER)
-            self.assertEqual(client.renew_access(EVALUATION, MODEL), {"evaluation_id": EVALUATION, "status": "queued"})
-            self.assertEqual(len(requests), 1)
-            self.assertEqual(requests[0]["path"], f"/evaluations/{EVALUATION}/credentials")
-            self.assertEqual(requests[0]["headers"][TOKEN_HEADER], MODEL)
-            self.assertNotIn(MODEL.encode(), requests[0]["body"])
-            for path in Path(state).rglob("*"):
-                if path.is_file():
-                    self.assertNotIn(MODEL.encode(), path.read_bytes())
+    def test_removed_credential_route_never_receives_model_tokens(self):
+        with self.server() as (url, requests):
+            with self.assertRaisesRegex(OpenRSIError, "submission endpoint"):
+                transport.solver_fetch(url, f"/evaluations/{EVALUATION}/credentials", SOLVER,
+                                       document={}, model_token=MODEL)
+            self.assertEqual(requests, [])
 
     def test_plaintext_model_submission_is_rejected_before_yukon_login(self):
         with self.server(certificate=None) as (url, requests):
