@@ -195,17 +195,13 @@ execution:
 
 The image needs Python 3 for the trusted launcher; the harness itself can use
 any installed language. Command descriptors cannot select `harbor.import_path`.
-The compiler selects the trusted `command_agent:CommandAgent` adapter.
 
 Models belong to the run's `model_access.models` list, independently of the
 agent. Each profile identifies the provider, request model, API protocol and
 pinned pricing identity. The compiler gives the harness a `DUNGENESS_TASK`
 JSON file containing the problem instruction, writable workspace, model
 endpoints and execution configuration. Real credentials are not in this file.
-Research strategy and feedback loops belong to the harness. The cleaned
-Dungeness runtime deployed by OpenRSI has removed the experimental research-state
-controller and its prompt interventions. Check the runtime revision when comparing
-a public checkout with the deployed service.
+Research strategy and feedback loops belong to the harness.
 
 One Harbor trial may run many harness subprocesses. They share the run's
 compute envelope, gateway and budget. The launcher forwards termination and
@@ -292,18 +288,9 @@ to the trusted gateway. Normal harness-executed function calls still work, inclu
 shell commands and file edits inside Dungeness. Hosted evaluations use the
 operator's confirmation for the platform account.
 
-The worker installs the frozen snapshot in its trusted Dungeness runtime.
-The gateway uses it for admission/accounting; OpenRSI uses the same snapshot
-to verify the complete usage ledger, intermediate scores and final receipt.
-Raw counts remain available for later comparison under another reference schedule.
-No Yukon backend change is needed.
-
-The catalog fetch uses a five-minute in-process cache and has bounded response
-size and timeout. Catalog failure never falls back to invented prices.
-If the catalog endpoint requires authentication, the operator can supply
-`OPENRSI_OPENROUTER_CATALOG_TOKEN` in the service environment. This credential
-is used only at that fixed catalog URL, never taken from solver model access,
-and is excluded from snapshots and worker environments. Redirects are refused.
+Accepted runs retain their original pricing snapshot, even if the catalog
+changes later. The same recorded schedule is used for the run's model-credit
+comparison. Quotes and raw usage do not authorize a solver to edit prices.
 
 The optional personal API-key interface is implemented but disabled in production.
 If an operator enables it later, the hidden prompt or stdin accepts a single API
@@ -370,8 +357,7 @@ Package tools and dependencies before execution because research-time internet
 access is disabled.
 
 Use [local build and smoke checks](local-evaluation.md), then submit a funded run
-through the remote service when authorized. Operator tests that launch Dungeness
-and the mock-provider end-to-end flow live in `openrsi-space-verifier`.
+through the remote service when authorized.
 
 ## Optional token ceiling
 

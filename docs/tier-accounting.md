@@ -1,123 +1,75 @@
-# ECDSA model-credit tiers
+# Scores and model credits
 
-The initial official problem is `ecdsa.fail`, pinned in
-`src/openrsi_space/problem-set/ecdsa-fail/releases/v1.json`. Compare harness source versions at
-**10, 20, 50 and 100 normalized model USD credits, plus Best achieved**. At each tier, minimize the
-best independently verified `avg_toffoli * peak_qubits` produced within that
-allowance. Do not average scores across tiers or replace best performance with
-the median of attempts. Retain each attempt and its complete curve.
+The ECDSA objective is **average executed Toffoli gates × peak qubits**; lower is
+better. Only independently verified candidates receive scores. Compare runs with
+the same problem version and scoring policy; local results and harness-reported
+numbers are not official scores.
 
 ## Spending caps and display budgets
 
-Each evaluation is one Dungeness run with the solver's positive finite
-`max_model_credits`. The solver may spend less than $10 or more than $100.
-Token/time limits can also end the run. There is no $2,000 comparison tier.
+A run has a positive finite spending cap and a time limit. An optional token limit
+can also stop it. These limits authorize a run; selecting a leaderboard budget
+only changes how its existing verified history is displayed.
 
-**Within $10**, **Within $20**, **Within $50**, **Within $100**, and **Best overall** are views over the saved
-verified curve. A $5 run qualifies for all four budget views. No funded-tier flag,
-checkpoint seal, new run, interpolation or extrapolation is needed to select a
-view. Spending authorization and total usage remain separate from credits at
-the best result.
+For a comparison budget B, select the lowest verified score reached at cumulative
+model credits **less than or equal to B**. Break ties by fewer credits, then earlier
+observation order. Best overall uses the full verified history without a fixed
+comparison budget. A shorter or cheaper run can qualify for a larger budget view;
+unused budget is not filled with estimated results. Missing observations mean no
+verified candidate within that budget, not a score of zero.
 
-## Trusted accounting
+The result contract records observations at $10, $20, $50 and $100, plus the best
+achieved result. The UI may expose a subset of those views. Changing a view never
+starts inference. Total run spending is separate from credits at the best score.
 
-`src/openrsi_space/pricing/pricing.json` is the pinned reference schedule, copied
-from Dungeness commit `506890937d75b659db714d3e02ea3d3cec3a1451`. Its canonical
-JSON SHA-256 is included in requests, result bindings, receipts and public
-metrics. Editing prices creates a different comparison policy identity; never
-silently reprice historical evaluations. The API must use its own trusted copy
-and reject client-provided overrides. These rates need no live provider lookup.
-They are reference credits, not a claim about current billing prices.
+## How credits are counted
 
-Meter every model request in the run across all harness processes, including
-failed experiments, retries with consumed tokens, and usage after the best
-candidate. Input tokens include cache-read and cache-write subsets; output
-includes reasoning tokens. Charge each bucket once. Apply the published
-long-context tier to the entire request when its threshold is exceeded. Unknown
-models, missing token counts, negative counts, duplicate request receipts, and
-unsupported nonzero pricing buckets fail closed. Subscription routes use the
-same reference prices as their corresponding API route; billed USD can be
-unknown. Infrastructure, builds and verifier compute are separate records.
+Model credits use the reference pricing schedule recorded for that evaluation.
+The schedule covers input, output (including reasoning), cache usage and any
+supported long-context rates. Historical runs retain their original schedule.
+See [model pricing](generic-harnesses.md#reference-prices-for-declared-models).
 
-The first contract supports one exact provider/model per evaluation. Multi-model
-harnesses need a later per-request model/authorization extension; do not accept
-unmetered secondary model calls. A pricing entry is not a claim that its provider
-authentication adapter has already been implemented.
+All declared models and harness workers share the run's budget. Usage includes
+failed experiments, retries that consumed tokens, and calls after the best
+candidate was found. Cache categories and reasoning are counted once. Builds,
+verification compute and infrastructure are separate from research-model credits.
 
-Dungeness owns admission, metering and the usage ledger. OpenRSI recomputes
-credits from its settled receipts using the pinned schedule. Unknown consumption,
-unsettled requests and token-limit overruns prevent a valid score. Under validity
-policy `ecdsa-trusted-checkpoints-v3`, final in-flight responses may exceed the
-credit cap only when every charged request has trusted admission evidence showing
-it started before settled spending reached the cap. The gateway blocks new calls
-after exhaustion; already admitted concurrent responses may finish. The worker
-records `admitted_after`, the last settled charged request ID at each gateway
-request event (or null before any settlement), from canonical gateway history.
-Missing admission evidence retains the strict cap. Explicit v2 judgments retain
-their original strict cap and policy digest; historical receipts are not rewritten. A request crossing $20 cannot benefit the $20 view even
-if it began below $20. Never clamp an overrun to the allowance.
+Credits are a comparison measure, not necessarily the provider's cash charge or
+remaining subscription allowance. Funded OpenRouter settlement uses reported
+provider charges; see [funding and allowances](platform-funded-inference.md).
+Unknown usage or unsupported pricing cannot establish a verified score.
 
-## Existing evaluator history
+## Concurrent calls and budget limits
 
-The private service adapter reads Dungeness's existing
-`usage/events.jsonl`: trusted `evaluator / evaluation.completed` records with
-`operation: score`, `status: ok`, candidate/source SHA-256, Toffoli count, peak
-qubits, score and a cumulative usage snapshot. It checks that snapshot against
-the canonical accounting order and retains every successful evaluation,
-including ties and regressions. It does not install a new capture mechanism.
+The gateway reserves credits before forwarding a request. A request with a large
+history or output limit may be rejected while credits remain. Reduce its size
+rather than repeating it unchanged; see [reservation errors](generic-harnesses.md#parallel-accounting-and-evaluation).
 
-If a model request started before the evaluation but settled afterward, the
-observation is charged at that settlement, including other usage settled by then.
-This conservative rule prevents streamed output from producing an artificially
-cheap score. Fallback evaluator-completion records without a canonical gateway
-sequence cannot establish a budget observation; they are omitted and counted in
-private history diagnostics. Unordered gateway accounting and malformed or
-contradictory canonical records fail closed.
+An already admitted response can finish above the cap. Current policy accepts
+such overshoot only when the recorded admission evidence establishes that all
+charged calls started before settled spending exhausted the cap. Older results
+retain their original stricter policy. Costs are never reduced to fit a budget
+view: a candidate recorded above $20 cannot qualify for the $20 comparison.
 
-The worker also freezes the terminal candidate and independently reruns the
-pinned ECDSA verifier with no network. That final point remains in the curve at
-full run cost, even when an earlier evaluator result is better. The two digest
-formats are labeled: Dungeness hashes module-relative contents; OpenRSI hashes
-its canonical file map. They are not interchangeable identifiers.
+## Verified history and final verification
 
-For budget B, select minimum performance among observations at cumulative
-credits <= B. Break ties by fewer credits, then earlier order. A result exactly
-at B qualifies. Each view is `eligible` or `no_verified_candidate`; the latter
-has `best: null` in metadata, never a fabricated score. Legacy seals can still
-be read and validated but do not restrict eligibility.
+The history includes successful candidate evaluations, ties and regressions.
+Calls still in flight when a candidate is evaluated count when their usage
+settles, so a score may be recorded at a later, higher cumulative cost.
 
-Historical receipts and already-published Yukon results remain immutable. A UI
-can read a legacy final-only receipt, but cannot invent its missing intermediate
-history. Re-exporting a retained old run needs an explicit new publication; it
-does not silently rewrite the old receipt.
+Final verification checks the saved terminal candidate independently. Its point
+is recorded at full run cost, even if it repeats an earlier score. An earlier
+verified candidate can remain the best point on the curve. Do not interpret final
+verification as an additional improvement or subtract its preceding model usage.
 
-## Cheat screening
+## Yukon results
 
-See [screening policy](cheat-filter.md). Harness source is screened before build;
-every new intermediate ECDSA evaluation is screened before invoking the pinned
-scorer; the final frozen candidate is screened before independent verification.
-The filter is a conservative additional check, not proof against arbitrary
-malicious Rust or a replacement for worker isolation.
+Yukon receives two minimizing values: best verified performance and cumulative
+model credits at that result. The full curve, selected models, spending cap and
+total usage remain available separately. A valid best result does not require
+observations at every budget; an invalid run has no score tuple.
 
-## Yukon projection
-
-Keep `schemaVersion: 1` and `editablePaths: ["submission/verification.json"]`. Yukon's current
-validator requires a finite score for every declared objective; partial
-`[score20, null, null]` tuples and Infinity/sentinel scores are inappropriate.
-Schema-v2 tracks also require non-overlapping editable paths.
-
-Use two minimizing objectives: `[ecdsaPerformance, modelCreditsAtBest]`, where
-the first is the best verified performance in the entire run and the second is
-cumulative model credits at that candidate's capture. Authorized maximum credits
-and final total usage remain separate. Missing $10/$20/$50/$100 observations stay in
-metadata; they do not prevent a valid best-achieved score.
-
-Yukon's generic Pareto frontier describes the best result/cost pair. The OpenRSI
-board ranks the selected view by performance: $10, $20, $50, $100, or Best achieved. A
-later candidate can improve Best achieved without improving an earlier
-budget view. Compare exact problem, pricing, model and execution conditions.
-The challenge UI reads this curve through the standard Yukon API; no Yukon backend patch is required.
-
-The local viewer is a development demonstration. It offers $10, $20, $50, $100 and Best achieved,
-shows the best reported score and the full curve, and labels all local data as
-synthetic or contributor-reported. Its imported records have contributor-reported provenance and cannot qualify for official rankings.
+Publishing a receipt retrieves the existing verified result without another
+research run. Existing receipts and published results retain their original
+problem and pricing identities. See [publication](solver-guide.md#6-publish-to-yukon)
+and [submission rules](cheat-filter.md).

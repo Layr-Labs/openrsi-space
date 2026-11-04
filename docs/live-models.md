@@ -69,9 +69,6 @@ retrieve its result. Publish the verified receipt using the
 
 ## Optional personal API-key support
 
-This interface is retained for operators who explicitly enable it later. It is
-currently disabled in production. It accepts API keys only, through the hidden
-prompt, stdin or a private `--provider-access-file` map. Subscription credentials,
-Codex login envelopes, refresh tokens and login-file objects are not accepted.
-API keys are transferred separately from source over HTTPS, staged privately for
-the trusted gateway, and removed during cleanup. The harness receives placeholders.
+The CLI retains API-key support for separately configured deployments. It is
+disabled on the hosted service. Use platform funding for official hosted runs;
+never substitute personal credentials when funding or evidence checks reject a request.

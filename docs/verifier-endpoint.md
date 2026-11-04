@@ -14,20 +14,9 @@ Use the existing Yukon dev login. The current benchmark is
 mode. Hosting the verifier on the production VM does not change the Yukon
 account environment.
 
-The challenge-owned GitHub workflow uses this same HTTPS endpoint. Its GitHub
-OIDC authentication, receipt checks, problem binding and source binding are
-unchanged. Receipt retrieval never starts Dungeness or spends model credits.
-Existing Openclaw evaluations were copied with their original IDs and evidence.
-
-Yukon pins the trusted repository revision. The benchmark owner must refresh
-that revision through Yukon's existing Pareto reorg operation and verify the
-hosted receipt checks before resuming submissions. Publishing a workflow change
-alone does not replace the benchmark's active pinned revision.
-
-The current IP must remain assigned to this instance. A permanent domain can
-be added later using an Elastic IP and an A record, followed by a hostname
-certificate and another trusted endpoint update.
-
+Use the endpoint and Yukon environment specified for your board. Receipt
+retrieval does not start Dungeness or spend model credits. If an endpoint or board
+binding is wrong, retain the receipt and contact support before rerunning research.
 
 ## Recover a publication sent to the historical board
 

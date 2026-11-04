@@ -48,7 +48,7 @@ a $5 run qualifies for all four budget views. Changing the view never starts a r
 OpenRSI exports the existing Dungeness evaluator history and settled usage.
 
 See [budget accounting](tier-accounting.md) for exact eligibility.
-The challenge UI is maintained in Yukon; see [the UI integration](challenge-ui.md).
+The challenge UI is maintained in Yukon; see [the UI integration](https://github.com/Layr-Labs/yukon/blob/master/apps/challenges-ui/challenges/openrsi/README.md).
 
 The [ECDSA statement](../src/openrsi_space/problem-set/ecdsa-fail/description.md) is maintained in
 OpenRSI. Each new run serves its assigned statement through an internal,
@@ -132,7 +132,7 @@ New harness submissions require public source, published after the run stops and
 credential screening passes. Traces are retained internally and cannot be downloaded or published. Existing private runs stay private. Owners can
 download harness source or add an authorized license; see
 [artifact downloads and sharing](artifact-sharing.md). Scores and curves
-come from Yukon's official result packet. The challenge UI lives in Yukon; see [the integration guide](challenge-ui.md).
+come from Yukon's official result packet. The challenge UI lives in Yukon; see [the integration guide](https://github.com/Layr-Labs/yukon/blob/master/apps/challenges-ui/challenges/openrsi/README.md).
 
 ## Repository boundary
 
@@ -143,16 +143,10 @@ This repository is the public solver and challenge interface. It contains:
 - Model-credit accounting rules, result validation and the public HTTP/receipt contract.
 - `benchmark.json`, the receipt-only GitHub Actions workflow and solver documentation.
 
-The **private `openrsi-space-verifier` repository** contains the verification API,
-queue, Dungeness worker adapter, anti-cheat implementation, credential handling
-inside the service, artifact storage and deployment tooling. It depends on the
-public `openrsi-space` package; this package does not depend on the service.
-The remote service owns its Dungeness runtime; the submission CLI does not launch
-it locally. However, funded admission requires evidence from an ended matching
-local Dungeness run. Use the [public runtime](https://github.com/Layr-Labs/dungeness)
-for local testing; an existing qualifying run can be reused.
-See [local testing options](local-evaluation.md).
-The hosted challenge UI remains in Yukon's challenge application.
+Official evaluations run on the hosted service. For local testing, use the
+public [Dungeness runtime](https://github.com/Layr-Labs/dungeness); a matching ended
+local run is required for funded admission. See [local testing](local-evaluation.md).
+The challenge UI lives in Yukon.
 
 The service and client communicate over the [public HTTP contract](remote-evaluation.md).
 A receipt identifies retained evidence; it contains no model credential and
@@ -182,9 +176,9 @@ uv run openrsi-space local run .openrsi/my-agent --dungeness /absolute/path/to/d
   --budget 1 --codex-auth-file
 ```
 
-This user-funded local example starts its services automatically. It does not
-establish eligibility for a funded remote run on a different provider route;
-choose the funded API provider/model before local testing when funding is intended.
+This local example starts its services automatically using your authorized access.
+It can qualify for a supported equivalent funded model when the recorded cap and
+all other evidence requirements match; check the live funding policy first.
 Add `--prepare-only` to build and inspect without making model calls. See
 [local testing](local-evaluation.md) for prerequisites, API keys, ensembles,
 artifacts and limits. Local runs cannot issue official Yukon receipts.
@@ -196,7 +190,6 @@ uv run python -m unittest discover -s tests -v
 ```
 
 Service and cross-repository integration tests live in `openrsi-space-verifier`.
-See [publication notes](publication.md) for the public/private source boundary.
 
 ### Harness visibility
 

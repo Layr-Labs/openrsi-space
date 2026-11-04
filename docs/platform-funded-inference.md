@@ -108,12 +108,11 @@ screening/upload attempts.
 A passing review establishes readiness, not authenticity or deterministic replay;
 your remote run begins fresh and is the only source of an official score.
 
-A run reserves its budget against your allowance. The platform also reserves
-an in-flight buffer from its global pool.
-Concurrent runs and retries cannot reuse the same allocation. Screening/build
-failures before inference release the reservation. Completed OpenRouter runs settle provider-reported charges. If usage is uncertain after execution starts, the reservation
-remains held until the operator reconciles it. Check `remote funding` for status;
-amounts there are microcredits (1,000,000 = one USD of OpenRouter funding).
+A run reserves its requested cap against your allowance. Screening or build
+failures before inference release it. Completed OpenRouter runs settle reported
+provider charges; unused funds return to your allowance. If usage is uncertain,
+the reservation remains held until it can be reconciled. Check `remote funding`
+for status; amounts expressed in microcredits use 1,000,000 per USD equivalent.
 
 The run cap is a maximum, not a spending target. Before each model call, the
 gateway reserves a conservative allowance for its input and output. A long

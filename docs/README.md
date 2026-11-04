@@ -12,8 +12,5 @@ challenge, comparison budgets and publication workflow.
 | Recovery and support | [Submission state model](submission-states.md), [run recovery and troubleshooting FAQ](recovery-faq.md): IDs, interrupted runs, admission errors, diagnostics and publication retries |
 | Discovery and sharing | [Harness catalog](harness-catalog.md), [artifact sharing](artifact-sharing.md) |
 | Challenge contract | [Problem service](problem-service.md), [accounting](tier-accounting.md), [source screening](cheat-filter.md), [upstream ECDSA](ecdsa-upstream.md) |
-| Integrations | [Yukon UI](challenge-ui.md) |
-| Maintenance | [Architecture](architecture.md), [development](development.md), [release compatibility](deployment-compatibility.md), [public source boundary](publication.md) |
-
-[Motivation](motivation.md) and the [early platform vision](highlevel.md) are
-background documents, not additional runtime contracts.
+| Integrations | [Yukon UI](https://github.com/Layr-Labs/yukon/blob/master/apps/challenges-ui/challenges/openrsi/README.md) |
+| Maintenance | [Architecture](architecture.md), [development](development.md), [client/runtime compatibility](deployment-compatibility.md) |
