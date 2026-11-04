@@ -27,16 +27,17 @@ queued → building → running → verifying → completed
 | `completed` | Result processing finished. Inspect the verification outcome: completion alone does not mean a valid circuit. |
 | `failed` | This attempt stopped with an error. Preserve its result and diagnostics. |
 | `cancelled` | This attempt was cancelled. Charges already incurred still count. |
-| `awaiting_credentials` | A supported credential-handoff path is waiting for model access and may return to `queued`. This is not a request to supply a personal provider key for a platform-funded run. |
 
 Build, execution and verification can end in `failed` or `cancelled`.
-Queued or credential-waiting evaluations can be cancelled before execution.
+Queued evaluations can be cancelled before execution.
 Cancellation of active work is a request; it is not necessarily instantaneous.
 `completed`, `failed` and `cancelled` are terminal for that evaluation attempt.
 
 Transitions are recorded durably and invalid transitions are rejected. Recovery
 after a worker interruption marks started work failed (or cancelled if requested);
-it does not automatically replay potentially paid calls.
+it does not automatically replay potentially paid calls. Missing or expired model
+access also ends the attempt with a durable failure; it cannot be resumed by
+replacing credentials. Resolve access before authorizing a new attempt.
 
 ## Current: separate outcomes
 
@@ -124,7 +125,6 @@ a request, reconnecting to a run and restarting research are different actions.
 | Response lost, outcome unknown | [Recover the unchanged saved request](#can-i-resume-after-closing-my-terminal-or-losing-the-connection). | It may create the intended run if the original never arrived; it should not duplicate an existing evaluation. |
 | `queued` or `building`, waiting for capacity | [Wait on the existing evaluation](#the-run-is-waiting-for-infrastructure-should-i-submit-again). | No new run; the accepted run may proceed and incur usage. |
 | `running` or `verifying` | [Reconnect with `remote wait`](#can-i-resume-after-closing-my-terminal-or-losing-the-connection). | No new run; ongoing work may still incur usage. |
-| `awaiting_credentials` | Inspect the reported access issue. For platform-funded runs, ask the operator; do not supply a personal model key. | Do not submit a replacement. Resolving access can allow the existing run to start. |
 | `failed` or `cancelled` | [Inspect the stopped attempt](#the-remote-run-stopped-unexpectedly-can-it-continue-where-it-stopped); check retained verification results before retrying research. | A fresh research attempt can incur new charges. Status retrieval cannot restart this one. |
 | `completed`, verification not passed | [Distinguish final verification from candidate success](#a-candidate-passed-but-final-verification-or-saving-failed-did-i-lose-it). | Retrieval does not; a newly authorized research attempt can. |
 | Verification passed, Yukon publication missing or failed | [Recover publication using the existing receipt](#verification-succeeded-but-yukon-publication-failed-must-i-rerun-research). | No model inference is needed for publication. |

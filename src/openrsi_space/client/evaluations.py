@@ -272,19 +272,6 @@ class RemoteClient:
             "evaluation_id", "status", "cancellation_requested", "trace_available", "reason"
         ) if key in result}
 
-    def renew_access(self, identity, token):
-        identity = evaluation_id(identity)
-        from openrsi_space.credentials import decode_remote_access, remote_api_keys
-        remote_api_keys(token)
-        if (self.folder(identity) / 'session.json').is_file():
-            decode_remote_access(self.session(identity)['request']['evaluation'], token)
-        result = json.loads(transport.solver_fetch(
-            self.base, f"/evaluations/{identity}/credentials", self.bearer,
-            document={}, model_token=token))
-        if result.get("evaluation_id") != identity:
-            raise OpenRSIError("Credential response does not match this evaluation.")
-        return {"evaluation_id": identity, "status": result["status"]}
-
     def wait(self, identity):
         from openrsi_space.progress import progress_line, diagnostic_lines
         folder = self.folder(identity)
@@ -300,10 +287,6 @@ class RemoteClient:
                     print(progress_line(result, current - started), file=sys.stderr, flush=True)
                     previous = result["status"]
                     last_report = current
-                if result["status"] == "awaiting_credentials":
-                    raise OpenRSIError(
-                        f"Temporary access expired or was lost on restart. Renew with "
-                        f"openrsi-space remote renew-access {identity}, then resume remote wait.")
                 if result["status"] in TERMINAL:
                     for line in diagnostic_lines(result):
                         print(line, file=sys.stderr, flush=True)

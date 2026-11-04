@@ -31,12 +31,8 @@ def credential_url(url, *, model_access=False):
             or (parts.scheme != "https" and not (loopback and not model_access))):
         raise OpenRSIError("Credentials require a trusted HTTPS evaluator endpoint; HTTP is only for local fixtures.")
     if model_access:
-        route = parts.path.split("/")
-        renewal = len(route) == 4 and route[:2] == ["", "evaluations"] and route[3] == "credentials"
-        if renewal:
-            evaluation_id(route[2])
-        if parts.query or not (parts.path == "/evaluations" or renewal):
-            raise OpenRSIError("Provider tokens require an HTTPS evaluation submission or credential-renewal endpoint.")
+        if parts.query or parts.path != "/evaluations":
+            raise OpenRSIError("Provider tokens require an HTTPS evaluation submission endpoint.")
 
 
 ADMISSION_FIELDS = {

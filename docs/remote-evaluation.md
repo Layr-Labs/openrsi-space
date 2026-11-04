@@ -23,8 +23,7 @@ disable certificate verification (`curl -k`, `verify=False`, or equivalent).
 Custom clients must use HTTPS for the first credential-bearing request and refuse
 redirects. An HTTP-to-HTTPS redirect cannot protect credentials already sent over
 HTTP. Real model credentials are refused even on loopback HTTP. HTTPS model-token
-handoff is restricted to `POST /evaluations` and the exact
-`POST /evaluations/<evaluation-id>/credentials` renewal route.
+handoff is restricted to `POST /evaluations`.
 
 Solvers use their Yukon login or `YUKON_API_TOKEN`. `POST /auth/yukon` exchanges
 that key for a temporary solver session using the solver-session protocol.
@@ -102,8 +101,8 @@ Historical stored requests remain readable and are not retroactively published.
 `openrsi-space remote status ID` reads `GET /evaluations/ID`.
 `openrsi-space remote wait ID` waits for completion and validates the returned bindings.
 These commands do not enqueue work. States include queued, building, running,
-verifying, awaiting_credentials, completed, failed and cancelled. Renew temporary
-access for an owned job before provider execution with `remote renew-access`.
+verifying, completed, failed and cancelled. Missing or expired model access ends
+the attempt with `MODEL_ACCESS_UNAVAILABLE`; it does not pause for credentials.
 `remote cancel` requests cancellation; do not resubmit while cancellation is pending.
 
 Pending status responses include owner-only `progress` from Dungeness's live

@@ -7,8 +7,8 @@ model credential. Matching local evidence must record a budget cap at least as l
 requested remote budget. Actual local spending may be lower. See [platform-funded inference](platform-funded-inference.md).
 
 Remote subscription-token submission has been removed. Subscription routes
-cannot be selected for remote submission, quoting or
-credential renewal. Remote commands no longer accept `--codex-auth-file`.
+cannot be selected for remote submission or quoting.
+Remote commands no longer accept `--codex-auth-file`.
 Personal API-key handoff remains implemented but is disabled on the hosted service.
 Do not use an old subscription example or change provider labels to bypass this policy.
 
@@ -79,8 +79,8 @@ The `claude-subscription` route uses Anthropic Messages with a temporary bearer
 access token. `anthropic` remains the API-key route. The real credential is mounted
 only into the trusted gateway; the submitted harness receives a placeholder.
 
-**Local testing only.** Remote subscription-token submission and renewal have
-been removed. This route may be used by an authorized local Dungeness run;
+**Local testing only.** Remote subscription-token submission has been removed.
+This route may be used by an authorized local Dungeness run;
 it is not eligible for hosted submission or hosted pricing quotes. Personal
 API-key submission is also currently disabled; hosted runs use platform funding.
 

@@ -135,12 +135,6 @@ def build_parser():
                              help="Supply an API key at a hidden prompt if personal API-key access is enabled.")
     token_input.add_argument("--model-token-stdin", action="store_true",
                              help="Supply one private API-key line from stdin if personal API-key access is enabled.")
-    renewal = remote_sub.add_parser("renew-access", help="Replace an API key for an owned queued evaluation, when enabled.")
-    renewal.add_argument("id")
-    renewal_input = renewal.add_mutually_exclusive_group(required=True)
-    renewal_input.add_argument("--provider-access-file")
-    renewal_input.add_argument("--prompt-model-token", action="store_true")
-    renewal_input.add_argument("--model-token-stdin", action="store_true")
     for operation, help_text in (
         ("status", "Read the current status of a submitted evaluation."),
         ("wait", "Wait for an existing evaluation; never enqueue another run."),
