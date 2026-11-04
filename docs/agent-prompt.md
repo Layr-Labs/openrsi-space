@@ -1,6 +1,6 @@
 # OpenRSI: instructions for a coding agent
 
-When a submission or run fails, use the [recovery and troubleshooting FAQ](recovery-faq.md)
+When a submission or run fails, use the [recovery and troubleshooting FAQ](submission-states.md)
 before changing source or spending again. Preserve the request/evaluation IDs,
 original local evidence, receipt and state directory. Reconnecting to an existing
 run or retrying publication is different from restarting research; remote
@@ -462,7 +462,7 @@ To download the evaluated harness source, use
 Remote traces and complete evidence bundles are not downloadable.
 
 Build dependencies: run `openrsi-space remote build-policy` before choosing hosted
-package sources; see [build dependency policy](build-dependencies.md).
+package sources; see [build dependency policy](source-limits.md#dependency-downloads-during-builds).
 
 ### Candidate files and compilation
 

@@ -58,7 +58,7 @@ existing records and document user-visible changes in the changelog.
 
 The UI's “How it works” and “Participate” sections are the primary explanation for
 solvers. Keep their benchmark description aligned with the opening of
-[the challenge overview](overview.md): solvers submit their own harness, start and
+[architecture](architecture.md): solvers submit their own harness, start and
 control each run, and compare independently verified results. Local tests use
 their authorized model access. Platform-funded remote runs, when enabled, require
 private local evidence and use platform API access without a personal model

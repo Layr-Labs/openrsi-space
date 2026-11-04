@@ -370,4 +370,4 @@ An operator who explicitly requires a finite token ceiling can reject uncapped
 requests; the hosted OpenRSI service does not impose one by default.
 
 Build dependencies: run `uv run openrsi-space remote build-policy` before choosing hosted
-package sources; see [build dependency policy](build-dependencies.md).
+package sources; see [build dependency policy](source-limits.md#dependency-downloads-during-builds).
