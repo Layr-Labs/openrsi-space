@@ -52,7 +52,7 @@ evaluator uses; coordinate the release with its operator.
 
 For a bug report, include `openrsi-space --version` and the Dungeness revision from
 `git -C /absolute/path/to/dungeness rev-parse HEAD`. For an OpenRSI source checkout,
-also include `git -C /absolute/path/to/catalyst rev-parse HEAD` and whether it has
+also include `git -C /absolute/path/to/openrsi-space rev-parse HEAD` and whether it has
 local changes: the package version alone does not distinguish development commits.
 See the [changelog](../CHANGELOG.md) for unreleased client changes.
 

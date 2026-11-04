@@ -34,7 +34,7 @@ Keep the complete performance–cost curve and every attempt, including failures
 and regressions. Infrastructure costs are accounted for separately.
 
 Model credits retain existing immutable reference rates in
-[`pricing.json`](../src/catalyst/pricing/pricing.json).
+[`pricing.json`](../src/openrsi_space/pricing/pricing.json).
 The service resolves additional declared models through a
 [service-issued OpenRouter pricing snapshot](generic-harnesses.md#reference-prices-for-declared-models).
 The exact schedule's content hash is bound into every evaluation and
@@ -50,7 +50,7 @@ OpenRSI exports the existing Dungeness evaluator history and settled usage.
 See [budget accounting](tier-accounting.md) for exact eligibility.
 The challenge UI is maintained in Yukon; see [the UI integration](challenge-ui.md).
 
-The [ECDSA statement](../src/catalyst/problem-set/ecdsa-fail/description.md) is maintained in
+The [ECDSA statement](../src/openrsi_space/problem-set/ecdsa-fail/description.md) is maintained in
 OpenRSI. Each new run serves its assigned statement through an internal,
 read-only [problem service](problem-service.md). See
 [the upstream comparison](ecdsa-upstream.md) for the documentation revision
@@ -146,7 +146,7 @@ This repository is the public solver and challenge interface. It contains:
 The **private `openrsi-space-verifier` repository** contains the verification API,
 queue, Dungeness worker adapter, anti-cheat implementation, credential handling
 inside the service, artifact storage and deployment tooling. It depends on the
-public `catalyst-research` package; this package does not depend on the service.
+public `openrsi-space` package; this package does not depend on the service.
 The remote service owns its Dungeness runtime; the submission CLI does not launch
 it locally. However, funded admission requires evidence from an ended matching
 local Dungeness run. Use the [public runtime](https://github.com/Layr-Labs/dungeness)
@@ -170,14 +170,14 @@ See [development](development.md) for the repository layout and `make check`.
 ```sh
 uv sync --frozen
 uv run openrsi-space problem list
-uv run openrsi-space harness create my-agent --executable --output .catalyst/my-agent
+uv run openrsi-space harness create my-agent --executable --output .openrsi/my-agent
 uv run openrsi-space --help
 ```
 
 For a full local research run with model accounting:
 
 ```sh
-uv run openrsi-space local run .catalyst/my-agent --dungeness /absolute/path/to/dungeness \
+uv run openrsi-space local run .openrsi/my-agent --dungeness /absolute/path/to/dungeness \
   --provider openai-chatgpt --model gpt-6-astra --reasoning-effort high \
   --budget 1 --codex-auth-file
 ```

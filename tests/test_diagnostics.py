@@ -6,10 +6,10 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from catalyst.cli import build_parser, remote_command
-from catalyst.client.evaluations import RemoteClient
-from catalyst.common import CatalystError
-from catalyst.progress import diagnostic_lines, progress_line
+from openrsi_space.cli import build_parser, remote_command
+from openrsi_space.client.evaluations import RemoteClient
+from openrsi_space.common import OpenRSIError
+from openrsi_space.progress import diagnostic_lines, progress_line
 
 
 IDENTITY = "a21c947a-b361-4710-ba4c-74ebc47afa96"
@@ -39,7 +39,7 @@ class DiagnosticsTests(unittest.TestCase):
             Path(root).chmod(0o755)
             output.write_text("old")
             output.chmod(0o644)
-            with patch("catalyst.client.transport.solver_fetch", return_value=json.dumps(report())) as fetch:
+            with patch("openrsi_space.client.transport.solver_fetch", return_value=json.dumps(report())) as fetch:
                 self.assertEqual(client.diagnostics(IDENTITY, output), report())
             fetch.assert_called_once_with(client.base, f"/evaluations/{IDENTITY}/diagnostics", client.bearer)
             self.assertEqual(output.stat().st_mode & 0o777, 0o600)
@@ -53,13 +53,13 @@ class DiagnosticsTests(unittest.TestCase):
             output = Path(root) / "report.json"
             for change in ({"protocol": "unknown"}, {"evaluation_id": "other"},
                            {"scoring_evidence": True}, {"scoring_evidence": 0}):
-                with self.subTest(change=change), patch("catalyst.client.transport.solver_fetch",
+                with self.subTest(change=change), patch("openrsi_space.client.transport.solver_fetch",
                         return_value=json.dumps({**report(), **change})):
-                    with self.assertRaises(CatalystError):
+                    with self.assertRaises(OpenRSIError):
                         client.diagnostics(IDENTITY, output)
                 self.assertFalse(output.exists())
-            with patch("catalyst.client.transport.solver_fetch") as fetch:
-                with self.assertRaises(CatalystError):
+            with patch("openrsi_space.client.transport.solver_fetch") as fetch:
+                with self.assertRaises(OpenRSIError):
                     client.diagnostics("../another-owner")
                 fetch.assert_not_called()
 
@@ -67,7 +67,7 @@ class DiagnosticsTests(unittest.TestCase):
         parser, _ = build_parser()
         args = parser.parse_args(["remote", "diagnostics", IDENTITY, "--output", "report.json"])
         out = io.StringIO()
-        with patch("catalyst.client.evaluations.RemoteClient") as factory, redirect_stdout(out):
+        with patch("openrsi_space.client.evaluations.RemoteClient") as factory, redirect_stdout(out):
             factory.return_value.diagnostics.return_value = report()
             remote_command(args, Path("."))
             factory.return_value.diagnostics.assert_called_once_with(IDENTITY, "report.json")
@@ -100,11 +100,11 @@ class DiagnosticsTests(unittest.TestCase):
                 with patch.object(client, "session", return_value={"request": {}}), \
                         patch.object(client, "status", return_value=result), \
                         patch.object(client, "clear_pending"), \
-                        patch("catalyst.client.evaluations.judgment", return_value={"valid": False}) as judge, \
-                        patch("catalyst.client.evaluations.verification_reference", return_value={}), \
+                        patch("openrsi_space.client.evaluations.judgment", return_value={"valid": False}) as judge, \
+                        patch("openrsi_space.client.evaluations.verification_reference", return_value={}), \
                         redirect_stderr(errors), redirect_stdout(out):
                     if status == "failed":
-                        with self.assertRaises(CatalystError):
+                        with self.assertRaises(OpenRSIError):
                             client.wait(IDENTITY)
                         judge.assert_not_called()
                     else:

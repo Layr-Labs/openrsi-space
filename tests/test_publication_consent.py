@@ -5,10 +5,10 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from catalyst.cli import build_parser, remote_command
-from catalyst.common import CatalystError
-from catalyst.publication import publication_choices
-from catalyst.remote import request_body
+from openrsi_space.cli import build_parser, remote_command
+from openrsi_space.common import OpenRSIError
+from openrsi_space.publication import publication_choices
+from openrsi_space.remote import request_body
 from harness_fixture import create_harness
 
 
@@ -37,11 +37,11 @@ class PublicationConsentTests(unittest.TestCase):
             {"harness": True, "traces": False, "license": "unknown"},
             {"harness": "true", "traces": False, "license": None},
         ):
-            with self.subTest(choices=choices), self.assertRaises(CatalystError):
+            with self.subTest(choices=choices), self.assertRaises(OpenRSIError):
                 publication_choices(choices)
 
     def test_private_submission_is_rejected_before_reading_source_or_credentials(self):
-        with self.assertRaisesRegex(CatalystError, "must be public"):
+        with self.assertRaisesRegex(OpenRSIError, "must be public"):
             request_body(Path("missing-harness"), "https://verifier.example.test",
                          publication={"harness": False, "traces": False, "license": None})
 
@@ -57,8 +57,8 @@ class PublicationConsentTests(unittest.TestCase):
     def test_source_review_required_before_publication_request(self):
         parser, _ = build_parser()
         args = parser.parse_args(["remote", "publish", "example", "--harness", "--license", "MIT"])
-        with patch("catalyst.remote.RemoteClient") as factory:
-            with self.assertRaisesRegex(CatalystError, "confirm-source-reviewed"):
+        with patch("openrsi_space.remote.RemoteClient") as factory:
+            with self.assertRaisesRegex(OpenRSIError, "confirm-source-reviewed"):
                 remote_command(args, Path("."))
             factory.return_value.sharing.assert_not_called()
 
@@ -67,7 +67,7 @@ class PublicationConsentTests(unittest.TestCase):
         args = parser.parse_args([
             "remote", "publish", "example", "--harness", "--license", "MIT", "--confirm-source-reviewed",
         ])
-        with patch("catalyst.remote.RemoteClient") as factory, contextlib.redirect_stdout(io.StringIO()):
+        with patch("openrsi_space.remote.RemoteClient") as factory, contextlib.redirect_stdout(io.StringIO()):
             factory.return_value.sharing.return_value = {}
             remote_command(args, Path("."))
             factory.return_value.sharing.assert_called_once_with("example", {"harness": True, "license": "MIT"})
@@ -75,7 +75,7 @@ class PublicationConsentTests(unittest.TestCase):
     def test_reviewed_source_can_be_public_without_granting_a_license(self):
         parser, _ = build_parser()
         args = parser.parse_args(["remote", "publish", "example", "--harness", "--confirm-source-reviewed"])
-        with patch("catalyst.remote.RemoteClient") as factory, contextlib.redirect_stdout(io.StringIO()):
+        with patch("openrsi_space.remote.RemoteClient") as factory, contextlib.redirect_stdout(io.StringIO()):
             factory.return_value.sharing.return_value = {}
             remote_command(args, Path("."))
             factory.return_value.sharing.assert_called_once_with("example", {"harness": True})

@@ -5,21 +5,21 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from catalyst.agent_setup import model_profile
-from catalyst.common import CatalystError
+from openrsi_space.agent_setup import model_profile
+from openrsi_space.common import OpenRSIError
 
 
 class ModelMetadataTests(unittest.TestCase):
     def test_duration_priced_quotes_require_matching_runtime(self):
         with tempfile.TemporaryDirectory() as tmp, patch(
-                "catalyst.integrations.dungeness.providers.model_providers", return_value={"anthropic"}):
+                "openrsi_space.integrations.dungeness.providers.model_providers", return_value={"anthropic"}):
             root = Path(tmp)
             entry = {"provider": "anthropic", "upstream_id": "anthropic/example", "request_models": ["example"]}
             for rates in ({"cache_write_1h_per_mtok": 8}, {"long_context": {"cache_write_1h_per_mtok": 16}}):
                 schedule = {"entries": [{**entry, **rates}]}
                 contract = {"schema_version": 1, "runtime": "dungeness", "capabilities": []}
                 (root / "runtime-contract.json").write_text(json.dumps(contract))
-                with self.assertRaisesRegex(CatalystError, "cache-duration-accounting-v1"):
+                with self.assertRaisesRegex(OpenRSIError, "cache-duration-accounting-v1"):
                     model_profile(root, "example", "anthropic", schedule)
                 contract["capabilities"] = ["cache-duration-accounting-v1"]
                 (root / "runtime-contract.json").write_text(json.dumps(contract))
@@ -30,7 +30,7 @@ class ModelMetadataTests(unittest.TestCase):
             "provider": "openai-chatgpt", "upstream_id": "example-new-model",
             "request_models": ["example-new-model"],
         }]}
-        with patch("catalyst.integrations.dungeness.providers.model_providers", return_value={"openai-chatgpt"}):
+        with patch("openrsi_space.integrations.dungeness.providers.model_providers", return_value={"openai-chatgpt"}):
             profile = model_profile(Path("/unused"), "example-new-model", "openai-chatgpt", pricing)
         self.assertNotIn("context_window", profile)
         self.assertNotIn("supported_reasoning_efforts", profile)
@@ -42,25 +42,25 @@ class ModelMetadataTests(unittest.TestCase):
                     "provider": provider, "upstream_id": provider + "/example",
                     "request_models": ["example"],
                 }]}
-                with self.assertRaisesRegex(CatalystError, "retired"):
+                with self.assertRaisesRegex(OpenRSIError, "retired"):
                     model_profile(Path("/unused"), "example", provider, pricing)
 
     def test_retired_provider_history_is_readable_but_credentials_are_rejected(self):
-        from catalyst.credentials import validate_provider_access
-        from catalyst.remote import validate_model
+        from openrsi_space.credentials import validate_provider_access
+        from openrsi_space.remote import validate_model
         for provider, name in (("moonshot", "kimi-k3"), ("kimi-code", "k3")):
             with self.subTest(provider=provider):
                 validate_model({"provider": provider, "name": name})
-                with self.assertRaisesRegex(CatalystError, "supported providers"):
+                with self.assertRaisesRegex(OpenRSIError, "supported providers"):
                     validate_provider_access({provider: "offline-test-credential"})
 
     def test_xai_and_grok_history_uses_retained_prices_but_cannot_run_remotely(self):
-        from catalyst.remote import validate_model
-        from catalyst.credentials import require_remote_models
+        from openrsi_space.remote import validate_model
+        from openrsi_space.credentials import require_remote_models
         for provider in ("xai", "grok-subscription"):
             model = {"provider": provider, "name": "historical-model"}
             pricing = {"entries": [{"provider": provider, "request_models": [model["name"]],
                                     "input_per_mtok": 2, "output_per_mtok": 6}]}
             validate_model(model, pricing=pricing)
-            with self.assertRaises(CatalystError):
+            with self.assertRaises(OpenRSIError):
                 require_remote_models([model])

@@ -4,9 +4,9 @@ from decimal import Decimal
 import json
 import unittest
 
-from catalyst.common import CatalystError
-from catalyst.remote import judge_input, judgment
-from catalyst.tiers import LEGACY_VALIDITY, SCORING, VALIDITY, pricing_digest, pricing_schedule, project_observation
+from openrsi_space.common import OpenRSIError
+from openrsi_space.remote import judge_input, judgment
+from openrsi_space.tiers import LEGACY_VALIDITY, SCORING, VALIDITY, pricing_digest, pricing_schedule, project_observation
 from test_tiers import MODEL, LIMITS, candidate, usage
 
 
@@ -45,17 +45,17 @@ class InflightBudgetTests(unittest.TestCase):
         del record["usage"][0]["admitted_after"]
         records.append(record)
         for record in records:
-            with self.subTest(record=record), self.assertRaises(CatalystError):
+            with self.subTest(record=record), self.assertRaises(OpenRSIError):
                 self.project(record)
 
     def test_legacy_cap_clipping_and_token_overruns_still_fail(self):
-        with self.assertRaises(CatalystError):
+        with self.assertRaises(OpenRSIError):
             self.project(observation(), allow_inflight_overshoot=False)
         record = observation()
         record["normalized_model_usd"] = 3
-        with self.assertRaises(CatalystError):
+        with self.assertRaises(OpenRSIError):
             self.project(record)
-        with self.assertRaisesRegex(CatalystError, "token limit"):
+        with self.assertRaisesRegex(OpenRSIError, "token limit"):
             project_observation(observation(), MODEL, 3, {**LIMITS, "max_model_tokens": 1})
         # New optional evidence must not alter v2's original validation rules.
         record = observation((1, 1), (None, "unknown"))
@@ -74,9 +74,9 @@ class InflightBudgetTests(unittest.TestCase):
         legacy = copy.deepcopy(request)
         legacy["judge"]["policies"]["validity"] = LEGACY_VALIDITY
         self.assertEqual(judge_input(json.dumps(legacy["judge"])), legacy["judge"])
-        with self.assertRaisesRegex(CatalystError, "credit limit"):
+        with self.assertRaisesRegex(OpenRSIError, "credit limit"):
             judgment(result, legacy)
         self.assertEqual(judge_input(None)["policies"], {"scoring": SCORING, "validity": VALIDITY})
         legacy["judge"]["policies"]["validity"] = {"version": "unknown"}
-        with self.assertRaises(CatalystError):
+        with self.assertRaises(OpenRSIError):
             judge_input(json.dumps(legacy["judge"]))

@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from catalyst.executable import build
+from openrsi_space.executable import build
 from harness_fixture import create_harness
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -28,7 +28,7 @@ class BuildPermissionTests(unittest.TestCase):
                         self.assertEqual(item.stat().st_mode & 0o777, 0o644, str(item))
             return ""
 
-        with tempfile.TemporaryDirectory() as directory, patch("catalyst.executable.docker_output", side_effect=docker):
+        with tempfile.TemporaryDirectory() as directory, patch("openrsi_space.executable.docker_output", side_effect=docker):
             previous = os.umask(0o077)
             try:
                 source = Path(directory) / "agent"

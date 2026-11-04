@@ -11,12 +11,12 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from catalyst import local
-from catalyst.cli import main
-from catalyst.common import snapshot_directory, read_json, write_json
-from catalyst.executable import SOURCE_EXCLUDES
-from catalyst.challenge.catalog import get_problem, problem_statement
-from catalyst.challenge.preparation import yaml_file
+from openrsi_space import local
+from openrsi_space.cli import main
+from openrsi_space.common import snapshot_directory, read_json, write_json
+from openrsi_space.executable import SOURCE_EXCLUDES
+from openrsi_space.challenge.catalog import get_problem, problem_statement
+from openrsi_space.challenge.preparation import yaml_file
 
 
 def commit(root):
@@ -59,11 +59,11 @@ class LocalRunTests(unittest.TestCase):
                                    '--output', str(self.harness)]), 0)
         self.state = self.harness / '.catalyst'
         self.out, self.err = io.StringIO(), io.StringIO()
-        self.build = patch('catalyst.local.executable.build', side_effect=self.fake_build).start()
+        self.build = patch('openrsi_space.local.executable.build', side_effect=self.fake_build).start()
         self.addCleanup(patch.stopall)
-        patch('catalyst.local.executable.inspect_build').start()
-        patch('catalyst.local.shutil.which', return_value='/fake/tool').start()
-        patch('catalyst.remote.RemoteClient', side_effect=AssertionError('Hosted API must not be used')).start()
+        patch('openrsi_space.local.executable.inspect_build').start()
+        patch('openrsi_space.local.shutil.which', return_value='/fake/tool').start()
+        patch('openrsi_space.remote.RemoteClient', side_effect=AssertionError('Hosted API must not be used')).start()
 
     def fake_build(self, state, path):
         snapshot, _ = snapshot_directory(path, exclude=SOURCE_EXCLUDES)
@@ -82,13 +82,13 @@ class LocalRunTests(unittest.TestCase):
         return read_json(paths[0])
 
     def test_prepare_only_builds_self_contained_inputs_without_credentials_or_remote_service(self):
-        with patch('catalyst.local.credential_input', side_effect=AssertionError('credentials read')), \
-                patch('catalyst.local.execute_process', side_effect=AssertionError('model run')):
+        with patch('openrsi_space.local.credential_input', side_effect=AssertionError('credentials read')), \
+                patch('openrsi_space.local.execute_process', side_effect=AssertionError('model run')):
             self.assertEqual(self.cli('--prepare-only'), 0, self.err.getvalue())
         metadata = self.metadata()
         self.assertEqual(metadata['status'], 'prepared')
-        from catalyst.challenge.catalog import initial_problems
-        from catalyst.contracts.results import digest
+        from openrsi_space.challenge.catalog import initial_problems
+        from openrsi_space.contracts.results import digest
         self.assertEqual(metadata['problem_set_digest'], digest(initial_problems()))
         self.assertFalse(metadata['official'])
         runtime = Path(metadata['runtime'])
@@ -111,8 +111,8 @@ class LocalRunTests(unittest.TestCase):
         self.assertEqual(description['release'], 'v1')
         catalog = read_json(task_path.parent / 'problem-service/files/resources.json')
         self.assertEqual(len(catalog['resources']), 50)
-        from catalyst.runtime.problem_server import load_files
-        from catalyst.common import canonical
+        from openrsi_space.runtime.problem_server import load_files
+        from openrsi_space.common import canonical
         routes = load_files(canonical(assigned), task_path.parent / 'problem-service/files')
         self.assertEqual(routes['/ecdsa-fail/description'], routes['/ecdsa-fail/v1/description'])
         self.assertEqual(routes['/ecdsa-fail/knowledge-base'], routes['/ecdsa-fail/v1/knowledge-base'])
@@ -145,7 +145,7 @@ class LocalRunTests(unittest.TestCase):
         self.assertEqual(catalogs[0], catalogs[1])
 
     def test_retired_release_is_rejected_before_local_preparation(self):
-        with patch('catalyst.local.prepare') as prepare:
+        with patch('openrsi_space.local.prepare') as prepare:
             with self.assertRaises(SystemExit):
                 self.cli('--prepare-only', '--problem-release', 'v0')
             prepare.assert_not_called()
@@ -165,7 +165,7 @@ class LocalRunTests(unittest.TestCase):
                 'status': 'completed', 'usage': {'normalized_usd': 0.25}, 'metrics': {'ecdsafail_score': 12345}}})
             return 0
         with patch.dict(os.environ, {'USER_TEST_KEY': 'synthetic-model-access'}), \
-                patch('catalyst.local.execute_process', side_effect=execute):
+                patch('openrsi_space.local.execute_process', side_effect=execute):
             self.assertEqual(self.cli('--provider-token-env', 'USER_TEST_KEY'), 0, self.err.getvalue())
         self.assertFalse(observed['path'].exists())
         metadata = self.metadata()
@@ -180,7 +180,7 @@ class LocalRunTests(unittest.TestCase):
                 'status': 'failed', 'usage': {'model_requests': 0}}})
             return 0
         with patch.dict(os.environ, {'USER_TEST_KEY': 'synthetic-model-access'}), \
-                patch('catalyst.local.execute_process', side_effect=execute):
+                patch('openrsi_space.local.execute_process', side_effect=execute):
             self.assertEqual(self.cli('--provider-token-env', 'USER_TEST_KEY'), 1)
         metadata = self.metadata()
         self.assertEqual(metadata['status'], 'failed')
@@ -207,7 +207,7 @@ class LocalRunTests(unittest.TestCase):
             self.assertEqual(read_json(path)['tokens']['access_token'], 'synthetic-access')
             self.assertNotIn('refresh_token', read_json(path)['tokens'])
             return 7
-        with patch('catalyst.local.execute_process', side_effect=execute):
+        with patch('openrsi_space.local.execute_process', side_effect=execute):
             self.assertEqual(self.cli('--codex-auth-file', str(auth), provider='openai-chatgpt',
                                       model='gpt-6-astra'), 7, self.err.getvalue())
         self.assertFalse(seen['path'].exists())
@@ -234,7 +234,7 @@ class LocalRunTests(unittest.TestCase):
             captured.append(Path(command[command.index('--env-file') + 1]))
             raise KeyboardInterrupt
         with patch.dict(os.environ, {'USER_TEST_KEY': 'synthetic-model-access'}), \
-                patch('catalyst.local.execute_process', side_effect=execute):
+                patch('openrsi_space.local.execute_process', side_effect=execute):
             self.assertEqual(self.cli('--provider-token-env', 'USER_TEST_KEY'), 130)
         self.assertFalse(captured[0].exists())
         self.assertEqual(self.metadata()['status'], 'cancelled')
@@ -257,17 +257,17 @@ class LocalRunTests(unittest.TestCase):
             self.assertIn('TESTBED_ANTHROPIC_API_KEY=synthetic-anthropic-key\n', contents)
             write_json(Path(self.metadata()['record_path']), {'data': {'status': 'completed'}})
             return 0
-        with patch('catalyst.local.execute_process', side_effect=execute), \
+        with patch('openrsi_space.local.execute_process', side_effect=execute), \
                 redirect_stdout(self.out), redirect_stderr(self.err):
             self.assertEqual(main(['--state', str(self.state), 'local', 'run', str(self.harness),
                                    '--dungeness', str(self.source),
                                    '--provider-access-file', str(credentials)]), 0, self.err.getvalue())
 
-    @unittest.skipUnless(os.environ.get('CATALYST_DUNGENESS'), 'Requires a real clean Dungeness checkout')
+    @unittest.skipUnless(os.environ.get('OPENRSI_DUNGENESS'), 'Requires a real clean Dungeness checkout')
     def test_public_local_package_compiles_with_real_dungeness(self):
         from datetime import datetime, timezone
         import yaml
-        self.source = Path(os.environ['CATALYST_DUNGENESS'])
+        self.source = Path(os.environ['OPENRSI_DUNGENESS'])
         self.assertEqual(self.cli('--prepare-only', provider='openai-chatgpt', model='gpt-6-astra'), 0,
                          self.err.getvalue())
         metadata = self.metadata()

@@ -2,8 +2,8 @@
 import json
 from unittest.mock import patch
 from test_local_check import LocalCheckTests
-from catalyst.client.local_evidence import bundle
-from catalyst.common import CatalystError
+from openrsi_space.client.local_evidence import bundle
+from openrsi_space.common import OpenRSIError
 
 
 class EvidenceExportTests(LocalCheckTests):
@@ -17,13 +17,13 @@ class EvidenceExportTests(LocalCheckTests):
 
     def test_failed_upload_retains_safe_diagnostics_without_claiming_a_saved_request(self):
         from unittest.mock import Mock
-        from catalyst.client.local_evidence import attach
-        from catalyst.client.transport import HTTPFailure
+        from openrsi_space.client.local_evidence import attach
+        from openrsi_space.client.transport import HTTPFailure
         client=Mock(state=self.state,base='https://example.invalid',bearer='private-token')
         failure=HTTPFailure(400,{'code':'local_evidence_not_private',
             'evidence_findings':[{'event_index':0,'line':1,'rule':'embedded-credential','value':'private-token'}]})
-        with patch('catalyst.client.local_evidence.bundle',return_value={}), \
-                patch('catalyst.client.transport.solver_fetch',side_effect=failure):
+        with patch('openrsi_space.client.local_evidence.bundle',return_value={}), \
+                patch('openrsi_space.client.transport.solver_fetch',side_effect=failure):
             with self.assertRaises(HTTPFailure) as error:
                 attach(client,self.body,{'record_path':str(self.path)})
         self.assertIn('before evaluation submission',str(error.exception))
@@ -35,10 +35,10 @@ class EvidenceExportTests(LocalCheckTests):
         self.assertFalse((self.state/'remote/pending').exists())
 
     def test_old_skipped_decision_cannot_omit_evidence_upload(self):
-        from catalyst.client.local_evidence import attach
+        from openrsi_space.client.local_evidence import attach
         from unittest.mock import Mock
-        with patch('catalyst.client.transport.solver_fetch') as network:
-            with self.assertRaisesRegex(CatalystError, 'no local evidence'):
+        with patch('openrsi_space.client.transport.solver_fetch') as network:
+            with self.assertRaisesRegex(OpenRSIError, 'no local evidence'):
                 attach(Mock(), self.body, {'status': 'skipped'})
             network.assert_not_called()
 
@@ -96,19 +96,19 @@ class EvidenceExportTests(LocalCheckTests):
         self.assertEqual(exported['events'][2]['data']['billed_usd'], 20)
         del self.event['data']['billing_source']
         self.save()
-        with self.assertRaisesRegex(CatalystError, 'provider-reported cost'):
+        with self.assertRaisesRegex(OpenRSIError, 'provider-reported cost'):
             bundle(self.path, self.body)
 
     def test_private_bundle_limit_includes_envelope_and_rejects_overflow(self):
-        from catalyst.client.local_evidence import MAX_BYTES
-        from catalyst.common import canonical
+        from openrsi_space.client.local_evidence import MAX_BYTES
+        from openrsi_space.common import canonical
         self.assertEqual(MAX_BYTES, 192 * 1024 * 1024)
         self.record['data']['configuration']['repository'] = {'commit': '1'*40}
         self.event['data']['normalized_usd'] = 100
         self.save()
         size = len(canonical(bundle(self.path, self.body)))
-        with patch('catalyst.client.local_evidence.MAX_BYTES', size):
+        with patch('openrsi_space.client.local_evidence.MAX_BYTES', size):
             self.assertEqual(len(canonical(bundle(self.path, self.body))), size)
-        with patch('catalyst.client.local_evidence.MAX_BYTES', size - 1):
-            with self.assertRaisesRegex(CatalystError, '192 MiB'):
+        with patch('openrsi_space.client.local_evidence.MAX_BYTES', size - 1):
+            with self.assertRaisesRegex(OpenRSIError, '192 MiB'):
                 bundle(self.path, self.body)

@@ -2,7 +2,7 @@ from pathlib import Path
 import tempfile
 import unittest
 from unittest.mock import patch
-from catalyst.common import CatalystError, snapshot_directory
+from openrsi_space.common import OpenRSIError, snapshot_directory
 from harness_fixture import create_harness
 
 
@@ -17,7 +17,7 @@ class SourceSafetyTests(unittest.TestCase):
                 def checked(path):
                     self.assertNotEqual(path,private,'Private content was opened')
                     return original(path)
-                with patch.object(Path,'read_bytes',checked),self.assertRaises(CatalystError) as error:
+                with patch.object(Path,'read_bytes',checked),self.assertRaises(OpenRSIError) as error:
                     snapshot_directory(root)
                 self.assertIn('outside the harness',str(error.exception))
                 self.assertNotIn('synthetic-private-value',str(error.exception))
@@ -34,5 +34,5 @@ class SourceSafetyTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmp:
             root=Path(tmp)/'harness';create_harness(root)
             private=root/'sensitive-parent-canary'/'auth.json';private.parent.mkdir();private.write_text('{}')
-            with self.assertRaises(CatalystError) as error:snapshot_directory(root)
+            with self.assertRaises(OpenRSIError) as error:snapshot_directory(root)
             self.assertNotIn('sensitive-parent-canary',str(error.exception))

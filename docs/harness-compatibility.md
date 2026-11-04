@@ -20,7 +20,7 @@ Use this process when creating or reusing a harness:
    provider and your exact model, with service-validated pricing. The local trace
    must match the provider, model and reasoning settings of the remote request.
 2. Route all model requests through the endpoints and model identities assigned
-   in `CATALYST_TASK`. Package any necessary API adapter in the harness. Test tool
+   in `OPENRSI_TASK`. Package any necessary API adapter in the harness. Test tool
    definitions, named tool choice, tool results, streaming responses and usage
    reporting. Translate both requests and responses when the protocols differ.
    Disable unsupported provider-hosted tools and unmetered fallback clients.

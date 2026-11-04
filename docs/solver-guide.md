@@ -42,7 +42,7 @@ a repository default is the deployed version. Use the returned tag explicitly as
 before submission. Include the tag and digest in the readiness report.
 
 Inside the run, read the server-assigned description and knowledge-base URLs from
-`CATALYST_TASK`; never hardcode a versioned resource URL in a general-purpose
+`OPENRSI_TASK`; never hardcode a versioned resource URL in a general-purpose
 harness. Every new evaluation starts fresh with that release's scaffold and
 resources. Preserve the original version and request ID when resuming an existing
 run; a new release requires a new evaluation, not editing saved requests or receipts.
@@ -178,7 +178,7 @@ repository is private, your GitHub account also needs read access.
 
 ```sh
 export YUKON_API_URL=https://api-dev.yukon.org
-export CATALYST_EVALUATOR_URL=https://3.21.93.126
+export OPENRSI_EVALUATOR_URL=https://3.21.93.126
 curl -fsSL https://api-dev.yukon.org/yukon/install.sh | sh
 ```
 
@@ -206,8 +206,8 @@ are no budget tracks to switch between.
 ## 2. Prepare a harness
 
 The assigned problem now includes a human-readable release (`v1`) alongside its
-content hash. During execution, use `CATALYST_DESCRIPTION_URL` for the versioned
-description and `CATALYST_KNOWLEDGE_BASE_URL` for the resource catalog. Follow
+content hash. During execution, use `OPENRSI_DESCRIPTION_URL` for the versioned
+description and `OPENRSI_KNOWLEDGE_BASE_URL` for the resource catalog. Follow
 catalog URLs and media types; the knowledge base can contain material beyond
 PDF papers. See [the endpoint contract](generic-harnesses.md#versioned-problem-and-knowledge-base-endpoints).
 
@@ -218,7 +218,7 @@ use your own agent architecture, subprocesses or search framework.
 To generate an editable starter:
 
 ```sh
-openrsi-space harness create my-agent --title "YOUR CHOSEN NAME" --output .catalyst/my-harness
+openrsi-space harness create my-agent --title "YOUR CHOSEN NAME" --output .openrsi/my-harness
 ```
 
 Replace the title placeholder with a short, distinctive name for your harness's
@@ -257,9 +257,9 @@ Do not combine `--entrypoint` with an existing `harness.json`.
 Runtime requirements:
 
 - Install generic dependencies in the image. The research container has no
-  public internet access. Read `CATALYST_KNOWLEDGE_BASE_URL` for the shared
+  public internet access. Read `OPENRSI_KNOWLEDGE_BASE_URL` for the shared
   eight-paper catalog and internal PDF links. Do not bundle task-specific material.
-- Read `CATALYST_TASK` for the problem instruction, writable workspace,
+- Read `OPENRSI_TASK` for the problem instruction, writable workspace,
   candidate paths, declared models and metered gateway endpoints. Route every
   model request through those endpoints. Do not hard-code public provider URLs.
 - Call `evaluate --json PATH` on candidate snapshots during research so
@@ -314,7 +314,7 @@ The CLI uploads its private evidence separately from source; it reads and sends 
 personal model credential for the remote run.
 
 ```sh
-openrsi-space remote submit .catalyst/my-harness \
+openrsi-space remote submit .openrsi/my-harness \
   --platform-funded --local-run /path/to/local/run.json \
   --problem-release TAG --provider PROVIDER --model EXACT_MODEL --budget 3 \
   --no-token-limit --max-seconds 10800 --wait
@@ -344,7 +344,7 @@ For your prepared harness, choose a compatible provider and exact model, then
 submit using the hidden credential prompt:
 
 ```sh
-openrsi-space remote submit .catalyst/my-harness \
+openrsi-space remote submit .openrsi/my-harness \
   --provider PROVIDER --model EXACT_MODEL --budget 3 \
   --no-token-limit --max-seconds 10800 \
   --prompt-model-token --wait
@@ -389,14 +389,14 @@ starts another run. A service restart cannot resume active research automaticall
 
 After a successful `--wait`, OpenRSI prints the validity, score pair,
 evaluation ID, private artifact paths and receipt path. Normally the receipt
-is `.catalyst/my-harness/verification.json`. Use the exact printed path if
+is `.openrsi/my-harness/verification.json`. Use the exact printed path if
 the source changed while the run was in progress.
 
 Continue only with a valid verified result:
 
 ```sh
 mkdir -p submission
-cp .catalyst/my-harness/verification.json submission/verification.json
+cp .openrsi/my-harness/verification.json submission/verification.json
 yukon run
 ```
 

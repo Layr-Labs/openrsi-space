@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 import tempfile
 import unittest
-from catalyst.challenge.assets import ROOT
+from openrsi_space.challenge.assets import ROOT
 
 
 def load(name, path):

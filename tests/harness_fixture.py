@@ -1,8 +1,8 @@
 """Small generated source fixture; no shipped solver or model calls."""
 from pathlib import Path
 
-from catalyst.common import write_json
-from catalyst.executable import create_starter
+from openrsi_space.common import write_json
+from openrsi_space.executable import create_starter
 
 
 def evaluation():

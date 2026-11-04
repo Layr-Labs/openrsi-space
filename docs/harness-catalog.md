@@ -13,7 +13,7 @@ uv run openrsi-space harness download EVALUATION_ID --output harness.zip --sourc
 
 Choose an evaluation ID from `items`. The download command verifies the ZIP's
 size and SHA-256 before replacing the output file. It does not extract or execute
-the archive. Set `CATALYST_EVALUATOR_URL` to select a different trusted service.
+the archive. Set `OPENRSI_EVALUATOR_URL` to select a different trusted service.
 
 The default search uses the service's current problem version. `problem_versions`
 lists the current version and versions with public verified runs. Historical

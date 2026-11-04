@@ -3,7 +3,7 @@
 The hosted board lives in `Layr-Labs/yukon` under
 `apps/challenges-ui/challenges/openrsi`, with routes at
 `apps/challenges-ui/app/(challenge)/openrsi`. The public solver command remains
-`openrsi-space`. Older `/catalyst` website links redirect to `/openrsi`.
+`openrsi-space`. Historical website links redirect to `/openrsi`.
 UI development and deployment belong in Yukon; this package has no separate viewer.
 
 ## Local preview

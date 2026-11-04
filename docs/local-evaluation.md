@@ -17,9 +17,9 @@ Neither local scores nor successful tests guarantee a receipt.
 ## Check a candidate circuit
 
 ```sh
-uv run openrsi-space problem clone ecdsa.fail .catalyst/ecdsa-workspace
-uv run openrsi-space problem setup ecdsa.fail --workspace .catalyst/ecdsa-workspace
-uv run openrsi-space problem check ecdsa.fail --workspace .catalyst/ecdsa-workspace
+uv run openrsi-space problem clone ecdsa.fail .openrsi/ecdsa-workspace
+uv run openrsi-space problem setup ecdsa.fail --workspace .openrsi/ecdsa-workspace
+uv run openrsi-space problem check ecdsa.fail --workspace .openrsi/ecdsa-workspace
 ```
 
 The clone is pinned. Edit only the allowed candidate paths. These commands use
@@ -35,9 +35,9 @@ the actual default starting workspace, including a candidate using
 ## Check harness packaging and its entrypoint
 
 ```sh
-uv run openrsi-space harness create my-agent --executable --output .catalyst/my-agent
-uv run openrsi-space harness build .catalyst/my-agent
-uv run openrsi-space harness smoke BUILD_ID --workspace .catalyst/ecdsa-workspace --problem ecdsa.fail
+uv run openrsi-space harness create my-agent --executable --output .openrsi/my-agent
+uv run openrsi-space harness build .openrsi/my-agent
+uv run openrsi-space harness smoke BUILD_ID --workspace .openrsi/ecdsa-workspace --problem ecdsa.fail
 ```
 
 Replace `BUILD_ID` with the build command's returned `id`. The smoke test runs
@@ -61,7 +61,7 @@ From your OpenRSI checkout, discover the current problem release and prepare:
 
 ```sh
 uv run openrsi-space problem current
-uv run openrsi-space local run .catalyst/my-agent \
+uv run openrsi-space local run .openrsi/my-agent \
   --dungeness /absolute/path/to/dungeness \
   --problem-release TAG --provider PROVIDER --model MODEL_ID \
   --budget LOCAL_CAP --max-seconds LOCAL_SECONDS --prepare-only
@@ -89,7 +89,7 @@ OpenRSI builds your harness, snapshots the current public problem package, prepa
 a private copy of the chosen Dungeness revision, and starts the agent, model gateway,
 problem service and evaluator. **You do not need to start a server or expose a port.**
 The problem service is a local container on an internal Docker network. The launcher
-loads its statement into `CATALYST_TASK` before your agent starts.
+loads its statement into `OPENRSI_TASK` before your agent starts.
 
 New ECDSA runs start with only the blank point-addition stub and trusted neutral
 SDK. There is no passing starting candidate. The problem package selects this
@@ -103,7 +103,7 @@ budget and token/time settings can come from it instead of command-line override
 For example, after authorizing API-key model use:
 
 ```sh
-uv run openrsi-space local run .catalyst/my-agent \
+uv run openrsi-space local run .openrsi/my-agent \
   --dungeness /absolute/path/to/dungeness --provider openai --model gpt-5.6-sol \
   --budget 1 --provider-token-env OPENAI_API_KEY
 ```
@@ -120,8 +120,8 @@ saved in the generated runtime. Local pricing does not change official rates.
 
 The command streams Dungeness output and finishes with a JSON summary containing
 status, usage, metrics, and artifact paths. Results live under
-`.catalyst/local/LOCAL_RUN_ID/`: `run.json` is the summary, `problem.zip` and
-`harness.zip` contain the input snapshots, and `dungeness/runs/projects/catalyst/`
+`.openrsi/local/LOCAL_RUN_ID/`: `run.json` is the summary, `problem.zip` and
+`harness.zip` contain the input snapshots, and the Dungeness run directory recorded in `run.json`
 contains Dungeness's records, usage events, traces and candidate artifacts. Ctrl-C
 asks Dungeness to stop its containers before temporary access is removed.
 
@@ -160,7 +160,7 @@ Every new funded submission requires local evidence; there is no exemption. See
 ### User-funded remote runs
 
 `openrsi-space remote submit` automatically reuses matching records under the selected
-`--state` directory's `local/`, or the harness's `.catalyst/local/`. No duplicate
+`--state` directory's `local/`, or the harness's `.openrsi/local/`. No duplicate
 test, automatic local spending, or trace upload occurs. The record must show a
 completed command-harness run, no runtime trial errors, settled accounting, and
 a successful accounted response from every declared model. A valid circuit or

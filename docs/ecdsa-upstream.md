@@ -12,7 +12,7 @@ Reviewed on 2026-10-14 against upstream `main` at
 “Latest” here means this exact reviewed commit, not a moving branch dependency.
 
 The authoritative statement is now maintained in OpenRSI at
-[`src/catalyst/problem-set/ecdsa-fail/description.md`](../src/catalyst/problem-set/ecdsa-fail/description.md).
+[`src/openrsi_space/problem-set/ecdsa-fail/description.md`](../src/openrsi_space/problem-set/ecdsa-fail/description.md).
 Service initialization copies that statement into its versioned problem package.
 Dungeness's older task statements remain available for historical standalone
 runs, but do not define newly initialized OpenRSI problem packages.

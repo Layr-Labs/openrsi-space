@@ -6,11 +6,11 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from catalyst.common import CatalystError
-from catalyst.integrations.dungeness.providers import model_providers, require_model_providers
-from catalyst.integrations.dungeness.agent import install_agent
-from catalyst.credentials import validate_provider_access
-from catalyst.cli import build_parser
+from openrsi_space.common import OpenRSIError
+from openrsi_space.integrations.dungeness.providers import model_providers, require_model_providers
+from openrsi_space.integrations.dungeness.agent import install_agent
+from openrsi_space.credentials import validate_provider_access
+from openrsi_space.cli import build_parser
 
 
 class RuntimeProviderTests(unittest.TestCase):
@@ -26,15 +26,15 @@ class RuntimeProviderTests(unittest.TestCase):
             with patch.dict(os.environ, {"PROVIDER_SECRET": "fixture-secret"}):
                 self.assertEqual(model_providers(root), frozenset({"anthropic", "example"}))
             require_model_providers(root, [{"provider": "anthropic"}])
-            with self.assertRaisesRegex(CatalystError, "not supported"):
+            with self.assertRaisesRegex(OpenRSIError, "not supported"):
                 require_model_providers(root, [{"provider": "openai"}])
             for document in (None, {}, {"providers": []},
                              {"schema_version": 1, "runtime": "dungeness", "providers": ["anthropic", "anthropic"]}):
                 (root / "dungeness").write_text(f"print({json.dumps(document)!r})\n")
-                with self.assertRaisesRegex(CatalystError, "Cannot read"):
+                with self.assertRaisesRegex(OpenRSIError, "Cannot read"):
                     model_providers(root)
             (root / "dungeness").unlink()
-            with self.assertRaisesRegex(CatalystError, "repin"):
+            with self.assertRaisesRegex(OpenRSIError, "repin"):
                 model_providers(root)
 
     def test_install_does_not_replace_runtime_registry(self):
@@ -61,7 +61,7 @@ class RuntimeProviderTests(unittest.TestCase):
                 parser.parse_args(command + ["--grok-auth-file"])
             self.assertEqual(raised.exception.code, 2)
         for provider in ("xai", "grok-subscription"):
-            with self.assertRaises(CatalystError):
+            with self.assertRaises(OpenRSIError):
                 validate_provider_access({provider: "synthetic-token"})
         args = parser.parse_args(['local', 'run', 'fixture', '--dungeness', '.', '--grok-auth-file'])
         self.assertTrue(args.grok_auth_file.endswith('/.grok/auth.json'))

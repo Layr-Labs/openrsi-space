@@ -2,7 +2,7 @@ import os
 import unittest
 from unittest.mock import patch
 
-from catalyst.integrations.dungeness.local import temporary_environment
+from openrsi_space.integrations.dungeness.local import temporary_environment
 
 
 class OpenRouterLocalAccessTests(unittest.TestCase):

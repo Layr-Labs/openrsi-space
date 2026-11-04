@@ -5,7 +5,7 @@ Let's Encrypt IP certificate and automatic renewal. No third-party hostname
 or SSH tunnel is required.
 
 ```sh
-export CATALYST_EVALUATOR_URL=https://3.21.93.126
+export OPENRSI_EVALUATOR_URL=https://3.21.93.126
 export YUKON_API_URL=https://api-dev.yukon.org
 ```
 
@@ -31,7 +31,7 @@ certificate and another trusted endpoint update.
 
 ## Recover a publication sent to the historical board
 
-The old `layr-labs/catalyst` board is retained for history. It is not the destination
+The retired board is retained for history. It is not the destination
 for new OpenRSI publications. Changing a GitHub remote URL does not change the
 Yukon benchmark stored in a checkout.
 

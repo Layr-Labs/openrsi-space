@@ -5,7 +5,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from catalyst.common import CatalystError, open_bundle, snapshot_directory
+from openrsi_space.common import OpenRSIError, open_bundle, snapshot_directory
 from harness_fixture import create_harness
 
 
@@ -25,7 +25,7 @@ class SnapshotRaceTests(unittest.TestCase):
                 (self.root/'agent.py').unlink()
                 (self.root/'agent.py').symlink_to(self.outside)
             return original(name, flags, *args, **kwargs)
-        with patch('os.open', raced), self.assertRaises(CatalystError):
+        with patch('os.open', raced), self.assertRaises(OpenRSIError):
             snapshot_directory(self.root)
 
     def test_parent_directory_swap_is_rejected(self):
@@ -38,7 +38,7 @@ class SnapshotRaceTests(unittest.TestCase):
                 nested.rename(self.root/'old-nested')
                 nested.symlink_to(self.outside.parent, target_is_directory=True)
             return original(name, flags, *args, **kwargs)
-        with patch('os.open', raced), self.assertRaises(CatalystError):
+        with patch('os.open', raced), self.assertRaises(OpenRSIError):
             snapshot_directory(self.root)
 
     def test_change_to_open_file_is_detected(self):
@@ -52,12 +52,12 @@ class SnapshotRaceTests(unittest.TestCase):
                 # Same descriptor, same inode; detect changed content metadata.
                 (self.root/'Dockerfile').write_text('changed while capturing')
             return data
-        with patch('os.read', raced), self.assertRaises(CatalystError):
+        with patch('os.read', raced), self.assertRaises(OpenRSIError):
             snapshot_directory(self.root)
 
     def test_fifo_rejected_without_blocking(self):
         os.mkfifo(self.root/'pipe')
-        with self.assertRaisesRegex(CatalystError, 'special files'):
+        with self.assertRaisesRegex(OpenRSIError, 'special files'):
             snapshot_directory(self.root)
 
     def test_uploaded_bytes_are_immutable_after_capture(self):

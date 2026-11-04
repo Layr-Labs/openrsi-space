@@ -5,9 +5,9 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
-from catalyst.common import CatalystError
-from catalyst.progress import progress_line, diagnostic_lines
-from catalyst.remote import RemoteClient
+from openrsi_space.common import OpenRSIError
+from openrsi_space.progress import progress_line, diagnostic_lines
+from openrsi_space.remote import RemoteClient
 
 
 class ProgressTests(unittest.TestCase):
@@ -93,9 +93,9 @@ class ProgressTests(unittest.TestCase):
             errors = io.StringIO()
             with patch.object(client, "session", return_value={"request": {}}), \
                     patch.object(client, "clear_pending"), patch.object(client, "status", side_effect=states), \
-                    patch("catalyst.remote.time.monotonic", side_effect=[0, 0, 5, 15, 16, 17]), \
-                    patch("catalyst.remote.time.sleep"), redirect_stderr(errors):
-                with self.assertRaises(CatalystError):
+                    patch("openrsi_space.remote.time.monotonic", side_effect=[0, 0, 5, 15, 16, 17]), \
+                    patch("openrsi_space.remote.time.sleep"), redirect_stderr(errors):
+                with self.assertRaises(OpenRSIError):
                     client.wait("a21c947a-b361-4710-ba4c-74ebc47afa96")
             lines = errors.getvalue().splitlines()
             self.assertEqual(len(lines), 4)

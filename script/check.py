@@ -19,7 +19,7 @@ def main():
     environment = {**os.environ, "PYTHONPATH": os.pathsep.join(
         str(ROOT / path) for path in ("src", "tests"))}
     run(sys.executable, "-m", "unittest", "discover", "-s", "tests", env=environment)
-    with tempfile.TemporaryDirectory(prefix="catalyst-check-") as temporary:
+    with tempfile.TemporaryDirectory(prefix="openrsi-check-") as temporary:
         work = Path(temporary)
         source = work / "source"
         source.mkdir()
@@ -27,7 +27,7 @@ def main():
             shutil.copy2(ROOT / name, source / name)
         shutil.copytree(ROOT / "src", source / "src", ignore=shutil.ignore_patterns(
             "__pycache__", "*.pyc", "*.pyo", "*.egg-info"))
-        package = source / "src/catalyst"
+        package = source / "src/openrsi_space"
         hashes = {str(path.relative_to(package)): hashlib.sha256(path.read_bytes()).hexdigest()
                   for path in package.rglob("*") if path.is_file()}
         manifest = work / "package-hashes.json"

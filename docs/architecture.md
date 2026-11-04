@@ -1,11 +1,12 @@
 # OpenRSI architecture
 
 OpenRSI is the platform and benchmark. The `openrsi-space` command and
-`catalyst-research` Python package are its solver toolkit; `openrsi-space-verifier`
+`openrsi-space` Python package are its solver toolkit; `openrsi-space-verifier`
 is its private verification service. Dungeness remains the execution runtime,
-and Yukon provides identity and the leaderboard UI. The solver command replaces
-`catalyst`; the Python and service names, stored state, receipt formats and
-environment variables remain stable.
+and Yukon provides identity and the leaderboard UI. Python imports use
+`openrsi_space` and `openrsi_space_verifier`. New client settings use `OPENRSI_*`
+and new local state uses `.openrsi/`; existing records and signed receipts remain
+readable through the compatibility layer.
 
 The standard workflow is **build → test locally with Dungeness → fix failures →
 remote evaluation → publish the verified receipt to Yukon**.
@@ -63,7 +64,7 @@ flowchart LR
 
 ## Public repository
 
-`catalyst-research` provides the solver CLI, temporary credential encoding,
+`openrsi-space` provides the solver CLI, temporary credential encoding,
 canonical source bundles, local build/smoke tools, pinned problem definition,
 pricing and score validation, receipt retrieval and Yukon integration.
 The public library uses the Python standard library and PyYAML. Local Docker smoke tests
@@ -74,7 +75,7 @@ run anti-cheat screening, hold an operator credential. The local-run path requir
 remote submission uses the service’s runtime.
 The challenge UI lives in Yukon; OpenRSI does not include a separate viewer.
 
-The public ECDSA statement lives in `src/catalyst/problem-set/ecdsa-fail/description.md`.
+The public ECDSA statement lives in `src/openrsi_space/problem-set/ecdsa-fail/description.md`.
 The private service copies it into a versioned problem package during
 initialization. For each run, it builds a read-only problem service from
 OpenRSI's `runtime/problem_server.py`, independently of the submitted harness.
@@ -102,20 +103,20 @@ and callers keep working. Add new code to the canonical packages. See the
 
 ## Challenge code and content
 
-`src/catalyst/challenge/` owns shared release loading, resource validation and
+`src/openrsi_space/challenge/` owns shared release loading, resource validation and
 preparation, asset installation, and assigned task assembly. Its directory README
-identifies the entry points. Public callers use `catalyst.challenge.*`; the old
+identifies the entry points. Public callers use `openrsi_space.challenge.*`; the old
 `problems`, `problem_assets`, `paper_library`, `knowledge_base`, and `task_setup`
 module paths remain compatibility aliases for existing verifier releases.
 
-`src/catalyst/problem-set/` owns the challenge content: descriptions, release
+`src/openrsi_space/problem-set/` owns the challenge content: descriptions, release
 manifests, paper catalogs, scaffolds and verifier bundles. Its paths and published
 content stay stable when preparation code moves. Pricing remains in `pricing/`.
 
 ## Private service
 
-The `openrsi-space-verifier` repository provides its own Python package (`catalyst_verifier`) and
-operator entrypoint (`catalyst-verifier`). It depends on an exact public package
+The `openrsi-space-verifier` repository provides its own Python package (`openrsi_space_verifier`) and
+operator entrypoint (`openrsi-space-verifier`). It depends on an exact public package
 version. Its source includes the API, job store, worker lifecycle, Dungeness
 integration, anti-cheat screening, provider staging, artifact storage and deployment
 configuration. The packages have separate tests and distribution contents.

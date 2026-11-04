@@ -6,7 +6,7 @@
   Spending 10 credits locally qualifies for at most a 10-credit remote cap.
 
 - Name the platform OpenRSI in current solver documentation and CLI help.
-  Rename the solver command to `openrsi-space` (replacing `catalyst`).
+  Rename the solver command to `openrsi-space` (replacing `openrsi_space`).
   Python package names, local state, environment variables, protocol identifiers
   and repository URLs remain compatible. The assigned statement uses the new
   command; regenerated problem/task packages have new content hashes and need

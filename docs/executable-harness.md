@@ -7,7 +7,7 @@ checkout's generated `submission/verification.json`; `yukon run` checks that ret
 See [the solver guide](solver-guide.md) for authentication and publication.
 
 The problem is **ecdsa.fail**. Exact source commits, candidate paths and verifier
-commands live in `src/catalyst/problem-set/ecdsa-fail/releases/v1.json`. Local checks use that
+commands live in `src/openrsi_space/problem-set/ecdsa-fail/releases/v1.json`. Local checks use that
 pin; they cannot issue an official receipt.
 
 ## Develop against a problem
@@ -30,8 +30,8 @@ intensive and is separate from the lightweight local contract tests.
 ## Package and smoke-test a harness
 
 ```sh
-uv run openrsi-space harness create my-solver --output .catalyst/my-solver
-uv run openrsi-space harness build .catalyst/my-solver
+uv run openrsi-space harness create my-solver --output .openrsi/my-solver
+uv run openrsi-space harness build .openrsi/my-solver
 ```
 
 The build prints its `id`. Use it to run the complete entrypoint:
@@ -42,7 +42,7 @@ uv run openrsi-space harness smoke BUILD_ID \
 ```
 
 Smoke tests use a **copy** of the workspace, without network access or model
-credentials. Records live under `.catalyst/smoke/`. They test entrypoint
+credentials. Records live under `.openrsi/smoke/`. They test entrypoint
 execution, not problem verification or performance. The starter leaves the
 starting candidate unchanged and makes no model calls. It is only a packaging
 smoke test: the default blank scaffold is not a valid circuit, so this starter
@@ -82,7 +82,7 @@ For the current ECDSA scaffold these are `POINT_ADD_SDK.md` and
 `src/point_add_sdk.rs`. Do not recursively chown or modify them. Smoke includes
 `remaining_seconds` and a deadline for child processes, but no live model or
 problem service. Copying
-excludes `.git`, `.env*`, `.catalyst`, `.venv`, `__pycache__` and `.DS_Store`, and
+excludes `.git`, `.env*`, `.openrsi`, `.venv`, `__pycache__` and `.DS_Store`, and
 symlinks are rejected. Directory modes are preserved, so a read/write mount alone
 does not guarantee that every process can write. Create needed directories at
 runtime and check ownership/modes if creation fails, especially if your wrapper
@@ -129,7 +129,7 @@ the manifest, Dockerfile and starter entrypoint together.
   "id": "my-agent",
   "title": "My Agent",
   "execution": {
-    "interface": "catalyst-exec-v1",
+    "interface": "openrsi-exec-v1",
     "dockerfile": "Dockerfile",
     "entrypoint": ["python3", "/opt/harness/agent.py"]
   }
@@ -140,18 +140,18 @@ Executable packages cannot select a host agent or Python adapter. Package
 general-purpose tools and retrieval code in any layout your agent supports.
 Problem-specific knowledge belongs to the trusted task: its library endpoint
 provides eight bundled papers, and your agent chooses how to read or index them during
-the run. `CATALYST_KNOWLEDGE_BASE_URL` points to the catalog. Do not submit ECDSA
+the run. `OPENRSI_KNOWLEDGE_BASE_URL` points to the catalog. Do not submit ECDSA
 papers, strategies, notes, solution code or answer caches. See the
 [screening policy](cheat-filter.md).
 
-`CATALYST_TASK` points to a JSON file containing problem/harness references,
+`OPENRSI_TASK` points to a JSON file containing problem/harness references,
 instruction, writable workspace, candidate paths, budget, model and gateway
-URL, plus an allowed `models` list. `CATALYST_WORKSPACE`, `CATALYST_MODEL`
-and `CATALYST_MODELS` are convenience variables.
+URL, plus an allowed `models` list. `OPENRSI_WORKSPACE`, `OPENRSI_MODEL`
+and `OPENRSI_MODELS` are convenience variables.
 With the [problem-service runtime](problem-service.md), the launcher first fetches
 the server-assigned statement and checks its SHA-256, problem identity and
 candidate paths. The resolved task includes `problem_document`, and
-`CATALYST_PROBLEM_URL` points to the read-only document. A failed or mismatched
+`OPENRSI_PROBLEM_URL` points to the read-only document. A failed or mismatched
 fetch stops the launcher before your entrypoint runs.
 During Dungeness execution, `OPENAI_BASE_URL` points at the metered gateway
 and `OPENAI_API_KEY` is only the public placeholder `testbed`. Smoke tests

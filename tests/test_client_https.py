@@ -12,10 +12,10 @@ import threading
 import unittest
 from unittest.mock import patch
 
-from catalyst.client import transport
-from catalyst.client.evaluations import RemoteClient
-from catalyst.common import CatalystError
-from catalyst.credentials import TOKEN_HEADER
+from openrsi_space.client import transport
+from openrsi_space.client.evaluations import RemoteClient
+from openrsi_space.common import OpenRSIError
+from openrsi_space.credentials import TOKEN_HEADER
 
 EVALUATION = "12345678-1234-4234-8234-123456789abc"
 SOLVER = "cys_synthetic-solver-secret"
@@ -31,7 +31,7 @@ class CredentialURLTests(unittest.TestCase):
                     lambda: transport.fetch("http://verifier.invalid/evaluations", bearer, document={}),
                     lambda: transport.solver_fetch("http://verifier.invalid", "/evaluations", bearer, document={}),
                 ):
-                    with self.subTest(bearer=bearer), self.assertRaisesRegex(CatalystError, "HTTPS"):
+                    with self.subTest(bearer=bearer), self.assertRaisesRegex(OpenRSIError, "HTTPS"):
                         operation()
             opener.assert_not_called()
 
@@ -51,7 +51,7 @@ class CredentialURLTests(unittest.TestCase):
                 f"https://verifier.invalid/evaluations/{EVALUATION}/%63redentials",
             ]
             for url in urls:
-                with self.subTest(url=url), self.assertRaises(CatalystError):
+                with self.subTest(url=url), self.assertRaises(OpenRSIError):
                     transport.fetch(url, SOLVER, document={}, model_token=MODEL)
             opener.assert_not_called()
 
@@ -162,7 +162,7 @@ subjectAltName={host}
                     self.server(certificate) as (url, requests):
                 for route,model in (("/auth/yukon", None), ("/evaluations", MODEL),
                                     (f"/evaluations/{EVALUATION}/credentials", MODEL)):
-                    with self.assertRaisesRegex(CatalystError, "TLS certificate verification failed") as raised:
+                    with self.assertRaisesRegex(OpenRSIError, "TLS certificate verification failed") as raised:
                         transport.fetch(url + route, SOLVER, document={"canary": BODY}, model_token=model)
                     self.assertIn("do not disable TLS verification", str(raised.exception))
                     for secret in (SOLVER, MODEL, BODY):
@@ -171,7 +171,7 @@ subjectAltName={host}
 
     def test_real_renewal_client_uses_the_https_job_credential_route(self):
         with self.server() as (url, requests), tempfile.TemporaryDirectory() as state, \
-                patch.dict(os.environ, {"CATALYST_EVALUATOR_URL": url}):
+                patch.dict(os.environ, {"OPENRSI_EVALUATOR_URL": url}):
             client = RemoteClient(Path(state), bearer=SOLVER)
             self.assertEqual(client.renew_access(EVALUATION, MODEL), {"evaluation_id": EVALUATION, "status": "queued"})
             self.assertEqual(len(requests), 1)
@@ -184,7 +184,7 @@ subjectAltName={host}
 
     def test_plaintext_model_submission_is_rejected_before_yukon_login(self):
         with self.server(certificate=None) as (url, requests):
-            with self.assertRaisesRegex(CatalystError, "HTTPS"):
+            with self.assertRaisesRegex(OpenRSIError, "HTTPS"):
                 transport.solver_fetch(url, "/evaluations", "ykn_synthetic-key", document={}, model_token=MODEL)
             self.assertEqual(requests, [])
             # Explicit loopback fixtures still work without a real model token.
@@ -197,7 +197,7 @@ subjectAltName={host}
                 for status in (301, 302, 303, 307, 308):
                     with self.subTest(target=target_certificate, status=status), \
                             self.server(redirect=target + "/evaluations", status=status) as (url, source):
-                        with self.assertRaises(CatalystError):
+                        with self.assertRaises(OpenRSIError):
                             transport.fetch(url + "/evaluations", SOLVER,
                                             document={"canary": BODY}, model_token=MODEL)
                         self.assertEqual(len(source), 1)
