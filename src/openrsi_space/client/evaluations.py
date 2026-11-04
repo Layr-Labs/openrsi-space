@@ -129,6 +129,8 @@ class RemoteClient:
         elif model_token is not None:
             raise OpenRSIError("This access mode does not accept personal model credentials.")
         if platform_access(body['evaluation']):
+            from .funding import preflight
+            preflight(self, body)
             from .local_evidence import attach
             attach(self, body, local_check)
         pending = self.pending_path(body)

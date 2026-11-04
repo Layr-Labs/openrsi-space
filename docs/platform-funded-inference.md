@@ -22,8 +22,17 @@ both selected routes using the task-assigned endpoints and model names.
 
 Before spending locally to qualify, run `openrsi-space remote funding-policy` for
 supported providers and policy, then `openrsi-space remote funding` for your
-reservations and settled usage. Neither command starts inference. Account-specific allowance overrides can be confirmed with the operator;
+remaining rolling 24-hour allowance, reservations and settled usage. Neither command starts inference. The reported allowance includes active account-specific overrides;
 allowance changes do not waive required local evidence.
+
+New platform-funded submissions automatically check your authenticated account
+allowance before preparing or uploading local evidence. The CLI shows the requested
+budget and available allowance, and stops early if funds are insufficient, funding
+is paused, or the allowance cannot be checked. This is a snapshot, not a reservation;
+the server still checks eligibility and reserves funds atomically at admission.
+Retries of an unchanged saved request go to the server without this early balance
+gate, because the original request may already hold the requested funds. They reuse
+the existing request ID rather than starting an additional run.
 
 Authorize local testing and remote execution separately. The local run’s recorded
 budget cap must be at least the requested remote budget. Actual local spending may
