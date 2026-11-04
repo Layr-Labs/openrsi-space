@@ -22,6 +22,11 @@ is `openrsi_space`. New local records use `.openrsi/`, and configuration uses
 
 ## Get started
 
+Already testing or submitting and something failed? Start with the
+[recovery and troubleshooting FAQ](docs/recovery-faq.md) before rerunning or
+changing your harness. It explains IDs, reconnecting, reusable evidence, and
+publication retries.
+
 Local development can use your existing Codex/ChatGPT or Claude subscription, or
 a supported model API. Official remote runs use **Eigen Labs-funded OpenRouter**;
 you authenticate with a Yukon key and send no personal model credential.
