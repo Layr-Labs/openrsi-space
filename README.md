@@ -76,7 +76,9 @@ its failure status is retained. See the [evidence rules](docs/platform-funded-in
   The recorded local budget cap must be **at least the remote cap**. Actual
   spending may be lower; no minimum-spend percentage applies. Local testing uses your authorized model access.
 - **Allowance:** the default is **20 model credits (USD equivalent) per Yukon account per
-  rolling 24 hours**, with operator overrides. Each account may have one funded
+  rolling 24 hours**, with operator overrides. Unused allowance does not carry over:
+  waiting two days does not permit a $40 run. Each funded remote run requires a
+  budget cap of **at least $1**; actual spending may be lower. Each account may have one funded
   evaluation running at a time. Split the allowance across multiple sequential
   runs; each reserves its requested cap and returns unused funds after settlement. The live policy and account allowance take precedence.
 

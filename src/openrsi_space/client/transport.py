@@ -43,8 +43,8 @@ ADMISSION_FIELDS = {
                    "evaluation.limits", "evaluation.limits.max_seconds", "evaluation.limits.max_model_tokens",
                    "evaluation.model", "evaluation.model.reasoning_effort", "evaluation.max_model_credits", "judge", "context", "source",
                    "source.archive_base64", "source.digest", "source.execution", "source.publication", "source.expanded_bytes"},
-    "authorization": {"evaluation"}, "credentials": {"model_access"},
-    "creation": {"request_id", "local_evidence"}, "readiness": {"service"},
+    "authorization": {"evaluation", "evaluation.max_model_credits"}, "credentials": {"model_access"},
+    "creation": {"request_id", "local_evidence", "evaluation.max_model_credits"}, "readiness": {"service"},
 }
 QUOTA_MESSAGES = {
     'account_concurrency': 'Your account has reached its active-run limit; wait for a run to finish or cancel it.',
@@ -73,6 +73,7 @@ ADMISSION_MESSAGES = {
     "local_evidence_capacity": "Private evidence storage is full; contact the operator or wait for upload expiry.",
     "local_evidence_rate_limit": "Too many evidence uploads; retry in an hour.",
     "local_evidence_too_large": "Local evidence exceeds 192 MiB; run a shorter readiness test.",
+    "funding_budget_too_low": "Budget too low. Use --budget of at least $1 for a funded remote run; actual spending may be lower.",
     "funding_run_limit": "Reduce the run budget to the limit in /public/funding-policy.",
     'source_not_publishable': 'The source did not pass the publication safety checks.',
     'screening_unavailable': 'Submission screening is temporarily unavailable.',
@@ -85,7 +86,8 @@ ADMISSION_MESSAGES = {
 }
 
 
-ADMISSION_EXPECTATIONS = {**{code: ADMISSION_MESSAGES[code] for code in (
+ADMISSION_EXPECTATIONS = {
+    "funding_budget_too_low": "Remote budget cap of at least $1; actual spending may be lower.",**{code: ADMISSION_MESSAGES[code] for code in (
  'local_evidence_budget_cap_missing', 'local_evidence_budget_cap_invalid', 'local_evidence_budget_cap_insufficient')}, 'request_shape': 'The documented evaluation request envelope.',
  'source_package_too_large': 'Expanded source within the advertised byte limit; retain runtime code and licenses.',
  'protocol_mismatch': 'Match server_policy.protocol.',

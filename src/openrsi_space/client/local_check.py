@@ -134,6 +134,24 @@ def validate_record(path, body):
             'local_run_path': selected_path, 'local_run_status': run_status}
 
 
+def pending_request(state, body, base):
+    """Find the same saved operation, bound to this endpoint and configuration."""
+    identity = request_identity(body)
+    for folder in (state / 'remote/pending', state / 'yukon/pending'):
+        for path in folder.glob('*.json'):
+            try:
+                saved = read_json(path)
+                if not isinstance(saved, dict):
+                    continue
+                saved_body = {k: v for k, v in saved.items() if k != 'request_id'}
+                expected_name = digest({'base': base, 'body': saved_body}) + '.json'
+                if saved.get('request_id') and path.name == expected_name and request_identity(saved) == identity:
+                    return saved
+            except (OSError, ValueError, KeyError, TypeError, OpenRSIError):
+                continue
+    return None
+
+
 def check_submission(state, package, body, base, *, local_run=None):
     identity = request_identity(body)
     decision = {'request_identity': identity}
@@ -141,18 +159,10 @@ def check_submission(state, package, body, base, *, local_run=None):
     # or removed. This resumes the same request, never creates an exemption for
     # changed source, model, limits, problem, publication choices or endpoint.
     if local_run is None:
-        for folder in (state / 'remote/pending', state / 'yukon/pending'):
-            for path in folder.glob('*.json'):
-                try:
-                    saved = read_json(path)
-                    body_without_id = {k: v for k, v in saved.items() if k != 'request_id'}
-                    expected_name = digest({'base': base, 'body': body_without_id}) + '.json'
-                    if (saved.get('request_id') and path.name == expected_name
-                            and request_identity(saved) == identity):
-                        return {**decision, 'status': 'resuming', 'request_id': saved['request_id'],
-                                **({'local_evidence': saved['local_evidence']} if 'local_evidence' in saved else {})}
-                except (OSError, ValueError, KeyError, TypeError, OpenRSIError):
-                    continue
+        saved = pending_request(state, body, base)
+        if saved is not None:
+            return {**decision, 'status': 'resuming', 'request_id': saved['request_id'],
+                    **({'local_evidence': saved['local_evidence']} if 'local_evidence' in saved else {})}
     paths = [local_run] if local_run is not None else sorted({
         path for root in (state, package.resolve() / '.openrsi', package.resolve() / LEGACY_STATE)
         for path in (root / 'local').glob('*/run.json')
