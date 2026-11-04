@@ -288,7 +288,7 @@ class LocalCheckTests(unittest.TestCase):
                 patch('openrsi_space.cli.model_access_input', return_value=None), \
                 redirect_stderr(io.StringIO()), redirect_stdout(io.StringIO()):
             factory.return_value.base = self.base
-            factory.return_value.submit.return_value = {}
+            factory.return_value.submit.return_value = {'evaluation_id': '11111111-1111-4111-8111-111111111111'}
             remote_command(args, self.state)
             decision = factory.return_value.submit.call_args.kwargs['local_check']
             self.assertEqual(decision['status'], 'passed')

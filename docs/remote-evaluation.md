@@ -184,6 +184,12 @@ claims in arbitrary local JSON do not constitute official evidence.
 
 ## Receipts and Yukon
 
+Opt into [client-side automatic Yukon publication](automatic-publication.md) with
+`remote submit --publish-to-yukon`. The CLI waits for verification and publishes
+using your local login; `remote wait` resumes the saved choice after disconnection.
+The verifier retains no Yukon key between requests. Publication retries never restart
+research. The manual receipt workflow below remains available.
+
 The client writes the complete service-issued `verification.json` beside the
 submitted harness. Create `submission/` and copy it into `submission/verification.json` in the
 challenge checkout. This is the only Yukon-editable path. It contains immutable evidence
