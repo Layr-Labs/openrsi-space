@@ -5,6 +5,9 @@ before changing source or spending again. Preserve the request/evaluation IDs,
 original local evidence, receipt and state directory. Reconnecting to an existing
 run or retrying publication is different from restarting research; remote
 mid-run checkpoint restoration is not generally supported.
+For support, start with the run/request ID, time and error code. Keep diagnostics
+and logs local; do not upload files or paste private content into support messages
+without the user's explicit permission.
 
 ## Use the current submission client with a pinned Yukon board
 

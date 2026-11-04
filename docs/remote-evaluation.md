@@ -64,7 +64,7 @@ supply model access or create a paid run.
 
 For symptom-based instructions and an ID reference, see the
 [recovery and troubleshooting FAQ](recovery-faq.md). Resuming retrieval does not
-restart a failed execution or restore a lost VM.
+restart failed research.
 
 `POST /evaluations` accepts the versioned request constructed by
 [`remote.py`](../src/openrsi_space/remote.py):

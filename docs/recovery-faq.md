@@ -17,8 +17,9 @@ to a run, and restarting research are different actions.**
    ```
 
    These commands do not start inference. Logs may be incomplete or unavailable;
-   the diagnostic export reports capture coverage. Treat downloaded logs as
-   private even after sanitization.
+   the diagnostic export reports capture coverage. The output files are saved on
+   your machine, not uploaded to support. Treat downloaded logs as private even
+   after sanitization; this guide does not ask you to share them.
 3. Follow the recovery path below. Do not delete pending-request files, invent
    a new request ID, or change source just to bypass an error.
 
@@ -32,7 +33,7 @@ directory explicitly, retain it: `openrsi-space --state /path/to/state remote st
 | Identifier | Purpose | What it does not do |
 | --- | --- | --- |
 | Request ID | Identifies the submission attempt, including a rejection before job creation. Retrying the same account, endpoint, ID, and payload avoids creating a duplicate evaluation. | Does not restart a terminal failed evaluation. |
-| Evaluation ID | Identifies a remote run for status, waiting, diagnostics, logs, and its retained result. | Does not restore a lost execution VM. |
+| Evaluation ID | Identifies a remote run for status, waiting, diagnostics, logs, and its retained result. | Does not restart interrupted research. |
 | Local run ID or local run path | Locates the local records used as evidence. | Is not an official remote evaluation ID. |
 | Evidence digest / source digest | Identifies the exact uploaded evidence / harness source. | Is not a login credential or a checkpoint. |
 | Yukon submission ID / job ID | Identifies leaderboard publication / its processing job. | Is not the research execution itself. |
@@ -82,7 +83,7 @@ rules; do not edit the saved request or recorded local evidence to make it match
 
 | Error or symptom | Next action |
 | --- | --- |
-| `source_not_publishable` / `local_evidence_not_private` | Request the sanitized finding's file or event, rule, and location. A generic error does not establish that a real credential exists. Do not alter placeholders or regenerate evidence based on a guess; privately provide the affected source/evidence if the operator needs it. Remove a confirmed real credential before submitting again. |
+| `source_not_publishable` / `local_evidence_not_private` | Give the operator the request ID and ask them to inspect retained diagnostics for the finding's file or event, rule, and location. A generic error does not establish that a real credential exists. Do not alter placeholders or regenerate evidence based on a guess. Do not send the matching secret or your source/evidence archive to support. Remove a confirmed real credential before submitting again. |
 | `local_evidence_budget_cap_missing` | Update the submission client and re-export from the original local run using `--local-run PATH`. A new local run is unnecessary if that record already contains a sufficient cap. |
 | `local_evidence_budget_cap_insufficient` | Lower the requested remote cap or select a qualifying local run with a sufficient recorded cap. Actual spending may be below the cap; there is no minimum-spend percentage. |
 | `local_evidence_mismatch` | Compare source, problem, exact model or supported provider equivalent, and reasoning settings. Use matching original evidence; do not relabel it. |
@@ -95,17 +96,17 @@ see [source limits](source-limits.md) and [local evidence requirements](platform
 ## The run is waiting for infrastructure. Should I submit again?
 
 No. Inspect the existing evaluation. “Waiting for infrastructure capacity” means
-the accepted attempt is waiting for a build/execution slot, not necessarily that
-the harness is making model calls. Keep waiting on that evaluation ID, or cancel
-it if you no longer want it to run. If progress appears stuck, send diagnostics
-to the operator. Duplicate submissions do not repair capacity or image permissions.
+the accepted attempt is waiting for the service to become available, not
+necessarily that the harness is making model calls. Keep waiting on that
+evaluation ID, or cancel it if you no longer want it to run. If progress appears
+stuck, give the operator the evaluation ID. Do not submit a duplicate run.
 
-## A worker or VM failed. Can it continue where it stopped?
+## The remote run stopped unexpectedly. Can it continue where it stopped?
 
 There is currently **no general remote checkpoint-resume command**. Interrupted
 started work is marked failed rather than silently replaying potentially paid
-calls. An internal harness checkpoint does not by itself restore the platform's
-execution environment and accounting.
+calls. A checkpoint saved by your harness does not by itself make the remote run
+resumable.
 
 After a terminal build/startup failure is repaired, a fresh remote attempt may
 be needed. Reusing the old request ID retrieves that old attempt, not a restart.
@@ -150,28 +151,31 @@ outcome is unknown, inspect `yukon submissions` or ask the operator before
 uploading again. Do not delete the helper's pending record to bypass its duplicate
 guard. See [Yukon publication](remote-evaluation.md#receipts-and-yukon).
 
-## What should I send to support?
+## How do I ask for help without sharing private data?
 
-Send a concise report through the support channel, not a public submission note:
+When contacting the operator privately, start with only these identifiers and
+error details. The operator should inspect the records already held by the
+service first; you do not need to attach source, evidence, logs, or transcripts.
 
 ```text
-Evaluator endpoint and Yukon environment/board:
-Time of failure (UTC):
-Client version and installed Git revision, if known:
 Request ID / evaluation ID (whichever exists):
 Yukon submission/job ID (if publication failed):
-HTTP status, error code, stage, field, correlation/edge ID:
-Source digest / local evidence digest / local run ID:
-Requested model, reasoning effort, remote cap, recorded local cap:
-Last observed phase and sanitized diagnostic summary:
-Was anything retried or changed after the error?
+Approximate time of failure (UTC):
+HTTP status and error code, if shown:
+Correlation/edge ID, if no request or evaluation ID is available:
 ```
 
-Do not include API keys, login files, authorization headers, or raw transcripts.
-Send source/evidence archives only through the operator's private diagnostic
-channel when requested; preserve the originals unchanged.
+Copy only those fields, not the full response or log contents. Do not post the
+report in a public issue or submission note. Keep API keys, login files,
+authorization headers, environment dumps, local filesystem paths, state
+directories, source/evidence archives, and raw transcripts out of support messages.
+Preserve your original files locally. Sanitization is not a guarantee that a
+downloaded file is safe to share.
 
 For coding agents: diagnose first, preserve identifiers and artifacts, distinguish
 retrieval from a new paid attempt, and reuse existing user authorization only
-within its stated scope. Do not claim a run resumed merely because status retrieval
-worked, or treat an infrastructure/review availability failure as a cheating verdict.
+within its stated scope. Permission to submit a run is not permission to send
+additional files or private content to support. Do not upload or paste them on
+the user's behalf without their explicit permission. Do not claim a run resumed
+merely because status retrieval worked, or treat a service/review availability
+failure as a cheating verdict.
