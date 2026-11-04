@@ -34,14 +34,14 @@ def require_current_board(benchmark):
             'and publish from there using the same solver account. No new local or paid remote run is needed.')
 
 
-def bind_job(root, job_id, benchmark_id, *, reference=None):
-    key = solver_token()
+def bind_job(root, job_id, benchmark_id, *, reference=None, bearer=None, base=None):
+    key = bearer if bearer is not None else solver_token()
     if not key.startswith("ykn_"):
         raise OpenRSIError("Execution binding requires your Yukon API key, not a OpenRSI session token.")
     reference = reference if reference is not None else read_receipt(root / RECEIPT_PATH)
     body = {"protocol": PROTOCOL, "job_id": identity(job_id),
             "benchmark_id": identity(benchmark_id), "reference": reference}
-    result = json.loads(fetch(endpoint() + "/verifications/yukon-bind", key, document=body))
+    result = json.loads(fetch((base or endpoint()) + "/verifications/yukon-bind", key, document=body))
     if (not isinstance(result, dict) or result.get("protocol") != PROTOCOL
             or result.get("job_id") != job_id or result.get("benchmark_id") != benchmark_id
             or result.get("evaluation_id") != reference["evaluation_id"]):

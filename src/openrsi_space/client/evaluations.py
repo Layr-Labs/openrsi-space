@@ -92,7 +92,7 @@ class RemoteClient:
         return legacy if legacy.is_file() else self.state / "remote/pending" / name
 
     def submit(self, submission: Path, *, judge=None, model_token=None, evaluation_overrides=None,
-               execution=None, publication=None, problem_release=None, local_check=None, _quote_retry=False):
+               execution=None, publication=None, problem_release=None, local_check=None, auto_publication=None, _quote_retry=False):
         if os.environ.get("GITHUB_ACTIONS") == "true":
             raise OpenRSIError("GitHub Actions must retrieve an existing result through openrsi-space yukon-run.")
         submission = submission.resolve()
@@ -140,6 +140,9 @@ class RemoteClient:
             else:
                 request = {**body, "request_id": str(uuid.uuid4())}
                 private_json(pending, request)
+            if auto_publication is not None:
+                from .yukon_publication import prepare
+                prepare(self, request, auto_publication)
             private = {"model_token": model_token} if model_token is not None else {}
             try:
                 accepted = json.loads(transport.solver_fetch(self.base, "/evaluations", self.bearer,
@@ -176,6 +179,7 @@ class RemoteClient:
                     recorded_check = read_json(session_path).get('local_check', local_check)
                 private_json(session_path, {
                     "base": self.base, "request": request, "submission": str(submission),
+                    **({'automatic_publication': True} if auto_publication is not None else {}),
                     **({"evaluation_overrides": evaluation_overrides} if evaluation_overrides else {}),
                     **({"pricing_quote": str(quote_path)} if quote_path else {}),
                     **({"execution": execution} if execution else {}),
@@ -185,9 +189,11 @@ class RemoteClient:
             return self.submit(submission, judge=judge, model_token=model_token,
                                evaluation_overrides=evaluation_overrides, execution=execution,
                                publication=publication, problem_release=problem_release,
-                               local_check=local_check, _quote_retry=True)
+                               local_check=local_check, auto_publication=auto_publication, _quote_retry=True)
         return {"evaluation_id": identity, "request_id": request["request_id"],
-                "source_digest": body["source"]["digest"], "evidence_mode": body["evidence_mode"]}
+                "source_digest": body["source"]["digest"], "evidence_mode": body["evidence_mode"],
+                **({"publication": {"state": "pending", "benchmark_id": auto_publication['benchmark_id']}}
+                   if auto_publication is not None else {})}
 
     def session(self, identity):
         path = self.folder(identity) / "session.json"

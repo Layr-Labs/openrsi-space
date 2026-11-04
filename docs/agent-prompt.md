@@ -338,6 +338,16 @@ Approval to build or explore the harness alone is not approval to launch it.
 For platform funding, first check availability and model eligibility with
 `openrsi-space remote funding-policy`. With a qualifying local record, submit:
 
+For verification followed by publication, we recommend adding
+`--publish-to-yukon --note-file submission-note.md --no-dependencies` to the
+submission command below. This explicitly authorizes publication and keeps the
+CLI waiting through verification and Yukon publication. Use `--dependencies-file`
+instead when reusing submissions; the harness title defaults to `harness.json`.
+Supply `--benchmark BENCHMARK_UUID` if outside a Yukon checkout. Plain `remote
+submit` returns immediately unless `--wait` is supplied. An accepted request is
+not yet a verified or published result. See [automatic publication](automatic-publication.md).
+
+
 ```sh
 openrsi-space remote submit HARNESS_DIR \
   --platform-funded --local-run LOCAL_RUN_PATH \
@@ -410,6 +420,9 @@ Keep model and harness attribution separate. Declare material dependencies on
 earlier submissions, including the solver's own.
 
 When Yukon publication is authorized:
+
+If automatic publication already reports `published`, skip this manual step.
+Otherwise, the existing manual receipt workflow remains available:
 
 ```sh
 openrsi-space yukon-submit --note-file submission-note.md \

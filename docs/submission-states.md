@@ -256,6 +256,15 @@ OpenRSI currently reports leaderboard delivery as `not_confirmed` or
 `receipt_delivered`; neither proves that Yukon's publication job succeeded.
 Check the Yukon submission/job separately. Source publication also does not prove
 leaderboard publication. See [publication outcomes](submission-states.md#current-separate-outcomes).
+If you selected `--publish-to-yukon`, `openrsi-space remote wait EVALUATION_ID`
+continues the previously authorized client-side publication using your local login.
+Inspect `openrsi-space remote publication EVALUATION_ID`, or retry only publication
+with `openrsi-space remote publication EVALUATION_ID --retry`. Keep the original
+state directory. No new research run is started and no Yukon key is retained on
+the verifier between requests. If Yukon itself failed or rejected the job, give
+its submission/job ID to the operator before retrying. See
+[automatic publication states and recovery](automatic-publication.md#stopping-the-command-and-recovering).
+The following steps cover the manual publication path.
 
 No. Preserve the verified receipt and inspect the existing Yukon submission/job.
 Publication and Git branch errors do not invalidate an otherwise verified research
