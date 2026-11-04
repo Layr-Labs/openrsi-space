@@ -4,6 +4,10 @@ Use this guide when submission, execution, or publication fails. Recover the
 existing operation before starting another run. **Retrying a request, reconnecting
 to a run, and restarting research are different actions.**
 
+The [submission state model](submission-states.md) defines evaluation states,
+separate execution/verification/publication outcomes, and safe retry boundaries.
+It also distinguishes today's behavior from proposed automatic Yukon publication.
+
 ## What should I do first?
 
 1. Keep the original harness, local run, receipt, and OpenRSI state directory.
@@ -20,13 +24,36 @@ to a run, and restarting research are different actions.**
    the diagnostic export reports capture coverage. The output files are saved on
    your machine, not uploaded to support. Treat downloaded logs as private even
    after sanitization; this guide does not ask you to share them.
-3. Follow the recovery path below. Do not delete pending-request files, invent
+3. Match the observed state to the recovery table below. Do not delete pending-request files, invent
    a new request ID, or change source just to bypass an error.
 
 Use the [current submission client](solver-guide.md#use-the-current-submission-client-with-a-pinned-yukon-board).
 The examples assume it is installed as `openrsi-space`. In a Yukon-pinned checkout,
 `uv run` can select an older client instead. If you originally selected a state
 directory explicitly, retain it: `openrsi-space --state /path/to/state remote status EVALUATION_ID`.
+
+## Which recovery path matches my submission's state?
+
+The normal evaluation path is `queued → building → running → verifying → completed`.
+`failed` and `cancelled` end that attempt. Publication is a separate outcome;
+it does not change a verified result into a failed research run.
+
+| What you observe | What to do next | Can this start another paid run? |
+| --- | --- | --- |
+| Confirmed admission rejection, no evaluation ID | [Read the admission error](#i-received-http-400-without-an-evaluation-id-was-anything-run); preserve the original request. | Correcting and resubmitting can create the first run once accepted. |
+| Response lost, outcome unknown | [Recover the unchanged saved request](#can-i-resume-after-closing-my-terminal-or-losing-the-connection). | It may create the intended run if the original never arrived; it should not duplicate an existing evaluation. |
+| `queued` or `building`, waiting for capacity | [Wait on the existing evaluation](#the-run-is-waiting-for-infrastructure-should-i-submit-again). | No new run; the accepted run may proceed and incur usage. |
+| `running` or `verifying` | [Reconnect with `remote wait`](#can-i-resume-after-closing-my-terminal-or-losing-the-connection). | No new run; ongoing work may still incur usage. |
+| `awaiting_credentials` | Inspect the reported access issue. For platform-funded runs, ask the operator; do not supply a personal model key. | Do not submit a replacement. Resolving access can allow the existing run to start. |
+| `failed` or `cancelled` | [Inspect the stopped attempt](#the-remote-run-stopped-unexpectedly-can-it-continue-where-it-stopped); check retained verification results before retrying research. | A fresh research attempt can incur new charges. Status retrieval cannot restart this one. |
+| `completed`, verification not passed | [Distinguish final verification from candidate success](#a-candidate-passed-but-final-verification-or-saving-failed-did-i-lose-it). | Retrieval does not; a newly authorized research attempt can. |
+| Verification passed, Yukon publication missing or failed | [Recover publication using the existing receipt](#verification-succeeded-but-yukon-publication-failed-must-i-rerun-research). | No model inference is needed for publication. |
+
+Use the [state reference](submission-states.md#current-separate-outcomes) when
+execution, verification and publication report different outcomes. In particular,
+`completed` is not synonymous with a valid circuit, and `receipt_delivered` is not
+confirmation that a score is on the Yukon board. The proposed server-managed
+publication states in that reference are not available commands or API values yet.
 
 ## Which ID do I need?
 
@@ -50,7 +77,8 @@ the evaluation ID without that saved session.
 
 ## Can I resume after closing my terminal or losing the connection?
 
-Yes, if the remote run is still active:
+You can reconnect to `queued`, `building`, `running` or `verifying` work without
+creating a new evaluation:
 
 ```bash
 openrsi-space remote wait EVALUATION_ID
@@ -67,6 +95,9 @@ The CLI reuses the saved request ID. Do not create a new request to work around
 an uncertain outcome; the original may already be running.
 
 ## I received HTTP 400 without an evaluation ID. Was anything run?
+
+A rejection at admission is **before** the evaluation state machine, not a
+terminal `failed` evaluation. See [admission and evaluation states](submission-states.md#current-admission-and-remote-evaluation).
 
 A confirmed admission rejection before job creation has no evaluation to resume.
 A timeout or missing response alone does not establish that the request was rejected.
@@ -103,6 +134,9 @@ stuck, give the operator the evaluation ID. Do not submit a duplicate run.
 
 ## The remote run stopped unexpectedly. Can it continue where it stopped?
 
+First distinguish a disconnected client from a terminal `failed` or `cancelled`
+evaluation. If the evaluation is still active, use `remote wait` for the same ID.
+
 There is currently **no general remote checkpoint-resume command**. Interrupted
 started work is marked failed rather than silently replaying potentially paid
 calls. A checkpoint saved by your harness does not by itself make the remote run
@@ -120,6 +154,10 @@ A new local run is not automatically required just because remote infrastructure
 
 ## A candidate passed, but final verification or saving failed. Did I lose it?
 
+Read the [separate execution and verification outcomes](submission-states.md#current-separate-outcomes).
+An execution failure can coexist with a passed verification of a retained circuit;
+if you have a valid receipt, follow publication recovery rather than restarting research.
+
 An intermediate valid candidate, final verification, and a published result are
 different outcomes. Keep the evaluation ID and diagnostics. Retained candidate
 artifacts may allow operator recovery, but a score in stdout is not a verified
@@ -133,6 +171,12 @@ checks pass. Conversely, wrapper exit code zero does not prove that the agent
 succeeded. See [local outcomes and diagnostics](local-evaluation.md#local-outcomes-and-diagnostics).
 
 ## Verification succeeded, but Yukon publication failed. Must I rerun research?
+
+This is a publication problem, not a transition back from `completed` to `running`.
+OpenRSI currently reports leaderboard delivery as `not_confirmed` or
+`receipt_delivered`; neither proves that Yukon's publication job succeeded.
+Check the Yukon submission/job separately. Source publication also does not prove
+leaderboard publication. See [publication outcomes](submission-states.md#current-separate-outcomes).
 
 No. Preserve the verified receipt and inspect the existing Yukon submission/job.
 Publication and Git branch errors do not invalidate an otherwise verified research
