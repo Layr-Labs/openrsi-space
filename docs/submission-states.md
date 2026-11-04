@@ -1,9 +1,8 @@
 # Submission states and recovery
 
 This is the reference for interpreting an OpenRSI submission's progress.
-The sections marked **current** describe implemented behavior. The final section
-records a proposed extension, not an available feature. For commands and
-troubleshooting, use the [recovery FAQ](recovery-faq.md).
+It describes implemented behavior. For commands and troubleshooting, use the
+[recovery FAQ](recovery-faq.md).
 
 ## Current: admission and remote evaluation
 
@@ -69,26 +68,3 @@ See the [FAQ's publication recovery steps](recovery-faq.md#verification-succeede
 Keep private state and downloaded diagnostics on your machine. For support, share
 only the identifiers and sanitized error fields listed in the
 [FAQ](recovery-faq.md#how-do-i-ask-for-help-without-sharing-private-data).
-
-## Proposed: server-managed Yukon publication
-
-**Not implemented.** The proposed opt-in automatic-publication feature adds a
-durable publication lifecycle alongside the existing evaluation lifecycle:
-
-```text
-pending → submitting → awaiting Yukon → published
-```
-
-Publication can also require authentication or encounter a retryable failure.
-Those states preserve the verified receipt. Retrying publication must not restart
-execution or spend additional model credits. An accepted Yukon request is still
-pending until Yukon confirms the publication outcome.
-
-The proposed record retains the publication intent, immutable payload, stable
-idempotency key, Yukon IDs and last sanitized error. It must recover uncertain
-submission outcomes before issuing a duplicate. Temporary authorization is
-separate from that record; credentials must not be stored in it. If authorization
-is lost or expires, request authentication again for the same publication.
-
-These are design labels, not current API values or CLI commands. Update this
-reference and the FAQ when the feature ships, including the supported retry path.

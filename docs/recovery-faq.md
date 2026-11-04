@@ -6,7 +6,6 @@ to a run, and restarting research are different actions.**
 
 The [submission state model](submission-states.md) defines evaluation states,
 separate execution/verification/publication outcomes, and safe retry boundaries.
-It also distinguishes today's behavior from proposed automatic Yukon publication.
 
 ## What should I do first?
 
@@ -52,8 +51,7 @@ it does not change a verified result into a failed research run.
 Use the [state reference](submission-states.md#current-separate-outcomes) when
 execution, verification and publication report different outcomes. In particular,
 `completed` is not synonymous with a valid circuit, and `receipt_delivered` is not
-confirmation that a score is on the Yukon board. The proposed server-managed
-publication states in that reference are not available commands or API values yet.
+confirmation that a score is on the Yukon board.
 
 ## Which ID do I need?
 
