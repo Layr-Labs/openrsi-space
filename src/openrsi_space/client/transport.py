@@ -47,8 +47,8 @@ ADMISSION_FIELDS = {
                    "evaluation.limits", "evaluation.limits.max_seconds", "evaluation.limits.max_model_tokens",
                    "evaluation.model", "evaluation.model.reasoning_effort", "evaluation.max_model_credits", "judge", "context", "source",
                    "source.archive_base64", "source.digest", "source.execution", "source.publication", "source.expanded_bytes"},
-    "authorization": {"evaluation"}, "credentials": {"model_access"},
-    "creation": {"request_id", "local_evidence"}, "readiness": {"service"},
+    "authorization": {"evaluation", "evaluation.max_model_credits"}, "credentials": {"model_access"},
+    "creation": {"request_id", "local_evidence", "evaluation.max_model_credits"}, "readiness": {"service"},
 }
 QUOTA_MESSAGES = {
     'account_concurrency': 'Your account has reached its active-run limit; wait for a run to finish or cancel it.',
@@ -90,7 +90,8 @@ ADMISSION_MESSAGES = {
 }
 
 
-ADMISSION_EXPECTATIONS = {**{code: ADMISSION_MESSAGES[code] for code in (
+ADMISSION_EXPECTATIONS = {
+    "funding_budget_too_low": "Remote budget cap of at least $1; actual spending may be lower.",**{code: ADMISSION_MESSAGES[code] for code in (
  'local_evidence_budget_cap_missing', 'local_evidence_budget_cap_invalid', 'local_evidence_budget_cap_insufficient')}, 'request_shape': 'The documented evaluation request envelope.',
  'source_package_too_large': 'Expanded source within the advertised byte limit; retain runtime code and licenses.',
  'protocol_mismatch': 'Match server_policy.protocol.',
