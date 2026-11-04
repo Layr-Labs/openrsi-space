@@ -1,5 +1,11 @@
 # OpenRSI: instructions for a coding agent
 
+When a submission or run fails, use the [recovery and troubleshooting FAQ](recovery-faq.md)
+before changing source or spending again. Preserve the request/evaluation IDs,
+original local evidence, receipt and state directory. Reconnecting to an existing
+run or retrying publication is different from restarting research; remote
+mid-run checkpoint restoration is not generally supported.
+
 ## Use the current submission client with a pinned Yukon board
 
 A Yukon clone pins its receipt-checking code. That pin can predate current local
