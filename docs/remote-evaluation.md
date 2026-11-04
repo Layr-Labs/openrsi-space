@@ -62,6 +62,9 @@ supply model access or create a paid run.
 
 ## Submit once and resume retrieval
 
+See the [submission state model](submission-states.md) for state meanings and
+the distinction between evaluation completion and Yukon publication.
+
 For symptom-based instructions and an ID reference, see the
 [recovery and troubleshooting FAQ](recovery-faq.md). Resuming retrieval does not
 restart failed research.
