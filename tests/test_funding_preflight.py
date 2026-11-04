@@ -61,7 +61,15 @@ class FundingPreflightTests(unittest.TestCase):
         for remaining in (0,1.999999):
             self.remaining=remaining
             with self.assertRaisesRegex(OpenRSIError,'exceeds'):self.client.submit(Path(self.temp))
-        self.body['evaluation']['max_model_credits']=0.3;self.remaining=0.3
+        self.body['evaluation']['max_model_credits']=1.3;self.remaining=1.3
+        self.client.submit(Path(self.temp))
+
+    def test_budget_below_one_is_rejected_before_network(self):
+        for cap in (0.5,0.9999999):
+            self.body['evaluation']['max_model_credits']=cap
+            with self.assertRaisesRegex(OpenRSIError,'Budget too low'):self.client.submit(Path(self.temp))
+        self.fetch.assert_not_called();self.upload.assert_not_called()
+        self.body['evaluation']['max_model_credits']=1;self.remaining=1
         self.client.submit(Path(self.temp))
 
     def test_invalid_allowance_fails_closed(self):

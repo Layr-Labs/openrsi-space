@@ -22,13 +22,16 @@ def dollars(value):
 
 
 def preflight(client, body):
+    requested = Decimal(str(body['evaluation']['max_model_credits']))
+    if requested < 1:
+        raise OpenRSIError('Budget too low. Funded remote runs require --budget of at least $1. '
+                           'Actual spending may be lower. No local evidence was uploaded or remote evaluation submitted.')
     # An uncertain prior POST may already hold this budget. Never block its
     # idempotent recovery because that hold lowered the reported availability.
     if pending_request(client.state, body, client.base) is not None:
         print('Resuming a saved request; the server will reconcile its existing funding reservation.',
               file=sys.stderr, flush=True)
         return
-    requested = Decimal(str(body['evaluation']['max_model_credits']))
     try:
         raw = transport.solver_fetch(client.base, '/funding', client.bearer)
     except (OpenRSIError, OSError) as error:

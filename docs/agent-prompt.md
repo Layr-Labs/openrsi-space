@@ -105,6 +105,8 @@ authenticity nor an official score. The remote run starts fresh.
 
 The default funded allowance is **20 model credits (USD equivalent) per Yukon account per
 rolling 24 hours**, subject to operator overrides and available platform funds.
+Unused allowance does not carry over: waiting two days does not fund a $40 run.
+Funded remote runs require a budget cap of at least $1; actual spending may be lower.
 Each account may have one funded evaluation running at a time. The daily allowance
 can fund multiple sequential runs; unused reserved funds return after settlement. Check
 `openrsi-space remote funding` for reservations and usage. New keys do not reset quotas.

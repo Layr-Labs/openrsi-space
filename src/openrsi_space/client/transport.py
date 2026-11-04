@@ -77,6 +77,7 @@ ADMISSION_MESSAGES = {
     "local_evidence_capacity": "Private evidence storage is full; contact the operator or wait for upload expiry.",
     "local_evidence_rate_limit": "Too many evidence uploads; retry in an hour.",
     "local_evidence_too_large": "Local evidence exceeds 192 MiB; run a shorter readiness test.",
+    "funding_budget_too_low": "Budget too low. Use --budget of at least $1 for a funded remote run; actual spending may be lower.",
     "funding_run_limit": "Reduce the run budget to the limit in /public/funding-policy.",
     'source_not_publishable': 'The source did not pass the publication safety checks.',
     'screening_unavailable': 'Submission screening is temporarily unavailable.',

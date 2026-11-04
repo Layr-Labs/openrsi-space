@@ -107,7 +107,11 @@ edit the cap to manufacture eligibility. This is a consistency check on
 solver-authored evidence, not cryptographic proof of the local configuration.
 
 The default allowance is 20 model credits (USD equivalent) per authenticated Yukon account
-per rolling 24 hours. Changing Yukon keys does not reset it. The operator may
+per rolling 24 hours. **Unused allowance does not accumulate or carry over:**
+waiting two days does not allow a $40 run under the default $20 allowance.
+Each funded remote run requires a **budget cap of at least $1**; a lower cap is
+rejected with `funding_budget_too_low`. Actual spending may be lower than $1.
+Changing Yukon keys does not reset the allowance. The operator may
 adjust an account's allowance by its authenticated Yukon account ID. Each account may
 have one funded evaluation running at a time. You can split the daily allowance
 across multiple sequential runs; it is not a one-run-per-day limit. Each run
