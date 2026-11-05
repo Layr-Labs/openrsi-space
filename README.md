@@ -20,6 +20,13 @@ The command and installed distribution are `openrsi-space`; the Python package
 is `openrsi_space`. New local records use `.openrsi/`, and configuration uses
 `OPENRSI_*` environment variables.
 
+Accepted remote results appear automatically on the OpenRSI dashboard. Remote
+run status is public; only accepted, verified results receive ranked scores.
+Yukon publication is optional: it adds an account-linked submission and repository
+record without another research run. Stopping the CLI or revoking your Yukon key
+does not remove an accepted result from the OpenRSI dashboard. Private local
+execution evidence, raw logs and credentials are not part of the public feed.
+
 ## Get started
 
 Already testing or submitting and something failed? Start with the

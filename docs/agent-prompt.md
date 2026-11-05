@@ -78,7 +78,7 @@ and the normalized model credits used to achieve it.
 
 **Workflow:** build the harness → test locally with Dungeness and fix failures → let the human review
 readiness and authorize model use → submit source to OpenRSI's remote Dungeness
-service → inspect the verified result and receipt → publish the receipt to Yukon.
+service → inspect the verified result on the dashboard → optionally publish the receipt to Yukon.
 Yukon retrieves the service's recorded scores; it does not launch a second agent run.
 
 Use these instructions with the human [solver guide](solver-guide.md).
@@ -340,14 +340,14 @@ Approval to build or explore the harness alone is not approval to launch it.
 For platform funding, first check availability and model eligibility with
 `openrsi-space remote funding-policy`. With a qualifying local record, submit:
 
-For verification followed by publication, we recommend adding
-`--publish-to-yukon --note-file submission-note.md --no-dependencies` to the
-submission command below. This explicitly authorizes publication and keeps the
-CLI waiting through verification and Yukon publication. Use `--dependencies-file`
-instead when reusing submissions; the harness title defaults to `harness.json`.
-Supply `--benchmark BENCHMARK_UUID` if outside a Yukon checkout. Plain `remote
-submit` returns immediately unless `--wait` is supplied. An accepted request is
-not yet a verified or published result. See [automatic publication](automatic-publication.md).
+Accepted remote results appear automatically on the OpenRSI dashboard. Use
+`--wait` to follow verification, or resume with `remote wait EVALUATION_ID`.
+For an optional Yukon submission and repository record, add
+`--publish-to-yukon --note-file submission-note.md --no-dependencies`; use
+`--dependencies-file` when declaring reused submissions. This publication runs
+in the CLI and is not required for dashboard visibility. Supply
+`--benchmark BENCHMARK_UUID` outside a Yukon checkout. See
+[optional Yukon publication](automatic-publication.md).
 
 
 ```sh
@@ -402,8 +402,9 @@ the provisional best score. Mention stale or unavailable metrics explicitly.
 Do not substitute repeated generic "still running" explanations for recorded
 progress, and do not call a live score an accepted or final result.
 
-## Verify and publish
+## Verify and optionally publish to Yukon
 
+This adds a Yukon submission and repository record; dashboard visibility does not require it.
 After a valid result, use the exact receipt path printed by OpenRSI:
 
 ```sh

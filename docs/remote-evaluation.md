@@ -1,5 +1,12 @@
 # Public remote evaluation contract
 
+Accepted remote results appear automatically on the OpenRSI dashboard. Remote
+run status is public; only accepted, verified results receive ranked scores.
+Yukon publication is optional: it adds an account-linked submission and repository
+record without another research run. Stopping the CLI or revoking your Yukon key
+does not remove an accepted result from the OpenRSI dashboard. Private local
+execution evidence, raw logs and credentials are not part of the public feed.
+
 The public client and the private `openrsi-space-verifier` service communicate over
 HTTPS. No private Python package, Dungeness checkout or server credential is
 required to call the remote API. Funded solvers must retain evidence from a
@@ -183,6 +190,8 @@ settled usage. The public validator checks the accounting and candidate bindings
 claims in arbitrary local JSON do not constitute official evidence.
 
 ## Receipts and Yukon
+
+Yukon publication is optional and separate from automatic dashboard visibility.
 
 Opt into [client-side automatic Yukon publication](automatic-publication.md) with
 `remote submit --publish-to-yukon`. The CLI waits for verification and publishes
