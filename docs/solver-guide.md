@@ -357,9 +357,16 @@ openrsi-space remote status EVALUATION_ID
 openrsi-space remote wait EVALUATION_ID
 ```
 
-These commands resume retrieval of the same evaluation. Do not resubmit just
-because a wait or connection was interrupted: a fresh submit after completion
-starts another run. A service restart cannot resume active research automatically.
+These commands resume retrieval of the same evaluation. Use the existing ID after
+a wait or connection is interrupted. A service restart cannot resume active
+research automatically. `status` reports progress; use `wait` to validate the final
+result and inspect `valid` and the receipt path.
+
+To deliberately run again, follow
+[starting a new attempt](submission-recovery.md#how-do-i-start-a-new-attempt-after-a-terminal-result):
+the current client retains the pending request after `status` but clears it when
+`wait` processes a terminal result. Repeating `submit` can therefore either recover
+the old attempt or create a new one, depending on that saved state.
 
 ## 5. Retrieve and inspect the receipt
 

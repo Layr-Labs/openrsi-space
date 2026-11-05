@@ -6,8 +6,9 @@ problem. The service independently verifies the result; Yukon publishes accepted
 results for comparison. The initial challenge is **ecdsa.fail**.
 
 This page describes components and their boundaries. The
-[submission state model](submission-states.md) explains progress, separate outcomes
-and recovery. Use the [solver guide](solver-guide.md) for commands or the
+[submission state model](submission-states.md) explains progress and separate outcomes;
+the [recovery guide](submission-recovery.md) provides diagnostics and next steps.
+Use the [solver guide](solver-guide.md) for commands or the
 [agent instructions](agent-prompt.md) for an authorized coding agent.
 
 ## Components and responsibilities
@@ -62,8 +63,8 @@ A receipt identifies a retained verified result. Publish it unchanged from the
 intended Yukon board checkout using the same owner account. Source publication,
 verification and leaderboard publication can succeed or fail separately;
 `completed` alone does not establish a valid score or a published leaderboard
-entry. The [state model](submission-states.md) defines these distinctions and
-which recovery actions can incur new spending.
+entry. The [state model](submission-states.md) defines these distinctions. The
+[recovery guide](submission-recovery.md) identifies which actions can incur new spending.
 
 ## Authentication, access and privacy
 
@@ -79,7 +80,7 @@ of the source archive. New harness source is published after execution stops and
 publication screening passes. Historical private runs stay private. Owner
 diagnostics and sanitized logs are distinct from public source downloads; keep
 those downloads private. See [artifact sharing](artifact-sharing.md) and
-[diagnostics and recovery](submission-states.md#what-should-i-do-first).
+[diagnostics and recovery](submission-recovery.md#what-should-i-do-first).
 
 ## Repository and code boundaries
 

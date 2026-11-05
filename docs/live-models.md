@@ -65,7 +65,7 @@ Choose an eligible exact model and authorized budget. The local run must match
 this configuration and source. Retrieve an interrupted wait with
 `openrsi-space remote wait EVALUATION_ID`; do not submit another paid run just to
 retrieve its result. Publish the verified receipt using the
-[Yukon submission workflow](submission-states.md#publish-a-verified-receipt).
+[Yukon submission workflow](submission-recovery.md#publish-a-verified-receipt).
 
 ## Optional personal API-key support
 
