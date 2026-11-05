@@ -20,8 +20,8 @@ see [funded submission requirements](platform-funded-inference.md).
 Check the deployed service rather than assuming a client update changed it:
 
 ```sh
-uv run openrsi-space remote limits
-uv run openrsi-space remote limits ./my-harness
+openrsi-space remote limits
+openrsi-space remote limits ./my-harness
 ```
 
 The first command reads `GET /public/submission-policy` from the configured
@@ -94,7 +94,7 @@ Before submitting, inspect the hosted builder's current policy without uploading
 source or credentials:
 
 ```sh
-uv run openrsi-space remote build-policy
+openrsi-space remote build-policy
 ```
 
 The result lists the enabled profiles and allowed hosts, with a version and digest.

@@ -13,10 +13,10 @@ pin; they cannot issue an official receipt.
 ## Develop against a problem
 
 ```sh
-uv run openrsi-space problem list
-uv run openrsi-space problem clone ecdsa.fail ./work/ecdsa
-uv run openrsi-space problem setup ecdsa.fail --workspace ./work/ecdsa
-uv run openrsi-space problem check ecdsa.fail --workspace ./work/ecdsa
+openrsi-space problem list
+openrsi-space problem clone ecdsa.fail ./work/ecdsa
+openrsi-space problem setup ecdsa.fail --workspace ./work/ecdsa
+openrsi-space problem check ecdsa.fail --workspace ./work/ecdsa
 ```
 
 Keep only UTF-8 `.rs` files inside `src/point_add/`, including subdirectories;
@@ -30,14 +30,14 @@ intensive and is separate from the lightweight local contract tests.
 ## Package and smoke-test a harness
 
 ```sh
-uv run openrsi-space harness create my-solver --output .openrsi/my-solver
-uv run openrsi-space harness build .openrsi/my-solver
+openrsi-space harness create my-solver --output .openrsi/my-solver
+openrsi-space harness build .openrsi/my-solver
 ```
 
 The build prints its `id`. Use it to run the complete entrypoint:
 
 ```sh
-uv run openrsi-space harness smoke BUILD_ID \
+openrsi-space harness smoke BUILD_ID \
   --workspace ./work/ecdsa --problem ecdsa.fail
 ```
 

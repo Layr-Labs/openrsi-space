@@ -30,7 +30,7 @@ lifecycle; [architecture](architecture.md) explains component responsibilities.
 4. Match the observed symptom to the table. Do not delete pending-request files,
    invent a new request ID, or change source to bypass an uncertain outcome.
 
-Use the [current submission client](solver-guide.md#use-the-current-submission-client-with-a-pinned-yukon-board).
+Use the [current submission client](solver-guide.md#install-the-current-submission-cli).
 The examples assume it is installed as `openrsi-space`. In a Yukon-pinned checkout,
 `uv run` can select an older client instead. If you originally selected a state
 directory explicitly, retain it: `openrsi-space --state /path/to/state remote status EVALUATION_ID`.
@@ -65,6 +65,10 @@ execution, verification and publication report different outcomes. In particular
 confirmation that a score is on the Yukon board.
 
 ## Publish a verified receipt
+
+This step is optional. Accepted remote results appear automatically on the OpenRSI
+dashboard. Use Yukon publication only for an additional account-linked submission
+and repository record.
 
 1. Retrieve the complete service-issued `verification.json` after verification.
 2. Copy it unchanged to `submission/verification.json` in the intended Yukon
@@ -416,8 +420,9 @@ bytes, so review that archive before using it.
 
 ## Verification succeeded, but Yukon publication failed. Must I rerun research?
 
-No. Preserve the receipt. Publication recovery uses the retained verified result
-without another research run.
+No. An accepted remote result remains on the OpenRSI dashboard even if optional
+Yukon publication fails. Preserve the receipt if you want to recover that Yukon
+record; publication recovery uses the retained result without another research run.
 OpenRSI currently reports leaderboard delivery as `not_confirmed` or
 `receipt_delivered`; neither proves that Yukon's publication job succeeded.
 Check the Yukon submission/job separately. Source publication also does not prove
@@ -435,7 +440,7 @@ below describe a different layer from the server's receipt-delivery outcomes abo
 
 | Client state (`state` here; `publication.state` in `wait` output) | Next action and expected result |
 | --- | --- |
-| `not_requested` | Choose automatic publication on the existing ID using the [documented `wait --publish-to-yukon` command](automatic-publication.md#stopping-the-command-and-recovering), or use the manual receipt workflow. No research rerun is needed. |
+| `not_requested` | No action is needed for dashboard visibility. If you want a Yukon record, choose automatic publication on the existing ID using the [documented `wait --publish-to-yukon` command](automatic-publication.md#stopping-the-command-and-recovering), or use the manual receipt workflow. No research rerun is needed. |
 | `pending` | Run `remote wait EVALUATION_ID` to finish verification and continue previously authorized publication. |
 | `submitting` or `awaiting_yukon` | Run `remote publication EVALUATION_ID --retry` to recover the same submission or refresh its outcome. Keep the saved archive and idempotency key; this recovers the existing publication operation. |
 | `needs_authentication` | Restore the same owner's local Yukon login, then run `remote publication EVALUATION_ID --retry`. |

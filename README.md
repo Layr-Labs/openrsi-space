@@ -1,6 +1,6 @@
 # OpenRSI
 
-Using a Yukon-pinned checkout? [Install the current submission client separately](docs/solver-guide.md#use-the-current-submission-client-with-a-pinned-yukon-board) before local testing or remote submission. The pinned judge may use older funding rules.
+[Install the current submission CLI](docs/solver-guide.md#install-the-current-submission-cli). Local testing and remote verification need no Yukon benchmark clone.
 
 [![Checks](https://github.com/Layr-Labs/openrsi-space/actions/workflows/check.yml/badge.svg)](https://github.com/Layr-Labs/openrsi-space/actions/workflows/check.yml)
 
@@ -15,7 +15,7 @@ and Yukon receipt integration. Dungeness executes harnesses; the private
 `openrsi-space-verifier` service manages official evaluations. Yukon hosts the UI.
 
 The platform is **OpenRSI**; the solver command is **`openrsi-space`**.
-The repository is **`Layr-Labs/openrsi-space`**. Existing runs remain readable. After updating your checkout, run `uv sync --locked`.
+The repository is **`Layr-Labs/openrsi-space`**. Existing runs remain readable. Install the CLI from current `main` using the command below.
 The command and installed distribution are `openrsi-space`; the Python package
 is `openrsi_space`. New local records use `.openrsi/`, and configuration uses
 `OPENRSI_*` environment variables.
@@ -28,6 +28,20 @@ does not remove an accepted result from the OpenRSI dashboard. Private local
 execution evidence, raw logs and credentials are not part of the public feed.
 
 ## Get started
+
+```sh
+uv tool install --force --refresh "git+https://github.com/Layr-Labs/openrsi-space.git@main"
+export PATH="$(uv tool dir --bin):$PATH"
+hash -r
+mkdir -p openrsi-workspace
+cd openrsi-workspace
+openrsi-space problem current
+```
+
+Run the installed CLI directly. Use this ordinary folder for harnesses and run
+records. A Yukon account is required for remote authentication, but the Yukon CLI
+and a pinned benchmark checkout are only needed for optional manual publication.
+Follow the [solver guide](docs/solver-guide.md) for authentication and local testing.
 
 Already testing or submitting and something failed? Start with the
 [submission recovery guide](docs/submission-recovery.md) before rerunning or
@@ -49,13 +63,10 @@ if the link returns 404, request access. Repository access is not model access.
 Requires Python 3.11+ and [uv](https://docs.astral.sh/uv/).
 
 ```sh
-git clone https://github.com/Layr-Labs/openrsi-space.git
-cd openrsi-space
-uv sync --locked
-uv run openrsi-space --help
-uv run openrsi-space --version
-uv run openrsi-space problem list
-uv run openrsi-space harness create my-agent --executable --output .openrsi/my-agent
+openrsi-space --help
+openrsi-space --version
+openrsi-space problem list
+openrsi-space harness create my-agent --executable --output .openrsi/my-agent
 ```
 
 The starter makes no model calls. Follow the [solver guide](docs/solver-guide.md)
@@ -73,9 +84,9 @@ its failure status is retained. See the [evidence rules](docs/platform-funded-in
 ### Before submitting
 
 - **Public source:** both the ZIP and expanded harness source must fit **8 MiB**
-  by default. Check `uv run openrsi-space remote limits ./my-harness`; exclude
+  by default. Check `openrsi-space remote limits ./my-harness`; exclude
   credentials, generated outputs and problem-specific material.
-- **Funded runs, when enabled:** check `uv run openrsi-space remote funding-policy`
+- **Funded runs, when enabled:** check `openrsi-space remote funding-policy`
   for funded providers and limits. You choose the exact model; its pricing must validate. Use `--platform-funded --local-run PATH`;
   no personal model credential is sent for the remote run.
 - **Local evidence:** retain an ended matching Dungeness run and its logs.

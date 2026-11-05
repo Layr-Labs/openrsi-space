@@ -21,7 +21,7 @@ or run from a Yukon checkout that records it.
 ```bash
 openrsi-space remote submit ./my-harness \
   --platform-funded --budget 3 --local-run /path/to/local-run \
-  --publish-to-yukon --benchmark BENCHMARK_UUID \
+  --publish-to-yukon --benchmark BOARD_UUID \
   --note-file submission-note.md --no-dependencies
 ```
 
@@ -61,7 +61,7 @@ If you submitted without publication enabled, you can opt in later:
 
 ```bash
 openrsi-space remote wait EVALUATION_ID --publish-to-yukon \
-  --benchmark BENCHMARK_UUID --publication-title "My harness" \
+  --benchmark BOARD_UUID --publication-title "My harness" \
   --note-file submission-note.md --no-dependencies
 ```
 
