@@ -30,7 +30,7 @@ lifecycle; [architecture](architecture.md) explains component responsibilities.
 4. Match the observed symptom to the table. Do not delete pending-request files,
    invent a new request ID, or change source to bypass an uncertain outcome.
 
-Use the [current submission client](solver-guide.md#use-the-current-submission-client-with-a-pinned-yukon-board).
+Use the [current submission client](solver-guide.md#install-the-current-submission-cli).
 The examples assume it is installed as `openrsi-space`. In a Yukon-pinned checkout,
 `uv run` can select an older client instead. If you originally selected a state
 directory explicitly, retain it: `openrsi-space --state /path/to/state remote status EVALUATION_ID`.

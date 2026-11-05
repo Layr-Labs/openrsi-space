@@ -9,25 +9,29 @@ For support, start with the run/request ID, time and error code. Keep diagnostic
 and logs local; do not upload files or paste private content into support messages
 without the user's explicit permission.
 
-## Use the current submission client with a pinned Yukon board
+## Install the current submission CLI
 
-A Yukon clone pins its receipt-checking code. That pin can predate current local
-budget and evidence rules. Install the submission client separately before local
-testing or remote submission:
+Install Git and [uv](https://docs.astral.sh/uv/getting-started/installation/), then:
 
 ```bash
 uv tool install --force --refresh "git+https://github.com/Layr-Labs/openrsi-space.git@main"
-export PATH="$HOME/.local/bin:$PATH"
+export PATH="$(uv tool dir --bin):$PATH"
+hash -r
 openrsi-space --version
+mkdir -p openrsi-workspace
+cd openrsi-workspace
 ```
 
-Run `openrsi-space` directly from the benchmark working directory. Do not prefix
-it with `uv run` there: that can select the older board-pinned package again.
-The package version alone is not a revision check; the install output identifies
-the resolved Git commit. Keep `yukon setup`, `yukon run` and the benchmark judge
-pinned as required by Yukon. Do not reset the benchmark checkout to upgrade the
-submission client. Use the current client's `openrsi-space yukon-submit` helper
-from that checkout to publish the existing receipt.
+Run `openrsi-space` directly in this ordinary workspace. You do not need the
+Yukon CLI, `yukon clone`, `uv sync`, or `yukon setup` to test locally, submit for
+remote verification, or appear on the automatic dashboard. Keep your workspace
+and run records when reconnecting. The installation output identifies the Git
+commit; the package version alone does not identify a revision.
+
+If you already have a Yukon checkout, keep its receipt checker pinned and install
+the current client separately as above. Do not reset that checkout or use
+`uv run openrsi-space` for research commands: it selects the bundled older client.
+The pinned checkout is only for the optional manual Yukon publication workflow.
 
 The local record's **budget cap**, not its actual spend, must cover the remote
 request. A $2 cap and $1.73 spent qualifies for a $2 remote request; a $1 cap does
@@ -243,14 +247,15 @@ not just the main inference loop. Provider/model flags do not translate API
 formats. Include strict mock checks and any untested live boundary in the
 readiness report; all inference must use assigned gateway endpoints.
 
-1. Read `benchmark.json`, `docs/solver-guide.md`,
+1. Read the current repository guides `docs/solver-guide.md`,
    `docs/generic-harnesses.md`, and the chosen framework's documentation.
    If available, read the installed `yukon-cli` skill for current command and
-   note requirements. OpenRSI's receipt helper is an additional required step.
+   note requirements if the user opts into Yukon publication.
 2. Use the current evaluator and Yukon environment in the solver guide.
    Reuse the solver's Yukon login. Do not print, log, package or publish keys.
-3. If needed, clone with `yukon clone bxue-l2/openrsi-space` and enter the printed
-   benchmark directory. Run `uv sync --frozen` and `yukon setup`.
+3. Work in an ordinary folder with the installed current `openrsi-space` CLI.
+   No benchmark clone or Yukon setup is required. Keep run records in this folder.
+   Use the optional publication section of the solver guide only if requested.
 4. Create a starter with `openrsi-space harness create my-agent --title "YOUR CHOSEN NAME" --output .openrsi/my-harness`,
    or adapt the requested framework without forcing it into Codex. Source can
    use a Dockerfile plus `--entrypoint`, or the existing `harness.json`
@@ -343,10 +348,9 @@ For platform funding, first check availability and model eligibility with
 Accepted remote results appear automatically on the OpenRSI dashboard. Use
 `--wait` to follow verification, or resume with `remote wait EVALUATION_ID`.
 For an optional Yukon submission and repository record, add
-`--publish-to-yukon --note-file submission-note.md --no-dependencies`; use
+`--publish-to-yukon --benchmark BOARD_UUID --note-file submission-note.md --no-dependencies`; use
 `--dependencies-file` when declaring reused submissions. This publication runs
-in the CLI and is not required for dashboard visibility. Supply
-`--benchmark BENCHMARK_UUID` outside a Yukon checkout. See
+in the CLI and is not required for dashboard visibility. Use the target board UUID for `BOARD_UUID`. See
 [optional Yukon publication](automatic-publication.md).
 
 
@@ -405,13 +409,20 @@ progress, and do not call a live score an accepted or final result.
 ## Verify and optionally publish to Yukon
 
 This adds a Yukon submission and repository record; dashboard visibility does not require it.
-After a valid result, use the exact receipt path printed by OpenRSI:
+After a valid result, keep the exact receipt path printed by OpenRSI. For optional
+publication from the same workspace, prepare the note described below and use:
 
 ```sh
-mkdir -p submission
-cp PRINTED_RECEIPT_PATH submission/verification.json
-yukon run
+openrsi-space remote wait EVALUATION_ID --publish-to-yukon \
+  --benchmark BOARD_UUID --publication-title "ACTUAL HARNESS" \
+  --note-file submission-note.md --no-dependencies
+openrsi-space remote publication EVALUATION_ID
 ```
+
+Use the target board's benchmark UUID, not its repository name. This command needs
+no Yukon clone. For a separate manual publication, follow the solver guide's
+[pinned publication checkout](solver-guide.md#6-optionally-publish-to-yukon)
+steps before calling `yukon run` or `openrsi-space yukon-submit`.
 
 Do not edit the receipt, replace its source hash or transplant another solver's
 evaluation. Local source edits after evaluation require a fresh run to be scored.

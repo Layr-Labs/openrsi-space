@@ -17,9 +17,9 @@ Neither local scores nor successful tests guarantee a receipt.
 ## Check a candidate circuit
 
 ```sh
-uv run openrsi-space problem clone ecdsa.fail .openrsi/ecdsa-workspace
-uv run openrsi-space problem setup ecdsa.fail --workspace .openrsi/ecdsa-workspace
-uv run openrsi-space problem check ecdsa.fail --workspace .openrsi/ecdsa-workspace
+openrsi-space problem clone ecdsa.fail .openrsi/ecdsa-workspace
+openrsi-space problem setup ecdsa.fail --workspace .openrsi/ecdsa-workspace
+openrsi-space problem check ecdsa.fail --workspace .openrsi/ecdsa-workspace
 ```
 
 The clone is pinned. Edit only the allowed candidate paths. These commands use
@@ -35,9 +35,9 @@ the actual default starting workspace, including a candidate using
 ## Check harness packaging and its entrypoint
 
 ```sh
-uv run openrsi-space harness create my-agent --executable --output .openrsi/my-agent
-uv run openrsi-space harness build .openrsi/my-agent
-uv run openrsi-space harness smoke BUILD_ID --workspace .openrsi/ecdsa-workspace --problem ecdsa.fail
+openrsi-space harness create my-agent --executable --output .openrsi/my-agent
+openrsi-space harness build .openrsi/my-agent
+openrsi-space harness smoke BUILD_ID --workspace .openrsi/ecdsa-workspace --problem ecdsa.fail
 ```
 
 Replace `BUILD_ID` with the build command's returned `id`. The smoke test runs
@@ -57,11 +57,11 @@ git clone https://github.com/Layr-Labs/dungeness.git /absolute/path/to/dungeness
 For a known-compatible pin and instructions for an older runtime, see
 [deployment compatibility](deployment-compatibility.md#local-runtime-compatibility).
 
-From your OpenRSI checkout, discover the current problem release and prepare:
+From your workspace with the installed current CLI, discover the current problem release and prepare:
 
 ```sh
-uv run openrsi-space problem current
-uv run openrsi-space local run .openrsi/my-agent \
+openrsi-space problem current
+openrsi-space local run .openrsi/my-agent \
   --dungeness /absolute/path/to/dungeness \
   --problem-release TAG --provider PROVIDER --model MODEL_ID \
   --budget LOCAL_CAP --max-seconds LOCAL_SECONDS --prepare-only
@@ -103,7 +103,7 @@ budget and token/time settings can come from it instead of command-line override
 For example, after authorizing API-key model use:
 
 ```sh
-uv run openrsi-space local run .openrsi/my-agent \
+openrsi-space local run .openrsi/my-agent \
   --dungeness /absolute/path/to/dungeness --provider openai --model gpt-5.6-sol \
   --budget 1 --provider-token-env OPENAI_API_KEY
 ```
@@ -177,7 +177,7 @@ If the records are elsewhere, supply the local run directory, its `run.json`, or
 Dungeness's `record.json` with adjacent `usage/events.jsonl`:
 
 ```sh
-uv run openrsi-space remote submit ./my-harness --local-run /path/to/local-run
+openrsi-space remote submit ./my-harness --local-run /path/to/local-run
 ```
 
 A directly launched Dungeness run must retain the OpenRSI harness-source and

@@ -55,7 +55,7 @@ Subscription usage counts in normalized USD equivalent, not as cash charges.
 ## Submit source and obtain the receipt
 
 ```sh
-uv run openrsi-space remote submit /path/to/harness \
+openrsi-space remote submit /path/to/harness \
   --platform-funded --local-run /path/to/completed-local-run \
   --provider openrouter --model openai/gpt-6-astra \
   --reasoning-effort high --budget 3 --wait
@@ -201,7 +201,7 @@ Use an authorized local Grok login with a Dungeness runtime that advertises
 
 ```sh
 grok login --device-auth
-uv run openrsi-space local run /absolute/path/to/harness \
+openrsi-space local run /absolute/path/to/harness \
   --dungeness /absolute/path/to/dungeness \
   --provider grok-subscription --model grok-4.7 --reasoning-effort high \
   --budget 3 --no-token-limit --grok-auth-file \
@@ -242,7 +242,7 @@ Supply it privately through a local environment variable or a 0600 credential
 map outside the harness. Never put the key in source or command arguments.
 
 ```sh
-uv run openrsi-space local run /absolute/path/to/harness \
+openrsi-space local run /absolute/path/to/harness \
   --dungeness /absolute/path/to/dungeness \
   --provider minimax-subscription --model MiniMax-M3.1-Flash \
   --budget 3 --provider-token-env MINIMAX_PLAN_KEY \

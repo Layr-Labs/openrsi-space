@@ -46,8 +46,10 @@ provider-reported charges; leaderboard credits can differ from actual charges.
 Repository access is separate from both Yukon authentication and model access.
 The current repository is `https://github.com/Layr-Labs/openrsi-space` and is
 internal; a GitHub 404 may require signing in with organization access. Request
-access rather than substituting another repository. `yukon clone bxue-l2/openrsi-space`
-selects the current Yukon dev board; its registry owner differs from the GitHub organization.
+access rather than substituting another repository. Install the current submission
+CLI from main using the [solver guide](solver-guide.md#install-the-current-submission-cli),
+and work in an ordinary folder. `yukon clone` is only needed for optional manual
+publication; it does not select the client for local or remote research runs.
 
 When enabled by the operator, OpenRSI supplies its own API access for remote
 runs. You supply no personal model credential. Yukon authentication still

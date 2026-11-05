@@ -30,7 +30,7 @@ Provide a Dockerfile and launch command; no OpenRSI-specific manifest or
 model ID, matching the client implemented by your harness:
 
 ```sh
-uv run openrsi-space remote submit /path/to/your-agent \
+openrsi-space remote submit /path/to/your-agent \
   --entrypoint "python3 /app/main.py" \
   --provider PROVIDER --model MODEL_ID --budget 3 \
   --platform-funded --local-run /path/to/completed-local-run --wait
@@ -48,7 +48,7 @@ do not combine it with `--entrypoint`.
 An optional editable starter is also available:
 
 ```sh
-uv run openrsi-space harness create my-agent --output .openrsi/my-agent
+openrsi-space harness create my-agent --output .openrsi/my-agent
 ```
 
 Replace `.openrsi/my-agent/agent.py` and install generic dependencies in its
@@ -72,7 +72,7 @@ rejected with migration instructions. Historical artifacts remain readable.
 Submit the same source with a model choice and spending cap:
 
 ```sh
-uv run openrsi-space remote submit .openrsi/my-agent \
+openrsi-space remote submit .openrsi/my-agent \
   --provider PROVIDER --model MODEL_ID --budget 3 \
   --platform-funded --local-run /path/to/completed-local-run --wait
 ```
@@ -369,5 +369,5 @@ still enables an explicit ceiling. Token usage is recorded in all cases.
 An operator who explicitly requires a finite token ceiling can reject uncapped
 requests; the hosted OpenRSI service does not impose one by default.
 
-Build dependencies: run `uv run openrsi-space remote build-policy` before choosing hosted
+Build dependencies: run `openrsi-space remote build-policy` before choosing hosted
 package sources; see [build dependency policy](source-limits.md#dependency-downloads-during-builds).
