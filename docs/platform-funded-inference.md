@@ -6,7 +6,8 @@
 | --- | --- | --- |
 | Local development | Your existing Codex/ChatGPT or Claude subscription, or a supported API provider; your account supplies the usage | Your authorized local login/key |
 | Funded remote evaluation | Eigen Labs pays for OpenRouter calls | Yukon key; no personal model key uploaded |
-| Publish a verified result | No new inference | Yukon key and service-issued receipt |
+| Automatic dashboard result | No new inference; accepted remote results appear automatically | No additional action |
+| Optional Yukon publication | No new inference | Yukon key and service-issued receipt |
 
 **Does a subscription local run qualify for funded OpenRouter evaluation? Yes,
 for supported equivalent models.** For example, local `openai-chatgpt/gpt-6-astra`

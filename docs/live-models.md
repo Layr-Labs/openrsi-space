@@ -64,7 +64,8 @@ uv run openrsi-space remote submit /path/to/harness \
 Choose an eligible exact model and authorized budget. The local run must match
 this configuration and source. Retrieve an interrupted wait with
 `openrsi-space remote wait EVALUATION_ID`; do not submit another paid run just to
-retrieve its result. Publish the verified receipt using the
+retrieve its result. Accepted remote results appear automatically on the OpenRSI
+dashboard. To add an optional Yukon account and repository record, use the
 [Yukon submission workflow](submission-recovery.md#publish-a-verified-receipt).
 
 ## Optional personal API-key support

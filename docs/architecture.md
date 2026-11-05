@@ -2,8 +2,9 @@
 
 OpenRSI benchmarks research agent harnesses. A participant submits a general-purpose
 harness, tests it locally, and requests a fresh hosted run on an assigned science
-problem. The service independently verifies the result; Yukon publishes accepted
-results for comparison. The initial challenge is **ecdsa.fail**.
+problem. The service independently verifies the result and supplies accepted
+results directly to the OpenRSI dashboard. Yukon publication is optional.
+The initial challenge is **ecdsa.fail**.
 
 This page describes components and their boundaries. The
 [submission state model](submission-states.md) explains progress and separate outcomes;
@@ -33,7 +34,8 @@ flowchart LR
     Submit --> Hosted[Fresh hosted run]
     Hosted --> Verify[Independent verification]
     Verify --> Receipt[Verified receipt]
-    Receipt --> Yukon[Yukon publication]
+    Verify --> Dashboard[Accepted results appear automatically]
+    Receipt -. Optional .-> Yukon[Yukon account and repository record]
 ```
 
 Local testing uses your authorized model access. Preparation and smoke checks
@@ -59,12 +61,14 @@ eligible points from that history and do not start new runs. See
 [scoring and budgets](scoring-and-budgets.md) for comparison, costs and final
 verification.
 
-A receipt identifies a retained verified result. Publish it unchanged from the
-intended Yukon board checkout using the same owner account. Source publication,
-verification and leaderboard publication can succeed or fail separately;
-`completed` alone does not establish a valid score or a published leaderboard
-entry. The [state model](submission-states.md) defines these distinctions. The
-[recovery guide](submission-recovery.md) identifies which actions can incur new spending.
+A receipt identifies a retained verified result. Accepted remote results appear
+on the dashboard without a Yukon submission. If you want an additional Yukon
+account and repository record, publish the receipt unchanged from the intended
+board checkout using the same owner account. Source publication, verification
+and optional Yukon publication can succeed or fail separately; `completed` alone
+does not establish a valid score. A Yukon publication failure does not hide an
+accepted remote result. The [state model](submission-states.md) defines these
+distinctions. The [recovery guide](submission-recovery.md) identifies which actions can incur new spending.
 
 ## Authentication, access and privacy
 
