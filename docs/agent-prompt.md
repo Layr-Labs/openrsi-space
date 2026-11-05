@@ -1,6 +1,6 @@
 # OpenRSI: instructions for a coding agent
 
-When a submission or run fails, use the [recovery and troubleshooting FAQ](submission-states.md)
+When a submission or run fails, use the [recovery and troubleshooting guide](submission-recovery.md)
 before changing source or spending again. Preserve the request/evaluation IDs,
 original local evidence, receipt and state directory. Reconnecting to an existing
 run or retrying publication is different from restarting research; remote

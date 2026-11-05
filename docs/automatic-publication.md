@@ -109,7 +109,7 @@ CLI login retains credentials according to its existing behavior.
 
 The locally saved intent is a recovery record, not cryptographic protection against
 a compromised computer or CLI. Do not share it or your login files. See the
-[submission states and recovery](submission-states.md) for safe support details and the
+[submission recovery guide](submission-recovery.md#how-do-i-ask-for-help-without-sharing-private-data) for safe support details and the
 [manual publication workflow](remote-evaluation.md#receipts-and-yukon) if you prefer
 to publish separately. Local evidence requirements, research budgets and scoring
 are unchanged.

@@ -60,9 +60,10 @@ supply model access or create a paid run.
 
 ## Submit once and resume retrieval
 
-See the [submission state model and recovery guide](submission-states.md) for
-state meanings, identifiers and symptom-based recovery. Evaluation completion is
-separate from Yukon publication; resuming retrieval does not restart research.
+See the [submission state model](submission-states.md) for state meanings and
+identifiers, and the [recovery guide](submission-recovery.md) for diagnostic commands
+and retries. Evaluation completion is separate from Yukon publication; resuming
+retrieval does not restart research.
 
 `POST /evaluations` accepts the versioned request constructed by
 [`remote.py`](../src/openrsi_space/remote.py):
@@ -207,7 +208,7 @@ workflow-only retrieval endpoint. Keep receipts unchanged and publish from the
 account and benchmark associated with the evaluation. Modified or mismatched
 receipts are rejected; publication never trusts a score supplied in a note.
 
-See [Yukon publication](submission-states.md#publish-a-verified-receipt) for the workflow and recovery rules.
+See [Yukon publication](submission-recovery.md#publish-a-verified-receipt) for the workflow and recovery rules.
 
 ## Scores, curves and artifacts
 
@@ -248,10 +249,12 @@ The saved request, source and settings are preserved. This report contains no
 source archive, authorization header, model credential or raw response body.
 A malformed/non-JSON edge error can still retain `edge_id` from the response header.
 
-For support, provide that report and the time of the attempt. The operator can
-look up durable admission records without an evaluation ID. A rejection before
-job creation does not have a run to fetch. Diagnose a 400 before retrying; do not
-change the request ID to try to bypass it. Updating the CLI does not recover an
+For support, provide the identifiers, time and error fields in the
+[private support template](submission-recovery.md#how-do-i-ask-for-help-without-sharing-private-data),
+not the complete report. The operator can look up durable admission records
+without an evaluation ID. A rejection before job creation does not have a run
+to fetch. Diagnose a 400 before retrying; do not change the request ID to try to
+bypass it. Updating the CLI does not recover an
 error body discarded by an older version and does not submit anything by itself.
 
 ### Diagnose an existing run

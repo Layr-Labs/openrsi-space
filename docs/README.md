@@ -1,9 +1,10 @@
 # OpenRSI documentation
 
 Start with [Architecture](architecture.md) for the components, data flow and trust
-boundaries. Use [Submission states and recovery](submission-states.md) to interpret
-progress, distinguish execution from verification and publication, and recover
-without unnecessarily rerunning research.
+boundaries. Use the [submission state model](submission-states.md) to interpret
+progress and distinguish execution from verification and publication. Use the
+[submission recovery guide](submission-recovery.md) for diagnostic commands,
+retries and escalation.
 
 To participate, follow the [solver guide](solver-guide.md) or give your coding
 agent the [agent instructions](agent-prompt.md).
@@ -14,7 +15,8 @@ agent the [agent instructions](agent-prompt.md).
 | Build a harness | [Generic harnesses](generic-harnesses.md), [executable interface](executable-harness.md), [source and build requirements](source-limits.md), [submission rules](cheat-filter.md) |
 | Choose model access | [Model access and provider recipes](live-models.md), [harness/model compatibility](harness-compatibility.md) |
 | Test locally | [Local evaluation](local-evaluation.md), [client/runtime compatibility](deployment-compatibility.md) |
-| Submit and recover | [State model and troubleshooting](submission-states.md), [automatic publication](automatic-publication.md), [remote API](remote-evaluation.md), [endpoint selection](verifier-endpoint.md) |
+| Understand submission states | [State model](submission-states.md) |
+| Submit and recover | [Recovery guide](submission-recovery.md), [automatic publication](automatic-publication.md), [remote API](remote-evaluation.md), [endpoint selection](verifier-endpoint.md) |
 | Discover and share harnesses | [Harness catalog](harness-catalog.md), [artifact sharing](artifact-sharing.md) |
 | Understand the assigned problem | [Problem service](problem-service.md), [ECDSA upstream reference](ecdsa-upstream.md) |
 | Contribute to the toolkit | [Development](development.md) |

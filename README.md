@@ -23,7 +23,7 @@ is `openrsi_space`. New local records use `.openrsi/`, and configuration uses
 ## Get started
 
 Already testing or submitting and something failed? Start with the
-[submission states and recovery guide](docs/submission-states.md) before rerunning or
+[submission recovery guide](docs/submission-recovery.md) before rerunning or
 changing your harness. It explains IDs, reconnecting, reusable evidence, and
 publication retries.
 
@@ -104,5 +104,6 @@ for optional integration tests.
 - [Changelog](CHANGELOG.md): recent client changes and compatibility guidance.
 - [Agent instructions](docs/agent-prompt.md): workflow for a solver's coding agent.
 - [Architecture](docs/architecture.md): components, data flow and trust boundaries.
-- [Submission states and recovery](docs/submission-states.md): outcomes, retries and diagnostics.
+- [Submission state model](docs/submission-states.md): lifecycle, outcomes and identifiers.
+- [Submission recovery](docs/submission-recovery.md): diagnostics, retries and escalation.
 - [Scoring and budgets](docs/scoring-and-budgets.md): leaderboard comparison and spending.

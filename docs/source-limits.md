@@ -2,7 +2,7 @@
 
 Use this reference to prepare a source package and reproducible build.
 The [submission rules](cheat-filter.md) define permitted content;
-[submission states](submission-states.md) explain failures and recovery.
+[submission recovery guide](submission-recovery.md) explains failures and recovery.
 
 ## Source package limits
 
