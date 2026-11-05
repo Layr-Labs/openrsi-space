@@ -1,5 +1,12 @@
 # Automatic Yukon publication from the CLI
 
+Accepted remote results appear automatically on the OpenRSI dashboard. Remote
+run status is public; only accepted, verified results receive ranked scores.
+Yukon publication is optional: it adds an account-linked submission and repository
+record without another research run. Stopping the CLI or revoking your Yukon key
+does not remove an accepted result from the OpenRSI dashboard. Private local
+execution evidence, raw logs and credentials are not part of the public feed.
+
 Opt in once to verify and publish with one command. The CLI submits the harness,
 waits for remote verification, then sends its verified receipt to Yukon using your
 existing local Yukon login. Publication runs on your computer, not in a server

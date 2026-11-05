@@ -1,5 +1,12 @@
 # Submission state model
 
+Accepted remote results appear automatically on the OpenRSI dashboard. Remote
+run status is public; only accepted, verified results receive ranked scores.
+Yukon publication is optional: it adds an account-linked submission and repository
+record without another research run. Stopping the CLI or revoking your Yukon key
+does not remove an accepted result from the OpenRSI dashboard. Private local
+execution evidence, raw logs and credentials are not part of the public feed.
+
 This reference defines the evaluation lifecycle, separate outcomes and operation
 identities. For diagnostic commands, retries and escalation, use the
 [submission recovery guide](submission-recovery.md). For component responsibilities,
@@ -8,7 +15,8 @@ see [architecture](architecture.md).
 The solver's overall journey is:
 
 ```text
-local test → submission/admission → remote evaluation → verified receipt → Yukon publication
+local test → submission/admission → remote evaluation → verified result → automatic dashboard visibility
+                                             └→ optional Yukon publication
 ```
 
 Local evidence establishes readiness for admission; it is not an official score.
@@ -61,7 +69,7 @@ verification and publication outcomes answer separate questions:
 | Execution | `outcomes.execution` | `not_started`, `running`, `completed`, `failed`, `cancelled` | What happened to the harness execution. A retained circuit can sometimes verify even after the harness failed. |
 | Verification | `outcomes.verification` | `not_started`, `running`, `passed`, `rejected`, `failed`, `cancelled` | Whether the result was checked and valid. An invalid candidate and a failure of the checking process are different outcomes. |
 | Source publication | `outcomes.publication.source` | `pending`, `published`, `blocked`, `retryable_failure` | Availability of the evaluated harness source under the source-publication policy. |
-| Server receipt delivery | `outcomes.publication.leaderboard` | `not_confirmed`, `receipt_delivered` | What the verifier knows about delivery toward the leaderboard. Neither outcome confirms Yukon acceptance. |
+| Server receipt delivery | `outcomes.publication.leaderboard` | `not_confirmed`, `receipt_delivered` | What the verifier knows about delivery toward the leaderboard. Neither outcome confirms optional Yukon acceptance; neither controls automatic dashboard visibility. |
 
 The owner status response nests this report under `diagnostics`, so the equivalent
 verification field there is `diagnostics.outcomes.verification`. The standalone

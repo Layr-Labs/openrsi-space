@@ -314,14 +314,14 @@ For this 3-credit example, the local record needs a **budget cap of at least
 The CLI uploads its private evidence separately from source; it reads and sends no
 personal model credential for the remote run.
 
-For verification followed by publication, we recommend adding
-`--publish-to-yukon --note-file submission-note.md --no-dependencies` to the
-submission command below. This explicitly authorizes publication and keeps the
-CLI waiting through verification and Yukon publication. Use `--dependencies-file`
-instead when reusing submissions; the harness title defaults to `harness.json`.
-Supply `--benchmark BENCHMARK_UUID` if outside a Yukon checkout. Plain `remote
-submit` returns immediately unless `--wait` is supplied. An accepted request is
-not yet a verified or published result. See [automatic publication](automatic-publication.md).
+Accepted remote results appear automatically on the OpenRSI dashboard. Use
+`--wait` to follow verification, or resume with `remote wait EVALUATION_ID`.
+For an optional Yukon submission and repository record, add
+`--publish-to-yukon --note-file submission-note.md --no-dependencies`; use
+`--dependencies-file` when declaring reused submissions. This publication runs
+in the CLI and is not required for dashboard visibility. Supply
+`--benchmark BENCHMARK_UUID` outside a Yukon checkout. See
+[optional Yukon publication](automatic-publication.md).
 
 ```sh
 openrsi-space remote submit .openrsi/my-harness \
@@ -392,6 +392,10 @@ does not change what this receipt refers to.
 harness again. A local claimed score cannot substitute for a verified receipt.
 
 ## 6. Publish to Yukon
+
+This step is optional. Accepted remote results already appear on the OpenRSI dashboard.
+Continue only if you want an additional Yukon submission and repository record.
+
 
 Write `submission-note.md` before submitting. Yukon requires a public note
 of 5–100 KiB. Explain the harness, knowledge/dependencies, exact model and effort,
