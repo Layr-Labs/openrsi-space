@@ -189,11 +189,14 @@ class LocalCheckTests(unittest.TestCase):
         doc = json.loads(metadata.read_text()); doc.update(status='failed', exit_code=1)
         write_json(metadata, doc)
         check = self.check(local_run=metadata)
-        def upload(*args, document, **kwargs):
+        def upload(*args, document=None, **kwargs):
+            if document is None:
+                from openrsi_space.client.transport import HTTPFailure
+                raise HTTPFailure(404)
             self.assertEqual(document['status'], 'failed')
             return json.dumps({'protocol':document['protocol'], 'digest':digest(document),'private':True})
         with patch('openrsi_space.client.transport.solver_fetch', side_effect=upload):
-            attach(Mock(), self.body, check)
+            attach(Mock(state=self.state, base='https://example.invalid', bearer='synthetic'), self.body, check)
 
     def test_partial_duplicate_missing_or_mismatched_exchanges_block_before_upload(self):
         self.record['data']['status'] = 'failed'

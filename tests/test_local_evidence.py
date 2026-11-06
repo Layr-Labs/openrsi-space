@@ -34,6 +34,40 @@ class EvidenceExportTests(LocalCheckTests):
         self.assertNotIn('private-token',json.dumps(saved))
         self.assertFalse((self.state/'remote/pending').exists())
 
+    def test_retry_with_explicit_local_run_reuses_original_binding(self):
+        from types import SimpleNamespace
+        from openrsi_space.client.local_evidence import attach
+        client = SimpleNamespace(state=self.state, base='https://example.invalid', bearer='synthetic')
+        with patch('openrsi_space.client.local_check.pending_request', return_value={'local_evidence': 'a'*64}), \
+                patch('openrsi_space.client.local_evidence.bundle') as bundle_mock, \
+                patch('openrsi_space.client.transport.solver_fetch') as network:
+            attach(client, self.body, {'record_path': str(self.path)})
+        self.assertEqual(self.body['local_evidence'], 'a'*64)
+        bundle_mock.assert_not_called()
+        network.assert_not_called()
+
+    def test_lookup_reuses_uploaded_bundle_after_lost_response_or_changed_budget(self):
+        from types import SimpleNamespace
+        from openrsi_space.client.local_evidence import attach
+        from openrsi_space.contracts.results import digest
+        from openrsi_space.client.transport import HTTPFailure
+        client = SimpleNamespace(state=self.state, base='https://example.invalid', bearer='synthetic')
+        doc = {'synthetic': True}
+        binding = {'protocol': 'catalyst-local-evidence-v1', 'digest': digest(doc), 'private': True}
+        for exists in (True, False):
+            calls = []
+            def fetch(base, route, bearer, **kwargs):
+                calls.append((route, kwargs))
+                if route.endswith('/'+digest(doc)) and not exists:
+                    raise HTTPFailure(404)
+                return json.dumps(binding).encode()
+            with patch('openrsi_space.client.local_evidence.bundle', return_value=doc), \
+                    patch('openrsi_space.client.transport.solver_fetch', side_effect=fetch):
+                attach(client, self.body, {'record_path': str(self.path)})
+            self.assertEqual(len(calls), 1 if exists else 2)
+            self.assertEqual(calls[0][1], {})
+            self.assertEqual(self.body['local_evidence'], digest(doc))
+
     def test_old_skipped_decision_cannot_omit_evidence_upload(self):
         from openrsi_space.client.local_evidence import attach
         from unittest.mock import Mock

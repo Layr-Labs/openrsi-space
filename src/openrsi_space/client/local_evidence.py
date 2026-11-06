@@ -56,6 +56,12 @@ def bundle(path, body):
 def attach(client, body, local_check):
     if not local_check:
         raise OpenRSIError('Platform funding requires a local readiness record. Use --local-run PATH; no remote run was submitted.')
+    from .local_check import pending_request
+    saved = pending_request(client.state, body, client.base) if local_check.get('record_path') else None
+    if saved is not None and saved.get('local_evidence'):
+        # Explicit --local-run on a retry must not upload the same evidence again.
+        body['local_evidence'] = saved['local_evidence']
+        return
     if local_check.get('local_evidence'):
         # Resume the same operation with the same immutable uploaded evidence.
         body['local_evidence'] = local_check['local_evidence']
@@ -65,10 +71,18 @@ def attach(client, body, local_check):
     from . import transport
     print('Preparing local-run evidence; no remote inference has started.',file=sys.stderr,flush=True)
     document = bundle(local_check.get('local_run_path') or local_check['record_path'], body)
-    print(f'Uploading local-run evidence ({len(canonical(document))/1048576:.1f} MiB)...',
-          file=sys.stderr,flush=True)
+    expected = digest(document)
+    reused = False
     try:
-        reply = json.loads(transport.solver_fetch(client.base, '/local-evidence', client.bearer, document=document))
+        try:
+            reply = json.loads(transport.solver_fetch(client.base, '/local-evidence/' + expected, client.bearer))
+            reused = True
+        except transport.HTTPFailure as error:
+            if error.status != 404:
+                raise
+            print(f'Uploading local-run evidence ({len(canonical(document))/1048576:.1f} MiB)...',
+                  file=sys.stderr, flush=True)
+            reply = json.loads(transport.solver_fetch(client.base, '/local-evidence', client.bearer, document=document))
     except transport.HTTPFailure as error:
         from .state import private_json
         from openrsi_space.common import now
@@ -81,8 +95,8 @@ def attach(client, body, local_check):
         except OSError:
             error.diagnostic_write_failed = True
         raise
-    expected = digest(document)
     if reply != {'protocol':EVIDENCE_PROTOCOL,'digest':expected,'private':True}:
         raise OpenRSIError('Local evidence upload returned an invalid binding.')
     body['local_evidence'] = expected
-    print('Local-run evidence uploaded; submission screening has not started yet.',file=sys.stderr,flush=True)
+    print(('Reusing retained local-run evidence' if reused else 'Local-run evidence uploaded') +
+          '; submission screening has not started yet.', file=sys.stderr, flush=True)
