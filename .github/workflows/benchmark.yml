@@ -17,7 +17,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     env:
-      OPENRSI_EVALUATOR_URL: https://3.21.93.126
+      OPENRSI_EVALUATOR_URL: https://verify.openrsi.space
       OPENRSI_RECEIPT_AUTH_WAIT_SECONDS: "60"
     steps:
       - name: Checkout dispatched source
