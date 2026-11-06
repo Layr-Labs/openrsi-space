@@ -76,7 +76,7 @@ def build_parser():
     local_sub = local.add_subparsers(dest="operation", required=True)
     local_run = local_sub.add_parser("run", help="Build, prepare, and run a harness with metered local model access.")
     local_run.add_argument("package", help="Harness source directory.")
-    local_run.add_argument("--dungeness", required=True, help="Clean checkout of the public Dungeness runtime.")
+    local_run.add_argument("--dungeness", help="Override the managed, pinned runtime with a clean Dungeness checkout.")
     local_run.add_argument("--problem", default="ecdsa.fail")
     local_run.add_argument("--problem-release", choices=list(PROBLEM_RELEASES),
                            help="Pinned problem release: v1 has eight licensed papers bundled for offline preparation.")

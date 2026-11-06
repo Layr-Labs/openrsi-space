@@ -48,29 +48,24 @@ for null model fields, absent problem-service fields, workspace permissions and 
 
 ## Full local agent run with Dungeness
 
-Install Git, Docker (running), and uv. Clone a clean copy of the public runtime:
-
-```sh
-git clone https://github.com/Layr-Labs/dungeness.git /absolute/path/to/dungeness
-```
-
-For a known-compatible pin and instructions for an older runtime, see
-[deployment compatibility](deployment-compatibility.md#local-runtime-compatibility).
+Install Git, Docker (running), and uv. The current CLI automatically downloads
+its tested Dungeness revision on first use and reuses it for later runs.
+No manual runtime checkout is needed. For developer overrides and cache details,
+see [deployment compatibility](deployment-compatibility.md#local-runtime-compatibility).
 
 From your workspace with the installed current CLI, discover the current problem release and prepare:
 
 ```sh
 openrsi-space problem current
 openrsi-space local run .openrsi/my-agent \
-  --dungeness /absolute/path/to/dungeness \
   --problem-release TAG --provider PROVIDER --model MODEL_ID \
   --budget LOCAL_CAP --max-seconds LOCAL_SECONDS --prepare-only
 ```
 
-Replace the path and uppercase placeholders. Use the release returned by
-`problem current`; update OpenRSI if that release is not installed. The runtime
-checkout must be clean. These commands build and prepare without reading model
-credentials or executing the research loop.
+Replace the uppercase placeholders. Use the release returned by
+`problem current`; update OpenRSI if that release is not installed. An optional
+`--dungeness PATH` override must point to a clean checkout. These commands build
+and prepare without reading model credentials or executing the research loop.
 
 For a real integration test, agree on a provider/model, time limit and total local
 budget across all attempts. Remove `--prepare-only` and add the matching credential
@@ -86,7 +81,7 @@ is required, and local execution does not submit to OpenRSI's hosted API.
 The separate `problem current` discovery command reads the official API.
 
 OpenRSI builds your harness, snapshots the current public problem package, prepares
-a private copy of the chosen Dungeness revision, and starts the agent, model gateway,
+an independent copy of the selected Dungeness revision, and starts the agent, model gateway,
 problem service and evaluator. **You do not need to start a server or expose a port.**
 The problem service is a local container on an internal Docker network. The launcher
 loads its statement into `OPENRSI_TASK` before your agent starts.
@@ -104,7 +99,7 @@ For example, after authorizing API-key model use:
 
 ```sh
 openrsi-space local run .openrsi/my-agent \
-  --dungeness /absolute/path/to/dungeness --provider openai --model gpt-5.6-sol \
+  --provider openai --model gpt-5.6-sol \
   --budget 1 --provider-token-env OPENAI_API_KEY
 ```
 

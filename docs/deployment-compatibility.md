@@ -18,28 +18,34 @@ receipt checker pinned; do not reset the benchmark checkout to upgrade the clien
 
 ## Local runtime compatibility
 
-Local testing requires a compatible public Dungeness checkout. It must advertise
-the capabilities required by the client, including provider discovery. Check:
+The CLI manages a tested Dungeness revision for all supported problems. The
+single authoritative pin is `REVISION` in
+[`managed_runtime.py`](../src/openrsi_space/integrations/dungeness/managed_runtime.py).
+`openrsi-space local run` downloads that exact revision on first use into
+`$XDG_CACHE_HOME/openrsi-space/runtimes/dungeness/COMMIT` (default:
+`~/.cache/openrsi-space/runtimes/dungeness/COMMIT`). Subsequent runs reuse it,
+including offline when the other required dependencies and images are available.
+Runtime download/preparation makes no model calls.
 
-```sh
-/path/to/dungeness/dungeness capabilities
-/path/to/dungeness/dungeness providers
-```
+Updating the CLI may select a newer tested runtime. It does not modify a running
+or retained evaluation. Each new run records its exact runtime commit and keeps
+an independent copy, so removing a cached revision does not damage existing runs.
+Downloads are locked and installed atomically; failed downloads do not fall back
+to an older runtime. Modified or incomplete caches produce an actionable error.
+The existing runtime capability checks still apply.
 
-If preparation reports missing capabilities, use a fresh checkout at an unused
-path so existing runs and working changes remain intact:
+For development, `--dungeness /absolute/path/to/checkout` explicitly overrides
+the managed pin. Keep that checkout clean; the CLI does not update it for you.
+Use `dungeness capabilities` and `dungeness providers` there to inspect support.
+Do not edit capability declarations to bypass a failed compatibility check.
+If the service reports a release mismatch, retain your evidence and contact
+support before repeating paid work. Local runtime selection does not change the
+runtime deployed on the hosted evaluator.
 
-```sh
-git clone https://github.com/Layr-Labs/dungeness.git /absolute/path/to/dungeness-compatible
-/absolute/path/to/dungeness-compatible/dungeness capabilities
-/absolute/path/to/dungeness-compatible/dungeness providers
-```
-
-Retry with `--dungeness /absolute/path/to/dungeness-compatible`. Do not edit a
-runtime's capability declaration to bypass a failed compatibility check. A local
-checkout does not establish which revision the hosted evaluator uses. If the
-service reports a release mismatch, retain your local evidence and report it to
-support before repeating paid work.
+Release maintainers: update the pin only after testing the new runtime against
+all supported problems and coordinating the hosted runtime release. CLI-only
+changes can keep the existing pin. Test first download, cache reuse, explicit
+overrides and preparation from the installed package before publishing a release.
 
 For a bug report, include `openrsi-space --version`, the Dungeness Git revision,
 and whether either checkout has local changes. For a source installation, also
@@ -51,7 +57,8 @@ particular development commit. See the [changelog](../CHANGELOG.md).
 Dungeness revision `df708b29249da5e5c80e7dfb32178452d6cd59a6` adds support for
 OpenRouter reasoning format/signature metadata and safe continuation diagnostics.
 Use that revision or a newer compatible runtime for local runs that replay this
-history. Updating the client alone does not update a separately installed runtime.
+history. The managed default follows the CLI pin. An explicitly supplied `--dungeness`
+checkout must still be updated separately.
 
 If diagnostics report `conversation_history_rejected`, retain the request ID and
 update the runtime or contact support. Do not strip reasoning, signatures or

@@ -81,6 +81,25 @@ class LocalRunTests(unittest.TestCase):
         self.assertEqual(len(paths), 1)
         return read_json(paths[0])
 
+    def test_default_runtime_prepares_without_credentials_and_survives_cache_removal(self):
+        with patch('openrsi_space.integrations.dungeness.managed_runtime.resolve',
+                   return_value=self.source) as resolve, \
+                patch('openrsi_space.local.credential_input', side_effect=AssertionError('credentials read')), \
+                patch('openrsi_space.local.execute_process', side_effect=AssertionError('model run')), \
+                redirect_stdout(self.out), redirect_stderr(self.err):
+            code = main(['--state', str(self.state), 'local', 'run', str(self.harness),
+                         '--provider', 'openai', '--model', 'gpt-5.6-sol', '--budget', '1', '--prepare-only'])
+        self.assertEqual(code, 0, self.err.getvalue())
+        resolve.assert_called_once_with(None)
+        metadata = self.metadata()
+        runtime = Path(metadata['runtime'])
+        self.assertFalse((runtime / '.git/objects/info/alternates').exists())
+        shutil.rmtree(self.source)
+        subprocess.run(['git', '-C', str(runtime), 'fsck', '--full'], check=True, capture_output=True)
+        retained = subprocess.check_output(['git', '-C', str(runtime), 'rev-parse',
+                                            metadata['dungeness_commit']], text=True).strip()
+        self.assertEqual(retained, metadata['dungeness_commit'])
+
     def test_prepare_only_builds_self_contained_inputs_without_credentials_or_remote_service(self):
         with patch('openrsi_space.local.credential_input', side_effect=AssertionError('credentials read')), \
                 patch('openrsi_space.local.execute_process', side_effect=AssertionError('model run')):

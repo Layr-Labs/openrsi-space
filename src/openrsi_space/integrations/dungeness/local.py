@@ -149,7 +149,8 @@ def prepare(state, package, source, evaluation, *, problem_id='ecdsa.fail', prob
     (folder / 'problem.zip').write_bytes(problem_bytes)
     runtime = folder / 'dungeness'
     print('Preparing Dungeness, metered models, and the internal task service…', file=sys.stderr, flush=True)
-    git(source, 'clone', '--quiet', '--shared', '--no-checkout', str(source), str(runtime))
+    # Runs must remain usable after the managed cache or override checkout is removed.
+    git(source, 'clone', '--quiet', '--shared', '--dissociate', '--no-checkout', str(source), str(runtime))
     git(runtime, 'checkout', '--quiet', '--detach', source_commit)
     strategy_file = folder / 'inputs/harness/instructions.md'
     assigned = install_task(runtime, problem_path, problem,
@@ -245,6 +246,8 @@ def run(args, state):
     from openrsi_space.credentials import require_active_models
     require_active_models(evaluation_models(evaluation))
     validate_credential_locations(args)
+    from openrsi_space.integrations.dungeness.managed_runtime import resolve
+    runtime_source = resolve(args.dungeness)
     access = None
     if not args.prepare_only:
         if not all(shutil.which(name) for name in ('docker', 'git', 'uv', 'uvx')):
@@ -255,7 +258,7 @@ def run(args, state):
               'or subscription allowance; an in-flight response can exceed the cap. '
               'No credentials are sent to OpenRSI or Yukon.', file=sys.stderr, flush=True)
     try:
-        metadata = prepare(state, Path(args.package), Path(args.dungeness), evaluation,
+        metadata = prepare(state, Path(args.package), runtime_source, evaluation,
                            problem_id=args.problem, problem_release=args.problem_release,
                            pricing_path=Path(args.pricing) if args.pricing else None)
         if args.prepare_only:

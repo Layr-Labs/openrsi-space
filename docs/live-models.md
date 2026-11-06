@@ -196,16 +196,19 @@ their recorded schedule. See [Claude Code environment variables](https://code.cl
 
 ## Local Grok subscription testing
 
+The CLI manages the runtime. For the custom pricing examples below, save and review
+a trusted [local pricing schedule](https://github.com/Layr-Labs/dungeness/blob/main/docs/examples/local-subscription-pricing-20261030.json)
+as `local-pricing.json`; its path is separate from the managed runtime cache.
+
 Use an authorized local Grok login with a Dungeness runtime that advertises
 `grok-subscription`. Sign in using the official CLI:
 
 ```sh
 grok login --device-auth
 openrsi-space local run /absolute/path/to/harness \
-  --dungeness /absolute/path/to/dungeness \
   --provider grok-subscription --model grok-4.7 --reasoning-effort high \
   --budget 3 --no-token-limit --grok-auth-file \
-  --pricing /absolute/path/to/dungeness/docs/examples/local-subscription-pricing-20261030.json
+  --pricing /absolute/path/to/local-pricing.json
 ```
 
 `--grok-auth-file` defaults to `~/.grok/auth.json` and is available only on
@@ -243,10 +246,9 @@ map outside the harness. Never put the key in source or command arguments.
 
 ```sh
 openrsi-space local run /absolute/path/to/harness \
-  --dungeness /absolute/path/to/dungeness \
   --provider minimax-subscription --model MiniMax-M3.1-Flash \
   --budget 3 --provider-token-env MINIMAX_PLAN_KEY \
-  --pricing /absolute/path/to/dungeness/docs/examples/local-subscription-pricing-20261030.json
+  --pricing /absolute/path/to/local-pricing.json
 ```
 
 Set `MINIMAX_PLAN_KEY` privately before running. The harness receives only a

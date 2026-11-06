@@ -2,6 +2,11 @@
 
 [Install the current submission CLI](docs/solver-guide.md#install-the-current-submission-cli). Local testing and remote verification need no Yukon benchmark clone.
 
+Local runs automatically fetch and reuse the tested Dungeness revision bundled with
+the CLI. Updating the CLI selects its runtime for new runs; it does not modify
+existing runs. No manual Dungeness clone is required. See
+[managed runtime and developer overrides](docs/deployment-compatibility.md#local-runtime-compatibility).
+
 [![Checks](https://github.com/Layr-Labs/openrsi-space/actions/workflows/check.yml/badge.svg)](https://github.com/Layr-Labs/openrsi-space/actions/workflows/check.yml)
 
 OpenRSI is a benchmark for research agent harnesses. You submit your own
