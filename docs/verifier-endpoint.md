@@ -8,8 +8,7 @@ export OPENRSI_EVALUATOR_URL=https://verify.openrsi.space
 export YUKON_API_URL=https://api.yukon.org
 ```
 
-The production benchmark is `bxue-l2/openrsi-space`, UUID
-`26d2d34c-9ef8-47e7-97d5-57ff9e28f0b9`, backed by
+The production benchmark is `bxue-l2/openrsi-space`, backed by
 `https://github.com/Layr-Labs/openrsi-space`. Authenticate with your production
 Yukon account. Dev and production account credentials and board IDs are separate.
 
