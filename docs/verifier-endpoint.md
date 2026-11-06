@@ -1,39 +1,35 @@
 # Verifier endpoint
 
-The dedicated OpenRSI VM serves **https://3.21.93.126** with a trusted
-Let's Encrypt IP certificate and automatic renewal. No third-party hostname
-or SSH tunnel is required.
+Production uses **https://verify.openrsi.space**, with a trusted TLS certificate
+and automatic renewal:
 
 ```sh
-export OPENRSI_EVALUATOR_URL=https://3.21.93.126
-export YUKON_API_URL=https://api-dev.yukon.org
+export OPENRSI_EVALUATOR_URL=https://verify.openrsi.space
+export YUKON_API_URL=https://api.yukon.org
 ```
 
-Use the existing Yukon dev login. The current benchmark is
-`bxue-l2/openrsi-space`, UUID `bd33c240-a4b3-4671-ad88-84b847859293`, in Pareto
-mode. Hosting the verifier on the production VM does not change the Yukon
-account environment.
+The production benchmark is `bxue-l2/openrsi-space`, UUID
+`26d2d34c-9ef8-47e7-97d5-57ff9e28f0b9`, backed by
+`https://github.com/Layr-Labs/openrsi-space`. Authenticate with your production
+Yukon account. Dev and production account credentials and board IDs are separate.
 
-Use the endpoint and Yukon environment specified for your board. Receipt
-retrieval does not start Dungeness or spend model credits. If an endpoint or board
-binding is wrong, retain the receipt and contact support before rerunning research.
+Development uses `https://3.21.93.126`, `https://api-dev.yukon.org`, and the
+`Layr-Labs/openrsi-space-dev` repository. Do not substitute a dev board UUID or
+receipt when publishing a production result.
 
-## Recover a publication sent to the historical board
+## Receipt validation and recovery
 
-The retired board is retained for history. It is not the destination
-for new OpenRSI publications. Changing a GitHub remote URL does not change the
-Yukon benchmark stored in a checkout.
+Yukon's GitHub workflow retrieves an existing remote evaluation; it does not
+start Dungeness or spend model credits. The root `verification.json` is an
+operator-selected production baseline used to check this integration. It records
+an unsuccessful completed run, so validation returns `valid: false` and no score;
+it is not an accepted solver result or a reference circuit score.
 
-Keep the original checkout, pending record, receipt and submission note. Clone
-`bxue-l2/openrsi-space` into a new directory, then copy the existing receipt,
-unchanged, to `submission/verification.json`. Authenticate separately using the
-same Yukon solver account that owns the evaluation. Run `yukon setup`, then
-`yukon run` to verify the receipt; neither command starts paid research. Publish
-using `openrsi-space yukon-submit` and the existing note and attribution.
-Check that the returned `benchmark_id` is
-`bd33c240-a4b3-4671-ad88-84b847859293`. This creates a new publication on the
-correct board while preserving the failed historical submission.
+Solvers publish their own service-issued receipt at `submission/verification.json`.
+Keep that receipt, the pending publication record and submission note when
+recovering from an error. Do not edit a receipt to match a different server,
+account, problem or board.
 
-A 403 from binding an old-board job does not invalidate the evaluation: the
-verifier authorizes the new board. Do not rewrite receipts, weaken ownership
-checks or pay for another evaluation just to recover publication.
+If receipt retrieval or publication fails, follow
+[submission recovery](submission-recovery.md). An endpoint or authorization error
+does not invalidate the research result or require another paid evaluation.
