@@ -174,7 +174,8 @@ def remote_command(args, state):
         from openrsi_space.publication import publication_choices
         publication = publication_choices({
             "harness": True, "traces": False, "license": args.source_license}, require_public=True)
-        print("Harness source will be PUBLIC after this run stops and publication screening passes. "
+        print("Every remote run, including unsuccessful runs, is listed publicly under your username. "
+              "Harness source will be PUBLIC after this run stops and publication screening passes. "
               "Public source is required; review your files and third-party rights before submitting. "
               "Traces are retained internally.", file=sys.stderr, flush=True)
         execution = None
