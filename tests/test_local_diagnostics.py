@@ -13,6 +13,32 @@ from openrsi_space.harnesses import executable
 
 
 class LocalDiagnosticsTests(unittest.TestCase):
+    def test_history_rejection_is_actionable_without_exposing_history(self):
+        from openrsi_space.contracts.history_diagnostics import history_rejection
+        details = {'code': 'conversation_history_rejected', 'reason': 'unsupported_history_field',
+                   'history_schema_version': 1, 'location': 'input', 'item_index': 2,
+                   'field_index': 5, 'field': 'private-canary', 'signature': 'private-canary',
+                   'upstream_request_sent': False}
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            write_json(root/'record.json', {'data': {'status': 'failed', 'usage': {'model_requests': 2}}})
+            events = root/'usage/events.jsonl'; events.parent.mkdir()
+            events.write_text(json.dumps({'kind':'gateway.model_request_rejected',
+                'request_id':'a'*32, 'data':details})+'\n')
+            report = summarize(root/'record.json')
+            finding = next(d for d in report['diagnostics'] if d['code']=='conversation_history_rejected')
+            self.assertEqual(finding['request_id'], 'a'*32)
+            self.assertEqual(finding['item_index'], 2)
+            self.assertEqual(finding['history_schema_version'], 1)
+            self.assertFalse(finding['upstream_request_sent'])
+            self.assertNotIn('private-canary', json.dumps(report))
+            self.assertEqual(report['usage']['model_requests'], 2)
+        unsafe = history_rejection({**details, 'item_index':True, 'location':'private-canary',
+                                    'upstream_request_sent':'false'}, 'private-canary')
+        self.assertNotIn('item_index', unsafe)
+        self.assertNotIn('upstream_request_sent', unsafe)
+        self.assertNotIn('private-canary', json.dumps(unsafe))
+
     def test_codex_failure_and_final_verification_are_independent_of_wrapper_exit(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)
