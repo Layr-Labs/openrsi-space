@@ -13,6 +13,33 @@ from harness_fixture import create_harness
 
 
 class PublicationConsentTests(unittest.TestCase):
+    def test_run_visibility_notice_precedes_submission_even_without_interactive_input(self):
+        parser, _ = build_parser()
+        for flags in ([], ["--platform-funded"]):
+            with self.subTest(flags=flags):
+                args = parser.parse_args(["remote", "submit", "harness", *flags])
+                errors, output = io.StringIO(), io.StringIO()
+
+                def stop_before_preflight(*_args, **_kwargs):
+                    self.assertIn(
+                        "Every remote run, including unsuccessful runs, is listed publicly under your username.",
+                        errors.getvalue(),
+                    )
+                    self.assertIn("publication screening passes", errors.getvalue())
+                    self.assertIn("Traces are retained internally.", errors.getvalue())
+                    raise OpenRSIError("stop before preflight")
+
+                with patch("openrsi_space.remote.RemoteClient") as factory, \
+                        patch("openrsi_space.client.configuration.evaluation_config", side_effect=stop_before_preflight), \
+                        patch("openrsi_space.cli.model_access_input") as credential, \
+                        patch("sys.stdin", io.StringIO()), \
+                        contextlib.redirect_stderr(errors), contextlib.redirect_stdout(output):
+                    with self.assertRaisesRegex(OpenRSIError, "stop before preflight"):
+                        remote_command(args, Path("."))
+                    factory.return_value.submit.assert_not_called()
+                    credential.assert_not_called()
+                self.assertEqual(output.getvalue(), "")
+
     def test_source_is_public_by_default_but_no_license_or_traces_are_granted(self):
         self.assertEqual(publication_choices(), {"harness": True, "traces": False, "license": None})
         parser, _ = build_parser()
