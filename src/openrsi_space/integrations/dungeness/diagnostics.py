@@ -4,6 +4,8 @@ import math
 from pathlib import Path
 import re
 
+from openrsi_space.contracts.history_diagnostics import history_rejection
+
 
 def document(path):
     try:
@@ -182,6 +184,10 @@ def summarize(record_path):
                     continue
                 event = json.loads(line)
                 details = event.get('data', {})
+                finding = history_rejection(details, event.get('request_id'))
+                if finding is not None:
+                    result['diagnostics'].append({**finding, 'path': str(event_path)})
+                    break
                 reason = details.get('code')
                 if (event.get('kind') == 'gateway.budget_rejected'
                         and reason == 'model_reservation_exceeds_remaining_budget'

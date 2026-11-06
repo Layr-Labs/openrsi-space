@@ -45,3 +45,16 @@ For a bug report, include `openrsi-space --version`, the Dungeness Git revision,
 and whether either checkout has local changes. For a source installation, also
 include the OpenRSI Git revision; a package version alone may not identify a
 particular development commit. See the [changelog](../CHANGELOG.md).
+
+## Conversation-history compatibility
+
+Dungeness revision `df708b29249da5e5c80e7dfb32178452d6cd59a6` adds support for
+OpenRouter reasoning format/signature metadata and safe continuation diagnostics.
+Use that revision or a newer compatible runtime for local runs that replay this
+history. Updating the client alone does not update a separately installed runtime.
+
+If diagnostics report `conversation_history_rejected`, retain the request ID and
+update the runtime or contact support. Do not strip reasoning, signatures or
+encrypted history. The rejection says whether the request reached the provider;
+earlier usage and candidate results remain recorded. A runtime update does not
+resume an already failed research process or automatically start paid work.
