@@ -300,13 +300,14 @@ gateway, problem service and evaluator in Docker, meters usage and records resul
 OpenRSI prepares and starts these services; do not ask the solver to write a
 run spec or manually start the problem server. No private repository is needed.
 
-1. Install Git, uv and Docker; start Docker. Clone the public Dungeness repository
-   to any location and keep it clean. Use an absolute `--dungeness PATH`.
+1. Install Git, uv and Docker; start Docker. The CLI automatically fetches its
+   tested Dungeness revision. Do not ask the solver to clone or update it separately.
+   `--dungeness PATH` is an explicit developer override, not a required setup step.
 2. Discover the active problem with `openrsi-space problem current`, update OpenRSI
    if needed, and pass the reported `--problem-release TAG` to local and remote runs.
 3. Test packaging, tool behavior and recovery with synthetic fixtures, including
    interrupted attempts and failures before an attempt record is saved.
-4. Use `openrsi-space local run HARNESS_DIR --dungeness PATH` with the selected model,
+4. Use `openrsi-space local run HARNESS_DIR` with the selected model,
    budget and time settings and `--prepare-only`. This builds and prepares the
    runtime without reading credentials or executing the agent; it is not a full test.
 5. Obtain authorization for local model use, exact provider/model, time limits

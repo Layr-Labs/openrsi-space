@@ -176,7 +176,7 @@ def check_submission(state, package, body, base, *, local_run=None):
                 reason = str(error) if isinstance(error, ValueError) and not isinstance(error, json.JSONDecodeError) else 'the selected local record is missing or incomplete'
     raise OpenRSIError(
         f'Local Dungeness check required: {reason}. Run openrsi-space local run '
-        f'{shlex.quote(str(package))} --dungeness /path/to/dungeness with the same model and problem '
+        f'{shlex.quote(str(package))} with the same model and problem '
         'and an authorized local budget. Existing records are reused automatically under '
         f'{state / "local"}; use --local-run PATH for another location. '
         'An ended matching local run with complete exchanges and settled accounting is required; the check cannot be skipped. '

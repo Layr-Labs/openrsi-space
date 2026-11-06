@@ -162,8 +162,9 @@ that every charged request started before budget exhaustion. See [accounting det
 
 You need Git, [uv](https://docs.astral.sh/uv/getting-started/installation/),
 Python 3.11 or newer (uv can install Python), and the current `openrsi-space` CLI.
-For local testing, install and start Docker and clone the public
-[Dungeness repository](https://github.com/Layr-Labs/dungeness) to any location.
+For local testing, install and start Docker. The CLI automatically fetches its
+tested [Dungeness](https://github.com/Layr-Labs/dungeness) revision on first use
+and reuses it; no manual runtime checkout is required.
 Dungeness coordinates the harness, model gateway, problem service and evaluator
 in containers. OpenRSI prepares and starts them with `openrsi-space local run`;
 no manual server setup or private repository is needed. Read the
