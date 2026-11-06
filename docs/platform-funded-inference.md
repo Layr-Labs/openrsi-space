@@ -169,3 +169,9 @@ archive's generated source-manifest `files` field (not the generated snapshot it
 The response contains no matched credential values or source excerpts.
 Preserve the saved request and local evidence while diagnosing it; a server-side
 scanner correction does not require changing your harness or repeating inference.
+
+### Funding shortages and safe retries
+
+A shared platform funding shortage is separate from your account allowance. Your requested budget does not increase to cover the platform's internal reservation buffer. The client checks funding before uploading a new evidence bundle; admission still makes the final decision because capacity can change.
+
+Retry an unchanged submission with its saved request. The client reuses its evidence reference, including when you specify `--local-run` again. For a new request it checks whether the same bundle is already retained under your authenticated account before uploading. Missing or expired evidence can be re-exported from the existing local record; no paid local rerun is required solely for an upload retry. Follow the returned `retry_after_seconds` if uploads are rate-limited. The CLI does not automatically start a new paid run or retry a rejected submission.

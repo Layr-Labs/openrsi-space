@@ -33,7 +33,10 @@ def preflight(client, body):
               file=sys.stderr, flush=True)
         return
     try:
-        raw = transport.solver_fetch(client.base, '/funding', client.bearer)
+        raw = transport.solver_fetch(client.base, '/funding?budget=' + str(requested), client.bearer)
+    except transport.HTTPFailure:
+        # Preserve the safe scope/code and retry timing from capacity rejection.
+        raise
     except (OpenRSIError, OSError) as error:
         raise OpenRSIError(
             'Could not check your remote funding allowance. Run openrsi-space remote funding '

@@ -33,7 +33,7 @@ class FundingPreflightTests(unittest.TestCase):
         def fetch(base,route,bearer,**kwargs):
             self.assertEqual(base,self.client.base);self.assertEqual(bearer,'synthetic-key')
             self.events.append(route)
-            if route=='/funding':
+            if route.startswith('/funding?budget='):
                 if self.failure:raise self.failure
                 return json.dumps({'mode':'platform','halted':False,
                                    'allowance':{'unit':'usd_equivalent','remaining':self.remaining}}).encode()
@@ -44,16 +44,27 @@ class FundingPreflightTests(unittest.TestCase):
         self.fetch=self.enterContext(patch('openrsi_space.client.transport.solver_fetch',side_effect=fetch))
         self.stderr=self.enterContext(redirect_stderr(io.StringIO()))
 
+    def test_global_shortage_is_reported_before_upload(self):
+        from openrsi_space.client.transport import HTTPFailure
+        self.failure = HTTPFailure(429, {'code': 'funding_allowance_exhausted', 'scope': 'global',
+                                        'limit': 100000000, 'current': 86041557, 'requested': 22000000,
+                                        'retry_after_seconds': 60})
+        with self.assertRaisesRegex(HTTPFailure, 'Platform funding is temporarily unavailable') as caught:
+            self.client.submit(Path(self.temp))
+        self.assertNotIn('22000000', str(caught.exception))
+        self.assertNotIn('limit', caught.exception.details)
+        self.upload.assert_not_called()
+
     def test_exact_remaining_amount_passes_before_upload(self):
         self.client.submit(Path(self.temp))
-        self.assertEqual(self.events,['/funding','upload','/evaluations'])
+        self.assertEqual(self.events,['/funding?budget=2','upload','/evaluations'])
         self.assertIn('requested $2; available $2',self.stderr.getvalue())
 
     def test_insufficient_allowance_rejects_before_upload_or_pending_request(self):
         self.remaining=1.73
         with self.assertRaisesRegex(OpenRSIError,r'\$2.*\$1.73'):
             self.client.submit(Path(self.temp))
-        self.assertEqual(self.events,['/funding'])
+        self.assertEqual(self.events,['/funding?budget=2'])
         self.upload.assert_not_called()
         self.assertFalse((self.client.state/'remote/pending').exists())
 
@@ -118,7 +129,7 @@ class FundingPreflightTests(unittest.TestCase):
             (folder/f'{index}.json').write_text(json.dumps(value))
         self.remaining=0
         with self.assertRaisesRegex(OpenRSIError,'exceeds'):self.client.submit(Path(self.temp))
-        self.assertEqual(self.events,['/funding'])
+        self.assertEqual(self.events,['/funding?budget=2'])
 
     def test_server_rejection_after_successful_preflight_is_preserved(self):
         # A competing submission can use capacity after the advisory snapshot.

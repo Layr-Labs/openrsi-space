@@ -71,7 +71,7 @@ ADMISSION_MESSAGES = {
     "local_evidence_mismatch": "Local evidence must match the submitted source, problem, model and reasoning settings, using a supported provider equivalence.",
     "local_evidence_not_private": "Local evidence contains a recognized credential or uninspectable content. Check the reported event and rule before changing source or repeating a local run.",
     "local_evidence_capacity": "Private evidence storage is full; contact the operator or wait for upload expiry.",
-    "local_evidence_rate_limit": "Too many evidence uploads; retry in an hour.",
+    "local_evidence_rate_limit": "Too many evidence uploads; retry after the indicated delay using the same local run.",
     "local_evidence_too_large": "Local evidence exceeds 192 MiB; run a shorter readiness test.",
     "funding_budget_too_low": "Budget too low. Use --budget of at least $1 for a funded remote run; actual spending may be lower.",
     "funding_run_limit": "Reduce the run budget to the limit in /public/funding-policy.",
@@ -186,7 +186,8 @@ class HTTPFailure(OpenRSIError):
                 scope = details.get('scope')
                 if isinstance(scope, str) and scope in {'account', 'global'}:
                     self.details['scope'] = scope
-                for name in ('limit', 'current', 'requested', 'retry_after_seconds'):
+                fields = ('retry_after_seconds',) if scope == 'global' else ('limit', 'current', 'requested', 'retry_after_seconds')
+                for name in fields:
                     value = details.get(name)
                     if type(value) is int and 0 <= value <= 2**53:
                         self.details[name] = value
@@ -202,7 +203,11 @@ class HTTPFailure(OpenRSIError):
         message = f"Evaluator returned HTTP {status}"
         code = self.details.get('code')
         if code:
-            message += ': ' + ADMISSION_MESSAGES[code]
+            explanation = ADMISSION_MESSAGES[code]
+            if code == 'funding_allowance_exhausted' and self.details.get('scope') == 'global':
+                explanation = ('Platform funding is temporarily unavailable; this is separate from your account allowance. '
+                               'No new run started. Keep your local evidence and retry later.')
+            message += ': ' + explanation
         if self.details:
             message += ' (' + ', '.join(f'{k}={v}' for k, v in self.details.items()) + ')'
         if 'source_findings' in self.details:
