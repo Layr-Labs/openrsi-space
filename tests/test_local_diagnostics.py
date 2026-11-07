@@ -39,6 +39,25 @@ class LocalDiagnosticsTests(unittest.TestCase):
         self.assertNotIn('upstream_request_sent', unsafe)
         self.assertNotIn('private-canary', json.dumps(unsafe))
 
+    def test_structural_history_fields_are_preserved_but_not_arbitrary_names(self):
+        from openrsi_space.contracts.history_diagnostics import history_rejection
+        details = {'code': 'conversation_history_rejected', 'path': 'input[87].content[1].type',
+                   'validation_rule': 'unsupported_content_type', 'diagnostics_version': 1,
+                   'block_index': 1, 'block_type': 'input_image', 'item_type': 'message',
+                   'provider': 'openrouter', 'operation': 'responses',
+                   'signature': 'private-canary', 'reasoning': 'private-canary'}
+        result = history_rejection(details, 'b'*32)
+        for key in ('path', 'validation_rule', 'diagnostics_version', 'block_index', 'block_type',
+                    'item_type', 'provider', 'operation'):
+            self.assertEqual(result[key], details[key])
+        self.assertNotIn('private-canary', json.dumps(result))
+        for key in ('path', 'validation_rule', 'block_type', 'item_type', 'provider', 'operation',
+                    'actual_type', 'expected_type'):
+            for value in ('private-canary', 'input[1].private-canary', ['private-canary']):
+                result = history_rejection({**details, key: value}, 'b'*32)
+                self.assertNotIn(key, result)
+                self.assertNotIn('private-canary', json.dumps(result))
+
     def test_codex_failure_and_final_verification_are_independent_of_wrapper_exit(self):
         with tempfile.TemporaryDirectory() as tmp:
             root = Path(tmp)

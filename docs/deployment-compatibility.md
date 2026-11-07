@@ -60,8 +60,14 @@ Use that revision or a newer compatible runtime for local runs that replay this
 history. The managed default follows the CLI pin. An explicitly supplied `--dungeness`
 checkout must still be updated separately.
 
-If diagnostics report `conversation_history_rejected`, retain the request ID and
-update the runtime or contact support. Do not strip reasoning, signatures or
+Dungeness revision `dbe7ee52974d25ddb109b5759491086d22bcf8f9` adds safe structural
+paths and fixed rejection rules, without changing accepted history. The CLI
+preserves these fields in local and authenticated owner diagnostics. No UI
+update is needed.
+
+If diagnostics report `conversation_history_rejected`, retain the request ID,
+structural path and validation rule and contact support. Operators can collect
+related incidents and release compatibility fixes together. Do not strip reasoning, signatures or
 encrypted history. The rejection says whether the request reached the provider;
 earlier usage and candidate results remain recorded. A runtime update does not
 resume an already failed research process or automatically start paid work.
