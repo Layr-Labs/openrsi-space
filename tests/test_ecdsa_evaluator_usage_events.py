@@ -60,7 +60,7 @@ class EvaluatorUsageEventTests(unittest.TestCase):
             handler.rfile = io.BytesIO(source)
             replies = []
             handler._reply = lambda code, body: replies.append((code, body))
-            with patch.object(module, '_record') as record:
+            with tempfile.TemporaryDirectory() as retained, patch.object(module, 'USAGE_DIR', Path(retained)), patch.object(module, '_record') as record:
                 handler.do_POST()
             code, body = replies.pop()
             self.assertEqual(code, 200)
@@ -75,6 +75,62 @@ class EvaluatorUsageEventTests(unittest.TestCase):
             else:
                 self.assertEqual(body['status'], 'ok')
                 grade.score_candidate.assert_called_once()
+
+    def test_passing_sources_survive_later_invalid_candidate_and_deduplicate(self):
+        from unittest.mock import Mock
+        grade = types.ModuleType('grade')
+        grade.score_candidate = Mock()
+        with patch.dict(sys.modules, {'grade': grade}):
+            module = load_server(SERVERS[0], 'passing_snapshot_server')
+        with tempfile.TemporaryDirectory() as temporary, patch.object(module, '_record') as record:
+            module.USAGE_DIR = Path(temporary)
+            digests = []
+            for code, score, status in [('first', 100, 'ok'), ('best', 50, 'ok'),
+                                         ('best', 50, 'ok'), ('broken', 1e18, 'invalid')]:
+                raw = ('// ' + code).encode()
+                archive = io.BytesIO()
+                with tarfile.open(fileobj=archive, mode='w') as tar:
+                    member = tarfile.TarInfo('mod.rs'); member.size = len(raw)
+                    tar.addfile(member, io.BytesIO(raw))
+                source = archive.getvalue()
+                grade.score_candidate.return_value = {'status': status, 'score': score,
+                    'avg_toffoli': score / 2, 'peak_qubits': 2}
+                handler = object.__new__(module.Handler)
+                handler.path = '/score'; handler.headers = {'content-length': str(len(source))}
+                handler.rfile = io.BytesIO(source); replies = []
+                handler._reply = lambda code, body: replies.append((code, body))
+                handler.do_POST()
+                http, body = replies.pop(); self.assertEqual(http, 200)
+                digests.append(body['candidate_sha256'])
+                path = module.USAGE_DIR / 'passing-candidates' / (digests[-1] + '.json')
+                self.assertEqual(path.exists(), status == 'ok')
+                if status == 'ok':
+                    self.assertEqual(json.loads(path.read_text())['files'], {'mod.rs': raw.decode()})
+                    self.assertEqual(path.stat().st_mode & 0o777, 0o600)
+            self.assertEqual(digests[1], digests[2])
+            self.assertEqual(len(list((module.USAGE_DIR / 'passing-candidates').iterdir())), 2)
+            self.assertEqual(module._best_score, 50)
+
+    def test_retention_failure_does_not_claim_a_retained_passing_evaluation(self):
+        from unittest.mock import Mock
+        grade = types.ModuleType('grade')
+        grade.score_candidate = Mock(return_value={'status': 'ok', 'score': 42,
+                                                   'avg_toffoli': 21, 'peak_qubits': 2})
+        with patch.dict(sys.modules, {'grade': grade}):
+            module = load_server(SERVERS[0], 'retention_failure_server')
+        archive = io.BytesIO()
+        with tarfile.open(fileobj=archive, mode='w') as tar:
+            member = tarfile.TarInfo('mod.rs'); member.size = 2
+            tar.addfile(member, io.BytesIO(b'//'))
+        raw = archive.getvalue()
+        handler = object.__new__(module.Handler)
+        handler.path = '/score'; handler.headers = {'content-length': str(len(raw))}
+        handler.rfile = io.BytesIO(raw); handler._reply = Mock()
+        with patch.object(module, '_retain_candidate', side_effect=OSError('disk full')), patch.object(module, '_record') as record:
+            handler.do_POST()
+        self.assertEqual(handler._reply.call_args.args[0], 500)
+        self.assertEqual(record.call_args.args[0]['status'], 'error')
+        self.assertIsNone(module._best_score)
 
     def test_invalid_score_response_exposes_bounded_stdout_and_stderr(self) -> None:
         grade = types.ModuleType('grade')

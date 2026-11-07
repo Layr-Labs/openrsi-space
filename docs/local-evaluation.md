@@ -120,6 +120,13 @@ status, usage, metrics, and artifact paths. Results live under
 contains Dungeness's records, usage events, traces and candidate artifacts. Ctrl-C
 asks Dungeness to stop its containers before temporary access is removed.
 
+The ECDSA evaluator retains the exact source of each distinct passing candidate
+under the run's `usage/passing-candidates/` directory. A later invalid candidate
+or agent error does not overwrite these snapshots. On updated remote workers,
+the best retained, trusted evaluation can become the official result even when
+research ends with an error, provided screening and accounting checks pass.
+Local evaluation results alone are not official remote scores.
+
 The public CLI and remote service share task and harness assembly, so neither needs
 a second handwritten copy of OpenRSI's problem configuration. The remote service
 additionally performs admission, source screening, isolated verification and receipt
