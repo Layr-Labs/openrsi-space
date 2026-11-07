@@ -12,7 +12,7 @@ Unlike the single-file `experiment-bin` sidecar, the candidate here is the whole
 `evaluate` client must tar it before POSTing). Each submission is a full build +
 heavy simulation, so requests are serialized and capped by a submission budget.
 
-NOT YET COMPILE-TESTED: authored from the upstream sources; needs a real run.
+Passing source snapshots live in the trusted usage mount, outside the agent workspace.
 """
 
 from __future__ import annotations
@@ -160,6 +160,38 @@ def _candidate_digest(path: Path) -> str:
     return digest.hexdigest()
 
 
+def _retain_candidate(module: Path, digest: str) -> None:
+    """Save the exact scored input, never the agent's later workspace contents."""
+    files = {}
+    size = 0
+    for path in sorted(module.rglob("*")):
+        if not path.is_file():
+            continue
+        raw = path.read_bytes()
+        size += len(raw)
+        if size > 8 * 1024**2 or len(files) >= 2000:
+            raise OSError("Candidate retention supports at most 8 MiB and 2000 files")
+        files[path.relative_to(module).as_posix()] = raw.decode("utf-8")
+    document = {"schema_version": 1, "candidate_sha256": digest, "files": files}
+    root = USAGE_DIR / "passing-candidates"
+    root.mkdir(parents=True, exist_ok=True, mode=0o700)
+    target = root / (digest + ".json")
+    if target.exists():
+        return  # Identical content is retained once, even if evaluated repeatedly.
+    temporary = None
+    try:
+        with tempfile.NamedTemporaryFile(mode="w", encoding="utf-8", dir=root,
+                                         prefix=".candidate-", delete=False) as output:
+            temporary = Path(output.name)
+            json.dump(document, output, ensure_ascii=False, separators=(",", ":"))
+            output.flush()
+            os.fsync(output.fileno())
+        temporary.replace(target)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
+
+
 def _candidate_format_findings(root: Path) -> list[dict]:
     """Apply the same public candidate file contract to local and remote checks."""
     findings = []
@@ -210,7 +242,11 @@ def _safe_extract_tar(data: bytes, dest: Path) -> None:
     """Extract a tar of the point_add module into dest, rejecting path escapes."""
     with tarfile.open(fileobj=io.BytesIO(data), mode="r:*") as tar:
         dest_resolved = dest.resolve()
-        for member in tar.getmembers():
+        members = tar.getmembers()
+        if (len(members) > 4000 or sum(m.isfile() for m in members) > 2000
+                or sum(m.size for m in members) > 8 * 1024**2):
+            raise ValueError("Candidate exceeds 8 MiB or 4000 archive entries")
+        for member in members:
             if not (member.isfile() or member.isdir()):
                 raise ValueError("tar may contain only regular files and dirs")
             target = (dest / member.name).resolve()
@@ -291,6 +327,8 @@ class Handler(BaseHTTPRequestHandler):
                                        + json.dumps(findings[:5], ensure_ascii=True)[:700]}
                     else:
                         details = grade.score_candidate(module)
+                        if details["status"] == "ok":
+                            _retain_candidate(module, candidate_digest)
             except ValueError as error:
                 _submissions -= 1  # malformed input: refund, nothing was run
                 self._reply(400, {"error": str(error)})
