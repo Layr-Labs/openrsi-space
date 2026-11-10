@@ -144,7 +144,7 @@ PY
 ```
 
 Pass the resulting path with `--provider-access-file`, as shown in the
-[subscription quickstart](local-subscriptions.md).
+[subscription quickstart](local-evaluation.md#3-prepare-only-the-selected-local-access-route).
 Remove this temporary access map after local testing. Keep the original Claude
 login unchanged. If login is stored in an OS keychain or uses another format,
 this helper does not apply: use an authorized local credential method to create

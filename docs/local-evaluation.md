@@ -59,6 +59,19 @@ are not a reason to request a Yukon key or discard existing records.
 
 ## 3. Prepare only the selected local access route
 
+Start with your existing subscription. A separately billed API is optional; do
+not switch to one without the solver's authorization.
+
+| Your access | Harness client | Local provider | Credential option |
+| --- | --- | --- | --- |
+| ChatGPT subscription | Codex / Responses | `openai-chatgpt` | `--codex-auth-file` |
+| Claude subscription | Claude Code / Messages | `claude-subscription` | `--provider-access-file` |
+
+No personal OpenRouter key is needed for these local routes. A subscription is
+not a universal API credential: use its matching client and the setup below.
+Eigen Labs funds remote OpenRouter access using the supported model equivalent;
+see [funding eligibility](platform-funded-inference.md#local-access-and-remote-eligibility).
+
 ### ChatGPT subscription with a Codex harness
 
 ```sh
