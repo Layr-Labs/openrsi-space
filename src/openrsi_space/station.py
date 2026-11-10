@@ -1,4 +1,5 @@
 """Workspace-local harness cards assembled from existing run records, offline."""
+from collections import Counter
 from datetime import datetime
 from itertools import islice
 import re
@@ -6,7 +7,7 @@ import re
 from openrsi_space.contracts.results import bound_result
 from openrsi_space.client.transport import safe_uuid
 from openrsi_space.common import OpenRSIError
-from openrsi_space.journey import read, mapping, enum, box
+from openrsi_space.journey import read, mapping, enum, box, allowance_lines
 
 
 def name(value):
@@ -105,10 +106,16 @@ def run_lines(group, selected=None, current=None):
 
 
 def overview(data):
-    lines = ['MY RESEARCH STATION', '', 'Harness cards · this workspace', 'Saved status; no remote refresh', '']
+    lines = ['MY RESEARCH STATION', '']
+    lines.extend(allowance_lines(data.get('daily_allowance')))
+    total = sum(len(group['runs']) for group in data['harnesses'])
+    lines.extend(['', f"{len(data['harnesses'])} harness cards · {total} runs",
+                  'This workspace · saved run status', ''])
     for index, group in enumerate(data['harnesses'], 1):
         local = sum(r['kind'] == 'local' for r in group['runs'])
         lines.extend([f"[{index}] {group['label']}", f"    {local} local · {len(group['runs']) - local} remote"])
+        counts = Counter(run['execution'] for run in group['runs'])
+        lines.append('    ' + ' · '.join(f'{count} {state}' for state, count in sorted(counts.items())))
     if not data['harnesses']:
         lines.append('No run records yet.')
     if data['omitted_records']:

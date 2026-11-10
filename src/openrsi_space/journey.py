@@ -92,13 +92,16 @@ def local_status(path):
     result['phase'] = 'prepare' if status == 'prepared' else 'local'
     result['next_action'] = 'Inspect local progress; do not start a second run.'
     if status == 'prepared':
+        result['completed_phases'] = ['choose']
         result['next_action'] = 'Confirm model access and authorized budget before starting the local test.'
     elif status in TERMINAL:
         result['phase'] = 'readiness'
-        result['completed_phases'] = ['local']
+        result['completed_phases'] = ['choose', 'prepare', 'local']
         result['next_action'] = 'Discuss the local outcome and check matching evidence and remote authorization.'
         if result['evidence_precheck'] != 'passed':
             result['blocker'] = 'Local evidence needs inspection; do not assume eligibility or rerun automatically.'
+    elif status == 'running':
+        result['completed_phases'] = ['choose', 'prepare']
     elif status == 'unknown':
         result['blocker'] = 'Local execution status is missing or unsupported.'
     return result
@@ -121,6 +124,7 @@ def remote_status(state, identity):
     result.update(source='remote_api', availability='live', evaluation_id=identity,
                   execution=live['status'], phase='remote',
                   note='Authenticated status bound to the saved request; candidate scores are provisional.')
+    result['completed_phases'] = ['choose', 'prepare', 'local', 'readiness']
     progress = mapping(live.get('progress'))
     result['usage'] = usage(progress.get('usage'))
     result['budget_cap'] = number(mapping(session['request'].get('evaluation')).get('max_model_credits'))
@@ -131,7 +135,7 @@ def remote_status(state, identity):
     result['next_action'] = f'Follow the existing run with openrsi-space remote wait {identity}.'
     if live['status'] in TERMINAL:
         result['phase'] = 'results'
-        result['completed_phases'] = ['remote']
+        result['completed_phases'].append('remote')
         result['verification'] = ('valid' if live['status'] == 'completed' and live.get('valid') is True
                                   else 'invalid' if live.get('valid') is False else 'unknown')
         result['next_action'] = 'Discuss the verified outcome and usage; Yukon publication is optional.'
@@ -175,7 +179,7 @@ def status(state, *, local_run=None, evaluation=None, harness=None, station=Fals
     state = Path(state)
     result = base()
     try:
-        from openrsi_space.station import catalog, overview
+        from openrsi_space.station import catalog
         if sum(value is not None for value in (local_run, evaluation, harness)) > 1:
             raise ValueError('Choose one target')
         collection = catalog(state)
@@ -187,11 +191,7 @@ def status(state, *, local_run=None, evaluation=None, harness=None, station=Fals
                     raise ValueError('Unknown harness')
                 result.update(harness=group, harness_id=group['harness_id'],
                               next_action='Select a local run or remote evaluation to inspect its progress.')
-                result['daily_allowance'] = account_allowance(state)
-                result['card'] = render(result)
-            else:
-                result['card'] = overview(collection)
-            return result
+            return present(result, state)
         if local_run is None and evaluation is None:
             locals_ = list((state / 'local').glob('*/run.json'))
             remotes = list((state / 'remote/evaluations').glob('*/session.json'))
@@ -199,8 +199,7 @@ def status(state, *, local_run=None, evaluation=None, harness=None, station=Fals
                 result.update(availability='station', phase=None, **collection,
                               next_action='Use --local-run PATH or --evaluation ID; no run was selected.',
                               local_run_count=len(locals_), remote_run_count=len(remotes))
-                result['card'] = overview(collection)
-                return result
+                return present(result, state)
             elif locals_:
                 local_run = locals_[0]
             elif remotes:
@@ -226,14 +225,36 @@ def status(state, *, local_run=None, evaluation=None, harness=None, station=Fals
         result.update(availability='unavailable', phase=None,
                       blocker='Could not read or validate status; no run was started or retried.',
                       next_action='Check the selected record, original --state directory, evaluator and local login.')
-    if result['availability'] in {'recorded', 'live'}:
+    return present(result, state)
+
+
+def present(result, state):
+    # One account-level lookup for every successful view, independent of run selection.
+    if result['availability'] != 'unavailable':
         result['daily_allowance'] = account_allowance(state)
-    result['card'] = render(result)
+    if result['availability'] == 'station' and not result.get('harness'):
+        from openrsi_space.station import overview
+        result['card'] = overview(result)
+    else:
+        result['card'] = render(result)
     return result
 
 
+def allowance_lines(allowance):
+    if allowance is None:
+        return []
+    if allowance.get('status') != 'available':
+        return ['Account allowance: unavailable']
+    lines = ['Account allowance (rolling 24h):',
+             f"${allowance['remaining']:.2f} available / ${allowance['limit']:g}"]
+    if allowance['halted']:
+        lines.append('Remote funding paused')
+    return lines
+
+
 def render(result):
-    lines = ['OPENRSI · RESEARCH STATION', '']
+    title = 'OPENRSI · RESEARCH STATION' if result['availability'] == 'no_records' else 'OPENRSI · HARNESS CARD'
+    lines = [title, '']
     if result.get('harness'):
         from openrsi_space.station import run_lines
         group = result['harness']
@@ -247,7 +268,7 @@ def render(result):
         lines.extend(['Evaluation: ' + result['evaluation_id'], ''])
     elif result.get('local_run_id'):
         lines.extend(['Local run: ' + result['local_run_id'], ''])
-    for key, label in PHASES:
+    for key, label in PHASES if result['phase'] is not None else ():
         marker = '●' if key == result['phase'] else '✓' if key in result['completed_phases'] else '○'
         lines.append(f'{marker} {label}')
     lines.append('')
@@ -264,15 +285,7 @@ def render(result):
         lines.append(f'Credits used: ${amount:.2f}' + (f' / ${cap:g}' if cap is not None else ''))
     elif cap is not None:
         lines.extend([f'Budget cap: ${cap:g}', 'Credits used: unavailable'])
-    allowance = result.get('daily_allowance')
-    if allowance is not None:
-        if allowance.get('status') == 'available':
-            lines.extend(['Account allowance (rolling 24h):',
-                          f"${allowance['remaining']:.2f} available / ${allowance['limit']:g}"])
-            if allowance['halted']:
-                lines.append('Remote funding paused')
-        else:
-            lines.append('Account allowance: unavailable')
+    lines.extend(allowance_lines(result.get('daily_allowance')))
     if result['execution'] in TERMINAL:
         outcome = {'valid': 'Valid final result', 'invalid': 'Final result invalid'}.get(
             result['verification'], 'Final result needs inspection')

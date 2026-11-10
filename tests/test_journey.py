@@ -45,6 +45,11 @@ class JourneyTests(unittest.TestCase):
         before = path.read_bytes()
         result = status(self.state)
         self.assertEqual(result['phase'], 'readiness')
+        self.assertEqual(result['completed_phases'], ['choose', 'prepare', 'local'])
+        self.assertIn('✓ Choose an idea', result['card'])
+        self.assertIn('✓ Prepare the harness', result['card'])
+        self.assertIn('✓ Test locally', result['card'])
+        self.assertIn('● Review readiness', result['card'])
         self.assertEqual(result['execution'], 'failed')
         self.assertEqual(result['verification'], 'valid')
         self.assertEqual(result['final_score'], 42)
@@ -68,6 +73,7 @@ class JourneyTests(unittest.TestCase):
              patch('openrsi_space.client.transport.solver_fetch', return_value=json.dumps(reply)) as fetch:
             for target in ({'local_run': path}, {'harness': 'simplicity-loop'}):
                 result = status(self.state, **target)
+                self.assertIn('OPENRSI · HARNESS CARD', result['card'])
                 self.assertIn('Harness: simplicity-loop', result['card'])
                 self.assertIn('Account allowance (rolling 24h):', result['card'])
                 self.assertIn('$12.50 available / $20', result['card'])
@@ -83,6 +89,38 @@ class JourneyTests(unittest.TestCase):
         self.assertIn('Credits used: $1.70 / $1.7', result['card'])
         self.assertIn('Account allowance: unavailable', result['card'])
 
+    def test_station_allowance_is_live_and_account_wide_without_refreshing_runs(self):
+        self.local(harness={'id': 'first', 'version': 'a' * 64})
+        write_json(self.state / 'local/local-two/run.json',
+                   {'status': 'completed', 'harness': {'id': 'second', 'version': 'b' * 64}})
+        before = {p: p.read_bytes() for p in self.state.rglob('*') if p.is_file()}
+        reply = {'mode': 'platform', 'halted': False,
+                 'allowance': {'unit': 'usd_equivalent', 'window_seconds': 86400,
+                               'limit': 100, 'remaining': 82.5}}
+        with patch('openrsi_space.client.transport.endpoint', return_value='https://example.com'), \
+             patch('openrsi_space.client.transport.solver_token', return_value='private-canary'), \
+             patch('openrsi_space.client.transport.solver_fetch', return_value=json.dumps(reply)) as fetch:
+            for target in ({'station': True}, {}):
+                result = status(self.state, **target)
+                self.assertIn('MY RESEARCH STATION', result['card'])
+                self.assertIn('2 harness cards · 2 runs', result['card'])
+                self.assertIn('[1] first', result['card'])
+                self.assertIn('[2] second', result['card'])
+                self.assertIn('1 running', result['card'])
+                self.assertIn('1 completed', result['card'])
+                self.assertNotIn('Local run:', result['card'])
+                self.assertIn('$82.50 available / $100', result['card'])
+                self.assertEqual(len(result['harnesses']), 2)
+                self.assertNotIn('private-canary', json.dumps(result))
+            self.assertEqual(fetch.call_count, 2)
+            self.assertTrue(all(call.args[1] == '/funding' and not call.kwargs
+                                for call in fetch.call_args_list))
+            fetch.side_effect = OSError('private-canary')
+            result = status(self.state, station=True)
+            self.assertIn('Account allowance: unavailable', result['card'])
+            self.assertEqual(len(result['harnesses']), 2)
+        self.assertEqual(before, {p: p.read_bytes() for p in self.state.rglob('*') if p.is_file()})
+
     def test_runtime_summary_is_used_without_claiming_live_process(self):
         record = self.root / 'runtime/record.json'
         write_json(record, {'data': {'status': 'running'}})
@@ -94,6 +132,7 @@ class JourneyTests(unittest.TestCase):
         self.assertEqual(result['usage']['model_requests'], 3)
         self.assertEqual(result['candidate_evaluations']['best_score'], 55)
         self.assertEqual(result['phase'], 'local')
+        self.assertEqual(result['completed_phases'], ['choose', 'prepare'])
         self.assertEqual(result['availability'], 'recorded')
         self.assertIn('stale', result['note'])
         self.assertNotEqual(result['verification'], 'valid')
@@ -107,6 +146,8 @@ class JourneyTests(unittest.TestCase):
         self.local(status='prepared')
         result = status(self.state)
         self.assertEqual(result['phase'], 'prepare')
+        self.assertEqual(result['completed_phases'], ['choose'])
+        self.assertNotIn('✓ Test locally', result['card'])
         self.assertIn('authorized budget', result['next_action'])
         self.assertEqual(result['usage']['accounting_state'], 'unknown')
 
@@ -183,7 +224,7 @@ class JourneyTests(unittest.TestCase):
 
     def test_station_reports_unreadable_records_and_needs_no_login(self):
         self.local().write_text('{')
-        with patch('openrsi_space.client.transport.solver_token', side_effect=AssertionError('login')):
+        with patch('openrsi_space.client.transport.solver_fetch', side_effect=AssertionError('network')):
             result = status(self.state, station=True)
         self.assertEqual(result['omitted_records'], 1)
         self.assertIn('unreadable', result['card'])
@@ -214,6 +255,7 @@ class JourneyTests(unittest.TestCase):
         self.assertNotIn('budget_usd', result['usage'])
         self.assertNotIn('model_requests', result['usage'])
         self.assertIn('unknown', result['card'])
+        self.assertEqual(result['completed_phases'], [])
 
     def remote_fixture(self):
         identity = 'f46fa5f6-b4b8-4c23-9711-baa08eb90023'
@@ -249,6 +291,7 @@ class JourneyTests(unittest.TestCase):
         before = {p: p.read_bytes() for p in self.state.rglob('*') if p.is_file()}
         result = self.remote_status(live)
         self.assertEqual(result['phase'], 'remote')
+        self.assertEqual(result['completed_phases'], ['choose', 'prepare', 'local', 'readiness'])
         self.assertEqual(result['usage']['budget_usd'], 0.7)
         self.assertEqual(result['candidate_evaluations']['best_score'], 50)
         self.assertEqual(result['verification'], 'unknown')
@@ -288,6 +331,7 @@ class JourneyTests(unittest.TestCase):
         for valid in (True, False, None):
             result = self.remote_status({**live, 'status': 'completed', 'valid': valid}, evaluation=identity)
             self.assertEqual(result['phase'], 'results')
+            self.assertEqual(result['completed_phases'], ['choose', 'prepare', 'local', 'readiness', 'remote'])
             self.assertEqual(result['verification'], 'valid' if valid is True else 'invalid' if valid is False else 'unknown')
         self.assertEqual([p.name for p in folder.iterdir()], ['session.json'])
 
