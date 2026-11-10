@@ -138,8 +138,17 @@ def remote_status(state, identity):
         if result['verification'] != 'valid':
             result['blocker'] = 'No confirmed valid final result; inspect owner diagnostics before another run.'
             result['next_action'] = f'Inspect openrsi-space remote diagnostics {identity}.'
-    result['daily_allowance'] = daily_allowance(client)
     return result
+
+
+def account_allowance(state):
+    from openrsi_space.client.evaluations import RemoteClient
+    try:
+        client = RemoteClient(state)
+    except (OpenRSIError, OSError, ValueError, TypeError):
+        # Existing credentials are optional for a local/harness card. Never prompt.
+        return {'status': 'unavailable'}
+    return daily_allowance(client)
 
 
 def daily_allowance(client):
@@ -178,6 +187,7 @@ def status(state, *, local_run=None, evaluation=None, harness=None, station=Fals
                     raise ValueError('Unknown harness')
                 result.update(harness=group, harness_id=group['harness_id'],
                               next_action='Select a local run or remote evaluation to inspect its progress.')
+                result['daily_allowance'] = account_allowance(state)
                 result['card'] = render(result)
             else:
                 result['card'] = overview(collection)
@@ -216,6 +226,8 @@ def status(state, *, local_run=None, evaluation=None, harness=None, station=Fals
         result.update(availability='unavailable', phase=None,
                       blocker='Could not read or validate status; no run was started or retried.',
                       next_action='Check the selected record, original --state directory, evaluator and local login.')
+    if result['availability'] in {'recorded', 'live'}:
+        result['daily_allowance'] = account_allowance(state)
     result['card'] = render(result)
     return result
 
@@ -255,12 +267,12 @@ def render(result):
     allowance = result.get('daily_allowance')
     if allowance is not None:
         if allowance.get('status') == 'available':
-            lines.extend(['Daily allowance (rolling 24h):',
+            lines.extend(['Account allowance (rolling 24h):',
                           f"${allowance['remaining']:.2f} available / ${allowance['limit']:g}"])
             if allowance['halted']:
                 lines.append('Remote funding paused')
         else:
-            lines.append('Daily allowance: unavailable')
+            lines.append('Account allowance: unavailable')
     if result['execution'] in TERMINAL:
         outcome = {'valid': 'Valid final result', 'invalid': 'Final result invalid'}.get(
             result['verification'], 'Final result needs inspection')
