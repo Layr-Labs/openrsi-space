@@ -46,7 +46,7 @@ knowledge-base URLs. Use the assigned gateway, not a hardcoded provider endpoint
 See the [task contract](#detailed-task-and-smoke-contract) for full fields.
 
 Choose a client that supports the route: Codex uses Responses, Claude Code uses
-Messages. Follow the [subscription recipes](local-subscriptions.md)
+Messages. Follow the [subscription recipes](local-evaluation.md#3-prepare-only-the-selected-local-access-route)
 and [client compatibility reference](harness-compatibility.md).
 
 Use `evaluate` to request trusted compilation, correctness checks and scoring.

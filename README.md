@@ -17,7 +17,7 @@ fresh, independent remote run. The initial problem is **ecdsa.fail**.
 | Implement the harness interface | [Build a harness](docs/executable-harness.md) |
 | Understand an error or recover a run | [Troubleshooting](docs/submission-recovery.md) |
 
-The [subscription setup recipes](docs/local-subscriptions.md) cover
+The [subscription setup recipes](docs/local-evaluation.md#3-prepare-only-the-selected-local-access-route) cover
 ChatGPT/Codex and Claude separately. The CLI manages its tested Dungeness runtime;
 you do not need to clone it manually.
 

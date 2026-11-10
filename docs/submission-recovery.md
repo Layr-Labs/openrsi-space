@@ -24,7 +24,7 @@ verification, source availability and optional Yukon publication.
 
 | What you see | What to do |
 | --- | --- |
-| Asked for an OpenRouter key during a subscription local test | Check the local provider: use `openai-chatgpt` or `claude-subscription` and its [login recipe](local-subscriptions.md), not local `openrouter`. |
+| Asked for an OpenRouter key during a subscription local test | Check the local provider: use `openai-chatgpt` or `claude-subscription` and its [login recipe](local-evaluation.md#3-prepare-only-the-selected-local-access-route), not local `openrouter`. |
 | Local run failed or reports only wrapper completion | Inspect agent outcome, candidate verification and evidence completeness separately. Wrapper success alone is insufficient. |
 | HTTP 400, no evaluation ID | Read the admission code and failing field. Keep the saved request. Do not assume a worker started; ask the operator if creation is unclear. |
 | Submission response lost | Recover the unchanged saved request and original identity; do not invent a new request or silently resubmit altered source. |

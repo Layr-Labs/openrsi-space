@@ -116,10 +116,11 @@ and check status until terminal. Closing monitoring alone does not stop spending
 
 `wait` reconnects to the existing run; it does not restart research. You can cancel,
 but cannot extend an active run's budget. Accepted verified results appear on the
-dashboard automatically. Each line in the run-history chart represents one run.
-Each dot marks a candidate evaluation: its score and cumulative model credits
-(USD equivalent) used when the agent requested evaluation. Lower ECDSA scores are
-better. Compare runs at the same spending level to see which harness makes more progress.
+dashboard automatically. Each line shows one run's best verified score so far
+against cumulative model credits (USD equivalent). Select a run to see individual
+candidate evaluations, including ties and worse scores, at the credits used when
+the agent requested evaluation. Lower ECDSA scores are better. Compare runs at the
+same spending level to see which harness makes more progress.
 Yukon publication is [optional](artifact-sharing.md) and uses the
 existing receipt, with no new inference.
 

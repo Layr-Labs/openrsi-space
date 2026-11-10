@@ -2,29 +2,37 @@
 
 Start with [Local setup](local-evaluation.md) and read only your selected provider section. Funded remote policy lives in [Funding and scoring](platform-funded-inference.md).
 
-## Implemented providers and hosted permission
+<a id="implemented-providers-and-hosted-permission"></a>
 
-OpenRSI discovers provider implementations from the pinned Dungeness runtime.
-Runtime availability does not grant remote permission: subscription routes are
-local-only, and platform funding additionally requires an operator-funded API
-provider. Pricing quotes and submissions enforce the same remote restrictions.
+## Choose local model access
 
-| Provider | Local access | Hosted access |
+**Start with your existing model subscription.** ChatGPT/Codex and Claude Code
+can use their authorized local logins; no personal OpenRouter key is needed.
+Testing consumes the plan's allowance. API access is an optional alternative with
+separate provider charges; do not switch to it without the solver's authorization.
+
+| Local access | Provider | Setup |
 | --- | --- | --- |
-| `openrouter` | Your API key | Platform funding when advertised |
-| `openai` | Your API key | Personal API-key support retained but disabled |
-| `anthropic` | Your API key | Personal API-key support retained but disabled |
-| `openai-chatgpt` | Existing local Codex login, if authorized | Not supported |
-| `claude-subscription` | Authorized local login access | Not supported |
-| `grok-subscription` | [Authorized local Grok login](live-models.md#local-grok-subscription-testing) | Not supported |
-| `minimax-subscription` | [MiniMax Coding/Token Plan key](live-models.md#local-minimax-subscription-testing) | Not supported |
+| ChatGPT subscription with Codex | `openai-chatgpt` | [Existing Codex login](#local-chatgpt-subscription-setup) |
+| Claude subscription with Claude Code | `claude-subscription` | [Existing Claude login](#claude-subscription-access) |
+| Optional, separately billed API access | `openrouter`, `openai`, `anthropic` | Your authorized provider API key |
 
-Select the exact model advertised by the funded provider. The submitted harness
-must construct compatible requests and tool definitions and use its assigned
-gateway with placeholder credentials. The trusted gateway holds the platform key.
-A successful pricing quote is not proof that the harness/provider pairing works.
-Test locally first with the matching model or advertised subscription equivalent,
-and the same reasoning settings. Local and remote provider labels can differ.
+## Funded remote verification
+
+Subscription local runs **can qualify** for the supported equivalent remote model.
+Check `openrsi-space remote funding-policy` before testing; source, problem and
+reasoning settings must also match. Local provider labels may differ from remote
+labels. Not every locally supported model has an eligible remote equivalent.
+
+Eigen Labs supplies and pays for remote OpenRouter access. Submit with
+`--platform-funded` and the exact supported remote model; do not upload a personal
+API key or subscription login. Subscription credentials are used locally only—this
+does not mean their local evidence is ineligible. See [funding and evidence rules](platform-funded-inference.md).
+
+The pinned Dungeness runtime defines available providers. The unchanged harness
+must support its assigned API protocol, endpoints and placeholder credentials on
+both routes; selecting a model does not translate requests. Test that pairing
+locally. A successful pricing quote alone does not establish compatibility.
 
 Direct xAI, Kimi Code and Moonshot routes remain retired.
 Historical receipts and results remain readable; reading them does not permit a new run.
@@ -136,7 +144,7 @@ PY
 ```
 
 Pass the resulting path with `--provider-access-file`, as shown in the
-[subscription quickstart](local-subscriptions.md).
+[subscription quickstart](local-evaluation.md#3-prepare-only-the-selected-local-access-route).
 Remove this temporary access map after local testing. Keep the original Claude
 login unchanged. If login is stored in an OS keychain or uses another format,
 this helper does not apply: use an authorized local credential method to create
@@ -224,70 +232,3 @@ and the [OpenRouter catalog](https://openrouter.ai/api/v1/models) on 2026-10-30:
 Opus 5.5 reference rates per million tokens are input $4, output $20, cache read
 $0.20, five-minute cache write $5 and one-hour cache write $8. Retained runs keep
 their recorded schedule. See [Claude Code environment variables](https://code.claude.com/docs/en/env-vars).
-
-## Local Grok subscription testing
-
-The CLI manages the runtime. For the custom pricing examples below, save and review
-a trusted [local pricing schedule](https://github.com/Layr-Labs/dungeness/blob/main/docs/examples/local-subscription-pricing-20261030.json)
-as `local-pricing.json`; its path is separate from the managed runtime cache.
-
-Use an authorized local Grok login with a Dungeness runtime that advertises
-`grok-subscription`. Sign in using the official CLI:
-
-```sh
-grok login --device-auth
-openrsi-space local run /absolute/path/to/harness \
-  --provider grok-subscription --model grok-4.7 --reasoning-effort high \
-  --budget 3 --no-token-limit --grok-auth-file \
-  --pricing /absolute/path/to/local-pricing.json
-```
-
-`--grok-auth-file` defaults to `~/.grok/auth.json` and is available only on
-`local run`. Only the access token and actual expiry are staged for the local
-gateway. Refresh tokens and account identity stay outside the run. An expired
-or ambiguous login is rejected; sign in locally again. Keep login files outside
-the harness. Do not paste tokens into source, prompts or command arguments.
-
-The harness must send Chat Completions with the assigned model and gateway URL.
-Configure high reasoning effort and a 500,000-token context in your client if
-desired; the CLI's `--reasoning-effort` run setting does not rewrite arbitrary
-client requests. A context window is separate from the run's total token limit.
-Test tool calls, title helpers and compaction as well as the main model call.
-The gateway does not impersonate the official CLI or add its identity headers.
-
-The $3 cap measures normalized reference usage, not cash or remaining Grok plan
-allowance. In-flight calls can overshoot the cap. The supplied frozen schedule
-includes Grok's higher pricing tier above 200,000 input tokens.
-
-Remote runs remain platform-funded through OpenRouter. This local route does
-not enable remote subscription-token submission or change evidence eligibility.
-Direct `xai` API access remains retired; use OpenRouter for funded remote access.
-
-See [Grok's headless documentation](https://docs.x.ai/build/overview).
-
-## Local MiniMax subscription testing
-
-Use your MiniMax Coding/Token Plan key with `minimax-subscription`, the exact
-supported model (`MiniMax-M3.1-Flash` or `MiniMax-M3`), and Chat Completions through
-the assigned gateway. A subscription key and a pay-as-you-go API key may have
-similar interfaces; select the plan key to consume your subscription.
-
-Supply it privately through a local environment variable or a 0600 credential
-map outside the harness. Never put the key in source or command arguments.
-
-```sh
-openrsi-space local run /absolute/path/to/harness \
-  --provider minimax-subscription --model MiniMax-M3.1-Flash \
-  --budget 3 --provider-token-env MINIMAX_PLAN_KEY \
-  --pricing /absolute/path/to/local-pricing.json
-```
-
-Set `MINIMAX_PLAN_KEY` privately before running. The harness receives only a
-placeholder; the gateway substitutes the key and records provider-reported usage.
-Preserve the assistant's reasoning content and tool calls in conversation history,
-as required by the [MiniMax API](https://platform.minimax.io/docs/api-reference/text-openai-api).
-
-Credits use a frozen reference schedule, not an assertion of cash billing or
-remaining subscription allowance. Remote credential submission remains disabled;
-this route does not change funded remote evaluation or evidence eligibility.
-Live account compatibility must be checked separately from synthetic tests.

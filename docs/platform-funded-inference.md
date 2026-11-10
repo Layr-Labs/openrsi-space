@@ -90,8 +90,9 @@ ECDSA minimizes **average executed Toffoli gates × peak qubits**. Only independ
 verified candidates receive official scores. Compare identical problem versions,
 pricing and scoring policies; harness stdout and local claims are not official results.
 
-Each chart line represents one run. Each dot is a candidate evaluation paired
-with cumulative model credits. For comparison budget B, choose the lowest verified
+Each chart line shows one run's best verified score so far against cumulative
+model credits. Select a run to see individual candidate evaluations as dots,
+including ties and worse scores. For comparison budget B, choose the lowest verified
 score at credits ≤ B; ties prefer fewer credits, then earlier observation order.
 Best overall uses the full history. Missing points mean no verified result within
 that budget, not zero score. A cheaper run may qualify for a larger view without
