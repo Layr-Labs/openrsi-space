@@ -29,7 +29,7 @@ Model access is separate from Yukon authentication. Hosted runs are platform-fun
 and receive no personal model credentials. Remote subscription-token submission
 has been removed, including the remote `--codex-auth-file` option. API-key handoff
 through `--provider-access-file`, the hidden prompt or stdin remains implemented
-but is currently disabled on the hosted service. See [model access](../live-models.md).
+but is currently disabled on the hosted service. See [model access](../model-access.md).
 
 Platform-funded requests instead use the non-secret grant
 `evaluation.llm_access.grant_id: grant_platform_funded` and send no
@@ -47,7 +47,7 @@ be at least the requested remote cap; actual spending may be lower. The upload i
 to 192 MiB and 1,000 model calls, separately from the public source ZIP.
 The server screens it for secrets and performs bounded LLM readiness review; it
 is not proof of full replay or authenticity. Every new funded submission requires
-this evidence; there is no skip option or operator exemption. See [funded submission details](../platform-funded-inference.md).
+this evidence; there is no skip option or operator exemption. See [funded submission details](../funding-and-scoring.md).
 
 GitHub Actions uses a short-lived OIDC identity for receipt retrieval. That
 identity authenticates the workflow; it is not the evaluation receipt and cannot

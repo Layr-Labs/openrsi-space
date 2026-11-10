@@ -1,6 +1,6 @@
 # Runtime and gateway reference
 
-For setup, start with [Local setup](local-evaluation.md); for image and entrypoint requirements, use [Build a harness](executable-harness.md).
+For setup, start with [Local setup](local-setup-and-testing.md); for image and entrypoint requirements, use [Build a harness](executable-harness.md).
 
 An `evaluation.json` is optional when all three model/budget flags are provided.
 Without a file, the defaults are temporary model access, no token ceiling,
@@ -170,12 +170,10 @@ Accepted runs retain their original pricing snapshot, even if the catalog
 changes later. The same recorded schedule is used for the run's model-credit
 comparison. Quotes and raw usage do not authorize a solver to edit prices.
 
-The optional personal API-key interface is implemented but disabled in production.
-If an operator enables it later, the hidden prompt or stdin accepts a single API
-key; `--provider-access-file` accepts API-key maps. Remote subscription handoffs
-and the remote `--codex-auth-file` option have been removed.
-
-API keys are staged privately for the trusted gateway. The harness uses the
+Personal model credentials stay on the solver's machine for local testing.
+Remote runs use platform-funded OpenRouter; do not upload a personal API key
+or subscription login. The trusted gateway supplies model access on each route.
+The harness uses the
 `testbed` placeholder, never native authentication files. Protocol conversion
 belongs in the submitted harness. For streamed chat requests, the gateway
 requests the final usage chunk and drains it even if the agent disconnects.
@@ -234,7 +232,7 @@ submitted command; it does not install or select a bundled coding agent.
 Package tools and dependencies before execution because research-time internet
 access is disabled.
 
-Use [local build and smoke checks](local-evaluation.md), then submit a funded run
+Use [local build and smoke checks](local-setup-and-testing.md), then submit a funded run
 through the remote service when authorized.
 
 ## Optional token ceiling
@@ -248,7 +246,7 @@ An operator who explicitly requires a finite token ceiling can reject uncapped
 requests; the hosted OpenRSI service does not impose one by default.
 
 Build dependencies: run `openrsi-space remote build-policy` before choosing hosted
-package sources; see [build dependency policy](source-limits.md#dependency-downloads-during-builds).
+package sources; see [build dependency policy](source-and-build-rules.md#dependency-downloads-during-builds).
 
 ## Task document
 

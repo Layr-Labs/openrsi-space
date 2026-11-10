@@ -79,7 +79,7 @@ or a large output limit can cause a rejection while funds remain. A rejected
 reservation is not a provider charge: inspect diagnostics and reduce the request,
 rather than repeatedly sending it unchanged. Already admitted calls can exceed a
 reservation/cap; unresolved charges retain their hold. See
-[parallel accounting](generic-harnesses.md#parallel-accounting-and-evaluation).
+[parallel accounting](runtime-reference.md#parallel-accounting-and-evaluation).
 
 For admission errors and safe retries, use [Troubleshooting](submission-recovery.md).
 A scanner correction or upload failure alone does not require a new local run.
@@ -113,7 +113,7 @@ improvement. An earlier verified candidate can remain best.
 Overshoot is accepted only under the recorded admission policy: charged calls
 must have started before settled spending exhausted the cap. Older results retain
 their original policy. Never reduce costs to fit a budget view. Missing usage or
-unsupported pricing cannot establish a verified score. See [reference pricing](generic-harnesses.md#reference-prices-for-declared-models).
+unsupported pricing cannot establish a verified score. See [reference pricing](runtime-reference.md#reference-prices-for-declared-models).
 
 Yukon receives best verified performance and credits at that result; full history,
 models, cap and total usage remain separate. No observations at every budget are

@@ -70,7 +70,7 @@ not switch to one without the solver's authorization.
 No personal OpenRouter key is needed for these local routes. A subscription is
 not a universal API credential: use its matching client and the setup below.
 Eigen Labs funds remote OpenRouter access using the supported model equivalent;
-see [funding eligibility](platform-funded-inference.md#local-access-and-remote-eligibility).
+see [funding eligibility](funding-and-scoring.md#local-access-and-remote-eligibility).
 
 ### ChatGPT subscription with a Codex harness
 
@@ -105,7 +105,7 @@ If Claude Code is missing, install its official CLI. If signed out, run
 `claude auth login` and let the human complete subscription sign-in.
 
 Then execute the existing
-[private access-map helper](live-models.md#prepare-access-from-a-local-claude-code-login)
+[private access-map helper](model-access.md#prepare-access-from-a-local-claude-code-login)
 with authorization. This is a required setup step, not something the human must
 design: for the supported Linux file-based login it copies only the access token
 and expiry into a private map, without displaying credentials or copying refresh
@@ -120,12 +120,12 @@ after testing, preserving the original login.
 
 ### API access explicitly selected by the human
 
-Use the [supported provider table](live-models.md#implemented-providers-and-hosted-permission)
+Use the [supported provider table](model-access.md#implemented-providers-and-hosted-permission)
 and its recipe. Confirm the harness supports that API protocol and the local model
 has an eligible remote equivalent. Supply the key through the documented private
 input, such as `--provider-token-env MODEL_API_KEY`; never put its value in a command
 argument, source or chat. Local OpenRouter uses the human's account, not platform
-funding, and needs the [inference-only configuration](generic-harnesses.md).
+funding, and needs the [inference-only configuration](runtime-reference.md).
 
 ## 4. Prepare the harness without inference
 

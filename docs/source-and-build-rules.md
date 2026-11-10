@@ -1,7 +1,7 @@
 # Harness source and build requirements
 
 Use this reference to prepare a source package and reproducible build.
-The [submission rules](source-limits.md) define permitted content;
+The research rules below define permitted content; the
 [submission recovery guide](submission-recovery.md) explains failures and recovery.
 
 ## Source package limits
@@ -15,7 +15,7 @@ the expanded-source count.
 For platform-funded runs, the required local-run evidence is a **separate private
 upload**, capped at **192 MiB and 1,000 model calls**. Do not include it in the
 public harness ZIP. Its recorded local budget cap must cover the remote cap; actual spending may be lower;
-see [funded submission requirements](platform-funded-inference.md).
+see [funded submission requirements](funding-and-scoring.md).
 
 Check the deployed service rather than assuming a client update changed it:
 
@@ -136,7 +136,7 @@ The trusted task service supplies the problem statement, blank scaffold, neutral
 SDK and the same pinned **eight-paper library** to every run. The agent may read those
 papers, index them, develop strategies and generate candidates during its metered
 run. Those trusted resources and newly generated candidates are outside the
-submitted-material prohibition. See [the library endpoint](generic-harnesses.md).
+submitted-material prohibition. See [the library endpoint](runtime-reference.md).
 
 Submissions and produced candidates are checked against these rules. A rejection
 can occur before execution or after model usage; charges already incurred still

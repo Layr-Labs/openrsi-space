@@ -24,7 +24,7 @@ verification, source availability and optional Yukon publication.
 
 | What you see | What to do |
 | --- | --- |
-| Asked for an OpenRouter key during a subscription local test | Check the local provider: use `openai-chatgpt` or `claude-subscription` and its [login recipe](local-evaluation.md#3-prepare-only-the-selected-local-access-route), not local `openrouter`. |
+| Asked for an OpenRouter key during a subscription local test | Check the local provider: use `openai-chatgpt` or `claude-subscription` and its [login recipe](local-setup-and-testing.md#3-prepare-only-the-selected-local-access-route), not local `openrouter`. |
 | Local run failed or reports only wrapper completion | Inspect agent outcome, candidate verification and evidence completeness separately. Wrapper success alone is insufficient. |
 | HTTP 400, no evaluation ID | Read the admission code and failing field. Keep the saved request. Do not assume a worker started; ask the operator if creation is unclear. |
 | Submission response lost | Recover the unchanged saved request and original identity; do not invent a new request or silently resubmit altered source. |
@@ -53,8 +53,8 @@ an evaluation was submitted; a timeout after submission remains ambiguous.
 
 | Symptom | Next action | Expected result / escalation |
 | --- | --- | --- |
-| `Local Dungeness check required` | Locate the original local record and use `--local-run PATH`. Compare source, problem, model/reasoning, recorded cap and complete settled exchanges using the [local evidence rules](platform-funded-inference.md#local-access-and-remote-eligibility). | Reuse a qualifying record. Start another paid local test only if the actual mismatch or missing evidence requires it. A valid local circuit is not required. |
-| Local build, model access or runtime failed | Inspect `run.json` and the paths in its summary using [local outcomes and diagnostics](local-evaluation.md#local-outcomes-and-diagnostics). | Fix the identified local issue. An ended failed run may still qualify as evidence; its exit code alone does not decide eligibility. |
+| `Local Dungeness check required` | Locate the original local record and use `--local-run PATH`. Compare source, problem, model/reasoning, recorded cap and complete settled exchanges using the [local evidence rules](funding-and-scoring.md#local-access-and-remote-eligibility). | Reuse a qualifying record. Start another paid local test only if the actual mismatch or missing evidence requires it. A valid local circuit is not required. |
+| Local build, model access or runtime failed | Inspect `run.json` and the paths in its summary using [local outcomes and diagnostics](local-setup-and-testing.md#local-outcomes-and-diagnostics). | Fix the identified local issue. An ended failed run may still qualify as evidence; its exit code alone does not decide eligibility. |
 | Evidence upload failed | Read the printed diagnostic path, which may be `<state>/remote/diagnostics/upload-UUID.json` with no request ID. Resolve the reported size, privacy or service error before retrying. | This upload does not create an evaluation. Keep the original local records; a transient upload failure does not require another local research run. |
 | HTTP 401 / missing login | Restore the same owner's Yukon login or key using [authentication handoff](solver-guide.md#yukon-authentication-when-needed), then retry the same retrieval or pending operation. | The client already attempts session renewal for Yukon keys. Persistent failure needs operator help; a personal model key does not replace Yukon authentication. |
 | HTTP 403 | Check the owner account, evaluator and intended board against [endpoint selection](solver-guide.md), then inspect the error code. | If access or policy remains denied, contact the operator with the IDs. A bare 403 does not identify which policy failed. |
@@ -94,7 +94,7 @@ rules; do not edit the saved request or recorded local evidence to make it match
 | Account allowance or funding unavailable | Inspect `remote funding` and `remote funding-policy`. Reservations and unsettled charges can affect availability. A new Yukon key does not create a new account allowance. |
 
 For size errors, use `remote limits ./my-harness` and the reported limit;
-see [source limits](source-limits.md) and [local evidence requirements](platform-funded-inference.md).
+see [source limits](source-and-build-rules.md) and [local evidence requirements](funding-and-scoring.md).
 
 ## Which failure can I fix myself?
 
@@ -174,7 +174,7 @@ Do not rerun research or edit receipt bindings to match the changed directory.
 For local testing, a failed or cancelled ended run can still qualify as evidence
 when its model exchanges and settled accounting are complete and the remaining
 checks pass. Conversely, wrapper exit code zero does not prove that the agent
-succeeded. See [local outcomes and diagnostics](local-evaluation.md#local-outcomes-and-diagnostics).
+succeeded. See [local outcomes and diagnostics](local-setup-and-testing.md#local-outcomes-and-diagnostics).
 
 ## Why is my harness source not public?
 

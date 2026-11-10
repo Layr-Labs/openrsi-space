@@ -11,37 +11,36 @@ Use this process when creating or reusing a harness:
 1. Inspect every model client the framework launches, including title generation,
    summarization, compaction and helper agents. Determine whether each uses
    Responses, Chat Completions, or another API. Check the
-   [hosted provider permissions](live-models.md#implemented-providers-and-hosted-permission).
+   [local model access and funded eligibility](model-access.md#funded-remote-verification).
    The selected Dungeness runtime reports its trusted provider IDs through
    `dungeness providers`. OpenRSI uses that registry for both pricing quotes and
    submission admission. Solvers cannot supply upstream URLs or provider profiles.
    A provider absent from the runtime needs operator integration. For platform
    funding, also check `openrsi-space remote funding-policy`: select a funded API
    provider and your exact model, with service-validated pricing. The local trace
-   must match the provider, model and reasoning settings of the remote request.
+   must match the remote model or a supported local provider/model equivalent,
+   with the same reasoning settings. The funding policy lists supported equivalents.
 2. Route all model requests through the endpoints and model identities assigned
    in `OPENRSI_TASK`. Package any necessary API adapter in the harness. Test tool
    definitions, named tool choice, tool results, streaming responses and usage
    reporting. Translate both requests and responses when the protocols differ.
    Disable unsupported provider-hosted tools and unmetered fallback clients.
 3. For funded remote access, use `--platform-funded` and no personal model credential.
-   Personal API-key submission is currently disabled and remote subscription
-   handoffs have been removed. For local testing, use the private access option
+   Keep personal model credentials local. For local testing, use the private access option
    described in the local guide. A qualifying local evidence run must match the
    funded remote model (or its supported local equivalent) and reasoning settings.
 4. Run the packaging/entrypoint smoke checks and exercise the adapter against a
    strict mock of the selected API, including auxiliary requests and a complete
    tool-call round trip. A mock should reject malformed fields rather than return
    success for any JSON. `openrsi-space harness smoke` alone does not test live provider
-   compatibility. Complete a [local Dungeness run](local-evaluation.md) before
+   compatibility. Complete a [local Dungeness run](local-setup-and-testing.md) before
    remote submission; the CLI reuses a matching local record. Every new hosted
    submission requires its private local bundle and a recorded local budget cap
    at least as large as the remote cap. Actual spending may be lower. There is no skip option or evidence exemption.
 5. Report the tested framework version, provider/model/access method, supported
    API operations and any untested boundary in the readiness report. A live
    compatibility run consumes model allowance and needs the user's authorization
-   for remote credential use and a finite budget; reuse authorization already
-   given. Do not claim a successful research run from a build or mock test alone.
+   for that local test and a finite budget; reuse authorization already given. Do not claim a successful research run from a build or mock test alone.
 
 ## Example: helper requests using a different API
 
