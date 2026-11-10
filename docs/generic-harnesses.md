@@ -170,12 +170,10 @@ Accepted runs retain their original pricing snapshot, even if the catalog
 changes later. The same recorded schedule is used for the run's model-credit
 comparison. Quotes and raw usage do not authorize a solver to edit prices.
 
-The optional personal API-key interface is implemented but disabled in production.
-If an operator enables it later, the hidden prompt or stdin accepts a single API
-key; `--provider-access-file` accepts API-key maps. Remote subscription handoffs
-and the remote `--codex-auth-file` option have been removed.
-
-API keys are staged privately for the trusted gateway. The harness uses the
+Personal model credentials stay on the solver's machine for local testing.
+Remote runs use platform-funded OpenRouter; do not upload a personal API key
+or subscription login. The trusted gateway supplies model access on each route.
+The harness uses the
 `testbed` placeholder, never native authentication files. Protocol conversion
 belongs in the submitted harness. For streamed chat requests, the gateway
 requests the final usage chunk and drains it even if the agent disconnects.
