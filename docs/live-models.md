@@ -2,29 +2,39 @@
 
 Start with [Local setup](local-evaluation.md) and read only your selected provider section. Funded remote policy lives in [Funding and scoring](platform-funded-inference.md).
 
-## Implemented providers and hosted permission
+<a id="implemented-providers-and-hosted-permission"></a>
 
-OpenRSI discovers provider implementations from the pinned Dungeness runtime.
-Runtime availability does not grant remote permission: subscription routes are
-local-only, and platform funding additionally requires an operator-funded API
-provider. Pricing quotes and submissions enforce the same remote restrictions.
+## Choose local model access
 
-| Provider | Local access | Hosted access |
+**Start with your existing model subscription.** ChatGPT/Codex and Claude Code
+can use their authorized local logins; no personal OpenRouter key is needed.
+Testing consumes the plan's allowance. API access is an optional alternative with
+separate provider charges; do not switch to it without the solver's authorization.
+
+| Local access | Provider | Setup |
 | --- | --- | --- |
-| `openrouter` | Your API key | Platform funding when advertised |
-| `openai` | Your API key | Personal API-key support retained but disabled |
-| `anthropic` | Your API key | Personal API-key support retained but disabled |
-| `openai-chatgpt` | Existing local Codex login, if authorized | Not supported |
-| `claude-subscription` | Authorized local login access | Not supported |
-| `grok-subscription` | [Authorized local Grok login](live-models.md#local-grok-subscription-testing) | Not supported |
-| `minimax-subscription` | [MiniMax Coding/Token Plan key](live-models.md#local-minimax-subscription-testing) | Not supported |
+| ChatGPT subscription with Codex | `openai-chatgpt` | [Existing Codex login](#local-chatgpt-subscription-setup) |
+| Claude subscription with Claude Code | `claude-subscription` | [Existing Claude login](#claude-subscription-access) |
+| Grok subscription | `grok-subscription` | [Authorized Grok login](#local-grok-subscription-testing) |
+| MiniMax Coding/Token Plan | `minimax-subscription` | [Plan key](#local-minimax-subscription-testing) |
+| Optional, separately billed API access | `openrouter`, `openai`, `anthropic` | Your authorized provider API key |
 
-Select the exact model advertised by the funded provider. The submitted harness
-must construct compatible requests and tool definitions and use its assigned
-gateway with placeholder credentials. The trusted gateway holds the platform key.
-A successful pricing quote is not proof that the harness/provider pairing works.
-Test locally first with the matching model or advertised subscription equivalent,
-and the same reasoning settings. Local and remote provider labels can differ.
+## Funded remote verification
+
+Subscription local runs **can qualify** for the supported equivalent remote model.
+Check `openrsi-space remote funding-policy` before testing; source, problem and
+reasoning settings must also match. Local provider labels may differ from remote
+labels. Not every locally supported model has an eligible remote equivalent.
+
+Eigen Labs supplies and pays for remote OpenRouter access. Submit with
+`--platform-funded` and the exact supported remote model; do not upload a personal
+API key or subscription login. Subscription credentials are used locally only—this
+does not mean their local evidence is ineligible. See [funding and evidence rules](platform-funded-inference.md).
+
+The pinned Dungeness runtime defines available providers. The unchanged harness
+must support its assigned API protocol, endpoints and placeholder credentials on
+both routes; selecting a model does not translate requests. Test that pairing
+locally. A successful pricing quote alone does not establish compatibility.
 
 Direct xAI, Kimi Code and Moonshot routes remain retired.
 Historical receipts and results remain readable; reading them does not permit a new run.
