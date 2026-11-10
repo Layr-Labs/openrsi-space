@@ -15,8 +15,6 @@ separate provider charges; do not switch to it without the solver's authorizatio
 | --- | --- | --- |
 | ChatGPT subscription with Codex | `openai-chatgpt` | [Existing Codex login](#local-chatgpt-subscription-setup) |
 | Claude subscription with Claude Code | `claude-subscription` | [Existing Claude login](#claude-subscription-access) |
-| Grok subscription | `grok-subscription` | [Authorized Grok login](#local-grok-subscription-testing) |
-| MiniMax Coding/Token Plan | `minimax-subscription` | [Plan key](#local-minimax-subscription-testing) |
 | Optional, separately billed API access | `openrouter`, `openai`, `anthropic` | Your authorized provider API key |
 
 ## Funded remote verification
@@ -234,70 +232,3 @@ and the [OpenRouter catalog](https://openrouter.ai/api/v1/models) on 2026-10-30:
 Opus 5.5 reference rates per million tokens are input $4, output $20, cache read
 $0.20, five-minute cache write $5 and one-hour cache write $8. Retained runs keep
 their recorded schedule. See [Claude Code environment variables](https://code.claude.com/docs/en/env-vars).
-
-## Local Grok subscription testing
-
-The CLI manages the runtime. For the custom pricing examples below, save and review
-a trusted [local pricing schedule](https://github.com/Layr-Labs/dungeness/blob/main/docs/examples/local-subscription-pricing-20261030.json)
-as `local-pricing.json`; its path is separate from the managed runtime cache.
-
-Use an authorized local Grok login with a Dungeness runtime that advertises
-`grok-subscription`. Sign in using the official CLI:
-
-```sh
-grok login --device-auth
-openrsi-space local run /absolute/path/to/harness \
-  --provider grok-subscription --model grok-4.7 --reasoning-effort high \
-  --budget 3 --no-token-limit --grok-auth-file \
-  --pricing /absolute/path/to/local-pricing.json
-```
-
-`--grok-auth-file` defaults to `~/.grok/auth.json` and is available only on
-`local run`. Only the access token and actual expiry are staged for the local
-gateway. Refresh tokens and account identity stay outside the run. An expired
-or ambiguous login is rejected; sign in locally again. Keep login files outside
-the harness. Do not paste tokens into source, prompts or command arguments.
-
-The harness must send Chat Completions with the assigned model and gateway URL.
-Configure high reasoning effort and a 500,000-token context in your client if
-desired; the CLI's `--reasoning-effort` run setting does not rewrite arbitrary
-client requests. A context window is separate from the run's total token limit.
-Test tool calls, title helpers and compaction as well as the main model call.
-The gateway does not impersonate the official CLI or add its identity headers.
-
-The $3 cap measures normalized reference usage, not cash or remaining Grok plan
-allowance. In-flight calls can overshoot the cap. The supplied frozen schedule
-includes Grok's higher pricing tier above 200,000 input tokens.
-
-Remote runs remain platform-funded through OpenRouter. This local route does
-not enable remote subscription-token submission or change evidence eligibility.
-Direct `xai` API access remains retired; use OpenRouter for funded remote access.
-
-See [Grok's headless documentation](https://docs.x.ai/build/overview).
-
-## Local MiniMax subscription testing
-
-Use your MiniMax Coding/Token Plan key with `minimax-subscription`, the exact
-supported model (`MiniMax-M3.1-Flash` or `MiniMax-M3`), and Chat Completions through
-the assigned gateway. A subscription key and a pay-as-you-go API key may have
-similar interfaces; select the plan key to consume your subscription.
-
-Supply it privately through a local environment variable or a 0600 credential
-map outside the harness. Never put the key in source or command arguments.
-
-```sh
-openrsi-space local run /absolute/path/to/harness \
-  --provider minimax-subscription --model MiniMax-M3.1-Flash \
-  --budget 3 --provider-token-env MINIMAX_PLAN_KEY \
-  --pricing /absolute/path/to/local-pricing.json
-```
-
-Set `MINIMAX_PLAN_KEY` privately before running. The harness receives only a
-placeholder; the gateway substitutes the key and records provider-reported usage.
-Preserve the assistant's reasoning content and tool calls in conversation history,
-as required by the [MiniMax API](https://platform.minimax.io/docs/api-reference/text-openai-api).
-
-Credits use a frozen reference schedule, not an assertion of cash billing or
-remaining subscription allowance. Remote credential submission remains disabled;
-this route does not change funded remote evaluation or evidence eligibility.
-Live account compatibility must be checked separately from synthetic tests.
