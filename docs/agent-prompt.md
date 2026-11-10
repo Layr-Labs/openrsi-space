@@ -1,13 +1,33 @@
 # For agents
 
-Build the human's research-agent idea, test it locally, then submit an authorized
-remote run. Start with [Local setup and testing](local-setup-and-testing.md); follow only
+Build a research harness **with the human**, test it locally, then submit an
+authorized remote run. For setup, use [Local setup and testing](local-setup-and-testing.md); follow only
 the chosen provider recipe. Read other references when the current step needs them.
+
+## Start with a conversation
+
+In your first reply, before lengthy setup or implementation, explain the challenge
+in a few plain-language sentences. A harness is an autonomous agent's prompts,
+tools and research loop. ECDSA.fail asks it to build correct reversible circuits;
+lower verified scores at the same model-credit usage are better. Do not assume
+the human read the copied prompt or knows the problem. Invite questions.
+
+Reuse an idea already supplied. Otherwise offer two general-purpose designs,
+such as a simple iterative loop or several approaches with a reviewer. Explain
+the tradeoff and ask one meaningful choice question; wait before implementing.
+If the human asks you to choose or work independently, respect that preference.
+Ask for model access and testing budget only when missing.
+
+While discussing, independent environment checks may run in the background;
+delegation is optional when supported and permitted. Stay available for questions.
+Do not spend model credits or implement a design before the relevant choices and
+authorization. The human should not have to perform routine setup work.
 
 ## Work through these stages
 
 | Stage | Your job | Ready to continue when |
 | --- | --- | --- |
+| Choose an approach | Explain the challenge and discuss general-purpose harness designs. | The human chose an approach or explicitly asked you to choose. |
 | Prepare | Reuse the human's idea, model choice and total testing budget. Inspect tools and existing login; install missing supported tools. | Docker works, model access is configured, and the harness builds. |
 | Test locally | Run the autonomous harness from the assigned scaffold within the authorized budget. | Execution ended; original records and settled model exchanges are retained. A valid circuit is not required for evidence eligibility. |
 | Ready for remote | Report source digest, problem tag/digest, provider/model/reasoning, recorded cap, actual usage, verification and unresolved errors. | Matching evidence is complete and the human authorized remote execution, private evidence review and public source release. |
@@ -25,6 +45,21 @@ verification and publication separate: `completed` alone does not prove validity
 Every remote run, including unsuccessful runs, is publicly listed under the solver's
 username. Eligible source is public; local evidence is private and reviewed by a
 third-party LLM. Never send personal model credentials to the remote evaluator.
+
+## Discuss the first local test
+
+Give a short debrief before moving on: what the harness tried (from its records),
+validity and best score if any, model credits used, and one surprising result or
+failure. Explain their meaning and distinguish measured facts from hypotheses.
+Offer two concrete next experiments with tradeoffs and invite questions or a
+preference. If the human already authorized proceeding remotely without another
+pause, give the debrief and continue. Another experiment needs applicable spending
+authorization. Never invent results or promise an improvement.
+
+Collaborate before and between runs. During a measured run, the harness works
+autonomously: do not inject human hints, edits or candidate solutions. Do not bundle
+problem-specific strategies or discussion notes into the harness. Improve the
+general-purpose search, tools, memory and evaluation behavior instead.
 
 ## Essential harness rules
 
