@@ -136,3 +136,30 @@ optional; do not select one unless you want one. Existing third-party licenses a
 ## Optional Yukon publication
 
 See [publication and recovery](artifact-sharing.md#optional-yukon-publication). This uses the existing receipt and does not start research.
+
+## Check journey progress
+
+After setup or a run transition, ask for a read-only status card:
+
+```bash
+openrsi-space journey list
+openrsi-space journey status --harness HARNESS_ID
+openrsi-space journey status --local-run LOCAL_RUN_PATH --json
+openrsi-space --state .openrsi journey status --evaluation EVALUATION_ID --json
+```
+
+JSON includes the rendered `card` for your agent to display in chat. Run the
+command from the original workspace (or use its original `--state` directory).
+The station groups recorded runs into harness cards. With multiple records,
+`journey status` shows the overview; choose a harness or run explicitly. Lists
+use saved status, not live server queries. Only a selected remote run is refreshed.
+All run IDs are retained in JSON; an expanded card shows up to five runs.
+This collection covers the selected workspace, not every machine or account. Remote checks use your existing login and configured evaluator.
+It never starts, retries or publishes a run. Missing data is unknown, not zero;
+saved local status does not prove a process is still running. Execution, final
+verification and the local evidence precheck are separate observations. A passed
+precheck does not guarantee that a particular remote request is eligible.
+
+Before a run exists, discuss your idea and preparation with the agent; the CLI
+cannot infer those human decisions. Use `remote wait` for an ongoing remote run,
+rather than adding another polling loop.

@@ -313,7 +313,14 @@ def remote_command(args, state):
 def dispatch(args):
     state = Path(args.state).expanduser().resolve()
     try:
-        if args.command == "problem":
+        if args.command == 'journey':
+            from openrsi_space.journey import status
+            result = status(state, local_run=getattr(args, 'local_run', None),
+                            evaluation=getattr(args, 'evaluation', None),
+                            harness=getattr(args, 'harness', None), station=args.operation == 'list')
+            print(json.dumps(result, indent=2, ensure_ascii=False) if args.json else result['card'])
+            return 1 if result['availability'] in {'unavailable', 'selection_required'} else 0
+        elif args.command == "problem":
             from openrsi_space.challenge.catalog import clone_problem, develop, get_problem, initial_problems
             if args.operation == "current":
                 from openrsi_space.client.catalog import PublicCatalog
