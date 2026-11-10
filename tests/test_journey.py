@@ -201,9 +201,14 @@ class JourneyTests(unittest.TestCase):
     def remote_status(self, live, **kwargs):
         with patch('openrsi_space.client.transport.endpoint', return_value='https://example.com'), \
              patch('openrsi_space.client.transport.solver_token', return_value='private-canary'), \
-             patch('openrsi_space.client.transport.solver_fetch', return_value=json.dumps(live)) as fetch:
+             patch('openrsi_space.client.transport.solver_fetch', side_effect=lambda base, path, bearer:
+                 json.dumps({'mode': 'platform', 'halted': False,
+                     'allowance': {'unit': 'usd_equivalent', 'window_seconds': 86400,
+                                   'limit': 20, 'remaining': 12.5},
+                     'recent_reservations': [{'secret': 'private-canary'}]})
+                 if path == '/funding' else json.dumps(live)) as fetch:
             result = status(self.state, **kwargs)
-            self.assertEqual(fetch.call_count, 1)
+            self.assertEqual(fetch.call_count, 2 if result['availability'] == 'live' else 1)
             self.assertEqual(len(fetch.call_args.args), 3)
             self.assertFalse(fetch.call_args.kwargs)  # GET only, no mutation document
         return result
@@ -217,8 +222,35 @@ class JourneyTests(unittest.TestCase):
         self.assertEqual(result['candidate_evaluations']['best_score'], 50)
         self.assertEqual(result['verification'], 'unknown')
         self.assertEqual(result['evaluation_id'], identity)
+        self.assertEqual(result['daily_allowance']['remaining'], 12.5)
+        self.assertIn('$12.50 available / $20', result['card'])
+        self.assertNotIn('Run budget left:', result['card'])
         self.assertNotIn('private-canary', json.dumps(result))
         self.assertEqual(before, {p: p.read_bytes() for p in self.state.rglob('*') if p.is_file()})
+
+    def test_allowance_failure_keeps_remote_status_and_never_leaks_response(self):
+        from openrsi_space.journey import daily_allowance
+        from types import SimpleNamespace
+        client = SimpleNamespace(base='https://example.com', bearer='private-canary')
+        for reply in ('private-canary', '{}', json.dumps({'mode': 'platform', 'halted': False,
+                      'allowance': {'unit': 'usd_equivalent', 'window_seconds': 86400,
+                                    'limit': 20, 'remaining': -1}})):
+            with patch('openrsi_space.client.transport.solver_fetch', return_value=reply):
+                self.assertEqual(daily_allowance(client), {'status': 'unavailable'})
+        with patch('openrsi_space.client.transport.solver_fetch', return_value=json.dumps({
+                'mode': 'platform', 'halted': True,
+                'allowance': {'unit': 'usd_equivalent', 'window_seconds': 86400,
+                              'limit': 100, 'remaining': 98}})):
+            result = daily_allowance(client)
+            self.assertEqual(result['limit'], 100)
+            self.assertTrue(result['halted'])
+        identity, folder, live = self.remote_fixture()
+        with patch('openrsi_space.client.transport.endpoint', return_value='https://example.com'), \
+             patch('openrsi_space.client.transport.solver_token', return_value='private-canary'), \
+             patch('openrsi_space.client.transport.solver_fetch', side_effect=[json.dumps(live), OSError('private-canary')]):
+            result = status(self.state, evaluation=identity)
+        self.assertEqual(result['execution'], 'running')
+        self.assertIn('Daily allowance: unavailable', result['card'])
 
     def test_remote_terminal_does_not_write_receipt_or_publish(self):
         identity, folder, live = self.remote_fixture()

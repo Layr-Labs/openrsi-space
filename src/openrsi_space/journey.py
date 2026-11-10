@@ -138,7 +138,28 @@ def remote_status(state, identity):
         if result['verification'] != 'valid':
             result['blocker'] = 'No confirmed valid final result; inspect owner diagnostics before another run.'
             result['next_action'] = f'Inspect openrsi-space remote diagnostics {identity}.'
+    result['daily_allowance'] = daily_allowance(client)
     return result
+
+
+def daily_allowance(client):
+    from openrsi_space.client import transport
+    from openrsi_space.client.funding import amount
+    try:
+        value = json.loads(transport.solver_fetch(client.base, '/funding', client.bearer))
+        if not isinstance(value, dict) or value.get('mode') != 'platform' or type(value.get('halted')) is not bool:
+            raise ValueError('Invalid funding response')
+        allowance = mapping(value.get('allowance'))
+        if allowance.get('unit') != 'usd_equivalent' or allowance.get('window_seconds') != 86400:
+            raise ValueError('Invalid allowance')
+        limit, remaining = amount(allowance.get('limit')), amount(allowance.get('remaining'))
+        if remaining > limit:
+            raise ValueError('Invalid remaining allowance')
+        return {'status': 'available', 'limit': float(limit), 'remaining': float(remaining),
+                'halted': value['halted']}
+    except (OpenRSIError, OSError, ValueError, TypeError):
+        # A failed balance lookup must not hide a valid run status or echo raw responses.
+        return {'status': 'unavailable'}
 
 
 def status(state, *, local_run=None, evaluation=None, harness=None, station=False):
@@ -228,9 +249,18 @@ def render(result):
                    if key in measured), None)
     cap = result.get('budget_cap')
     if amount is not None:
-        lines.append(f'Model credits: ${amount:.2f}' + (f' / ${cap:g}' if cap is not None else ''))
+        lines.append(f'Credits used: ${amount:.2f}' + (f' / ${cap:g}' if cap is not None else ''))
     elif cap is not None:
-        lines.append(f'Budget cap: ${cap:g}')
+        lines.extend([f'Budget cap: ${cap:g}', 'Credits used: unavailable'])
+    allowance = result.get('daily_allowance')
+    if allowance is not None:
+        if allowance.get('status') == 'available':
+            lines.extend(['Daily allowance (rolling 24h):',
+                          f"${allowance['remaining']:.2f} available / ${allowance['limit']:g}"])
+            if allowance['halted']:
+                lines.append('Remote funding paused')
+        else:
+            lines.append('Daily allowance: unavailable')
     if result['execution'] in TERMINAL:
         outcome = {'valid': 'Valid final result', 'invalid': 'Final result invalid'}.get(
             result['verification'], 'Final result needs inspection')
