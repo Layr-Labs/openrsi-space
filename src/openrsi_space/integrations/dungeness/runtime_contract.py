@@ -44,7 +44,7 @@ def require_capabilities(root: Path, *required: str) -> None:
                 ". Install the matching bounded-admission runtime release and repin it; "
                 "the verifier and execution image must be upgraded together. Check "
                 "`dungeness capabilities` before retrying. See "
-                "https://github.com/Layr-Labs/openrsi-space/blob/main/docs/deployment-compatibility.md."
+                "https://github.com/Layr-Labs/openrsi-space/blob/main/docs/client-runtime-versions.md."
             )
         raise OpenRSIError(
             "Dungeness lacks required native capabilities: " + ", ".join(missing) +
@@ -52,6 +52,6 @@ def require_capabilities(root: Path, *required: str) -> None:
             "git clone https://github.com/Layr-Labs/dungeness.git ./dungeness-compatible && git -C ./dungeness-compatible checkout --detach 08e8f7ddc3d87a1ec88e92052d28561ec27411e6. "
             "Check `dungeness capabilities` and `dungeness providers` in that checkout. "
             "Retry with --dungeness pointing to that checkout. "
-            "See https://github.com/Layr-Labs/openrsi-space/blob/main/docs/deployment-compatibility.md "
+            "See https://github.com/Layr-Labs/openrsi-space/blob/main/docs/client-runtime-versions.md "
             "for compatible runtime pins."
         )

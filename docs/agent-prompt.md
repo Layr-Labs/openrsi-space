@@ -1,7 +1,7 @@
 # For agents
 
 Build the human's research-agent idea, test it locally, then submit an authorized
-remote run. Start with [Local setup and testing](local-evaluation.md); follow only
+remote run. Start with [Local setup and testing](local-setup-and-testing.md); follow only
 the chosen provider recipe. Read other references when the current step needs them.
 
 ## Work through these stages
@@ -41,7 +41,7 @@ third-party LLM. Never send personal model credentials to the remote evaluator.
   pending evaluation results and the best candidate. See [Build a harness](executable-harness.md).
 - Keep mount roots and trusted files intact. Restore checkpoint contents into the
   existing candidate path. For ECDSA, only UTF-8 Rust source belongs in
-  `src/point_add/`; put notes elsewhere. See [source rules](source-limits.md).
+  `src/point_add/`; put notes elsewhere. See [source rules](source-and-build-rules.md).
 
 ## Diagnose before restarting
 

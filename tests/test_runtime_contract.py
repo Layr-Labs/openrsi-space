@@ -38,7 +38,7 @@ class RuntimeContractTests(unittest.TestCase):
         self.assertIn("git clone https://github.com/Layr-Labs/dungeness.git", message)
         self.assertIn("dungeness providers", message)
         self.assertIn("--dungeness", message)
-        self.assertIn("deployment-compatibility.md", message)
+        self.assertIn("client-runtime-versions.md", message)
         self.assertEqual(json.loads(self.path.read_text())["capabilities"], [])
 
     def test_invalid_contract_never_uses_legacy_detection(self):

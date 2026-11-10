@@ -35,7 +35,7 @@ standalone manifest. The creation command generates this shape:
 
 Package general-purpose code only. The task supplies problem resources; do not
 include ECDSA-specific papers, strategies, circuits or previous solutions.
-Review the [source and build limits](source-limits.md) before packaging.
+Review the [source and build limits](source-and-build-rules.md) before packaging.
 Never put credentials in source or images; `testbed` is a gateway placeholder.
 
 ## Run against the assigned task
@@ -46,7 +46,7 @@ knowledge-base URLs. Use the assigned gateway, not a hardcoded provider endpoint
 See the [task contract](#detailed-task-and-smoke-contract) for full fields.
 
 Choose a client that supports the route: Codex uses Responses, Claude Code uses
-Messages. Follow the [subscription recipes](local-evaluation.md#3-prepare-only-the-selected-local-access-route)
+Messages. Follow the [subscription recipes](local-setup-and-testing.md#3-prepare-only-the-selected-local-access-route)
 and [client compatibility reference](harness-compatibility.md).
 
 Use `evaluate` to request trusted compilation, correctness checks and scoring.
@@ -125,7 +125,7 @@ they contain the selected problem's ID and manifest hash, candidate paths, and
 title. There is no `problem_service`, research statement, library endpoint, model
 budget or `models` list. Check `evidence` before initializing model clients;
 smoke mode should exercise packaging with synthetic fixtures. Use a
-[local Dungeness run](local-evaluation.md)
+[local Dungeness run](local-setup-and-testing.md)
 to test the live task and model integration.
 
 The copied workspace is mounted read/write; the original is untouched. Candidate
@@ -172,7 +172,7 @@ compiler does not block `evaluate`. This check does not certify dependencies or
 prove that a candidate compiles.
 The starter copies the whole bundle into `/opt/harness/`, so general-purpose
 prompts and helper modules travel with the agent. Use the
-[configuration reference](generic-harnesses.md)
+[configuration reference](runtime-reference.md)
 to choose provider, model and budget separately from those source files.
 
 Executable packages cannot select a host agent or Python adapter. Package
@@ -181,13 +181,13 @@ Problem-specific knowledge belongs to the trusted task: its library endpoint
 provides eight bundled papers, and your agent chooses how to read or index them during
 the run. `OPENRSI_KNOWLEDGE_BASE_URL` points to the catalog. Do not submit ECDSA
 papers, strategies, notes, solution code or answer caches. See the
-[screening policy](source-limits.md).
+[screening policy](source-and-build-rules.md).
 
 `OPENRSI_TASK` points to a JSON file containing problem/harness references,
 instruction, writable workspace, candidate paths, budget, model and gateway
 URL, plus an allowed `models` list. `OPENRSI_WORKSPACE`, `OPENRSI_MODEL`
 and `OPENRSI_MODELS` are convenience variables.
-With the [problem-service runtime](generic-harnesses.md), the launcher first fetches
+With the [problem-service runtime](runtime-reference.md), the launcher first fetches
 the server-assigned statement and checks its SHA-256, problem identity and
 candidate paths. The resolved task includes `problem_document`, and
 `OPENRSI_PROBLEM_URL` points to the read-only document. A failed or mismatched

@@ -1,6 +1,6 @@
 # Runtime and gateway reference
 
-For setup, start with [Local setup](local-evaluation.md); for image and entrypoint requirements, use [Build a harness](executable-harness.md).
+For setup, start with [Local setup](local-setup-and-testing.md); for image and entrypoint requirements, use [Build a harness](executable-harness.md).
 
 An `evaluation.json` is optional when all three model/budget flags are provided.
 Without a file, the defaults are temporary model access, no token ceiling,
@@ -232,7 +232,7 @@ submitted command; it does not install or select a bundled coding agent.
 Package tools and dependencies before execution because research-time internet
 access is disabled.
 
-Use [local build and smoke checks](local-evaluation.md), then submit a funded run
+Use [local build and smoke checks](local-setup-and-testing.md), then submit a funded run
 through the remote service when authorized.
 
 ## Optional token ceiling
@@ -246,7 +246,7 @@ An operator who explicitly requires a finite token ceiling can reject uncapped
 requests; the hosted OpenRSI service does not impose one by default.
 
 Build dependencies: run `openrsi-space remote build-policy` before choosing hosted
-package sources; see [build dependency policy](source-limits.md#dependency-downloads-during-builds).
+package sources; see [build dependency policy](source-and-build-rules.md#dependency-downloads-during-builds).
 
 ## Task document
 

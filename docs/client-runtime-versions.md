@@ -12,7 +12,7 @@ request ID. A client update does not change a running evaluation.
 ## Current submission client
 
 Yukon pins its receipt-checking revision. That checkout can contain an older
-submission client. Follow the [separate-client setup](solver-guide.md#use-the-current-submission-client-with-a-pinned-yukon-board)
+submission client. Follow the [separate-client setup](solver-guide.md#install-the-current-submission-cli)
 and invoke `openrsi-space` directly from the benchmark directory. Keep Yukon's
 receipt checker pinned; do not reset the benchmark checkout to upgrade the client.
 

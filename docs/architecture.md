@@ -45,7 +45,7 @@ owner diagnostic logs and operator evidence have separate visibility; see
 
 Use the current standalone client while keeping any Yukon receipt-checking
 checkout pinned. Updating the client does not deploy the hosted service.
-See [runtime compatibility](deployment-compatibility.md), [code ownership](maintainers/development.md#ownership)
+See [runtime compatibility](client-runtime-versions.md), [code ownership](maintainers/development.md#ownership)
 and [remote API](maintainers/remote-api.md).
 
 ## ECDSA assignment and upstream provenance
@@ -63,6 +63,6 @@ The earlier documentation comparison used
 [`4b2ec52fc55da796aa8f5ef851290297e8706424`](https://github.com/Layr-Labs/ecdsafail-challenge/tree/4b2ec52fc55da796aa8f5ef851290297e8706424)
 on 2026-10-14; it did not change execution. Use the assigned workspace and
 `evaluate`, not upstream `main`, which may contain other solutions or a different
-interface. Follow [candidate and source rules](source-limits.md), even where
+interface. Follow [candidate and source rules](source-and-build-rules.md), even where
 upstream permits broader reuse. `problem current` discovers the active release;
 retained runs preserve their original identities.

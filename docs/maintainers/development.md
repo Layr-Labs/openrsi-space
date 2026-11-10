@@ -47,7 +47,7 @@ remains at stable package paths. See [architecture](../architecture.md).
 
 ## Integration checks
 
-For a real harness, follow [local evaluation](../local-evaluation.md). Model-consuming
+For a real harness, follow [local evaluation](../local-setup-and-testing.md). Model-consuming
 runs require model, spending-cap and credential authorization. A local check
 does not issue an official receipt or establish a leaderboard improvement.
 

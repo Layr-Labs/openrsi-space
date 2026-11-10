@@ -1,6 +1,6 @@
 # Local model access reference
 
-Start with [Local setup](local-evaluation.md) and read only your selected provider section. Funded remote policy lives in [Funding and scoring](platform-funded-inference.md).
+Start with [Local setup](local-setup-and-testing.md) and read only your selected provider section. Funded remote policy lives in [Funding and scoring](funding-and-scoring.md).
 
 <a id="implemented-providers-and-hosted-permission"></a>
 
@@ -27,7 +27,7 @@ labels. Not every locally supported model has an eligible remote equivalent.
 Eigen Labs supplies and pays for remote OpenRouter access. Submit with
 `--platform-funded` and the exact supported remote model; do not upload a personal
 API key or subscription login. Subscription credentials are used locally only—this
-does not mean their local evidence is ineligible. See [funding and evidence rules](platform-funded-inference.md).
+does not mean their local evidence is ineligible. See [funding and evidence rules](funding-and-scoring.md).
 
 The pinned Dungeness runtime defines available providers. The unchanged harness
 must support its assigned API protocol, endpoints and placeholder credentials on
@@ -59,7 +59,7 @@ Do not print, commit or upload that file. If a managed policy prevents this
 storage method, report that integration limitation; do not bypass the policy.
 The official [Codex authentication guide](https://developers.openai.com/codex/auth)
 describes login methods and credential storage. The
-[local guide](local-evaluation.md) covers setup and the budgeted run command.
+[local guide](local-setup-and-testing.md) covers setup and the budgeted run command.
 
 ## Claude subscription access
 
@@ -144,7 +144,7 @@ PY
 ```
 
 Pass the resulting path with `--provider-access-file`, as shown in the
-[subscription quickstart](local-evaluation.md#3-prepare-only-the-selected-local-access-route).
+[subscription quickstart](local-setup-and-testing.md#3-prepare-only-the-selected-local-access-route).
 Remove this temporary access map after local testing. Keep the original Claude
 login unchanged. If login is stored in an OS keychain or uses another format,
 this helper does not apply: use an authorized local credential method to create

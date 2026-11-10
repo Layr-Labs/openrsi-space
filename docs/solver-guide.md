@@ -9,7 +9,7 @@ preferred subscription/model and a local testing budget. It will check your setu
 build the harness, test it, and report readiness for remote verification. Expect
 short progress updates and one concrete action at a time when your help is needed.
 Keep credentials out of chat. You can build and test before signing in to Yukon.
-The agent should begin with [Local setup](local-evaluation.md), which provides the
+The agent should begin with [Local setup](local-setup-and-testing.md), which provides the
 environment checks and selected-provider preparation path.
 
 <a id="use-the-current-submission-client-with-a-pinned-yukon-board"></a>
@@ -38,7 +38,7 @@ agent machinery; the assigned task supplies problem resources and the scaffold.
 
 ## 2. Choose local access and test
 
-Follow [Local setup and testing](local-evaluation.md) for machine checks, the chosen
+Follow [Local setup and testing](local-setup-and-testing.md) for machine checks, the chosen
 subscription/API recipe, active problem discovery and a budgeted run. No Yukon
 login is needed yet. Keep the complete run directory and its `run.json` path.
 Use the reported release as `TAG` below and the policy's supported model pair.
@@ -126,8 +126,8 @@ existing receipt, with no new inference.
 
 If anything fails, use [Troubleshooting](submission-recovery.md) before spending again.
 For upload limits and detailed eligibility, consult the
-[funding reference](platform-funded-inference.md) and
-[source limits](source-limits.md). An additional source license is
+[funding reference](funding-and-scoring.md) and
+[source limits](source-and-build-rules.md). An additional source license is
 optional; do not select one unless you want one. Existing third-party licenses apply.
 
 <a id="6-optionally-publish-to-yukon"></a>
