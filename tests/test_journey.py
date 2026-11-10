@@ -184,6 +184,29 @@ class JourneyTests(unittest.TestCase):
         self.assertNotIn('model_requests', result['usage'])
         self.assertIn('unknown', result['card'])
 
+    def test_card_budget_is_estimated_from_usage_not_account_allowance(self):
+        self.local(usage={'normalized_usd': 0.8, 'accounting_state': 'settled'},
+                   evaluation={'max_model_credits': 3})
+        card = status(self.state)['card']
+        self.assertIn('Credits used: $0.80 / $3', card)
+        self.assertIn('Run budget left: ~$2.20', card)
+        for accounting in ('pending', 'incomplete'):
+            self.local(usage={'normalized_usd': 0.8, 'accounting_state': accounting},
+                       evaluation={'max_model_credits': 3})
+            card = status(self.state)['card']
+            self.assertIn('usage settling', card)
+            self.assertNotIn('$2.20', card)
+        self.local(evaluation={'max_model_credits': 3})
+        card = status(self.state)['card']
+        self.assertIn('Credits used: unavailable', card)
+        self.assertIn('Run budget left: unavailable', card)
+        self.assertNotIn('$0.00', card)
+        self.local(status='completed', usage={'normalized_usd': 0.8},
+                   evaluation={'max_model_credits': 3})
+        self.assertIn('Unused run budget: ~$2.20', status(self.state)['card'])
+        self.local(usage={'normalized_usd': 3.1}, evaluation={'max_model_credits': 3})
+        self.assertIn('Run budget left: ~$0.00', status(self.state)['card'])
+
     def remote_fixture(self):
         identity = 'f46fa5f6-b4b8-4c23-9711-baa08eb90023'
         request = {'request_id': identity, 'source': {'digest': 'source'},

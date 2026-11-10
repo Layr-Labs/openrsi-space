@@ -228,9 +228,19 @@ def render(result):
                    if key in measured), None)
     cap = result.get('budget_cap')
     if amount is not None:
-        lines.append(f'Model credits: ${amount:.2f}' + (f' / ${cap:g}' if cap is not None else ''))
+        lines.append(f'Credits used: ${amount:.2f}' + (f' / ${cap:g}' if cap is not None else ''))
     elif cap is not None:
-        lines.append(f'Budget cap: ${cap:g}')
+        lines.extend([f'Budget cap: ${cap:g}', 'Credits used: unavailable'])
+    if cap is not None:
+        if amount is None:
+            lines.append('Run budget left: unavailable')
+        elif measured.get('accounting_state') in {'pending', 'incomplete'}:
+            lines.append('Run budget left: usage settling')
+        else:
+            label = 'Unused run budget' if result['execution'] in TERMINAL else 'Run budget left'
+            # An estimate from retained usage, not the gateway's spendable balance:
+            # in-flight reservations and later settlement can reduce availability.
+            lines.append(f'{label}: ~${max(0, cap - amount):.2f}')
     if result['execution'] in TERMINAL:
         outcome = {'valid': 'Valid final result', 'invalid': 'Final result invalid'}.get(
             result['verification'], 'Final result needs inspection')
