@@ -7,7 +7,7 @@ import unittest
 from unittest.mock import patch
 
 from openrsi_space.cli import main
-from openrsi_space.common import write_json
+from openrsi_space.common import OpenRSIError, write_json
 from openrsi_space.contracts.results import PROTOCOL, digest
 from openrsi_space.journey import status
 
@@ -18,6 +18,9 @@ class JourneyTests(unittest.TestCase):
         self.addCleanup(self.temp.cleanup)
         self.root = Path(self.temp.name)
         self.state = self.root / '.openrsi'
+        no_login = patch('openrsi_space.client.transport.solver_token', side_effect=OpenRSIError('No login'))
+        no_login.start()
+        self.addCleanup(no_login.stop)
 
     def local(self, **fields):
         path = self.state / 'local/local-one/run.json'
@@ -51,6 +54,34 @@ class JourneyTests(unittest.TestCase):
         self.assertEqual(result['agent_execution']['last_client_status'], 'failed')
         self.assertNotIn('canary', json.dumps(result))
         self.assertEqual(before, path.read_bytes())
+
+    def test_local_and_harness_cards_show_the_same_live_account_allowance(self):
+        path = self.local(status='failed', harness={'id': 'simplicity-loop', 'version': 'a' * 64},
+                          usage={'normalized_usd': 1.7}, evaluation={'max_model_credits': 1.7},
+                          final_verification={'status': 'valid', 'score': 42})
+        reply = {'mode': 'platform', 'halted': False,
+                 'allowance': {'unit': 'usd_equivalent', 'window_seconds': 86400,
+                               'limit': 20, 'remaining': 12.5}}
+        before = path.read_bytes()
+        with patch('openrsi_space.client.transport.endpoint', return_value='https://example.com'), \
+             patch('openrsi_space.client.transport.solver_token', return_value='private-canary'), \
+             patch('openrsi_space.client.transport.solver_fetch', return_value=json.dumps(reply)) as fetch:
+            for target in ({'local_run': path}, {'harness': 'simplicity-loop'}):
+                result = status(self.state, **target)
+                self.assertIn('Harness: simplicity-loop', result['card'])
+                self.assertIn('Account allowance (rolling 24h):', result['card'])
+                self.assertIn('$12.50 available / $20', result['card'])
+                self.assertNotIn('private-canary', json.dumps(result))
+            self.assertEqual(fetch.call_count, 2)
+            self.assertTrue(all(call.args == ('https://example.com', '/funding', 'private-canary')
+                                and not call.kwargs for call in fetch.call_args_list))
+        self.assertEqual(before, path.read_bytes())
+        with patch('openrsi_space.client.transport.solver_fetch', side_effect=AssertionError('network')):
+            result = status(self.state, local_run=path)
+        self.assertEqual(result['execution'], 'failed')
+        self.assertEqual(result['verification'], 'valid')
+        self.assertIn('Credits used: $1.70 / $1.7', result['card'])
+        self.assertIn('Account allowance: unavailable', result['card'])
 
     def test_runtime_summary_is_used_without_claiming_live_process(self):
         record = self.root / 'runtime/record.json'
@@ -250,7 +281,7 @@ class JourneyTests(unittest.TestCase):
              patch('openrsi_space.client.transport.solver_fetch', side_effect=[json.dumps(live), OSError('private-canary')]):
             result = status(self.state, evaluation=identity)
         self.assertEqual(result['execution'], 'running')
-        self.assertIn('Daily allowance: unavailable', result['card'])
+        self.assertIn('Account allowance: unavailable', result['card'])
 
     def test_remote_terminal_does_not_write_receipt_or_publish(self):
         identity, folder, live = self.remote_fixture()
