@@ -23,6 +23,16 @@ def build_parser():
     parser.add_argument("--state", default=str(state_directory()),
                         help="Local state directory (default: .openrsi; existing local records are reused).")
     commands = parser.add_subparsers(dest="command", required=True)
+    journey = commands.add_parser('journey', help='Read recorded progress; never start, retry or publish a run.')
+    journey_sub = journey.add_subparsers(dest='operation', required=True)
+    journey_status = journey_sub.add_parser('status', help='Print a portable status card, or JSON for your agent.')
+    journey_status.add_argument('--json', action='store_true', help='Return structured observations and a chat-ready card.')
+    journey_list = journey_sub.add_parser('list', help='Show this workspace research station without contacting remote servers.')
+    journey_list.add_argument('--json', action='store_true', help='Return harness cards and all retained run IDs.')
+    journey_target = journey_status.add_mutually_exclusive_group()
+    journey_target.add_argument('--local-run', type=Path, help='Local run directory or run.json. Required when selection is ambiguous.')
+    journey_target.add_argument('--evaluation', help='Remote evaluation ID saved in the original --state directory.')
+    journey_target.add_argument('--harness', help='Harness ID or card key from journey list; show its retained runs offline.')
     for kind in ("problem", "harness"):
         group = commands.add_parser(kind)
         sub = group.add_subparsers(dest="operation", required=True)

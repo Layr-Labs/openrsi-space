@@ -57,6 +57,17 @@ with tempfile.TemporaryDirectory() as temporary:
     # Exercise the installed package with an absent cache and forbidden downloads.
     # This catches wheels that contain the catalog but omit any of its PDFs.
     root = Path(temporary)
+    journey = json.loads(subprocess.check_output(
+        [str(command), '--state', str(root / 'absent-state'), 'journey', 'status', '--json'],
+        env=clean_env, text=True, cwd=root))
+    assert journey['availability'] == 'no_records' and journey['phase'] == 'choose'
+    assert journey['card'].startswith('┌') and '● Choose an idea' in journey['card']
+    assert not (root / 'absent-state').exists()
+    station = json.loads(subprocess.check_output(
+        [str(command), '--state', str(root / 'absent-state'), 'journey', 'list', '--json'],
+        env=clean_env, text=True, cwd=root))
+    assert station['harnesses'] == [] and 'MY RESEARCH STATION' in station['card']
+    assert not (root / 'absent-state').exists()
     binding = catalog.get_problem("ecdsa.fail", release="v1")["dungeness"]["knowledge_base"]
     with patch.dict(os.environ, {"OPENRSI_PAPER_CACHE": str(root / "absent-cache")}), \
             patch.object(papers, "build_opener", side_effect=AssertionError("Unexpected paper download")) as opener:
