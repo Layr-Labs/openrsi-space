@@ -43,11 +43,11 @@ the owning package. Keep compatibility forwarding free of business logic.
 Contracts must not import the HTTP client, CLI, execution machinery or integrations.
 The CLI coordinates those layers; integrations may use client and contracts.
 Challenge preparation may use Dungeness capability checks while challenge content
-remains at stable package paths. See [architecture](architecture.md).
+remains at stable package paths. See [architecture](../architecture.md).
 
 ## Integration checks
 
-For a real harness, follow [local evaluation](local-evaluation.md). Model-consuming
+For a real harness, follow [local evaluation](../local-evaluation.md). Model-consuming
 runs require model, spending-cap and credential authorization. A local check
 does not issue an official receipt or establish a leaderboard improvement.
 
@@ -58,7 +58,7 @@ existing records and document user-visible changes in the changelog.
 
 The UI's “How it works” and “Participate” sections are the primary explanation for
 solvers. Keep their benchmark description aligned with the opening of
-[architecture](architecture.md): solvers submit their own harness, start and
+[architecture](../architecture.md): solvers submit their own harness, start and
 control each run, and compare independently verified results. Local tests use
 their authorized model access. Platform-funded remote runs, when enabled, require
 private local evidence and use platform API access without a personal model

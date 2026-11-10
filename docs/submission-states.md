@@ -94,26 +94,10 @@ In particular:
 
 ### Client publication states
 
-The CLI's automatic-publication record tracks a separate operation from the
-verifier's receipt-delivery outcome. Its state is reported as `state` by the
-publication command and as `publication.state` in evaluation command output when present.
-
-| Client state | Meaning |
-| --- | --- |
-| `not_requested` | Automatic publication was not selected. |
-| `pending` | Waiting for verification or the next client publication attempt. |
-| `submitting` | An upload may have reached Yukon; its outcome may still be uncertain. |
-| `awaiting_yukon` | Yukon has the submission and its outcome is being checked. |
-| `published` | Yukon reports the submission accepted. |
-| `needs_authentication` | The saved publication needs the same owner's valid local login. |
-| `retryable_failure` | Publication is incomplete and its reported issue needs resolution. |
-| `not_eligible` | The evaluation ended without an eligible verified result for automatic publication. |
-
-These labels are not remote evaluation lifecycle states. Publication runs in the
-client using local authentication; stopping the client does not cancel remote
-research. Yukon submission/job IDs identify the downstream publication operation.
-The [publication recovery guide](submission-recovery.md#verification-succeeded-but-yukon-publication-failed-must-i-rerun-research)
-maps these states to actions.
+Optional Yukon publication is a separate client operation, not a remote run state.
+See the [publication state table and recovery commands](artifact-sharing.md#stopping-the-command-and-recovering).
+Stopping the client does not cancel remote research. Yukon submission/job IDs
+identify that downstream operation, not the remote evaluation.
 
 <a id="current-identifiers-and-safe-retries"></a>
 
@@ -139,9 +123,7 @@ guarantee: whether the client still has a pending request matters. The
 [recovery guide](submission-recovery.md#how-do-i-start-a-new-attempt-after-a-terminal-result)
 documents that client behavior and the procedure for a deliberate new attempt.
 
-## Related guides
-
 <a id="publish-a-verified-receipt"></a>
 
-- [Publish a verified receipt](submission-recovery.md#publish-a-verified-receipt).
-- [Diagnose a failure and choose a recovery action](submission-recovery.md#which-recovery-path-matches-my-submissions-state).
+For commands, see [publication](artifact-sharing.md#optional-yukon-publication) or
+[diagnosis and recovery](submission-recovery.md).

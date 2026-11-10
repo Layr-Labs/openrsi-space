@@ -1,177 +1,120 @@
-# Platform-funded inference
+# Funding, evidence and scoring
 
 ## Local access and remote eligibility
 
-| Stage | Model access and payment | Authentication |
+| Stage | Model access | Who pays / authenticates |
 | --- | --- | --- |
-| Local development | Your existing Codex/ChatGPT or Claude subscription, or a supported API provider; your account supplies the usage | Your authorized local login/key |
-| Funded remote evaluation | Eigen Labs pays for OpenRouter calls | Yukon key; no personal model key uploaded |
-| Automatic dashboard result | No new inference; accepted remote results appear automatically | No additional action |
-| Optional Yukon publication | No new inference | Yukon key and service-issued receipt |
+| Local test | Existing subscription or supported API | Solver's authorized login/key and allowance |
+| Remote verification | Platform OpenRouter account | Eigen Labs pays; Yukon identifies the solver |
+| Dashboard / optional receipt publication | No inference | Results appear automatically; optional Yukon publication uses the solver's login |
 
-**Does a subscription local run qualify for funded OpenRouter evaluation? Yes,
-for supported equivalent models.** For example, local `openai-chatgpt/gpt-6-astra`
-qualifies for remote `openrouter/openai/gpt-6-astra`; local
-`claude-subscription/claude-opus-5-5` qualifies for remote
-`openrouter/anthropic/claude-opus-5.5`. Reasoning settings, harness source and
-problem must match. Claude evidence cannot qualify for Astra. The versioned
-`local_evidence_models` mapping in `openrsi-space remote funding-policy` lists
-accepted pairs. Unlisted pairs still require an exact provider/model match.
-The top-level `providers` list describes remote funding only, not local access.
-This policy does not translate API requests: the unchanged harness must support
-both selected routes using the task-assigned endpoints and model names.
+Subscription evidence qualifies for supported model equivalents. For example,
+`openai-chatgpt/gpt-6-astra` can match `openrouter/openai/gpt-6-astra`, and
+`claude-subscription/claude-opus-5-5` can match `openrouter/anthropic/claude-opus-5.5`.
+The live `local_evidence_models` mapping in `remote funding-policy` is authoritative;
+unlisted pairs require an exact provider/model match. Its top-level `providers`
+list restricts remote funding, not local access. The unchanged harness must
+support both routes; model equivalence does not translate API requests.
 
-Before spending locally to qualify, run `openrsi-space remote funding-policy` for
-supported providers and policy, then `openrsi-space remote funding` for your
-remaining rolling 24-hour allowance, reservations and settled usage. Neither command starts inference. The reported allowance includes active account-specific overrides;
-allowance changes do not waive required local evidence.
+Every new submission requires ended local evidence with:
 
-New platform-funded submissions automatically check your authenticated account
-allowance before preparing or uploading local evidence. The CLI shows the requested
-budget and available allowance, and stops early if funds are insufficient, funding
-is paused, or the allowance cannot be checked. This is a snapshot, not a reservation;
-the server still checks eligibility and reserves funds atomically at admission.
-Retries of an unchanged saved request go to the server without this early balance
-gate, because the original request may already hold the requested funds. They reuse
-the existing request ID rather than starting an additional run.
+- Matching source, problem, model/equivalence and reasoning settings.
+- A recorded local budget cap at least equal to the remote cap. **Local cap $2,
+  actual spend $1.73 → remote $2 is eligible.** There is no minimum-spend percentage.
+- At least one model exchange and complete responses and settled accounting for
+  every recorded request. Failed/cancelled runs can qualify; prepared, running,
+  zero-call or incomplete runs cannot. A valid local circuit is not required.
+- At most 1,000 model calls and 192 MiB in the private exported bundle.
 
-Authorize local testing and remote execution separately. The local run’s recorded
-budget cap must be at least the requested remote budget. Actual local spending may
-be lower: a $2 local cap with $1.73 spent qualifies for a $2 remote request; a $1
-local cap does not. There is no minimum-spend percentage. Choose the remote cap
-within the published per-run and account allowance. Subscription testing consumes plan
-allowance; API testing uses your provider account. Local OpenRouter accounting uses
-provider-reported charges; leaderboard credits can differ from actual charges.
+Use `--local-run PATH` or matching records discovered in client state. A changed
+harness needs matching new evidence. Older exports missing the cap can be
+re-exported from an unchanged original record that contains it; never invent a
+cap or modify evidence. These checks establish consistency, not cryptographic
+proof of historical execution. There is no skip flag or evidence exemption.
 
-Repository access is separate from both Yukon authentication and model access.
-The current repository is `https://github.com/Layr-Labs/openrsi-space` and is
-internal; a GitHub 404 may require signing in with organization access. Request
-access rather than substituting another repository. Install the current submission
-CLI from main using the [solver guide](solver-guide.md#install-the-current-submission-cli),
-and work in an ordinary folder. `yukon clone` is only needed for optional manual
-publication; it does not select the client for local or remote research runs.
+Evidence includes model exchanges, accounting and evaluation events, separately
+from public source. It excludes login files and arbitrary filesystem archives,
+is scanned for credentials, and is reviewed privately by a third-party LLM.
+Review it for personal information before authorizing upload.
 
-When enabled by the operator, OpenRSI supplies its own API access for remote
-runs. You supply no personal model credential. Yukon authentication still
-identifies your account, and platform allowances determine admission.
+## Allowance and reservations
 
-```sh
-openrsi-space remote funding-policy
-openrsi-space remote submit ./my-harness --platform-funded \
-  --provider openrouter --model EXACT_AUTHOR/MODEL_ID --budget 3 --local-run /path/to/local/run.json
-openrsi-space remote funding
-```
+`remote funding-policy` is public. Authenticated `remote funding` reports your
+rolling 24-hour allowance, reservations, settled usage, remaining amount and next
+settled-charge expiry, including account overrides. Neither starts inference.
 
-Before preparing either run, check that `funding-policy` reports funding enabled.
-Check source size with `openrsi-space remote limits ./my-harness`: both the public ZIP
-and expanded source default to **8 MiB**. The private evidence limit below is
-separate and does not increase the source limit.
+The default is **$20 per account per rolling 24 hours**, with a **$1 minimum run
+cap** (`funding_budget_too_low` below that). Unused allowance does not accumulate.
+Multiple sequential runs are allowed; only one funded evaluation can run per
+account at once. Changing keys does not reset the allowance. Live policy,
+enrollment, global capacity and upload/screening limits also apply.
 
-You choose the exact model ID on a funded provider reported by `funding-policy`
-(for example, `openrouter` with an exact `author/model` ID). The service validates
-and pins its pricing; unknown models, automatic model routing and unsupported
-charges are rejected before a run starts. Pair your harness with that API format.
-The exact model (or a supported provider equivalent) and reasoning settings must
-match your local Dungeness evidence. Changed models or efforts require matching
-evidence for the new configuration. Existing operator-restricted deployments may
-also report a `models` list; respect it when present. Keep using the assigned gateway and placeholder
-credentials. Do not include personal model keys or login files in this flow.
-`--platform-funded` cannot be combined with credential input flags.
+New submissions check allowance before preparing/uploading evidence; admission
+makes the final atomic reservation. The requested cap is reserved against your
+account, without adding the platform's internal buffer. Screening/build failures
+before inference release it. Known charges settle and unused funds return;
+uncertain usage retains its hold and does not automatically expire. Microcredits
+use 1,000,000 per USD equivalent.
 
-An ended matching local Dungeness test is required for funded runs. Local tests
-use your explicitly supplied model access; platform funding applies to admitted
-remote runs only. The client uploads recorded model requests/responses/accounting
-and evaluation events privately for readiness review. This is separate from public
-harness source. Review your logging for secrets and personal information first.
-No local login files or arbitrary filesystem archives are included. Logs are
-scanned for possible secrets before third-party LLM review.
+An unchanged saved request bypasses the early balance check because it may already
+hold funds. Retrying preserves request identity and reuses retained evidence,
+even with `--local-run` supplied again. Missing/expired evidence can be exported
+again from retained records without fresh inference. Observe `retry_after_seconds`;
+the client does not automatically start a new paid attempt.
 
-Use an existing matching record with `--local-run PATH`; the client can also find
-records under its state directory automatically. Source, problem, model (or supported provider equivalent)
-and reasoning settings must match. A valid circuit is not required. The recorded
-local cap must cover the remote cap; actual local spending may be lower. The exported bundle allows at most 1,000 model
-calls and 192 MiB, with complete settled usage. Every new
-funded submission requires the bundle; neither solver flags nor operator allowance
-overrides can waive it.
+## Models and accounting
 
-A run that ended as `failed` or `cancelled` can qualify if every recorded model
-request has its response and settled accounting, and all matching checks pass.
-The failure status is preserved; eligibility is not a claim that the harness
-finished successfully. Prepared, running, zero-call or incomplete-accounting runs
-do not qualify. A later candidate-save failure does not erase complete evidence.
-If you fix the harness, its source digest changes and it needs matching local
-evidence for the new source. Never edit an old record to mark it successful.
+Choose an exact funded model advertised by policy. The service validates and pins
+pricing; unknown models, automatic routing and unsupported charges are rejected.
+Respect any deployment-specific `models` restriction. Use `--platform-funded`
+without personal credential flags, and assigned gateway routes inside the harness.
 
-Older evidence uploads without a recorded cap must be exported again with the
-updated client and `--local-run PATH`. An original Dungeness record with a
-sufficient cap can be reused without rerunning inference. If the original record
-has no valid cap, select another matching run or authorize a new local test; never
-edit the cap to manufacture eligibility. This is a consistency check on
-solver-authored evidence, not cryptographic proof of the local configuration.
+OpenRouter settlement uses reported request charges (`billed_usd`). Reference-price
+`normalized_usd` is retained separately for comparison and as an additional
+conservative ceiling. Other local providers use their supported normalized
+accounting. Subscription credits are not a cash charge or remaining plan allowance.
 
-The default allowance is 20 model credits (USD equivalent) per authenticated Yukon account
-per rolling 24 hours. **Unused allowance does not accumulate or carry over:**
-waiting two days does not allow a $40 run under the default $20 allowance.
-Each funded remote run requires a **budget cap of at least $1**; a lower cap is
-rejected with `funding_budget_too_low`. Actual spending may be lower than $1.
-Changing Yukon keys does not reset the allowance. The operator may
-adjust an account's allowance by its authenticated Yukon account ID. Each account may
-have one funded evaluation running at a time. You can split the daily allowance
-across multiple sequential runs; it is not a one-run-per-day limit. Each run
-reserves its requested cap and returns unused funds after settled usage is known.
-Separate limits apply to
-screening/upload attempts.
-A passing review establishes readiness, not authenticity or deterministic replay;
-your remote run begins fresh and is the only source of an official score.
+Before forwarding each request the gateway reserves for input/output. Long history
+or a large output limit can cause a rejection while funds remain. A rejected
+reservation is not a provider charge: inspect diagnostics and reduce the request,
+rather than repeatedly sending it unchanged. Already admitted calls can exceed a
+reservation/cap; unresolved charges retain their hold. See
+[parallel accounting](generic-harnesses.md#parallel-accounting-and-evaluation).
 
-A run reserves its requested cap against your allowance. Screening or build
-failures before inference release it. Completed OpenRouter runs settle reported
-provider charges; unused funds return to your allowance. If usage is uncertain,
-the reservation remains held until it can be reconciled. Check `remote funding`
-for status; amounts expressed in microcredits use 1,000,000 per USD equivalent.
+For admission errors and safe retries, use [Troubleshooting](submission-recovery.md).
+A scanner correction or upload failure alone does not require a new local run.
 
-The run cap is a maximum, not a spending target. Before each model call, the
-gateway reserves a conservative allowance for its input and output. A long
-context or large explicit output limit can therefore stop a run with credits
-remaining. A reservation rejection is not a provider charge. Shorten context or
-lower the harness's explicit output-token limit, and check the reported available
-and required amounts with `openrsi-space remote diagnostics EVALUATION_ID`.
-Increasing a run's cap is not required to diagnose the issue.
+## Scoring and budget views
 
-`completed` means execution and verification finished; check `valid` and the
-verified score separately. A completed run with no valid candidate has no
-leaderboard score. CLI progress distinguishes these outcomes and reports actual
-provider charges separately from provisional live measurements.
+ECDSA minimizes **average executed Toffoli gates × peak qubits**. Only independently
+verified candidates receive official scores. Compare identical problem versions,
+pricing and scoring policies; harness stdout and local claims are not official results.
 
-For OpenRouter, local evidence spending and funded settlement use the provider's
-reported request charges (`billed_usd`), not the pinned-price estimate. The same
-Dungeness gateway accounting is used locally and remotely. The gateway records
-`normalized_usd` separately for benchmark comparison and retains that existing
-credit ceiling as an additional conservative limit. Other providers retain their
-existing normalized accounting. Neither cap can prevent an already in-flight
-request from exceeding its reservation; unresolved charges retain their hold. Platform funding may require account enrollment. If it is disabled,
-submitting this mode returns an actionable error without starting a run.
+Each chart line represents one run. Each dot is a candidate evaluation paired
+with cumulative model credits. For comparison budget B, choose the lowest verified
+score at credits ≤ B; ties prefer fewer credits, then earlier observation order.
+Best overall uses the full history. Missing points mean no verified result within
+that budget, not zero score. A cheaper run may qualify for a larger view without
+inventing additional observations. Changing a view never starts inference.
 
-`remote funding` includes `allowance` in USD equivalent: the account limit,
-usage plus active reservations, remaining allowance and the next settled charge
-expiry. This is a rolling 24-hour window, not a midnight reset; unresolved holds
-do not expire automatically. Global capacity and enrollment still apply.
+The result contract records $10/$20/$50/$100 views and best overall; the UI may
+show a subset. Credits at the best result and total run spending are distinct.
+All models/workers share the cap. Accounting includes consumed retries, failed
+experiments and calls after the best candidate. Input, output/reasoning, caches
+and supported long-context rates use the retained schedule without double counting.
+Builds and verification infrastructure are separate from model credits.
 
-The default evaluator is `https://3.21.93.126`; set `OPENRSI_EVALUATOR_URL` to
-use another trusted deployment. Public policy commands require no login.
+History includes ties and regressions. Pending model usage settles before a point
+is finalized, potentially raising its cumulative cost. Final verification checks
+the saved terminal candidate at full run cost; a repeated score is not a fresh
+improvement. An earlier verified candidate can remain best.
 
-### A source-publication rejection
+Overshoot is accepted only under the recorded admission policy: charged calls
+must have started before settled spending exhausted the cap. Older results retain
+their original policy. Never reduce costs to fit a budget view. Missing usage or
+unsupported pricing cannot establish a verified score. See [reference pricing](generic-harnesses.md#reference-prices-for-declared-models).
 
-`source_not_publishable` happens before an evaluation starts. New diagnostics
-include `source_findings`: the scanner rule, a one-based line number, and a
-zero-based file index. Match that index to the sorted keys of the saved source
-archive's generated source-manifest `files` field (not the generated snapshot itself).
-The response contains no matched credential values or source excerpts.
-Preserve the saved request and local evidence while diagnosing it; a server-side
-scanner correction does not require changing your harness or repeating inference.
-
-### Funding shortages and safe retries
-
-A shared platform funding shortage is separate from your account allowance. Your requested budget does not increase to cover the platform's internal reservation buffer. The client checks funding before uploading a new evidence bundle; admission still makes the final decision because capacity can change.
-
-Retry an unchanged submission with its saved request. The client reuses its evidence reference, including when you specify `--local-run` again. For a new request it checks whether the same bundle is already retained under your authenticated account before uploading. Missing or expired evidence can be re-exported from the existing local record; no paid local rerun is required solely for an upload retry. Follow the returned `retry_after_seconds` if uploads are rate-limited. The CLI does not automatically start a new paid run or retry a rejected submission.
+Yukon receives best verified performance and credits at that result; full history,
+models, cap and total usage remain separate. No observations at every budget are
+required. Receipt publication preserves original identities and starts no research;
+see [artifacts and publication](artifact-sharing.md).
