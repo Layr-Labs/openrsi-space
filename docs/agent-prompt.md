@@ -26,6 +26,11 @@ what it implements; check reuse rights and adapt only general-purpose agent
 methods, not problem-specific solutions. Wait for their choice before implementing.
 If the human asks you to choose or work independently, respect that preference.
 Ask for model access and testing budget only when missing.
+When discussing budgets, tell the human before starting: a $3 local run budget
+cap supports a remote run of at most $3, even if actual local spending is lower.
+Eigen Labs pays for remote verification, subject to account allowance and evidence
+checks. Confirm this run’s cap separately from the total budget across attempts;
+do not silently increase either.
 
 While discussing, independent environment checks may run in the background;
 delegation is optional when supported and permitted. Stay available for questions.
@@ -56,7 +61,14 @@ Once the CLI is installed, run `openrsi-space journey status --json` after setup
 
 The collection is My research station: one harness card with its local and remote runs listed inside. Use `openrsi-space journey list --json` for the workspace overview, and `openrsi-space journey status --harness HARNESS_ID --json` to open a harness card. Select a run with `--local-run PATH` or `--evaluation ID` to show its progress inside that card. Translate requests such as “back to my station” or “open Paper Explorer” into these commands. Display numbers are temporary shortcuts; resolve them to the IDs in the latest output. Overview and harness lists use saved records without remote polling; only a selected remote evaluation is refreshed. This is a workspace-local collection, not an account-wide cloud library. Runs are grouped by recorded harness identity and source bindings, never by guessing from titles. Unknown identities stay separate. Each run keeps its own spending and outcome.
 
+Keep the card high-level; do not append a diagnostic field dump. If the human asks “Explain this run,” use the selected run’s JSON details to explain usage, verification and any issue in plain language, keeping unknown values distinct from zero.
+
 Show the returned `card` in a monospace code block in your chat reply: tool output may be hidden in desktop or phone apps. Explain the next action briefly. The CLI cannot know human choices or prove that setup is complete; add that conversational context without overriding observed execution, verification or usage. Saved local status can be stale; unknown usage is not zero. A completed phase means the attempt ended, not that its result was valid. If the command is unavailable in an older client, use the existing local records or remote status and mention the limitation; do not delay the conversation or upgrade silently. Keep the full card to phase changes and use short text updates between them. During remote waiting, use the existing `remote wait`; do not add a competing poll loop. No card or status check authorizes another paid run.
+
+Before a new run or when diagnosing a platform issue, follow the
+[update check](client-runtime-versions.md#check-for-updates). Explain relevant fixes
+and ask before upgrading an existing client unless already authorized. Do not
+change software during an active run or start a paid retry without authorization.
 
 ## Work through these stages
 

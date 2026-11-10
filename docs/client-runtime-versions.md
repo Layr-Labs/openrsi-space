@@ -1,9 +1,9 @@
 # Client and runtime compatibility
 
 Before a new run, use `openrsi-space problem current` to discover the evaluator's
-active release and exact problem digest. Update the client if it reports a
-mismatch, and use the discovered `--problem-release` for both local and remote
-runs. A release tag alone is not enough to establish an exact match.
+active release and exact problem digest. If it reports a mismatch, explain it
+and ask before updating the client. Use the discovered `--problem-release` for
+both local and remote runs. A release tag alone is not enough to establish an exact match.
 
 Existing runs, local evidence and receipts retain their original identities.
 Do not edit them to match a newer problem or retry an old operation with a new
@@ -15,6 +15,36 @@ Yukon pins its receipt-checking revision. That checkout can contain an older
 submission client. Follow the [separate-client setup](solver-guide.md#install-the-current-submission-cli)
 and invoke `openrsi-space` directly from the benchmark directory. Keep Yukon's
 receipt checker pinned; do not reset the benchmark checkout to upgrade the client.
+
+## Check for updates
+
+Before a new run or when diagnosing a possible platform issue, compare the
+installed client's Git revision with the matching environment's published main:
+
+```sh
+git ls-remote https://github.com/Layr-Labs/openrsi-space.git refs/heads/main
+```
+
+Read the installed revision from the installation record or the installed package's
+`direct_url.json` field `vcs_info.commit_id`. For a source installation, use that
+checkout's HEAD and note local modifications. `--version` alone does not identify
+the revision. Read only the revision, not full installation metadata, which may
+contain private URLs. If the revision or network check is unavailable, report
+“update status unknown”; this does not require a Yukon key or invalidate a run.
+
+Different commits do not by themselves prove an update is needed: confirm the
+repository/environment and inspect relevant changes. Tell the human what the
+update fixes and ask before replacing an existing installation, unless they
+already authorized that update. After approval, run:
+
+```sh
+uv tool install --force --refresh "git+https://github.com/Layr-Labs/openrsi-space.git@main"
+```
+
+Record the installed revision and rerun preparation checks. Use the client's
+tested Dungeness pin, not Dungeness main independently. Never replace the client
+or runtime during an active run. Preserve saved evidence, requests and receipts.
+An update does not authorize a paid retry or resume an ended research process.
 
 ## Local runtime compatibility
 

@@ -30,7 +30,7 @@ class JourneyTests(unittest.TestCase):
         self.assertEqual(result['availability'], 'no_records')
         self.assertEqual(result['phase'], 'choose')
         self.assertEqual(result['completed_phases'], [])
-        self.assertIn('Model credits: unknown', result['card'])
+        self.assertNotIn('Model credits:', result['card'])
         self.assertFalse(self.state.exists())
 
     def test_local_preserves_failure_verification_and_evidence_separately(self):
@@ -66,6 +66,11 @@ class JourneyTests(unittest.TestCase):
         self.assertEqual(result['availability'], 'recorded')
         self.assertIn('stale', result['note'])
         self.assertNotEqual(result['verification'], 'valid')
+        self.assertIn('Last saved: running', result['card'])
+        self.assertNotIn('not_retained', result['card'])
+        self.assertNotIn('Accounting:', result['card'])
+        self.assertNotIn('○ not confirmed', result['card'])
+        self.assertIn('Explain this run.', result['card'])
 
     def test_prepared_is_not_running_or_authorized(self):
         self.local(status='prepared')

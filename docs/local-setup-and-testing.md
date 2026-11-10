@@ -35,14 +35,20 @@ Host tool installations are not inherited by the harness image.
 
 ## 2. Install the current client and discover the task
 
+These commands preserve an existing installation. Before a new run, follow the
+[update check](client-runtime-versions.md#check-for-updates) and ask before upgrading
+an existing client unless the human already authorized it.
+
 This guide uses the **production repository and service**. If the human supplied
 an official development environment, use its matching repository and evaluator;
 do not mix development and production credentials.
 
 ```sh
-uv tool install --force --refresh "git+https://github.com/Layr-Labs/openrsi-space.git@main"
 export PATH="$(uv tool dir --bin):$PATH"
 hash -r
+if ! command -v openrsi-space >/dev/null 2>&1; then
+  uv tool install --force --refresh "git+https://github.com/Layr-Labs/openrsi-space.git@main"
+fi
 openrsi-space --version
 mkdir -p openrsi-workspace
 cd openrsi-workspace

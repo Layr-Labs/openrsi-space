@@ -217,32 +217,40 @@ def render(result):
     for key, label in PHASES:
         marker = '●' if key == result['phase'] else '✓' if key in result['completed_phases'] else '○'
         lines.append(f'{marker} {label}')
-    lines.extend(['', '○ not confirmed · ✓ ended'])
-    lines.append('Now: Choose an approach together' if result['availability'] == 'no_records'
-                 else f"Status: {result['execution']}")
-    if result['availability'] == 'recorded':
-        lines.append('Source: saved local records')
+    lines.append('')
+    if result['availability'] == 'no_records':
+        lines.append('Now: Choose an approach together')
+    elif result['availability'] != 'station':
+        label = 'Last saved' if result['source'] == 'local_record' else 'Status'
+        lines.append(f"{label}: {result['execution']}")
     measured = result.get('usage', {})
     amount = next((measured[key] for key in ('budget_usd', 'normalized_usd', 'normalized_model_credits')
                    if key in measured), None)
     cap = result.get('budget_cap')
-    lines.append('Model credits: unknown' if amount is None else
-                 f'Model credits: ${amount:.4f}' + (f' / ${cap:g}' if cap is not None else ''))
-    if measured.get('accounting_state') in {'pending', 'incomplete'}:
-        lines.append('Accounting: ' + measured['accounting_state'])
-    candidates = result.get('candidate_evaluations', {})
-    if 'evaluations' in candidates:
-        lines.append(f"Candidate evaluations: {candidates['evaluations']:g}")
-    if 'best_score' in candidates:
-        lines.append(f"Candidate best: {candidates['best_score']:g}")
-    lines.append('Final verification: ' + result['verification'])
-    if 'final_score' in result:
-        lines.append(f"Final score: {result['final_score']:g}")
-    if result['source'] == 'local_record' and result['execution'] in TERMINAL:
-        lines.append('Evidence precheck: ' + result['evidence_precheck'])
-    if result.get('blocker'):
-        lines.append('Check: ' + result['blocker'])
-    lines.append('Next: ' + result['next_action'])
+    if amount is not None:
+        lines.append(f'Model credits: ${amount:.2f}' + (f' / ${cap:g}' if cap is not None else ''))
+    elif cap is not None:
+        lines.append(f'Budget cap: ${cap:g}')
+    if result['execution'] in TERMINAL:
+        outcome = {'valid': 'Valid final result', 'invalid': 'Final result invalid'}.get(
+            result['verification'], 'Final result needs inspection')
+        lines.append(outcome)
+        if 'final_score' in result:
+            lines.append(f"Score: {result['final_score']:g}")
+    if result['availability'] == 'unavailable':
+        next_step = 'Ask your agent to check this run.'
+    elif result.get('blocker'):
+        next_step = 'Review the issue with your agent.'
+    else:
+        next_step = {
+            'choose': 'Choose an idea together.',
+            'prepare': 'Confirm access and budget.',
+            'local': 'Follow this run’s progress.',
+            'readiness': 'Review before remote submission.',
+            'remote': 'Follow this run’s progress.',
+            'results': 'Explore the results together.',
+        }.get(result['phase'], 'Select a run to explore.')
+    lines.extend(['Next: ' + next_step, '', 'Details: Ask “Explain this run.”'])
     return box(lines)
 
 

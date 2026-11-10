@@ -16,10 +16,16 @@ environment checks and selected-provider preparation path.
 
 ## Install the current submission CLI
 
+These commands preserve an existing installation. Before a new run, follow the
+[update check](client-runtime-versions.md#check-for-updates) and ask before upgrading
+an existing client unless the human already authorized it.
+
 ```sh
-uv tool install --force --refresh "git+https://github.com/Layr-Labs/openrsi-space.git@main"
 export PATH="$(uv tool dir --bin):$PATH"
 hash -r
+if ! command -v openrsi-space >/dev/null 2>&1; then
+  uv tool install --force --refresh "git+https://github.com/Layr-Labs/openrsi-space.git@main"
+fi
 ```
 
 Use the installed command directly, not an old checkout's `uv run`. It fetches its
