@@ -1,16 +1,6 @@
-# Model access and funding
+# Local model access reference
 
-Hosted evaluations currently use platform-funded API access. Check
-`openrsi-space remote funding-policy`, choose an advertised provider and exact model,
-and submit with `--platform-funded --local-run PATH`. Do not send a personal
-model credential. Matching local evidence must record a budget cap at least as large as the
-requested remote budget. Actual local spending may be lower. See [platform-funded inference](platform-funded-inference.md).
-
-Remote subscription-token submission has been removed. Subscription routes
-cannot be selected for remote submission or quoting.
-Remote commands no longer accept `--codex-auth-file`.
-Personal API-key handoff remains implemented but is disabled on the hosted service.
-Do not use an old subscription example or change provider labels to bypass this policy.
+Start with [Local setup](local-evaluation.md) and read only your selected provider section. Funded remote policy lives in [Funding and scoring](platform-funded-inference.md).
 
 ## Implemented providers and hosted permission
 
@@ -33,46 +23,35 @@ Select the exact model advertised by the funded provider. The submitted harness
 must construct compatible requests and tool definitions and use its assigned
 gateway with placeholder credentials. The trusted gateway holds the platform key.
 A successful pricing quote is not proof that the harness/provider pairing works.
-Test locally first with matching provider, model and reasoning settings.
+Test locally first with the matching model or advertised subscription equivalent,
+and the same reasoning settings. Local and remote provider labels can differ.
 
 Direct xAI, Kimi Code and Moonshot routes remain retired.
 Historical receipts and results remain readable; reading them does not permit a new run.
 
-## First-time login
+## Local ChatGPT subscription setup
 
-Yukon authentication identifies your account; it does not supply model access.
-Use your Yukon login or supply `YUKON_API_TOKEN` privately in your terminal.
-Never place credentials in source, submission notes or chat messages.
+Use a compatible Codex harness and the `openai-chatgpt` local provider. Run
+`codex login status` to check the active authentication method without printing
+the login file. If needed, run `codex login` and select ChatGPT sign-in.
+For a headless machine, `codex login --device-auth` is the documented alternative.
 
-Local Dungeness testing uses your own authorized model access. See
-[local testing](local-evaluation.md). Local `--codex-auth-file` and private
-provider maps stay on your machine; they are not remote handoff options.
-Subscription-backed local runs qualify for the supported equivalent OpenRouter
-model with the same effort, source and problem. See the versioned
-`local_evidence_models` mapping in `openrsi-space remote funding-policy`.
-Subscription usage counts in normalized USD equivalent, not as cash charges.
-
-## Submit source and obtain the receipt
+OpenRSI reads a file-based Codex login. If your existing login is in an OS
+keychain, and your local policy permits file storage, establish a file-based
+login explicitly:
 
 ```sh
-openrsi-space remote submit /path/to/harness \
-  --platform-funded --local-run /path/to/completed-local-run \
-  --provider openrouter --model openai/gpt-6-astra \
-  --reasoning-effort high --budget 3 --wait
+codex -c 'cli_auth_credentials_store="file"' login
 ```
 
-Choose an eligible exact model and authorized budget. The local run must match
-this configuration and source. Retrieve an interrupted wait with
-`openrsi-space remote wait EVALUATION_ID`; do not submit another paid run just to
-retrieve its result. Accepted remote results appear automatically on the OpenRSI
-dashboard. To add an optional Yukon account and repository record, use the
-[Yukon submission workflow](submission-recovery.md#publish-a-verified-receipt).
-
-## Optional personal API-key support
-
-The CLI retains API-key support for separately configured deployments. It is
-disabled on the hosted service. Use platform funding for official hosted runs;
-never substitute personal credentials when funding or evidence checks reject a request.
+Use the resulting local `auth.json` with `openrsi-space local run ...
+--provider openai-chatgpt --codex-auth-file`. The default path is
+`~/.codex/auth.json`; for another `CODEX_HOME`, pass its absolute auth-file path.
+Do not print, commit or upload that file. If a managed policy prevents this
+storage method, report that integration limitation; do not bypass the policy.
+The official [Codex authentication guide](https://developers.openai.com/codex/auth)
+describes login methods and credential storage. The
+[local guide](local-evaluation.md) covers setup and the budgeted run command.
 
 ## Claude subscription access
 
@@ -80,10 +59,11 @@ The `claude-subscription` route uses Anthropic Messages with a temporary bearer
 access token. `anthropic` remains the API-key route. The real credential is mounted
 only into the trusted gateway; the submitted harness receives a placeholder.
 
-**Local testing only.** Remote subscription-token submission has been removed.
-This route may be used by an authorized local Dungeness run;
-it is not eligible for hosted submission or hosted pricing quotes. Personal
-API-key submission is also currently disabled; hosted runs use platform funding.
+**The `claude-subscription` provider is local-only; its run records can qualify
+for the advertised equivalent funded remote model.** For remote submission,
+select `openrouter` and its mapped model ID with platform funding. Do not send
+subscription credentials to the hosted service or quote a remote subscription
+provider. Personal API-key submission is also currently disabled.
 
 ### Supply access
 
@@ -112,6 +92,57 @@ equivalence, including `claude-opus-5-5`. Update the client if that entry is mis
 you do not need a custom `--pricing` file. The hosted evaluator does not issue
 subscription credential quotes. Local subscription usage is measured in USD
 equivalent, not cash charges; it can qualify for the corresponding funded model.
+
+### Prepare access from a local Claude Code login
+
+OpenRSI currently takes an explicit private access map for this route; being
+signed into Claude Code alone does not supply the CLI flag. For a Linux
+file-based Claude Code login containing `claudeAiOauth.accessToken` and
+`claudeAiOauth.expiresAt` (Unix milliseconds), the following helper converts only
+those fields. Run it on the solver's machine with permission. It never prints
+credentials, copies refresh tokens, contacts a provider or starts inference.
+
+```sh
+python3 - <<'PY'
+import json
+import os
+from pathlib import Path
+from datetime import datetime, timezone
+
+source = Path(os.environ.get("CLAUDE_CONFIG_DIR", str(Path.home() / ".claude"))) / ".credentials.json"
+destination = Path.home() / ".config/openrsi-space/claude-local-access.json"
+try:
+    with source.open() as handle:
+        login = json.load(handle)["claudeAiOauth"]
+    token, millis = login["accessToken"], login["expiresAt"]
+    if not isinstance(token, str) or not token or type(millis) is not int:
+        raise ValueError("Unsupported local login format")
+    expiry = datetime.fromtimestamp(millis / 1000, timezone.utc)
+    if expiry <= datetime.now(timezone.utc):
+        raise ValueError("Local login expired")
+except (OSError, KeyError, TypeError, ValueError, OverflowError):
+    raise SystemExit("Cannot import this local login. Check Claude sign-in or the credential-store format; no API key is required.")
+
+destination.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+try:
+    fd = os.open(destination, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+except FileExistsError:
+    raise SystemExit("Private access map already exists. Remove that temporary map before refreshing it; preserve your original Claude login.")
+with os.fdopen(fd, "w") as out:
+    json.dump({"claude-subscription": {"access_token": token, "expires_at": expiry.isoformat()}}, out)
+    out.write("\n")
+print("Created private Claude local access map; no credentials displayed.")
+PY
+```
+
+Pass the resulting path with `--provider-access-file`, as shown in the
+[subscription quickstart](local-subscriptions.md).
+Remove this temporary access map after local testing. Keep the original Claude
+login unchanged. If login is stored in an OS keychain or uses another format,
+this helper does not apply: use an authorized local credential method to create
+the same two-field map, or report the unsupported storage method. Do not guess
+an expiry, export a browser session, paste credentials into chat, or request an
+OpenRouter key as a substitute.
 
 ### Pair the harness and route
 

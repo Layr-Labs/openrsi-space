@@ -1,37 +1,94 @@
-# Executable harness development
+# Build a harness
 
-Create your agent in its own directory, using the starter generator or your own
-repository. OpenRSI packages that source for the remote verification service.
-After a successful evaluation, copy the returned receipt to the challenge
-checkout's generated `submission/verification.json`; `yukon run` checks that retained result.
-See [the solver guide](solver-guide.md) for authentication and publication.
+Your harness is the agent's code, prompts, tools and autonomous research loop.
+It receives an assigned problem and must work from the supplied scaffold without
+further human input. Follow [Quickstart](solver-guide.md) for model access and submission.
 
-The problem is **ecdsa.fail**. Exact source commits, candidate paths and verifier
-commands live in `src/openrsi_space/problem-set/ecdsa-fail/releases/v1.json`. Local checks use that
-pin; they cannot issue an official receipt.
-
-## Develop against a problem
+## Create and package
 
 ```sh
-openrsi-space problem list
-openrsi-space problem clone ecdsa.fail ./work/ecdsa
-openrsi-space problem setup ecdsa.fail --workspace ./work/ecdsa
-openrsi-space problem check ecdsa.fail --workspace ./work/ecdsa
+openrsi-space harness create my-agent --title "My Research Agent" --output ./my-harness
+openrsi-space harness build ./my-harness
 ```
 
-Keep only UTF-8 `.rs` files inside `src/point_add/`, including subdirectories;
-research notes belong outside it. Screening returns the offending file and rule
-without quoting its contents. Checks reuse the existing workspace and build caches;
-trusted contract edits are rejected. Local feedback is not official evidence.
-The pinned start is `62ae3d00d1e01d7bc640b5163cfea8dabffd8392`, also used by
-the Dungeness task/checkpoint binding. Full circuit simulation is memory
-intensive and is separate from the lightweight local contract tests.
+Replace the starter's `agent.py` with your research loop. Install the agent CLI,
+Python 3, Bash and other dependencies in its Dockerfile. Set an explicit image
+`PATH`; host tools and shell profiles are not inherited. The starter makes no
+model calls and does not produce a valid circuit by itself.
 
-## Package and smoke-test a harness
+The `execution` object belongs inside the complete `harness.json`, not in a
+standalone manifest. The creation command generates this shape:
+
+```json
+{
+  "schema_version": 1,
+  "kind": "harness",
+  "id": "my-agent",
+  "title": "My Agent",
+  "execution": {
+    "interface": "openrsi-exec-v1",
+    "dockerfile": "Dockerfile",
+    "entrypoint": ["python3", "/opt/harness/agent.py"]
+  }
+}
+```
+
+Package general-purpose code only. The task supplies problem resources; do not
+include ECDSA-specific papers, strategies, circuits or previous solutions.
+Review the [source and build limits](source-limits.md) before packaging.
+Never put credentials in source or images; `testbed` is a gateway placeholder.
+
+## Run against the assigned task
+
+Read `OPENRSI_TASK`, a JSON file with the workspace, candidate paths, instruction,
+model, gateway, budget and read-only paths. Follow the assigned problem and
+knowledge-base URLs. Use the assigned gateway, not a hardcoded provider endpoint.
+See the [task contract](#detailed-task-and-smoke-contract) for full fields.
+
+Choose a client that supports the route: Codex uses Responses, Claude Code uses
+Messages. Follow the [subscription recipes](local-subscriptions.md)
+and [client compatibility reference](harness-compatibility.md).
+
+Use `evaluate` to request trusted compilation, correctness checks and scoring.
+That evaluator has its own pinned Rust toolchain. Rust is not automatically
+installed in the solver's image. If you want agent-side compilation, install the
+workspace's pinned version and dependencies during image build.
+
+## Sandbox and workspace
+
+- Public internet and runtime dependency downloads are unavailable. Install
+  dependencies during Docker build and retrieve papers from the assigned library.
+- Hosted search and image inputs to the model gateway are unsupported. Local PDF
+  processing tools may extract text or render files, but do not send image blocks.
+- Candidate paths can be bind mounts. Edit or restore their contents; do not
+  rename, swap or replace the mounted root. `EXDEV` and `EBUSY` can indicate this
+  filesystem constraint, not a cheating verdict.
+- Preserve the task's read-only files; do not recursively chown the workspace.
+  For the ECDSA scaffold these include `POINT_ADD_SDK.md` and `src/point_add_sdk.rs`.
+  Keep only UTF-8 `.rs` files inside `src/point_add/`; notes can live elsewhere.
+
+## Handle errors without losing progress
+
+The gateway returns structured errors to the client; it cannot make the model
+recover if your wrapper exits. Your wrapper must inspect the failure and retain
+work:
+
+| Signal | Wrapper behavior |
+| --- | --- |
+| `run_action=stop` | Stop safely and preserve the best candidate and accounting. |
+| `retryable=true` | Retry with bounded backoff, within remaining budget and time. |
+| `run_action=continue`, `retryable=false` | Correct the request or choose a supported alternative; do not resend it unchanged. |
+| Unknown failure | Preserve evidence and report the error; do not blindly restart paid research. |
+
+Keep completed candidate evaluations, including results that finish while another
+request fails. Do not restore an older checkpoint over a newer verified best.
+See [compatibility and recovery](harness-compatibility.md) and the
+[runtime request policy](https://github.com/Layr-Labs/dungeness/blob/main/docs/gateway-request-policy.md).
+
+## Detailed task and smoke contract
 
 ```sh
-openrsi-space harness create my-solver --output .openrsi/my-solver
-openrsi-space harness build .openrsi/my-solver
+openrsi-space harness build ./my-harness
 ```
 
 The build prints its `id`. Use it to run the complete entrypoint:
@@ -68,7 +125,7 @@ they contain the selected problem's ID and manifest hash, candidate paths, and
 title. There is no `problem_service`, research statement, library endpoint, model
 budget or `models` list. Check `evidence` before initializing model clients;
 smoke mode should exercise packaging with synthetic fixtures. Use a
-[local Dungeness run](local-evaluation.md#full-local-agent-run-with-dungeness)
+[local Dungeness run](local-evaluation.md)
 to test the live task and model integration.
 
 The copied workspace is mounted read/write; the original is untouched. Candidate
@@ -115,26 +172,8 @@ compiler does not block `evaluate`. This check does not certify dependencies or
 prove that a candidate compiles.
 The starter copies the whole bundle into `/opt/harness/`, so general-purpose
 prompts and helper modules travel with the agent. Use the
-[general remote submission flow](generic-harnesses.md#submit-your-own-agent)
+[configuration reference](generic-harnesses.md)
 to choose provider, model and budget separately from those source files.
-
-A complete `harness.json` is shown below. The `execution` object is a field of
-this document, not a standalone manifest. `openrsi-space harness create` generates
-the manifest, Dockerfile and starter entrypoint together.
-
-```json
-{
-  "schema_version": 1,
-  "kind": "harness",
-  "id": "my-agent",
-  "title": "My Agent",
-  "execution": {
-    "interface": "openrsi-exec-v1",
-    "dockerfile": "Dockerfile",
-    "entrypoint": ["python3", "/opt/harness/agent.py"]
-  }
-}
-```
 
 Executable packages cannot select a host agent or Python adapter. Package
 general-purpose tools and retrieval code in any layout your agent supports.
@@ -142,13 +181,13 @@ Problem-specific knowledge belongs to the trusted task: its library endpoint
 provides eight bundled papers, and your agent chooses how to read or index them during
 the run. `OPENRSI_KNOWLEDGE_BASE_URL` points to the catalog. Do not submit ECDSA
 papers, strategies, notes, solution code or answer caches. See the
-[screening policy](cheat-filter.md).
+[screening policy](source-limits.md).
 
 `OPENRSI_TASK` points to a JSON file containing problem/harness references,
 instruction, writable workspace, candidate paths, budget, model and gateway
 URL, plus an allowed `models` list. `OPENRSI_WORKSPACE`, `OPENRSI_MODEL`
 and `OPENRSI_MODELS` are convenience variables.
-With the [problem-service runtime](problem-service.md), the launcher first fetches
+With the [problem-service runtime](generic-harnesses.md), the launcher first fetches
 the server-assigned statement and checks its SHA-256, problem identity and
 candidate paths. The resolved task includes `problem_document`, and
 `OPENRSI_PROBLEM_URL` points to the read-only document. A failed or mismatched
@@ -190,14 +229,3 @@ reproduce every live mount boundary.
 boundaries; `EBUSY` can mean the target is a mount root. Check the failed operation
 and its paths. These are filesystem compatibility errors, not cheating or
 security-policy verdicts, and do not make the harness architecture ineligible.
-
-## Official evaluation
-
-Submit the harness source using the [solver guide](solver-guide.md). The remote service builds and runs it with metered model access and independent verification. Operator Dungeness tooling lives in `openrsi-space-verifier`; it is not required locally.
-
-## Build review
-
-The [build review contract](source-limits.md#build-requirements) keeps ordinary online package installation
-and multi-stage Dockerfiles, with source review followed by bounded image review.
-No private offline dependency format is required. See the documented coverage limits;
-code availability and deployment activation are separate.

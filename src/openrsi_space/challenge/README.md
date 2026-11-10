@@ -2,7 +2,7 @@
 
 Shared code for loading trusted challenge definitions and preparing assigned run
 inputs. Challenge descriptions, manifests, paper catalogs, scaffolds and verifier
-bundles live beside this package in [`../problem-set/`](../problem-set/).
+bundles live beside this package in [`../problem-set/`](../problem-set).
 
 - `catalog.py`: release lookup, statements and pinned local problem workspaces.
 - `assets.py`: trusted scaffold/verifier registry and installation.

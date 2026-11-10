@@ -1,26 +1,37 @@
 # OpenRSI documentation
 
-Start with [Architecture](architecture.md) for the components, data flow and trust
-boundaries. Use the [submission state model](submission-states.md) to interpret
-progress and distinguish execution from verification and publication. Use the
-[submission recovery guide](submission-recovery.md) for diagnostic commands,
-retries and escalation.
+## Start here
 
-To participate, follow the [solver guide](solver-guide.md) or give your coding
-agent the [agent instructions](agent-prompt.md).
+**Coding agents:** start with [For agents](agent-prompt.md). It directs you through
+[Local setup](local-evaluation.md), the selected model-access recipe, harness preparation,
+local testing and remote submission. Read detailed references only when that step
+needs them. Report progress and identify whether a blocker needs human action.
 
-| Task | Reference |
+**Solvers:** use [Quickstart](solver-guide.md) to follow the same journey yourself,
+or give the agent your research idea, preferred model access and testing budget.
+Local ChatGPT/Codex and Claude subscription tests do not require an OpenRouter key.
+Eigen Labs supplies remote model access.
+
+## Find the answer for your current step
+
+| Question | Authoritative guide |
 | --- | --- |
-| Understand scores and spending | [Scoring and budgets](scoring-and-budgets.md), [funding and local evidence](platform-funded-inference.md) |
-| Build a harness | [Generic harnesses](generic-harnesses.md), [executable interface](executable-harness.md), [source and build requirements](source-limits.md), [submission rules](cheat-filter.md) |
-| Choose model access | [Model access and provider recipes](live-models.md), [harness/model compatibility](harness-compatibility.md) |
-| Test locally | [Local evaluation](local-evaluation.md), [client/runtime compatibility](deployment-compatibility.md) |
-| Understand submission states | [State model](submission-states.md) |
-| Submit and recover | [Recovery guide](submission-recovery.md), [automatic publication](automatic-publication.md), [remote API](remote-evaluation.md), [endpoint selection](verifier-endpoint.md) |
-| Discover and share harnesses | [Harness catalog](harness-catalog.md), [artifact sharing](artifact-sharing.md) |
-| Understand the assigned problem | [Problem service](problem-service.md), [ECDSA upstream reference](ecdsa-upstream.md) |
-| Contribute to the toolkit | [Development](development.md) |
+| Is this machine ready, and how do I use my login? | [Local setup](local-evaluation.md) |
+| What must my harness implement? | [Build a harness](executable-harness.md) |
+| How must the wrapper recover from gateway errors? | [Harness compatibility](harness-compatibility.md) |
+| Where is my submission, and what can happen next? | [Submission states](submission-states.md) |
+| What failed, and can I retry without another run? | [Troubleshooting](submission-recovery.md) |
+| Which model routes and credentials are supported? | [Model access](live-models.md) |
+| How do caps, usage and funding eligibility work? | [Funding and scoring](platform-funded-inference.md) |
+| What source can I submit? | [Source limits and research rules](source-limits.md) |
+| What is public, and how do I reuse or publish source? | [Artifacts, licenses and optional publication](artifact-sharing.md) |
+| How do configuration and task documents work? | [Harness configuration](generic-harnesses.md) |
 
-The [challenge UI](https://github.com/Layr-Labs/yukon/blob/master/apps/challenges-ui/challenges/openrsi/README.md)
-is maintained in Yukon. Hosted-service implementation and operator runbooks belong
-in the private verifier repository.
+## System and maintainer references
+
+- [Architecture](architecture.md)
+- [Runtime compatibility and release pins](deployment-compatibility.md)
+- [Development](maintainers/development.md)
+- [Remote API contract](maintainers/remote-api.md)
+
+Each topic has one home; there is no mirrored reference directory to read as well.

@@ -1,103 +1,6 @@
-# Generic harness execution
+# Runtime and gateway reference
 
-This implementation separates harness execution from model access in
-Dungeness. Harbor still provides the container/job lifecycle. No Yukon change
-is required: the remote service continues issuing verification receipts.
-The deployed runtime executes submitted command harnesses and meters model
-usage. Docker integration checks cover internet isolation, declared-model
-enforcement, token accounting, independent verification and receipt retrieval
-through stock Yukon. A live submitted Codex harness also completed independent
-verification with no model-token ceiling. These checks do not replace testing
-your own agent/model integration.
-
-## Submit your own agent
-
-For login, credential setup, receipt retrieval and Yukon publication, use the
-[solver guide](solver-guide.md). [Agent instructions](agent-prompt.md) cover the
-same flow for coding agents. Hosted runs use platform funding; personal API-key
-handoff is retained but disabled, and subscription-token handoff is removed.
-Use `--platform-funded --local-run PATH` with a matching ended local run
-whose recorded budget cap covers the remote cap; actual spending may be lower. See
-[the funded workflow](platform-funded-inference.md).
-The source ZIP and expanded source must each fit the advertised 8 MiB default;
-check `remote limits HARNESS_DIR` before uploading.
-
-Submit an existing repository containing the general-purpose harness, prompts,
-configuration, helper programs and dependencies, with its existing directory
-layout. The harness can run its own workers, search loop or framework.
-Provide a Dockerfile and launch command; no OpenRSI-specific manifest or
-`instructions.md` is required. Replace `PROVIDER` and `MODEL_ID` below with an enabled provider and its exact
-model ID, matching the client implemented by your harness:
-
-```sh
-openrsi-space remote submit /path/to/your-agent \
-  --entrypoint "python3 /app/main.py" \
-  --provider PROVIDER --model MODEL_ID --budget 3 \
-  --platform-funded --local-run /path/to/completed-local-run --wait
-```
-
-The command must match the location established by your Dockerfile. Use
-`--dockerfile relative/path/Dockerfile` when it is not at the repository root.
-`--entrypoint` is parsed as an argument list, not evaluated by a host shell.
-If the program needs shell syntax, declare a shell explicitly; it runs only
-inside the worker container. The CLI includes generated execution metadata in
-the immutable source archive without writing files into your repository.
-An existing `harness.json` can declare the same launch information instead;
-do not combine it with `--entrypoint`.
-
-An optional editable starter is also available:
-
-```sh
-openrsi-space harness create my-agent --output .openrsi/my-agent
-```
-
-Replace `.openrsi/my-agent/agent.py` and install generic dependencies in its
-Dockerfile. The starter copies the whole source bundle into `/opt/harness/`.
-Do not package ECDSA-specific papers, notes, strategies or candidate code. Do not
-instruct the agent to focus on a predetermined task paper, including by title,
-identifier, indirect hint, or a ranking rule favoring that paper. This applies
-even when the paper is in the assigned library. Reading the library and selecting
-relevant resources during the run is allowed. The
-assigned task supplies a shared eight-paper library during execution. It initially makes
-no model calls; implement the research loop before requesting a model run.
-An existing framework can use its own entrypoint instead.
-
-Executable submissions are the supported workflow. Dungeness no longer bundles
-Codex, Claude Code, Pi or Prime Agent launchers. Install your preferred agent and
-configure its CLI inside the submitted image. OpenRSI's `openrsi-exec-v1`
-contract is unchanged: it installs the generic Dungeness command adapter.
-Legacy `harness create --agent` and non-executable harness preparation are
-rejected with migration instructions. Historical artifacts remain readable.
-
-Submit the same source with a model choice and spending cap:
-
-```sh
-openrsi-space remote submit .openrsi/my-agent \
-  --provider PROVIDER --model MODEL_ID --budget 3 \
-  --platform-funded --local-run /path/to/completed-local-run --wait
-```
-
-Hosted runs receive no personal model credentials. For example, select
-`--provider openrouter --model openai/gpt-6-astra` with matching local evidence
-and the platform-funded flag. A matching local Codex/ChatGPT Astra run qualifies;
-use the OpenRouter provider/model only for the remote request. Local subscription
-usage counts in normalized USD equivalent. Remote subscription provider IDs are
-rejected because the platform funds OpenRouter, not because subscription evidence
-is ineligible. See [evidence matching](platform-funded-inference.md).
-The harness's model client must implement the chosen provider's supported
-protocol and use the gateway endpoint supplied in `OPENRSI_TASK`.
-The gateway substitutes trusted credentials using configured authentication
-headers; it does not adapt the coding agent to the model. The harness owns
-context-window settings and reasoning preferences. OpenRSI does not assign
-one fixed context window or capability list to every ChatGPT model.
-The provider's protocol must be available and enabled by the operator.
-Check [hosted provider permissions](live-models.md#implemented-providers-and-hosted-permission):
-quotes and submissions check the same pinned Dungeness registry. A successful
-quote does not test credentials or harness API compatibility. Check rollout
-status when targeting an older hosted deployment.
-New model names do not need a code change or a model whitelist: the service
-resolves and freezes reference pricing before accepting the run.
-All inference uses the metered gateway.
+For setup, start with [Local setup](local-evaluation.md); for image and entrypoint requirements, use [Build a harness](executable-harness.md).
 
 An `evaluation.json` is optional when all three model/budget flags are provided.
 Without a file, the defaults are temporary model access, no token ceiling,
@@ -107,31 +10,6 @@ With an existing file, flags override its run settings without editing it.
 Set provider and model together; switching them clears any inherited reasoning
 effort unless `--reasoning-effort` is also given. For ensembles, keep the full
 v4 model list in `evaluation.json`; budget and limit flags still apply.
-
-The client saves the resolved run settings for `remote wait` and receipt export,
-including across process restarts. Source and knowledge edits change the source
-digest; model/budget changes change the evaluation configuration digest.
-Both identities are bound into the verification receipt. Yukon still receives
-only that receipt and retrieves the existing verified result.
-
-The source archive is limited to 8 MiB and cannot contain symlinks. Install
-larger generic dependencies at image build time and pin their versions. Read
-task-specific research material from `OPENRSI_KNOWLEDGE_BASE_URL` during the run. Keep all credential files
-outside the source directory; `.env*`, `.git`, local state and virtual
-environments are excluded. A selected credential file inside the source
-directory is rejected before submission.
-
-## Runtime dependency
-
-The remote submission command does not launch Dungeness on the solver’s machine. The
-private `openrsi-space-verifier` service owns its pinned runtime and the adapter that
-installs submitted command harnesses. The public CLI packages source, checks
-the local entrypoint and talks to the service through HTTPS. Anyone can clone
-the public [Dungeness repository](https://github.com/Layr-Labs/dungeness) for
-local tests. Funded admission requires a matching retained local run and its
-private evidence bundle; reuse an existing qualifying run.
-See [local testing options](local-evaluation.md). Local output does not replace
-an official remote receipt. Your harness receives the execution interface below.
 
 ## Execution contract
 
@@ -371,3 +249,29 @@ requests; the hosted OpenRSI service does not impose one by default.
 
 Build dependencies: run `openrsi-space remote build-policy` before choosing hosted
 package sources; see [build dependency policy](source-limits.md#dependency-downloads-during-builds).
+
+## Task document
+
+`GET /task` returns:
+
+- `schema_version: 1` and the assigned `run_id`;
+- `problem.id` and the content-addressed problem-package `version`;
+- the `title` and `statement`;
+- the starting `repository` URL and commit;
+- `candidate_paths` and the scoring `metric`;
+- `initialization.mode`, currently `scaffold` for ECDSA;
+- `evaluation.command`, currently `evaluate`.
+- `knowledge_base` with the library ID, count and catalog URL;
+- `attachments` binding every allowed file name, media type, byte size and SHA-256.
+
+The OpenRSI launcher fetches this document before starting the harness. It
+checks the digest, problem identity and candidate paths, prepends the trusted
+statement to the run instructions, and writes the resolved `OPENRSI_TASK`.
+`problem_document` contains the response; `OPENRSI_PROBLEM_URL` allows subsequent
+queries. Existing harnesses that read `OPENRSI_TASK.instruction` continue working.
+Unavailable or mismatched task responses stop execution rather than substituting
+user-authored instructions. Old run inputs without this service field retain
+their original embedded instructions.
+
+Use `evaluate` to check candidates against the assigned problem. Editing a local
+statement or claiming a score in stdout cannot change the official requirements.
