@@ -1,4 +1,4 @@
-"""Public local Dungeness runs: no hosted API, Yukon login, or official receipts."""
+"""Local Dungeness runs with public model preflight; no Yukon login or receipts."""
 from openrsi_space.compatibility import LEGACY_STATE, PROBLEM_DIGEST_LABEL, RUNTIME_NAMESPACE
 from contextlib import contextmanager
 import json
@@ -246,6 +246,15 @@ def run(args, state):
     from openrsi_space.credentials import require_active_models
     require_active_models(evaluation_models(evaluation))
     validate_credential_locations(args)
+    if not getattr(args, 'local_only', False):
+        from openrsi_space.client.model_preflight import check
+        prices = read_json(Path(args.pricing)) if args.pricing else pricing_schedule()
+        remote_models = check(evaluation_models(evaluation), prices)
+        print('Remote model pairing checked: ' + ', '.join(m['name'] for m in remote_models) +
+              '. Source, problem, reasoning, evidence and allowance checks still apply at submission.',
+              file=sys.stderr, flush=True)
+    else:
+        print('Local-only experiment: remote model eligibility was not checked.', file=sys.stderr, flush=True)
     from openrsi_space.integrations.dungeness.managed_runtime import resolve
     runtime_source = resolve(args.dungeness)
     access = None

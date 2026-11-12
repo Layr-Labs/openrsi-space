@@ -23,8 +23,14 @@ def tier(value) -> int:
     return value
 
 
-def pricing_schedule() -> dict:
+def base_pricing_schedule() -> dict:
+    """Original pinned snapshot, retained for already-issued requests/receipts."""
     return read_json(Path(__file__).resolve().parents[1] / "pricing/pricing.json")
+
+
+def pricing_schedule() -> dict:
+    from .model_registry import reference_pricing
+    return reference_pricing(base_pricing_schedule())
 
 
 def pricing_digest(schedule=None) -> str:
