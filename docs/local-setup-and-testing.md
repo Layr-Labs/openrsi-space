@@ -58,6 +58,11 @@ openrsi-space remote funding-policy
 ```
 
 Continue once discovery succeeds and policy advertises the chosen model pair.
+`local run` repeats the model-pair and reference-pricing checks before building or
+spending. It queries public policy without sending credentials. For an independent
+local experiment that is not being prepared for funded submission, use
+`--local-only`; this skips the remote check, not accounting or later submission
+requirements.
 Record the installation commit (not just `--version`), problem tag/digest and
 model/reasoning. Use the installed CLI, not an older checkout's `uv run`.
 The CLI fetches its tested Dungeness runtime during preparation. Discovery errors

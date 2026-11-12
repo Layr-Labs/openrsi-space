@@ -64,6 +64,11 @@ class LocalRunTests(unittest.TestCase):
         patch('openrsi_space.local.executable.inspect_build').start()
         patch('openrsi_space.local.shutil.which', return_value='/fake/tool').start()
         patch('openrsi_space.remote.RemoteClient', side_effect=AssertionError('Hosted API must not be used')).start()
+        from openrsi_space.compatibility import FUNDING_PROTOCOL
+        from openrsi_space.contracts.model_equivalence import public_policy
+        patch('openrsi_space.client.model_preflight.transport.fetch', return_value=json.dumps({
+            'protocol': FUNDING_PROTOCOL, 'enabled': True, 'providers': ['openrouter'],
+            'model_selection': 'solver', 'local_evidence_models': public_policy()}).encode()).start()
 
     def fake_build(self, state, path):
         snapshot, _ = snapshot_directory(path, exclude=SOURCE_EXCLUDES)
@@ -80,6 +85,20 @@ class LocalRunTests(unittest.TestCase):
         paths = list(self.state.glob('local/*/run.json'))
         self.assertEqual(len(paths), 1)
         return read_json(paths[0])
+
+    def test_unknown_funded_pair_fails_before_runtime_credentials_or_build(self):
+        with patch('openrsi_space.integrations.dungeness.managed_runtime.resolve') as runtime, \
+             patch('openrsi_space.local.credential_input') as credentials:
+            self.assertEqual(self.cli(provider='claude-subscription', model='claude-fable-unknown'), 1)
+            runtime.assert_not_called()
+            credentials.assert_not_called()
+            self.build.assert_not_called()
+        self.assertIn('No supported remote equivalent', self.err.getvalue())
+
+    def test_local_only_prepare_does_not_need_funding_service(self):
+        with patch('openrsi_space.client.model_preflight.transport.fetch', side_effect=AssertionError('No hosted service')):
+            self.assertEqual(self.cli('--prepare-only', '--local-only'), 0)
+        self.assertIn('remote model eligibility was not checked', self.err.getvalue())
 
     def test_default_runtime_prepares_without_credentials_and_survives_cache_removal(self):
         with patch('openrsi_space.integrations.dungeness.managed_runtime.resolve',

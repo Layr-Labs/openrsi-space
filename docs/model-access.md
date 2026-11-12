@@ -24,6 +24,20 @@ Check `openrsi-space remote funding-policy` before testing; source, problem and
 reasoning settings must also match. Local provider labels may differ from remote
 labels. Not every locally supported model has an eligible remote equivalent.
 
+`local run` checks the shared model registry, local reference pricing, and the
+selected evaluator's public funding policy before building or reading credentials.
+No Yukon login is required. An outdated client or server stops preparation with
+an actionable message. `--local-only` skips this remote eligibility check for
+independent experiments; it does not waive evidence checks at submission.
+
+Fable versions are distinct: `claude-fable-5`, `claude-fable-5-1`, and
+`claude-fable-5-2` on `claude-subscription` or `anthropic` correspond respectively
+to `anthropic/claude-fable-5`, `anthropic/claude-fable-5.1`, and
+`anthropic/claude-fable-5.2` on OpenRouter. Reasoning effort must match. Actual
+access still depends on your provider account; the registry does not grant access.
+The exact IDs follow [Anthropic's model documentation](https://platform.claude.com/docs/en/models/overview).
+
+
 Eigen Labs supplies and pays for remote OpenRouter access. Submit with
 `--platform-funded` and the exact supported remote model; do not upload a personal
 API key or subscription login. Subscription credentials are used locally only—this
