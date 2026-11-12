@@ -37,6 +37,16 @@ to `anthropic/claude-fable-5`, `anthropic/claude-fable-5.1`, and
 access still depends on your provider account; the registry does not grant access.
 The exact IDs follow [Anthropic's model documentation](https://platform.claude.com/docs/en/models/overview).
 
+Sonnet 5.5 and Haiku 5.5 use `claude-sonnet-5-5` and `claude-haiku-5-5`
+locally on `claude-subscription` or `anthropic`, mapped to
+`anthropic/claude-sonnet-5.5` and `anthropic/claude-haiku-5.5` on OpenRouter.
+Haiku's higher reference rates apply to the whole request when inclusive input
+exceeds 100,000 tokens; exactly 100,000 still uses the base tier. Both include
+separate five-minute and one-hour cache-write rates. Use Anthropic Messages for
+duration-priced cache writes so the runtime receives the required usage buckets.
+These entries require an updated client and evaluator registry; preparation checks
+the evaluator's advertised mappings before local model usage.
+
 
 Eigen Labs supplies and pays for remote OpenRouter access. Submit with
 `--platform-funded` and the exact supported remote model; do not upload a personal

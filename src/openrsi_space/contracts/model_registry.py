@@ -6,7 +6,7 @@ This registry does not grant provider access or translate API protocols.
 from copy import deepcopy
 from dataclasses import dataclass
 
-REGISTRY_VERSION = 'openrsi-model-registry-20261112'
+REGISTRY_VERSION = 'openrsi-model-registry-20261112-2'
 
 
 @dataclass(frozen=True)
@@ -24,6 +24,18 @@ MODELS = (
     Model('openai/gpt-5.6-sol', (('openai-chatgpt', 'gpt-5.6-sol'), ('openai', 'gpt-5.6-sol'))),
     Model('anthropic/claude-opus-5', (('claude-subscription', 'claude-opus-5'), ('anthropic', 'claude-opus-5'))),
     Model('anthropic/claude-opus-5.5', (('claude-subscription', 'claude-opus-5-5'), ('anthropic', 'claude-opus-5-5'))),
+    # Exact IDs and all cache/context tiers checked 2026-11-12:
+    # https://platform.claude.com/docs/en/models/sonnet-5-5/overview
+    # https://platform.claude.com/docs/en/models/haiku-5-5/overview
+    Model('anthropic/claude-sonnet-5.5', (('claude-subscription', 'claude-sonnet-5-5'), ('anthropic', 'claude-sonnet-5-5')),
+          dict(text_only=True, input_per_mtok=2.0, output_per_mtok=10.0, cached_read_per_mtok=0.10,
+               cache_write_per_mtok=2.5, cache_write_1h_per_mtok=4.0)),
+    Model('anthropic/claude-haiku-5.5', (('claude-subscription', 'claude-haiku-5-5'), ('anthropic', 'claude-haiku-5-5')),
+          dict(text_only=True, input_per_mtok=0.10, output_per_mtok=0.50, cached_read_per_mtok=0.01,
+               cache_write_per_mtok=0.125, cache_write_1h_per_mtok=0.20,
+               long_context=dict(threshold_input_tokens=100000, input_per_mtok=0.50,
+                                 output_per_mtok=2.50, cached_read_per_mtok=0.05,
+                                 cache_write_per_mtok=0.625, cache_write_1h_per_mtok=1.0))),
     # Anthropic model IDs and cache-duration rates checked 2026-11-12:
     # https://platform.claude.com/docs/en/models/fable-5/overview
     # https://platform.claude.com/docs/en/models/fable-5-1/overview
