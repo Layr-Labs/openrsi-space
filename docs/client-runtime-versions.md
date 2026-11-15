@@ -46,6 +46,12 @@ tested Dungeness pin, not Dungeness main independently. Never replace the client
 or runtime during an active run. Preserve saved evidence, requests and receipts.
 An update does not authorize a paid retry or resume an ended research process.
 
+The current default is `79b2fb4569ae1d034e2d07ef88d968783cf445fd`, the
+published source matching production's November 13 cache-accounting runtime
+(deployment snapshot `05931ecd55cad53f6cb9ab671b3787e5b0650611`). It includes
+accounting for OpenRouter Claude aggregate cache writes using the request's cache
+TTL. The deployment snapshot is not a downloadable public runtime revision.
+
 ## Local runtime compatibility
 
 The CLI manages a tested Dungeness revision for all supported problems. The
