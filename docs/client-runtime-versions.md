@@ -46,11 +46,11 @@ tested Dungeness pin, not Dungeness main independently. Never replace the client
 or runtime during an active run. Preserve saved evidence, requests and receipts.
 An update does not authorize a paid retry or resume an ended research process.
 
-The current default is `79b2fb4569ae1d034e2d07ef88d968783cf445fd`, the
-published source matching production's November 13 cache-accounting runtime
-(deployment snapshot `05931ecd55cad53f6cb9ab671b3787e5b0650611`). It includes
-accounting for OpenRouter Claude aggregate cache writes using the request's cache
-TTL. The deployment snapshot is not a downloadable public runtime revision.
+The current default is `ba38604878f52b302306c7adb7d2dec07ab2b486`.
+It includes the GPT 5.6–6.2 catalog, Terra pricing, bounded provider request
+lifetimes and the earlier OpenRouter cache-accounting fixes. Local and hosted
+runtime promotion are qualified together; updating the client does not update
+the hosted evaluator.
 
 ## Local runtime compatibility
 

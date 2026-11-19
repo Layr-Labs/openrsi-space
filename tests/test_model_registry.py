@@ -19,6 +19,45 @@ def policy():
 
 
 class ModelRegistryTests(unittest.TestCase):
+    def test_gpt_catalog_preflight_and_version_effort_isolation(self):
+        from openrsi_space.contracts.evaluation import validate_model
+        names = ('gpt-6.2-astra', 'gpt-6.2-sol', 'gpt-6.1-sol', 'gpt-6.1-terra',
+                 'gpt-6-astra', 'gpt-6-sol', 'gpt-6-luna', 'gpt-5.6-sol',
+                 'gpt-5.6-terra', 'gpt-5.6-luna')
+        no_reasoning = {'gpt-6.1-terra', 'gpt-6-sol', 'gpt-6-luna',
+                        'gpt-5.6-sol', 'gpt-5.6-terra', 'gpt-5.6-luna'}
+        for name in names:
+            remote = dict(provider='openrouter', name='openai/' + name, reasoning_effort='high')
+            for provider in ('openai-chatgpt', 'openai'):
+                local = dict(provider=provider, name=name, reasoning_effort='high')
+                with self.subTest(name=name, provider=provider), patch(
+                        'openrsi_space.client.model_preflight.transport.fetch', return_value=json.dumps(policy())):
+                    self.assertEqual(check([local], pricing_schedule()), [remote])
+                    for effort in ('low', 'medium', 'high', 'xhigh', 'max'):
+                        validate_model({**local, 'reasoning_effort': effort})
+                    for model in (local, remote):
+                        if name in no_reasoning:
+                            validate_model({**model, 'reasoning_effort': 'none'})
+                        else:
+                            with self.assertRaisesRegex(OpenRSIError, 'reasoning effort'):
+                                validate_model({**model, 'reasoning_effort': 'none'})
+                    self.assertNotEqual(model_binding([local]), model_binding([{**remote, 'reasoning_effort': 'medium'}]))
+                    self.assertNotEqual(model_binding([{**local, 'name': name + '-latest'}]), model_binding([remote]))
+        self.assertNotEqual(model_binding([dict(provider='openai-chatgpt', name='gpt-5.6-terra')]),
+                            model_binding([dict(provider='openrouter', name='openai/gpt-6.1-terra')]))
+        for provider, name in [('other', 'gpt-5.6-terra'), ('openrouter', 'vendor/unknown')]:
+            with self.assertRaisesRegex(OpenRSIError, 'reasoning effort'):
+                validate_model(dict(provider=provider, name=name, reasoning_effort='none'), check_pricing=False)
+        self.assertNotEqual(model_binding([dict(provider='openai-chatgpt', name='gpt-5.6-terra', reasoning_effort='none')]),
+                            model_binding([dict(provider='openrouter', name='openai/gpt-5.6-terra')]))
+
+    def test_terra_cache_and_long_context_prices(self):
+        for provider in ('openai', 'openai-chatgpt', 'openrouter'):
+            model = dict(provider=provider, name=('openai/' if provider == 'openrouter' else '') + 'gpt-5.6-terra')
+            usage = dict(input_tokens=272000, output_tokens=1000, cached_read_tokens=20000, cache_write_tokens=10000)
+            self.assertEqual(credits(usage, model), Decimal('0.525'))
+            self.assertEqual(credits({**usage, 'input_tokens':272001}, model), Decimal('1.044004'))
+
     def test_sonnet_and_haiku_preflight_and_exact_model_bindings(self):
         for family in ('sonnet', 'haiku'):
             remote = dict(provider='openrouter', name=f'anthropic/claude-{family}-5.5', reasoning_effort='high')
