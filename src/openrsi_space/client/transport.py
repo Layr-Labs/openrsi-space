@@ -99,7 +99,7 @@ ADMISSION_EXPECTATIONS = {
  'limit_fields': 'max_seconds and optional max_model_tokens.',
  'time_limit': 'A positive integer max_seconds.',
  'token_limit': 'null or a positive integer max_model_tokens.',
- 'reasoning_effort': 'low, medium, high, xhigh or max.',
+ 'reasoning_effort': 'low, medium, high, xhigh or max; none only for supported models.',
  'model_shape': 'A provider ID, exact model name and optional reasoning_effort.',
  'source_envelope': 'digest and archive_base64 fields.',
  'source_encoding': 'Valid base64 for the source bundle.',

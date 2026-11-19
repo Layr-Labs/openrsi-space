@@ -61,7 +61,11 @@ def validate_model(model, *, check_pricing=True, pricing=None):
             or any(not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9._/:-]{1,120}", value)
                    for value in model.values())):
         raise OpenRSIError("model requires a provider and exact model name.")
-    if "reasoning_effort" in model and model["reasoning_effort"] not in {"low", "medium", "high", "xhigh", "max"}:
+    from .model_registry import supports_no_reasoning
+    efforts = {"low", "medium", "high", "xhigh", "max"}
+    if supports_no_reasoning(model):
+        efforts.add("none")
+    if "reasoning_effort" in model and model["reasoning_effort"] not in efforts:
         raise OpenRSIError("Unsupported reasoning effort.")
     # Read historical and future provider IDs without making this a second
     # availability list. Admission uses the selected runtime's trusted registry.

@@ -30,6 +30,16 @@ No Yukon login is required. An outdated client or server stops preparation with
 an actionable message. `--local-only` skips this remote eligibility check for
 independent experiments; it does not waive evidence checks at submission.
 
+GPT models use the same exact version locally and remotely: for example,
+`openai-chatgpt/gpt-5.6-terra` maps to `openrouter/openai/gpt-5.6-terra`.
+The supported GPT catalog is 6.2 Astra/Sol, 6.1 Sol/Terra, 6 Astra/Sol/Luna,
+and 5.6 Sol/Terra/Luna. Use Responses for coding tool calls. Subscription
+availability depends on your account; a mapping does not grant model access.
+Reasoning effort must match exactly. Explicit `none` is supported for 6.1 Terra,
+6 Sol/Luna, and 5.6 Sol/Terra/Luna; it is distinct from leaving effort unspecified.
+New reference prices include cache writes and the whole-request long-context
+rate above 272,000 input tokens. Existing comparison prices are unchanged.
+
 Fable versions are distinct: `claude-fable-5`, `claude-fable-5-1`, and
 `claude-fable-5-2` on `claude-subscription` or `anthropic` correspond respectively
 to `anthropic/claude-fable-5`, `anthropic/claude-fable-5.1`, and

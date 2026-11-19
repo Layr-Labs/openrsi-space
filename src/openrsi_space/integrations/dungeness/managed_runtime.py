@@ -12,9 +12,9 @@ from openrsi_space.common import OpenRSIError
 
 REPOSITORY = 'https://github.com/Layr-Labs/dungeness.git'
 # Release pin, shared by all supported problems. Update only after compatibility tests.
-# Public source for production's 05931ecd deployment snapshot; never pin a
-# deployment-local commit that solvers cannot fetch from REPOSITORY.
-REVISION = '79b2fb4569ae1d034e2d07ef88d968783cf445fd'
+# Always pin public source, never a deployment-local snapshot that solvers
+# cannot fetch from REPOSITORY.
+REVISION = 'ba38604878f52b302306c7adb7d2dec07ab2b486'
 
 
 def _git(root, *args):
