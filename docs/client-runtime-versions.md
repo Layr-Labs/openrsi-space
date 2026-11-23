@@ -48,7 +48,9 @@ An update does not authorize a paid retry or resume an ended research process.
 
 The current default is `60cacfa13207bcc2f42f92a8bb7dba4dabb510ab`.
 It adds recovery from confirmed Claude provider rate-limit rejections without
-marking accounting incomplete. The harness must honor retry guidance and backoff;
+marking accounting incomplete. Evidence retains settled provider rejections, but
+still requires a complete successful exchange for every declared model. Unknown
+usage remains ineligible. The harness must honor retry guidance and backoff;
 the gateway does not retry model calls itself. It retains the GPT 5.6–6.2 catalog,
 Terra pricing, bounded provider request lifetimes and OpenRouter cache accounting. Local and hosted
 runtime promotion are qualified together; updating the client does not update
