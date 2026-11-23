@@ -10,6 +10,7 @@ def validate_exchanges(events, models):
     if not isinstance(events, list) or not 3 <= len(events) <= 6000:
         raise OpenRSIError('Provide 1–1000 complete model exchanges in a shorter local readiness run.')
     calls, successes = {}, set()
+    declared = {(m['provider'], m['name']) for m in models}
     previous_sequence = -1
     for event in events:
         if (not isinstance(event, dict) or set(event) != {'kind', 'request_id', 'sequence', 'data'}
@@ -35,10 +36,15 @@ def validate_exchanges(events, models):
         if set(call) != {'model.request', 'model.response', 'model.accounting'}:
             raise OpenRSIError('Every recorded model request needs its response and accounting event.')
         accounting = call['model.accounting']
-        if (accounting.get('accounting_method') != 'gateway' or accounting.get('status') != 'success'
-                or type(accounting.get('total_tokens')) is not int or not 0 < accounting['total_tokens'] <= 2**53):
-            raise OpenRSIError('Local evidence must have settled successful model accounting; retain complete exchanges from an ended run.')
+        status = accounting.get('status')
+        if (accounting.get('accounting_method') != 'gateway'
+                or status not in ('success', 'provider_error')
+                or type(accounting.get('total_tokens')) is not int
+                or not (1 if status == 'success' else 0) <= accounting['total_tokens'] <= 2**53):
+            raise OpenRSIError('Local evidence must have settled model accounting; retain complete exchanges from an ended run.')
         pair = (accounting.get('provider'), accounting.get('model'))
+        if not all(isinstance(value, str) for value in pair) or pair not in declared:
+            raise OpenRSIError('Every model exchange must use a declared model.')
         if any((v.get('provider'), v.get('model')) != pair for v in call.values()):
             raise OpenRSIError('Provider or model differs within an exchange.')
         if 'request' not in call['model.request'] or 'response' not in call['model.response']:
@@ -47,8 +53,11 @@ def validate_exchanges(events, models):
         if (not isinstance(request, dict) or not request
                 or not isinstance(response, (dict, list, str)) or not response):
             raise OpenRSIError('Recorded model requests and responses must contain nonempty payloads.')
-        successes.add(pair)
-    if successes != {(m['provider'], m['name']) for m in models}:
+        # Retain provider rejections for review, but never count them as proof
+        # that a model was exercised successfully. Unknown usage still fails.
+        if status == 'success':
+            successes.add(pair)
+    if successes != declared:
         raise OpenRSIError('Every declared model needs a complete successful exchange.')
     for call in calls.values():
         usage = call['model.accounting']

@@ -7,6 +7,52 @@ from openrsi_space.common import OpenRSIError
 
 
 class EvidenceExportTests(LocalCheckTests):
+    def rejection_trace(self):
+        from copy import deepcopy
+        self.record['data']['configuration']['repository'] = {'commit': '1'*40}
+        self.record['data']['usage']['model_requests'] = 2
+        self.save()
+        success = self.exchanges(self.event)
+        failed = deepcopy(success)
+        for event in failed:
+            event['request_id'] = 'rejected-call'
+            event['sequence'] += 3
+        failed[1]['data'].update(status='provider_error', response={
+            'type': 'error', 'error': {'type': 'rate_limit_error', 'message': 'Try later.'}})
+        failed[2]['data'].update(status='provider_error', total_tokens=0, normalized_usd=0)
+        return success + failed
+
+    def test_export_keeps_settled_rejections_and_successful_exchanges(self):
+        events = self.rejection_trace()
+        log = self.path.parent / 'usage/events.jsonl'
+        for tokens, spent in ((0, 0), (10, .01)):
+            events[-1]['data'].update(total_tokens=tokens, normalized_usd=spent)
+            log.write_text(''.join(json.dumps(e)+'\n' for e in events))
+            exported = bundle(self.path, self.body)
+            self.assertEqual(len(exported['events']), 6)
+            self.assertEqual(exported['events'][-1]['data']['status'], 'provider_error')
+            self.assertEqual(exported['events'][-1]['data']['normalized_usd'], spent)
+
+    def test_failed_exchange_needs_complete_settled_accounting_and_a_success(self):
+        from copy import deepcopy
+        from openrsi_space.contracts.local_evidence import validate_exchanges
+        raw = self.rejection_trace()
+        models = [{'provider': 'openai', 'name': 'gpt-5.6-sol'}]
+        events = [{k:v for k,v in e.items() if k != 'run_id'} for e in raw]
+        validate_exchanges(events, models)
+        invalid = [events[3:], events[:-1]]
+        for change in ({'accounting_method': 'unavailable'}, {'total_tokens': None},
+                       {'total_tokens': -1}, {'total_tokens': True}, {'normalized_usd': None},
+                       {'normalized_usd': -1}, {'normalized_usd': float('nan')}, {'status': 'unknown'},
+                       {'status': []}, {'status': {}}, {'provider': []}, {'model': {}}):
+            bad = deepcopy(events); bad[-1]['data'].update(change); invalid.append(bad)
+        bad = deepcopy(events)
+        for event in bad[3:]: event['data']['model'] = 'undeclared-model'
+        invalid.append(bad)
+        for bad in invalid:
+            with self.subTest(events=bad), self.assertRaises(OpenRSIError):
+                validate_exchanges(bad, models)
+
     def test_export_preserves_recorded_cap_even_when_spending_and_remote_cap_are_lower(self):
         self.record['data']['configuration']['resolved']['limits']['max_usd'] = 2
         self.record['data']['configuration']['repository'] = {'commit': '1'*40}
