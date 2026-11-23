@@ -43,7 +43,8 @@ class EvidenceExportTests(LocalCheckTests):
         invalid = [events[3:], events[:-1]]
         for change in ({'accounting_method': 'unavailable'}, {'total_tokens': None},
                        {'total_tokens': -1}, {'total_tokens': True}, {'normalized_usd': None},
-                       {'normalized_usd': -1}, {'normalized_usd': float('nan')}, {'status': 'unknown'}):
+                       {'normalized_usd': -1}, {'normalized_usd': float('nan')}, {'status': 'unknown'},
+                       {'status': []}, {'status': {}}, {'provider': []}, {'model': {}}):
             bad = deepcopy(events); bad[-1]['data'].update(change); invalid.append(bad)
         bad = deepcopy(events)
         for event in bad[3:]: event['data']['model'] = 'undeclared-model'

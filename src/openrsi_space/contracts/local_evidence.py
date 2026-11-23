@@ -38,12 +38,12 @@ def validate_exchanges(events, models):
         accounting = call['model.accounting']
         status = accounting.get('status')
         if (accounting.get('accounting_method') != 'gateway'
-                or status not in {'success', 'provider_error'}
+                or status not in ('success', 'provider_error')
                 or type(accounting.get('total_tokens')) is not int
                 or not (1 if status == 'success' else 0) <= accounting['total_tokens'] <= 2**53):
             raise OpenRSIError('Local evidence must have settled model accounting; retain complete exchanges from an ended run.')
         pair = (accounting.get('provider'), accounting.get('model'))
-        if pair not in declared:
+        if not all(isinstance(value, str) for value in pair) or pair not in declared:
             raise OpenRSIError('Every model exchange must use a declared model.')
         if any((v.get('provider'), v.get('model')) != pair for v in call.values()):
             raise OpenRSIError('Provider or model differs within an exchange.')
