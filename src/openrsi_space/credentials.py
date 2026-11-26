@@ -2,6 +2,7 @@
 from openrsi_space.compatibility import MODEL_TOKEN_HEADER
 import base64
 import json
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 from openrsi_space.common import OpenRSIError, canonical
@@ -18,14 +19,15 @@ MAX_TOKEN_BYTES = 8192
 # Credential serialization/staging formats, not the service admission policy.
 # Provider availability is discovered from the selected Dungeness runtime.
 PROVIDER_ENV = {"openai": "TESTBED_OPENAI_API_KEY", "anthropic": "TESTBED_ANTHROPIC_API_KEY",
-                "openrouter": "TESTBED_OPENROUTER_API_KEY"}
+                "openrouter": "TESTBED_OPENROUTER_API_KEY",
+                "google": "TESTBED_GEMINI_API_KEY", "xai": "TESTBED_XAI_API_KEY"}
 LOCAL_PLAN_KEYS = {"minimax-subscription": "TESTBED_MINIMAX_CODING_PLAN_KEY"}
 LOCAL_SESSION_ENV = {"claude-subscription": "TESTBED_CLAUDE_ACCESS_TOKEN",
                      "grok-subscription": "TESTBED_GROK_SUBSCRIPTION_TOKEN"}
-PROVIDERS = frozenset(PROVIDER_ENV) | LOCAL_PLAN_KEYS.keys() | LOCAL_SESSION_ENV.keys() | {"openai-chatgpt"}
+PROVIDERS = frozenset(PROVIDER_ENV) | LOCAL_PLAN_KEYS.keys() | LOCAL_SESSION_ENV.keys() | {"openai-chatgpt", "google-vertex"}
 SUBSCRIPTION_PROVIDERS = frozenset(LOCAL_SESSION_ENV) | LOCAL_PLAN_KEYS.keys() | {"openai-chatgpt"}
 # Read historical configurations without re-enabling their credentials or execution.
-RETIRED_PROVIDERS = frozenset({"kimi-code", "moonshot", "xai"})
+RETIRED_PROVIDERS = frozenset({"kimi-code", "moonshot", "grok-subscription", "minimax-subscription"})
 
 def require_active_models(models):
     for model in models:
@@ -35,6 +37,8 @@ def require_active_models(models):
 def require_remote_models(models):
     """Subscription credentials are local-only, never a remote handoff."""
     require_active_models(models)
+    if any(model['provider'] == 'google-vertex' for model in models):
+        raise OpenRSIError('Vertex OAuth credentials are local-only. Use platform-funded OpenRouter for remote verification.')
     if any(model['provider'] in SUBSCRIPTION_PROVIDERS for model in models):
         raise OpenRSIError('Remote subscription-token submission has been removed. Use platform-funded API access.')
 
@@ -166,8 +170,21 @@ def grok_access(path):
         raise OpenRSIError('Cannot read one unexpired first-party Grok login. Run `grok login --device-auth` locally.') from None
 
 
+def validate_vertex_access(value):
+    if not isinstance(value, dict) or set(value) != {'access_token', 'expires_at', 'project_id'}:
+        raise OpenRSIError('Vertex access requires access_token, expires_at and project_id; keep refresh credentials local.')
+    validate_session_access({k: value[k] for k in ('access_token', 'expires_at')})
+    if not isinstance(value['project_id'], str) or not re.fullmatch(r'[a-z][a-z0-9-]{4,28}[a-z0-9]|[0-9]{1,20}', value['project_id']):
+        raise OpenRSIError('Supply a valid Vertex project ID or project number.')
+
+
 def provider_environment(provider, value):
     """Shared local/remote credential staging; values go only to private tmpfs."""
+    if provider == 'google-vertex':
+        validate_vertex_access(value)
+        return {'TESTBED_VERTEX_ACCESS_TOKEN': value['access_token'],
+                'TESTBED_VERTEX_ACCESS_TOKEN_EXPIRES_AT': value['expires_at'],
+                'TESTBED_VERTEX_PROJECT_ID': value['project_id']}
     if provider in LOCAL_SESSION_ENV:
         validate_session_access(value)
         name = LOCAL_SESSION_ENV[provider]
@@ -185,6 +202,8 @@ def validate_provider_access(document):
     for provider, value in document.items():
         if provider == "openai-chatgpt":
             validate_access(value)
+        elif provider == 'google-vertex':
+            validate_vertex_access(value)
         elif provider in LOCAL_SESSION_ENV:
             validate_session_access(value)
         else:

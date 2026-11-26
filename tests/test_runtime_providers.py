@@ -59,7 +59,8 @@ class RuntimeProviderTests(unittest.TestCase):
             with redirect_stderr(io.StringIO()), self.assertRaises(SystemExit) as raised:
                 parser.parse_args(command + ["--grok-auth-file"])
             self.assertEqual(raised.exception.code, 2)
-        for provider in ("xai", "grok-subscription"):
+        validate_provider_access({"xai": "synthetic-api-key"})
+        for provider in ("grok-subscription",):
             with self.assertRaises(OpenRSIError):
                 validate_provider_access({provider: "synthetic-token"})
         args = parser.parse_args(['local', 'run', 'fixture', '--dungeness', '.', '--grok-auth-file'])

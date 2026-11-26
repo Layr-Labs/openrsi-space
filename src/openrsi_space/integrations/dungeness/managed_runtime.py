@@ -14,7 +14,7 @@ REPOSITORY = 'https://github.com/Layr-Labs/dungeness.git'
 # Release pin, shared by all supported problems. Update only after compatibility tests.
 # Always pin public source, never a deployment-local snapshot that solvers
 # cannot fetch from REPOSITORY.
-REVISION = '60cacfa13207bcc2f42f92a8bb7dba4dabb510ab'
+REVISION = 'b27289143a0fcbaf7e32c4e1ab29c597479e0c11'
 
 
 def _git(root, *args):

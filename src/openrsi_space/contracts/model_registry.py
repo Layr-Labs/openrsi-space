@@ -6,7 +6,7 @@ This registry does not grant provider access or translate API protocols.
 from copy import deepcopy
 from dataclasses import dataclass
 
-REGISTRY_VERSION = 'openrsi-model-registry-20261119'
+REGISTRY_VERSION = 'openrsi-model-registry-20261126'
 
 
 @dataclass(frozen=True)
@@ -64,7 +64,17 @@ MODELS = (
     Model('anthropic/claude-fable-5.2', (('claude-subscription', 'claude-fable-5-2'), ('anthropic', 'claude-fable-5-2')),
           dict(text_only=True, input_per_mtok=8.0, output_per_mtok=40.0, cached_read_per_mtok=0.20,
                cache_write_per_mtok=10.0, cache_write_1h_per_mtok=16.0)),
-    Model('x-ai/grok-4.7', (('grok-subscription', 'grok-4.7'),)),
+    # Preserve old identity bindings for retained evidence; only active routes
+    # are advertised. New local xAI rates match Dungeness b272891 exactly.
+    Model('x-ai/grok-4.7', (('xai', 'grok-4.7'), ('grok-subscription', 'grok-4.7')),
+          dict(text_only=True, input_per_mtok=2, cached_read_per_mtok=.5, output_per_mtok=6,
+               long_context=dict(threshold_input_tokens=199999, input_per_mtok=4,
+                                 cached_read_per_mtok=1, output_per_mtok=12))),
+    *(Model('google/' + name, (('google', name), ('google-vertex', name)),
+            dict(text_only=True, input_per_mtok=rate, cached_read_per_mtok=rate / 20,
+                 output_per_mtok=rate * 5))
+      for name, rate in (('gemini-4-carbon', 2), ('gemini-4-neon', 3),
+                         ('gemini-4-argon', 2), ('gemini-4-hydrogen', 1.5))),
     Model('minimax/minimax-m3', (('minimax-subscription', 'MiniMax-M3'),)),
     Model('minimax/minimax-m3.1-flash', (('minimax-subscription', 'MiniMax-M3.1-Flash'),)),
 )

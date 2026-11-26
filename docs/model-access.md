@@ -15,7 +15,7 @@ separate provider charges; do not switch to it without the solver's authorizatio
 | --- | --- | --- |
 | ChatGPT subscription with Codex | `openai-chatgpt` | [Existing Codex login](#local-chatgpt-subscription-setup) |
 | Claude subscription with Claude Code | `claude-subscription` | [Existing Claude login](#claude-subscription-access) |
-| Optional, separately billed API access | `openrouter`, `openai`, `anthropic` | Your authorized provider API key |
+| Optional, separately billed API access | `openrouter`, `openai`, `anthropic`, `google`, `xai` | Your authorized provider API key |
 
 ## Funded remote verification
 
@@ -68,7 +68,7 @@ must support its assigned API protocol, endpoints and placeholder credentials on
 both routes; selecting a model does not translate requests. Test that pairing
 locally. A successful pricing quote alone does not establish compatibility.
 
-Direct xAI, Kimi Code and Moonshot routes remain retired.
+Kimi Code, Moonshot and the former Grok/MiniMax subscription routes are retired.
 Historical receipts and results remain readable; reading them does not permit a new run.
 
 ## Local ChatGPT subscription setup
@@ -266,3 +266,47 @@ and the [OpenRouter catalog](https://openrouter.ai/api/v1/models) on 2026-10-30:
 Opus 5.5 reference rates per million tokens are input $4, output $20, cache read
 $0.20, five-minute cache write $5 and one-hour cache write $8. Retained runs keep
 their recorded schedule. See [Claude Code environment variables](https://code.claude.com/docs/en/env-vars).
+
+
+## Google and Grok API access
+
+These routes use separately billed API access, not Google or Grok subscription
+allowances. ChatGPT and Claude subscriptions remain supported as above.
+
+| Local route | Local model | Private input | Funded remote equivalent |
+| --- | --- | --- | --- |
+| `google` | `gemini-4-carbon`, `gemini-4-neon`, `gemini-4-argon`, `gemini-4-hydrogen` | Gemini API key | `openrouter/google/<same-model>` |
+| `google-vertex` | The same Gemini models | Cloud access token, actual expiry and project ID | The same OpenRouter equivalents |
+| `xai` | `grok-4.7` | xAI API key | `openrouter/x-ai/grok-4.7` |
+
+Use your existing private key environment variable with `--provider-token-env NAME`
+for `google` or `xai`. For Vertex, use a private `--provider-access-file` outside
+harness source, containing `{"google-vertex": {"access_token": "...",
+"expires_at": "<actual ISO 8601 expiry>", "project_id": "<your project>"}}`.
+Supply only those three fields, never a refresh token or a whole login export.
+The token must remain valid for the run; automatic refresh is not implemented.
+These credentials are staged only for the local gateway, then removed.
+
+For example, with your Gemini key already in your private shell environment:
+
+```sh
+openrsi-space local run ./my-harness --provider google --model gemini-4-carbon \
+  --reasoning-effort high --budget 2 --provider-token-env GEMINI_API_KEY
+```
+
+The same harness source must support both assigned protocols: Google local runs
+use `google-genai` and the native Google SDK; funded OpenRouter runs use the
+assigned OpenAI-compatible protocol. Select from `DUNGENESS_TASK.models[].api`,
+`base_url` and `request_model`; do not hardcode a provider URL or rewrite source
+between local and remote runs. Grok local runs use Responses; the harness must
+also support the assigned remote protocol. Keep native signed history intact
+within each run. Dungeness does not translate Google calls to OpenRouter.
+
+`local run` checks the selected server's published pairing before building or
+spending. If the server has not yet adopted these routes, it stops with a clear
+message. Update the client after the server rollout; use `--local-only` only for
+an independent experiment. The local cap must cover the requested remote cap;
+source, problem and reasoning settings still have to match.
+
+Grok subscription and MiniMax routes are retired for new runs. Retained evidence,
+prices and receipts remain readable; no credential or model fallback is applied.
