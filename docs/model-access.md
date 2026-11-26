@@ -68,7 +68,7 @@ must support its assigned API protocol, endpoints and placeholder credentials on
 both routes; selecting a model does not translate requests. Test that pairing
 locally. A successful pricing quote alone does not establish compatibility.
 
-Direct xAI, Kimi Code and Moonshot routes remain retired.
+Kimi Code, Moonshot and the former Grok/MiniMax subscription routes are retired.
 Historical receipts and results remain readable; reading them does not permit a new run.
 
 ## Local ChatGPT subscription setup
