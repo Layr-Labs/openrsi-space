@@ -8,8 +8,11 @@ ALIASES = {pair: ('openrouter', remote) for remote, pairs in GROUPS for pair in 
 
 
 def public_policy():
+    from openrsi_space.credentials import RETIRED_PROVIDERS
+    active = [(remote, [(p, n) for p, n in pairs if p not in RETIRED_PROVIDERS])
+              for remote, pairs in GROUPS]
     return {'policy': POLICY, 'registry_version': REGISTRY_VERSION,
             'same_reasoning_effort_required': True,
             'equivalences': [{'remote': {'provider': 'openrouter', 'name': remote},
                               'local': [{'provider': p, 'name': n} for p, n in pairs]}
-                             for remote, pairs in GROUPS]}
+                             for remote, pairs in active if pairs]}

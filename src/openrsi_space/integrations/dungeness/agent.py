@@ -22,8 +22,13 @@ def model_profile(source: Path, requested: str, provider="openai", pricing=None)
     if any("cache_write_1h_per_mtok" in rates for rates in (matches[0], matches[0].get("long_context", {}))):
         from openrsi_space.runtime_contract import require_capabilities
         require_capabilities(source, "cache-duration-accounting-v1")
+    if provider in {"google", "google-vertex"}:
+        from openrsi_space.runtime_contract import require_capabilities
+        require_capabilities(source, "google-native-protocol-v1")
     return {"provider": provider, "upstream_id": matches[0]["upstream_id"],
-            "request_model": requested, "api": ("anthropic-messages" if provider in {"anthropic", "claude-subscription"}
+            "request_model": requested, "api": ("google-genai" if provider in {"google", "google-vertex"}
+                else "openai-responses" if provider == "xai"
+                else "anthropic-messages" if provider in {"anthropic", "claude-subscription"}
                 else "openai-responses" if provider == "openai-chatgpt"
                 else "openai-completions"),
             "name_format": "request"}

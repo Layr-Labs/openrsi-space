@@ -46,7 +46,7 @@ tested Dungeness pin, not Dungeness main independently. Never replace the client
 or runtime during an active run. Preserve saved evidence, requests and receipts.
 An update does not authorize a paid retry or resume an ended research process.
 
-The current default is `60cacfa13207bcc2f42f92a8bb7dba4dabb510ab`.
+The current default is `b27289143a0fcbaf7e32c4e1ab29c597479e0c11`.
 It adds recovery from confirmed Claude provider rate-limit rejections without
 marking accounting incomplete. Evidence retains settled provider rejections, but
 still requires a complete successful exchange for every declared model. Unknown

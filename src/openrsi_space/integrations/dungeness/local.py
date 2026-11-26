@@ -47,7 +47,7 @@ def credential_input(args, providers):
     elif args.provider_access_file:
         access = read_json(Path(args.provider_access_file).expanduser())
     elif args.provider_token_env:
-        if len(providers) != 1 or providers & (set(LOCAL_SESSION_ENV) | {'openai-chatgpt'}):
+        if len(providers) != 1 or providers & (set(LOCAL_SESSION_ENV) | {'openai-chatgpt', 'google-vertex'}):
             raise OpenRSIError('--provider-token-env requires one API-key provider; use --provider-access-file for ensembles.')
         access = {next(iter(providers)): os.environ.get(args.provider_token_env)}
     else:
