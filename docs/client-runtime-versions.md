@@ -46,8 +46,11 @@ tested Dungeness pin, not Dungeness main independently. Never replace the client
 or runtime during an active run. Preserve saved evidence, requests and receipts.
 An update does not authorize a paid retry or resume an ended research process.
 
-The current default is `b27289143a0fcbaf7e32c4e1ab29c597479e0c11`.
-It adds recovery from confirmed Claude provider rate-limit rejections without
+The current default is `27b62cbd5cc6174c6284e33365df34139851503b`.
+This revision removes the HTTP client’s separate 600-second read timeout, so
+slow provider responses follow the gateway’s bounded absolute request deadline.
+The 30-second connection timeout and budget controls remain enforced.
+It also retains recovery from confirmed Claude provider rate-limit rejections without
 marking accounting incomplete. Evidence retains settled provider rejections, but
 still requires a complete successful exchange for every declared model. Unknown
 usage remains ineligible. The harness must honor retry guidance and backoff;
